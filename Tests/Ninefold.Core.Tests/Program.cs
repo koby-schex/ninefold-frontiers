@@ -32,7 +32,7 @@ internal static partial class Program
             ("Explicit round lifecycle handles skipped final unit", RoundBoundary),
             ("Fractional path costs do not gain or lose allowance", FractionalMovement),
             ("Mixed abstract teams share the same scheduler", ManyRounds)
-        }.Concat(AbilityTests()).Concat(HealthTests()).ToArray();
+        }.Concat(AbilityTests()).Concat(HealthTests()).Concat(BattlefieldTests()).ToArray();
         int failed = 0;
         foreach (var test in tests)
         {

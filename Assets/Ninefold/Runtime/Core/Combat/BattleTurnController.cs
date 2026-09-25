@@ -35,6 +35,7 @@ namespace Ninefold.Core.Combat
         public bool IsBattleEnded { get; private set; }
         public BattleAbilityController Abilities { get; }
         public BattleHealthController Health { get; }
+        public BattlefieldController Battlefield { get; private set; }
         public ActivationView CurrentActivation => active;
         public IReadOnlyList<string> RoundOrder => Array.AsReadOnly(roundOrder);
 
@@ -59,6 +60,16 @@ namespace Ninefold.Core.Combat
             Health = new BattleHealthController(this, damageRules ?? DamageRules.Provisional);
             foreach (var unit in initialUnits)
                 RegisterUnit(unit);
+        }
+
+        /// <summary>Configure once before rounds begin; presentation uses Battlefield commands.</summary>
+        public BattlefieldController ConfigureBattlefield(BattlefieldMap map)
+        {
+            EnsureBattleOpen();
+            if (map == null) throw new ArgumentNullException(nameof(map));
+            if (Battlefield != null || RoundNumber != 0) throw new InvalidOperationException("Configure the field before battle starts, once.");
+            Battlefield = new BattlefieldController(this, map);
+            return Battlefield;
         }
 
         /// <summary>New units enter the next round snapshot, never the current queue.</summary>
