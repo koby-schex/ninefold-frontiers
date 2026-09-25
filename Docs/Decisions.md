@@ -31,3 +31,10 @@ positive damage) is configurable and provisional. Single-target team policy and
 provided targeting verdicts are explicitly scoped; full targeting/effect definitions,
 passive/status effects and environmental damage are separate work. No unit balance
 values or canonical content are introduced by abstract tests.
+
+2026-09-25: battlefield validation preserves free placement with optional future snaps
+(game archive D041). Initial conservative fixed-orientation body proxies, authored
+3D target rays, strongest intersecting partial cover, flat supplied paths and
+footprint-based difficult-ground costs are implementation choices, not canonical
+geometry or final balance. Confirmations recalculate current legality. See Battlefield.md
+for precision, trusted-API boundaries and deferred navigation/model validation.

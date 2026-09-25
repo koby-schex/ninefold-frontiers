@@ -80,3 +80,7 @@ external-event hook and are not automatically inferred here.
 
 Tests run the exact engine-independent Core source in Windows/Linux GitHub CI.
 Unity/IL2CPP, animation, touch interaction and device performance remain deferred.
+
+The Battlefield adapter now computes direct range/obstruction/cover and binds effect
+amounts to registered profiles. See Battlefield.md. The low-level HealthAction API
+remains trusted and does not independently compute geometry.
