@@ -27,11 +27,12 @@ namespace Ninefold.Core.Combat
             decimal n = x*x+y*y+z*z;
             if (n == 0m) return 0m;
             decimal root = n >= 1m ? n : 1m;
+            decimal previous = 0m;
             for (int i = 0; i < 100; i++)
             {
                 decimal next = (root + n/root)/2m;
-                if (Math.Abs(next-root) < 0.000000000001m) return next;
-                root = next;
+                if (next == root || next == previous) return Math.Min(next,root);
+                previous = root; root = next;
             }
             return root;
         }

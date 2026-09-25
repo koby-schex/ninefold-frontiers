@@ -189,7 +189,7 @@ internal static partial class Program
     {
         var b = FieldBattle(); RejectEffect(b,FieldFailure.InvalidTarget,target:"unknown"); RejectEffect(b,FieldFailure.InvalidTarget,target:null);
         RejectEffect(b,FieldFailure.InvalidRequest,AbilitySlot.Passive);
-        b.RegisterUnit(U("missing")); b.EndActivation(b.CurrentActivation.ActivationId); Drain(b); b.StartNextRound();
+        b.RegisterUnit(U("missing")); b.Abilities.RegisterKit("missing",new UnitAbilityDefinition(2,SignatureReadiness.ReadyAtDeployment)); b.EndActivation(b.CurrentActivation.ActivationId); Drain(b); b.StartNextRound();
         while (b.BeginNextActivation().UnitId != "missing") b.EndActivation(b.CurrentActivation.ActivationId);
         Equal(false,b.Battlefield.TryMove(b.CurrentActivation.ActivationId,new[] { P(1,1) },out _,out var failure));
         Equal(FieldFailure.MissingPosition,failure); RejectEffect(b,FieldFailure.MissingPosition);
