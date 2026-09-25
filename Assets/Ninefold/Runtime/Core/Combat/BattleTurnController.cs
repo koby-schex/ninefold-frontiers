@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Ninefold.Core.Missions;
 
 namespace Ninefold.Core.Combat
 {
@@ -36,6 +37,7 @@ namespace Ninefold.Core.Combat
         public BattleAbilityController Abilities { get; }
         public BattleHealthController Health { get; }
         public BattlefieldController Battlefield { get; private set; }
+        public MissionController Mission { get; private set; }
         public ActivationView CurrentActivation => active;
         public IReadOnlyList<string> RoundOrder => Array.AsReadOnly(roundOrder);
 
@@ -70,6 +72,14 @@ namespace Ninefold.Core.Combat
             if (Battlefield != null || RoundNumber != 0) throw new InvalidOperationException("Configure the field before battle starts, once.");
             Battlefield = new BattlefieldController(this, map);
             return Battlefield;
+        }
+
+        public MissionController ConfigureMission(MissionDefinition definition)
+        {
+            EnsureBattleOpen();
+            if (Mission != null || RoundNumber != 0) throw new InvalidOperationException("Configure mission once before rounds begin.");
+            Mission = new MissionController(this, definition);
+            return Mission;
         }
 
         /// <summary>New units enter the next round snapshot, never the current queue.</summary>
@@ -107,6 +117,8 @@ namespace Ninefold.Core.Combat
             EnsureBattleOpen();
             if (RoundNumber != 0 && !IsRoundComplete)
                 throw new InvalidOperationException("Finish the current round first.");
+            if (Mission != null && RoundNumber > 0 && Mission.LastResolvedRound != RoundNumber)
+                throw new InvalidOperationException("Resolve mission round-end effects and objectives first.");
             var nextOrder = units.Values.Where(unit => unit.Eligible)
                 .OrderByDescending(unit => unit.Initiative)
                 .ThenBy(unit => unit.Definition.UnitId, StringComparer.Ordinal)

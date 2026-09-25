@@ -85,6 +85,7 @@ namespace Ninefold.Core.Combat
             units[request.TargetId].Current = preview.HealthAfter;
             if (preview.DefeatsTarget) turns.RemoveUnit(request.TargetId);
             result = preview;
+            turns.Mission?.Evaluate();
             return true;
         }
 

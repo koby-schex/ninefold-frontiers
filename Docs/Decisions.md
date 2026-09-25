@@ -45,3 +45,11 @@ free destinations and reuses supplied-path validation. Graph-optimal routes are 
 claimed as globally optimal continuous weighted paths; search-limit failure is distinct
 from no path. Exact displayed-route confirmation remains available through TryMove.
 See Pathfinding.md for numeric clearance, scaling limits and deferred device checks.
+
+2026-09-25: finite mission contracts implement six objective families, one primary
+plus up to two optional goals, explicit simultaneous outcome priority and once-per-round
+objective checks. Interactions cost one primary action, have explicit actor eligibility
+and use provisional authored contact-reference geometry. Immutable in-memory results
+do not grant rewards or persist progression. Concrete mission/event/escort adapters
+remain separate; see Missions.md. These are reviewable implementation contracts, not
+new canon, campaign content or permanent-loss rules.
