@@ -1,14 +1,28 @@
 # Ninefold: Frontiers
 
-Unity mobile tactical game foundation. **Setup scaffold only:** no playable missions,
-production art, saves, purchases, or iOS distribution are implemented in this commit.
+Unity mobile tactical game foundation with an engine-independent combat turn core.
+No playable missions, production art, saves, purchases or iOS distribution yet.
 
 - Unity **6.3 LTS / 6000.3.21f1**; URP **17.3.0**.
 - Development: Windows. Initial mobile platform: iPhone; Android later.
 - iPhone 14 is one test device, not the minimum or only supported environment.
 - Work lands through pull requests; Koby merges.
 
-## Open the project
+## Develop without opening Unity
+
+The combat turn controller compiles against .NET Standard 2.1. A standalone .NET 8
+executable runs behavioral tests against the exact source used by Unity. GitHub
+Actions runs these checks on Windows and Linux; no Unity installation/license is
+needed for the Core checks. Unity rendering/import/device validation remains deferred.
+
+```sh
+dotnet run --project Tests/Ninefold.Core.Tests/Ninefold.Core.Tests.csproj --configuration Release
+```
+
+See [the turn-system contract](Docs/CombatTurns.md). Clone/pull and review PRs as
+normal. The following Editor steps can wait until we are ready for integration.
+
+## Open the project later
 
 1. Clone this repository with Git LFS installed and run `git lfs pull`.
 2. In Unity Hub, add the cloned repository root and open with **6000.3.21f1**.
