@@ -45,9 +45,11 @@ are applied here. Removal represents battle eligibility, not permanent roster lo
 
 ## Explicitly deferred
 
-Stuns and cooldown ticking need an activation-start/status resolution layer: do not
-model a stunned scheduled turn as permanent removal. Revival/re-entry, movement buffs,
-Signature readiness/use, objective progress, save snapshots/migrations, faction/squad
+Owner activation counts now drive main-ability cooldowns; Signature readiness/use
+is implemented in the battle-owned Abilities controller (see AbilityUse.md). Stun
+resolution still needs a status layer: do not model a stunned scheduled turn as
+permanent removal. Revival/re-entry, movement buffs, objective progress,
+save snapshots/migrations, faction/squad
 selection and geometry are separate changes. Save restoration must preserve activation
 identity and queue state when implemented. No offline persistence is claimed yet.
 

@@ -1,5 +1,6 @@
-# Combat turn core
+# Combat core
 
 BattleTurnController owns round order and activation budgets without UnityEngine.
-See Docs/CombatTurns.md and Tests/Ninefold.Core.Tests for usage and behavioral checks.
-No damage, pathfinding, status effects, cooldowns or persistence are implemented yet.
+Its Abilities controller manages main cooldowns, Signature readiness/use and costs.
+See Docs/CombatTurns.md, Docs/AbilityUse.md and Tests/Ninefold.Core.Tests.
+Damage, pathfinding, passive effects, status resolution and persistence remain future work.

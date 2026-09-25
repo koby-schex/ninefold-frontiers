@@ -16,3 +16,10 @@ No universal device support, frame rate, launch date or cloud pricing is promise
 before opening Unity. Editor integration/testing remains a later gate, not a
 prerequisite for engine-independent rule work. Turn-order tie breaking and decimal
 movement cost are documented implementation choices, not revisions to canon.
+
+2026-09-25: ability-availability implementation uses owner activation counters,
+main readiness at activation N+C, main abilities initially ready, configurable
+Signature readiness and latched once-per-battle use. Exact unit cooldown values
+and unit effects remain separate design/tuning work. Passives have no action
+button or action cost; their actual effects are deferred. These are implementation
+contracts for review and do not establish new lore.
