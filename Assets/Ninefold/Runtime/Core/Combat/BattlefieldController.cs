@@ -7,7 +7,7 @@ namespace Ninefold.Core.Combat
     public enum FieldFailure
     {
         None, InvalidRequest, InactiveTurn, MissingPosition, IllegalDestination, BlockedPath,
-        UnsupportedElevation, InsufficientMovement, InvalidTarget, OutOfRange, Obstructed, HealthRejected
+        UnsupportedElevation, InsufficientMovement, InvalidTarget, OutOfRange, Obstructed, HealthRejected, PathNotFound, SearchLimitExceeded
     }
 
     public sealed class MovementPreview
@@ -36,7 +36,7 @@ namespace Ninefold.Core.Combat
     }
 
     /// <summary>Single-threaded spatial commands. All previews are pure; confirmations recalculate.</summary>
-    public sealed class BattlefieldController
+    public sealed partial class BattlefieldController
     {
         private sealed class Placement
         {
@@ -88,11 +88,7 @@ namespace Ninefold.Core.Combat
                 if (to.Equals(from)) return Fail(FieldFailure.InvalidRequest, out failure);
                 if (to.Y != from.Y) return Fail(FieldFailure.UnsupportedElevation, out failure);
                 if (!LegalPosition(id, actor, to)) return Fail(FieldFailure.IllegalDestination, out failure);
-                if (Map.Obstacles.Any(w => w.BlocksMovement && Swept(w.Bounds, from, to, actor.Body)))
-                    return Fail(FieldFailure.BlockedPath, out failure);
-                foreach (var other in units)
-                    if (other.Key != id && turns.IsUnitEligible(other.Key) && Swept(other.Value.Body.At(other.Value.Position), from, to, actor.Body))
-                        return Fail(FieldFailure.BlockedPath, out failure);
+                if (!ClearSegment(id, actor, from, to)) return Fail(FieldFailure.BlockedPath, out failure);
                 cost += SegmentCost(from, to, actor.Body);
                 if (cost > turns.CurrentActivation.MovementRemaining) return Fail(FieldFailure.InsufficientMovement, out failure);
                 from = to;
@@ -160,6 +156,12 @@ namespace Ninefold.Core.Combat
             var box = actor.Body.At(point);
             if (Map.Obstacles.Any(w => w.BlocksMovement && w.Bounds.Overlaps(box))) return false;
             return !units.Any(u => u.Key != id && turns.IsUnitEligible(u.Key) && u.Value.Body.At(u.Value.Position).Overlaps(box));
+        }
+        private bool ClearSegment(string id, Placement actor, FieldPoint from, FieldPoint to)
+        {
+            if (Map.Obstacles.Any(w => w.BlocksMovement && Swept(w.Bounds, from, to, actor.Body))) return false;
+            return !units.Any(other => other.Key != id && turns.IsUnitEligible(other.Key)
+                && Swept(other.Value.Body.At(other.Value.Position), from, to, actor.Body));
         }
         private static bool Swept(FieldBox box, FieldPoint a, FieldPoint b, FieldBody body)
             => box.Intersects(a,b,out _,out _,body.HalfWidth,body.Height,body.HalfDepth);
