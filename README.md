@@ -22,7 +22,8 @@ dotnet run --project Tests/Ninefold.Core.Tests/Ninefold.Core.Tests.csproj --conf
 See [the turn-system contract](Docs/CombatTurns.md) and
 [ability-use contract](Docs/AbilityUse.md), and
 [health-resolution contract](Docs/HealthResolution.md), and
-[battlefield contract](Docs/Battlefield.md). Clone/pull and review PRs as
+[battlefield contract](Docs/Battlefield.md), and
+[destination pathfinding](Docs/Pathfinding.md). Clone/pull and review PRs as
 normal. The following Editor steps can wait until we are ready for integration.
 
 ## Open the project later

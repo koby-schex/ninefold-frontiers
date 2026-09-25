@@ -49,7 +49,8 @@ movement blockers, not assumed from absent ground data.
 
 Movement accepts 1-256 destination waypoints after the current position. Duplicate
 consecutive points, changes in Y, blocked segments and insufficient allowance fail.
-It does not find a path; the future navigator must supply one. Euclidean segment
+This supplied-path API does not find a path. The destination pathfinding API now
+supplies routes; see Pathfinding.md. Euclidean segment
 length uses decimal square-root iteration, costs round upward per segment to 0.000001
 movement units, and costs sum across the complete route. Subdivision cannot create
 free travel. Difficult-ground cost applies for the portion where the moving footprint
@@ -84,7 +85,7 @@ footprints, detours, terrain costs, exact range, offsets, cover/height, compatib
 stale commands and state changes between preview and confirm. CI runs the actual Core
 sources on Windows and Linux. No claim of universal platform bit-identical simulation.
 
-Later work: pathfinding and reachable-area generation; slope/support/navmesh data;
+Destination routing is implemented in Pathfinding.md. Later work: reachable-area generation; slope/support/navmesh data;
 rotating and mesh-derived bodies, weapon origins and contact targets; ability-specific
 geometry and statuses; touch overlays and optional snaps; Unity import and physical
 model/device checks. Real maps must accommodate canonical bodies without shrinking

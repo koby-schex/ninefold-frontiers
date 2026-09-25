@@ -38,3 +38,10 @@ values or canonical content are introduced by abstract tests.
 footprint-based difficult-ground costs are implementation choices, not canonical
 geometry or final balance. Confirmations recalculate current legality. See Battlefield.md
 for precision, trusted-API boundaries and deferred navigation/model validation.
+
+2026-09-25: destination routing uses a bounded, deterministically ordered corner
+visibility graph with current footprints, occupancy and terrain costs. This preserves
+free destinations and reuses supplied-path validation. Graph-optimal routes are not
+claimed as globally optimal continuous weighted paths; search-limit failure is distinct
+from no path. Exact displayed-route confirmation remains available through TryMove.
+See Pathfinding.md for numeric clearance, scaling limits and deferred device checks.
