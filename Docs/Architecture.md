@@ -1,6 +1,8 @@
 # Architecture boundaries
 
-This document specifies planned responsibilities, not implemented game systems.
+Core turn scheduling, action/movement budgets and ability availability/costs are
+implemented. Other responsibilities below remain planned; see CombatTurns.md and
+AbilityUse.md for exact implementation boundaries.
 
 - **Core:** plain C# rules and committed state; no UnityEngine references. Combat,
   missions, progression and saves have reserved folders. Commands validate legal

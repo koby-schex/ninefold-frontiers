@@ -14,6 +14,7 @@ namespace Ninefold.Core.Combat
         {
             internal readonly UnitTurnDefinition Definition;
             internal int Initiative;
+            internal long ActivationCount;
             internal bool Eligible = true;
 
             internal UnitState(UnitTurnDefinition definition)
@@ -32,6 +33,7 @@ namespace Ninefold.Core.Combat
 
         public int RoundNumber { get; private set; }
         public bool IsBattleEnded { get; private set; }
+        public BattleAbilityController Abilities { get; }
         public ActivationView CurrentActivation => active;
         public IReadOnlyList<string> RoundOrder => Array.AsReadOnly(roundOrder);
 
@@ -52,6 +54,7 @@ namespace Ninefold.Core.Combat
         {
             if (initialUnits == null)
                 throw new ArgumentNullException(nameof(initialUnits));
+            Abilities = new BattleAbilityController(this);
             foreach (var unit in initialUnits)
                 RegisterUnit(unit);
         }
@@ -123,9 +126,11 @@ namespace Ninefold.Core.Combat
                     continue;
                 }
                 long nextActivationId = checked(activationSequence + 1);
+                long nextOwnerCount = checked(unit.ActivationCount + 1);
                 active = new ActivationView(nextActivationId, unit.Definition.UnitId,
                     RoundNumber, unit.Definition.MovementAllowance, true);
                 activationSequence = nextActivationId;
+                unit.ActivationCount = nextOwnerCount;
                 nextIndex++;
                 return active;
             }
@@ -169,6 +174,11 @@ namespace Ninefold.Core.Combat
             IsBattleEnded = true;
             active = null;
         }
+
+        /// <summary>Scheduled activations begun by this owner, including forfeited turns.</summary>
+        public long GetActivationCount(string unitId) => FindUnit(unitId).ActivationCount;
+
+        public bool IsUnitEligible(string unitId) => FindUnit(unitId).Eligible;
 
         private UnitState FindUnit(string unitId)
         {
