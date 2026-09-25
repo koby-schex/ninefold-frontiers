@@ -1,0 +1,37 @@
+# Unity generated files (keep Assets and .meta files)
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Bb]uild/
+/[Bb]uilds/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+.vs/
+.idea/
+*.csproj
+*.sln
+*.slnx
+*.user
+*.pidb
+*.booproj
+*.opendb
+*.VC.db
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc
+# Local credentials and signing material
+.env
+.env.*
+!.env.example
+*.p12
+*.pfx
+*.mobileprovision
+*.keystore
+*.jks
+*.key
+*.pem
+*.p8
+# Package resolution is tracked after the first verified Editor import.
