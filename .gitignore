@@ -35,3 +35,9 @@ __pycache__/
 *.pem
 *.p8
 # Package resolution is tracked after the first verified Editor import.
+
+# Authored standalone projects; Unity-generated root projects stay ignored.
+!BuildTools/Core/Ninefold.Core.csproj
+!Tests/Ninefold.Core.Tests/Ninefold.Core.Tests.csproj
+**/bin/
+**/obj/

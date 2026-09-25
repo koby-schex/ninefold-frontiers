@@ -11,3 +11,8 @@
 
 Editor upgrades require a deliberate PR recording package changes and validation.
 No universal device support, frame rate, launch date or cloud pricing is promised.
+
+2026-09-25: Koby chose continued GitHub implementation and automated Core checks
+before opening Unity. Editor integration/testing remains a later gate, not a
+prerequisite for engine-independent rule work. Turn-order tie breaking and decimal
+movement cost are documented implementation choices, not revisions to canon.
