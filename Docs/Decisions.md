@@ -23,3 +23,11 @@ Signature readiness and latched once-per-battle use. Exact unit cooldown values
 and unit effects remain separate design/tuning work. Passives have no action
 button or action cost; their actual effects are deferred. These are implementation
 contracts for review and do not establish new lore.
+
+2026-09-25: implement health, deterministic damage, capped healing and defeat
+eligibility with a battle-owned resolver. The current damage hypothesis (armor
+scale 100, combined ordinary reduction cap 70%, halves-up rounding, minimum 1
+positive damage) is configurable and provisional. Single-target team policy and
+provided targeting verdicts are explicitly scoped; full targeting/effect definitions,
+passive/status effects and environmental damage are separate work. No unit balance
+values or canonical content are introduced by abstract tests.

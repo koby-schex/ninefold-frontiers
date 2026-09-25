@@ -1,6 +1,6 @@
 # Ninefold: Frontiers
 
-Unity mobile tactical game foundation with engine-independent combat turn and ability-availability systems.
+Unity mobile tactical game foundation with engine-independent turns, ability availability, and health-effect resolution.
 No playable missions, production art, saves, purchases or iOS distribution yet.
 
 - Unity **6.3 LTS / 6000.3.21f1**; URP **17.3.0**.
@@ -20,7 +20,8 @@ dotnet run --project Tests/Ninefold.Core.Tests/Ninefold.Core.Tests.csproj --conf
 ```
 
 See [the turn-system contract](Docs/CombatTurns.md) and
-[ability-use contract](Docs/AbilityUse.md). Clone/pull and review PRs as
+[ability-use contract](Docs/AbilityUse.md), and
+[health-resolution contract](Docs/HealthResolution.md). Clone/pull and review PRs as
 normal. The following Editor steps can wait until we are ready for integration.
 
 ## Open the project later

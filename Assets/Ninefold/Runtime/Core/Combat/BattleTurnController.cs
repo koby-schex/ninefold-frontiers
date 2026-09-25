@@ -34,6 +34,7 @@ namespace Ninefold.Core.Combat
         public int RoundNumber { get; private set; }
         public bool IsBattleEnded { get; private set; }
         public BattleAbilityController Abilities { get; }
+        public BattleHealthController Health { get; }
         public ActivationView CurrentActivation => active;
         public IReadOnlyList<string> RoundOrder => Array.AsReadOnly(roundOrder);
 
@@ -50,11 +51,12 @@ namespace Ninefold.Core.Combat
             }
         }
 
-        public BattleTurnController(IEnumerable<UnitTurnDefinition> initialUnits)
+        public BattleTurnController(IEnumerable<UnitTurnDefinition> initialUnits, DamageRules damageRules = null)
         {
             if (initialUnits == null)
                 throw new ArgumentNullException(nameof(initialUnits));
             Abilities = new BattleAbilityController(this);
+            Health = new BattleHealthController(this, damageRules ?? DamageRules.Provisional);
             foreach (var unit in initialUnits)
                 RegisterUnit(unit);
         }
