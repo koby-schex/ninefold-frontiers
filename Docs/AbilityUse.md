@@ -13,7 +13,8 @@ to reset cooldowns or a spent Signature.
 - Signature: one primary action, its readiness prerequisite, and at most one use
   in this battle. Other turns and repeated readiness triggers never refund use.
 - Passive: no active-use command and no action cost. Passive effect evaluation is
-  a later system; this PR does not execute damage, healing or passive modifiers.
+  a later system. Single-target damage/healing now use Health (see HealthResolution.md);
+  passive modifiers remain deferred.
 
 `GetAvailability(activationId, slot)` is a pure preview. `TryUse(..., out failure)`
 commits availability/costs only. A rejected use returns a reason without spending
@@ -23,7 +24,9 @@ Stale activation IDs are rejected, including old turns from the same unit.
 Target/path/effect prerequisites must be validated by the future command layer before
 calling TryUse. Accepted use currently records activation, not resolved damage.
 Attack/main readiness means successful activation, not kill, hit-health loss or an
-arbitrary click. No target legality or effect transaction is claimed in this PR.
+arbitrary click. The battle-owned Health controller now validates supported health effects and target
+verdicts before calling TryUse, then commits damage/healing. Geometry and full
+unit-specific effect definitions remain deferred; see HealthResolution.md.
 Contextual interactions may use SpendPrimaryAction directly; they do not count as
 an attack or main ability and do not satisfy those Signature prerequisites.
 
@@ -79,8 +82,8 @@ turn state and command identity. Constructing a fresh battle is NOT a restore pa
 
 ## Validation
 
-The existing .NET 8 test executable now runs 45 scenarios: 21 turn-controller checks
-and 24 ability checks. Both use the exact Unity Core source compiled for .NET Standard
+The .NET 8 executable includes 21 turn-controller checks and 24 ability checks,
+plus the health-resolution checks described in Tests/README.md. Both use the exact Unity Core source compiled for .NET Standard
 2.1, independently of the Editor. Checks cover cooldown boundaries/owner ticks,
 readiness variations, rejected/canceled previews, movement preservation, stale commands,
 kit reset attempts, independent units, reinforcements and repeated Signature events.

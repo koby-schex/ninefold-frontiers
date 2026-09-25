@@ -1,6 +1,6 @@
 # Combat core
 
-BattleTurnController owns round order and activation budgets without UnityEngine.
-Its Abilities controller manages main cooldowns, Signature readiness/use and costs.
-See Docs/CombatTurns.md, Docs/AbilityUse.md and Tests/Ninefold.Core.Tests.
-Damage, pathfinding, passive effects, status resolution and persistence remain future work.
+BattleTurnController owns scheduling/budgets, Abilities owns cooldowns/readiness/use,
+and Health owns health state and supported single-target damage/healing commits.
+See Docs/CombatTurns.md, Docs/AbilityUse.md, Docs/HealthResolution.md and Tests.
+Geometry, environmental damage, passive/status effects and persistence remain future work.
