@@ -13,7 +13,7 @@
 - End activation forfeits unused resources. There is no wall-clock timer.
 - Removing a defeated/extracted unit skips its pending turn or ends its active turn.
   IDs are unique for the whole battle and cannot be reused to gain another turn.
-- EndBattle stops mutation; mission logic will decide when a battle ends.
+- EndBattle stops mutation; configured mission logic decides when a battle ends.
 
 Implementation choices pending broader combat review: equal initiative uses ordinal
 battle-local ID order, independent of insertion order/faction. Use stable IDs, not
@@ -48,9 +48,11 @@ are applied here. Removal represents battle eligibility, not permanent roster lo
 Owner activation counts now drive main-ability cooldowns; Signature readiness/use
 is implemented in the battle-owned Abilities controller (see AbilityUse.md). Stun
 resolution still needs a status layer: do not model a stunned scheduled turn as
-permanent removal. Revival/re-entry, movement buffs, objective progress,
+permanent removal. Mission objective progress is implemented in Missions.md.
+Revival/re-entry and movement buffs,
 save snapshots/migrations, faction/squad
-selection and geometry are separate changes. Save restoration must preserve activation
+selection are separate changes. Geometry/pathfinding are documented in Battlefield.md
+and Pathfinding.md. Save restoration must preserve activation
 identity and queue state when implemented. No offline persistence is claimed yet.
 
 Core builds using .NET Standard 2.1 / C# 9 and has no UnityEngine reference. Tests
