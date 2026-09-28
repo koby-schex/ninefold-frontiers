@@ -39,6 +39,14 @@ namespace Ninefold.Core.Combat
             units.Add(unitId, new HealthState(definition, current));
         }
 
+        public bool TryGetState(string unitId, out HealthStateView view)
+        {
+            view = null;
+            if (unitId == null || !units.TryGetValue(unitId,out var state)) return false;
+            view = new HealthStateView(unitId,state.Definition,state.Current);
+            return true;
+        }
+
         public HealthStateView GetState(string unitId)
         {
             if (unitId == null) throw new ArgumentNullException(nameof(unitId));
