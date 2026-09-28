@@ -124,7 +124,7 @@ namespace Ninefold.Core.Combat
             return Fail(FieldFailure.HealthRejected, out failure);
         }
 
-        private bool BuildAction(long activationId, AbilitySlot slot, string targetId, out HealthAction action, out FieldFailure failure)
+        private bool BuildAction(long activationId, AbilitySlot slot, string targetId, out HealthAction action, out FieldFailure failure, FieldPoint? actorPosition = null)
         {
             action = null; failure = FieldFailure.None;
             if (!Active(activationId)) return Fail(FieldFailure.InactiveTurn, out failure);
@@ -132,8 +132,9 @@ namespace Ninefold.Core.Combat
             if (targetId == null || !units.TryGetValue(targetId, out var target) || !turns.IsUnitEligible(targetId))
                 return Fail(FieldFailure.InvalidTarget, out failure);
             if (!actor.Abilities.TryGetValue(slot, out var profile)) return Fail(FieldFailure.InvalidRequest, out failure);
-            var from = FieldPoint.Add(actor.Position, actor.Body.AttackOffset);
-            var to = FieldPoint.Add(target.Position, target.Body.TargetOffset);
+            var from = FieldPoint.Add(actorPosition ?? actor.Position, actor.Body.AttackOffset);
+            var targetPosition = targetId == turns.CurrentActivation.UnitId ? actorPosition ?? target.Position : target.Position;
+            var to = FieldPoint.Add(targetPosition, target.Body.TargetOffset);
             if (FieldPoint.Distance(from,to) > profile.Range) return Fail(FieldFailure.OutOfRange, out failure);
             decimal cover = 0m;
             foreach (var obstacle in Map.Obstacles)

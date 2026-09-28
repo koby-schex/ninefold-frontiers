@@ -53,3 +53,10 @@ and use provisional authored contact-reference geometry. Immutable in-memory res
 do not grant rewards or persist progression. Concrete mission/event/escort adapters
 remain separate; see Missions.md. These are reviewable implementation contracts, not
 new canon, campaign content or permanent-loss rules.
+
+2026-09-28: initial enemy behaviors use explicit perceived targets, bounded candidate
+positions, standard path/effect validators and one normal activation. Aggressive
+attack/approach and defensive self-heal/guard heuristics are configurable abstract
+implementation choices, not canonical species behavior. Pure planning never mutates
+shared positions. Production sensing, stepped animation, mission-specific restrictions
+and device performance remain later work; see EnemyTurns.md.
