@@ -6,7 +6,7 @@ using Ninefold.Core.Combat;
 namespace Ninefold.Core.Missions
 {
     /// <summary>Finite mission contracts. All mutations occur on the battle simulation thread.</summary>
-    public sealed class MissionController
+    public sealed partial class MissionController
     {
         private sealed class State
         {
@@ -22,7 +22,8 @@ namespace Ninefold.Core.Missions
         public MissionDefinition Definition { get; }
         public BattleResult Result { get; private set; }
         public int LastResolvedRound { get; private set; }
-        internal MissionController(BattleTurnController turns, MissionDefinition definition)
+        internal MissionController(BattleTurnController turns, MissionDefinition definition) : this(turns,definition,false) { }
+        private MissionController(BattleTurnController turns, MissionDefinition definition, bool restoring)
         {
             this.turns = turns; Definition = definition ?? throw new ArgumentNullException(nameof(definition));
             if (turns.Battlefield == null) throw new InvalidOperationException("Configure battlefield first.");
@@ -31,7 +32,8 @@ namespace Ninefold.Core.Missions
                 .Concat(s.Definition.Interaction?.AllowedActors ?? Array.Empty<string>()))).Distinct(StringComparer.Ordinal);
             foreach (string id in referenced)
             {
-                if (!turns.IsUnitEligible(id) || turns.Health.GetState(id).IsDefeated) throw new ArgumentException("Mission actors must start alive and eligible.");
+                bool eligible = turns.IsUnitEligible(id); var health = turns.Health.GetState(id);
+                if (!restoring && (!eligible || health.IsDefeated)) throw new ArgumentException("Mission actors must start alive and eligible.");
                 turns.Battlefield.GetPosition(id); // Fail setup before publishing a partially configured mission.
             }
         }

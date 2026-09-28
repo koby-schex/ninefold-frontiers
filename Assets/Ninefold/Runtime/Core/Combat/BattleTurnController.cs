@@ -9,7 +9,7 @@ namespace Ninefold.Core.Combat
     /// Single-threaded battle turn authority. No clocks, Unity types, damage or geometry.
     /// Round transitions are explicit so objective/event resolution can happen between rounds.
     /// </summary>
-    public sealed class BattleTurnController
+    public sealed partial class BattleTurnController
     {
         private sealed class UnitState
         {

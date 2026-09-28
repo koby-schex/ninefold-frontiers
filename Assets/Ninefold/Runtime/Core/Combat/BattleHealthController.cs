@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace Ninefold.Core.Combat
 {
     /// <summary>Single-target health effects and cost commits, on the battle's single thread.</summary>
-    public sealed class BattleHealthController
+    public sealed partial class BattleHealthController
     {
         private sealed class HealthState
         {
