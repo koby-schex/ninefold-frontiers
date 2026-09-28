@@ -7,7 +7,7 @@ namespace Ninefold.Core.Combat
     /// One instance owned by each battle. Availability/cost commit only: callers must
     /// validate targets and effect prerequisites before TryUse. Single-threaded.
     /// </summary>
-    public sealed class BattleAbilityController
+    public sealed partial class BattleAbilityController
     {
         private sealed class AbilityState
         {

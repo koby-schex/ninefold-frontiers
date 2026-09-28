@@ -1,7 +1,7 @@
 # Ninefold: Frontiers
 
 Unity mobile tactical game foundation with engine-independent turns, ability availability, health-effect resolution, and battlefield validation.
-No playable missions, production art, saves, purchases or iOS distribution yet.
+Core battle snapshots and local recovery are implemented; no playable missions, production art, purchases or iOS distribution yet.
 
 - Unity **6.3 LTS / 6000.3.21f1**; URP **17.3.0**.
 - Development: Windows. Initial mobile platform: iPhone; Android later.
@@ -25,7 +25,8 @@ See [the turn-system contract](Docs/CombatTurns.md) and
 [battlefield contract](Docs/Battlefield.md), and
 [destination pathfinding](Docs/Pathfinding.md), and
 [mission objectives](Docs/Missions.md), and
-[enemy turns](Docs/EnemyTurns.md). Clone/pull and review PRs as
+[enemy turns](Docs/EnemyTurns.md), and
+[offline battle saves](Docs/BattleSaves.md). Clone/pull and review PRs as
 normal. The following Editor steps can wait until we are ready for integration.
 
 ## Open the project later
