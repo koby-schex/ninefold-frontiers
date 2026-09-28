@@ -74,7 +74,8 @@ internal static partial class Program
     {
         var b = EnemyBattle(movement:1,range:.1m); var r = RunEnemy(b,"b");
         Equal<HealthEffectPreview>(null,r.Effect); Equal(true,r.Movement.Cost <= 1m);
-        Equal(true,FieldPoint.Distance(b.Battlefield.GetPosition("a"),P(6,0)) < 6m);
+        var position = b.Battlefield.GetPosition("a");
+        Equal(true,(position.X-6m)*(position.X-6m)+position.Z*position.Z < 36m);
     }
     private static void EnemyGuard()
     {
