@@ -2,8 +2,8 @@
 
 Core turn scheduling, action/movement budgets, ability availability/costs and
 single-target health resolution, supplied-path movement validation, destination routing and direct targeting
-are implemented. Other responsibilities below remain planned; see CombatTurns.md and
-AbilityUse.md, HealthResolution.md Battlefield.md and Pathfinding.md for exact implementation boundaries.
+and finite mission objectives/outcomes are implemented. Other responsibilities below remain planned; see CombatTurns.md and
+AbilityUse.md, HealthResolution.md Battlefield.md, Pathfinding.md and Missions.md for exact implementation boundaries.
 
 - **Core:** plain C# rules and committed state; no UnityEngine references. Combat,
   missions, progression and saves have reserved folders. Commands validate legal

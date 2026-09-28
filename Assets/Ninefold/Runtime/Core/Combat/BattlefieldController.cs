@@ -102,6 +102,7 @@ namespace Ninefold.Core.Combat
             string id = turns.CurrentActivation.UnitId;
             turns.SpendMovement(activationId, result.Cost);
             units[id].Position = result.Path[result.Path.Count-1];
+            turns.Mission?.Evaluate();
             return true;
         }
 
