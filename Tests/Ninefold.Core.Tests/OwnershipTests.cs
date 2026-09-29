@@ -125,10 +125,10 @@ internal static partial class Program
         Throws<NotSupportedException>(() => ((IList<string>)after.OwnedUnits).Clear());
         Throws<NotSupportedException>(() => ((IList<UnitUnlockReceipt>)after.Unlocks).Clear());
     }
-    private static byte[] LegacyProfile(byte[] versionTwo)
+    private static byte[] LegacyProfile(byte[] current)
     {
-        // Fixture conversion is valid only with empty initial ownership and zero unlocks.
-        var bytes = versionTwo.Take(versionTwo.Length - 40).Concat(new byte[32]).ToArray();
+        // Fixture conversion is valid only with empty ownership, unlocks and campaign receipts.
+        var bytes = current.Take(current.Length - 44).Concat(new byte[32]).ToArray();
         using var stream = new MemoryStream(bytes); using var r = new BinaryReader(stream);
         stream.Position = 8; r.ReadString(); Array.Copy(BitConverter.GetBytes(1), 0, bytes, (int)stream.Position, 4); Rehash(bytes); return bytes;
     }

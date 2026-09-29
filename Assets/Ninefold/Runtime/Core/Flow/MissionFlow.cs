@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using Ninefold.Core.Combat;
+using Ninefold.Core.Campaigns;
 using Ninefold.Core.Persistence;
 using Ninefold.Core.Progression;
 
@@ -19,6 +20,7 @@ namespace Ninefold.Core.Flow
         private readonly Dictionary<string, MissionEntry> entries;
         private readonly Dictionary<string, RosterUnit> roster;
         private readonly string revision;
+        public CampaignCatalog CampaignCatalog { get; }
         private byte[] snapshot;
         private bool busy;
         public bool NeedsReload { get; private set; } = true;
@@ -28,7 +30,7 @@ namespace Ninefold.Core.Flow
         public MissionClaim Receipt { get; private set; }
         public IReadOnlyList<MissionEntry> Missions { get; }
         public MissionFlow(IBattleSaveFiles battleFiles, IProgressSaveFiles progressFiles,
-            string profileId, string contentRevision, IEnumerable<MissionEntry> missions, IEnumerable<RosterUnit> units)
+            string profileId, string contentRevision, IEnumerable<MissionEntry> missions, IEnumerable<RosterUnit> units, IEnumerable<CampaignDefinition> campaigns = null)
         {
             RewardRules.Id(profileId); RewardRules.Id(contentRevision);
             if (missions == null || units == null) throw new ArgumentNullException("Catalogs required.");
@@ -39,6 +41,7 @@ namespace Ninefold.Core.Flow
             if (owned.Select(u => u.Unlock.FragmentResourceId).Distinct(StringComparer.Ordinal).Count() != owned.Length)
                 throw new ArgumentException("Each unit requires its own fragment resource.");
             Missions = Array.AsReadOnly(catalog);
+            CampaignCatalog = new CampaignCatalog(campaigns ?? Array.Empty<CampaignDefinition>(), catalog, owned);
             // Bind battle snapshots to profile identity as well as content version.
             using var sha = SHA256.Create();
             revision = "flow-v1:" + BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(profileId.Length + ":" + profileId + contentRevision))).Replace("-", "");
@@ -57,6 +60,8 @@ namespace Ninefold.Core.Flow
                     starters.Any(id => id == null || !roster.ContainsKey(id) || roster[id].IsApex) ||
                     starters.Select(id => roster[id].FactionId).Distinct(StringComparer.Ordinal).Count() != 1)
                     throw new ArgumentException("Starter roster must contain three standard units from one faction.");
+                var starter = CampaignCatalog.Campaigns.FirstOrDefault(c => c.StarterBonus != null);
+                if (starter != null && roster[starters[0]].FactionId != starter.FactionId) throw new ArgumentException("Starter roster must match starter campaign faction.");
                 try { profiles.Create(starters); } catch { NeedsReload = true; throw; }
                 LoadCore();
             }
@@ -101,7 +106,9 @@ namespace Ninefold.Core.Flow
         {
             EnsureReady();
             if (selected == null) throw new ArgumentNullException(nameof(selected));
-            return Entry(missionId).Validate(Progress, roster, selected.ToArray());
+            var entry = Entry(missionId);
+            if (!CampaignCatalog.IsMissionAvailable(missionId, Progress)) return SquadFailure.MissionLocked;
+            return entry.Validate(Progress, roster, selected.ToArray(), CampaignCatalog.ContainsMission(missionId) && Progress.Missions.ContainsKey(missionId));
         }
         public void Start(string missionId, IEnumerable<string> selected)
         {
@@ -111,7 +118,7 @@ namespace Ninefold.Core.Flow
                 if (Phase != MissionFlowPhase.Selection) throw new InvalidOperationException("Finish the current attempt before starting another.");
                 if (selected == null) throw new ArgumentNullException(nameof(selected));
                 var squad = selected.ToArray(); var entry = Entry(missionId);
-                var failure = entry.Validate(Progress, roster, squad);
+                var failure = ValidateSquad(missionId, squad);
                 if (failure != SquadFailure.None) throw new InvalidOperationException("Invalid squad: " + failure);
                 string attempt = Guid.NewGuid().ToString("N");
                 var draft = entry.Build(attempt, Array.AsReadOnly(squad));
@@ -182,6 +189,22 @@ namespace Ninefold.Core.Flow
             }
             finally { busy = false; }
         }
+        public CampaignClaimResult ClaimCampaign(string campaignId)
+        {
+            Enter(true);
+            try
+            {
+                if (Phase != MissionFlowPhase.Selection) throw new InvalidOperationException("Claim mission rewards and return to selection first.");
+                CampaignClaimResult claimed;
+                try { claimed = profiles.ClaimCampaign(campaignId, CampaignCatalog); }
+                catch { NeedsReload = true; throw; }
+                Progress = claimed.Saved.Progress; Recovered |= claimed.Saved.Recovered;
+                return claimed;
+            }
+            finally { busy = false; }
+        }
+        public CampaignProgress InspectCampaign(string campaignId)
+        { EnsureReady(); return CampaignCatalog.Inspect(campaignId, Progress); }
         public void ReturnToSelection()
         {
             Enter(true);

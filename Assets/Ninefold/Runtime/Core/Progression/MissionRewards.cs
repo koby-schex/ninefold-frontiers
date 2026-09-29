@@ -74,16 +74,22 @@ namespace Ninefold.Core.Progression
         public IReadOnlyList<string> InitialUnits { get; }
         public IReadOnlyList<string> OwnedUnits { get; }
         public IReadOnlyList<UnitUnlockReceipt> Unlocks { get; }
-        public long Generation => Claims.Count + Unlocks.Count + 1L;
+        public IReadOnlyList<CampaignClaim> CampaignClaims { get; }
+        public long Generation => Claims.Count + Unlocks.Count + CampaignClaims.Count + 1L;
         public bool Owns(string unitId) => OwnedUnits.Contains(unitId, StringComparer.Ordinal);
         public IReadOnlyDictionary<string, long> Balances { get; }
         public IReadOnlyDictionary<string, MissionProgress> Missions { get; }
-        internal PlayerProgress(string profileId, IEnumerable<MissionClaim> claims, IEnumerable<string> initialUnits = null, IEnumerable<UnitUnlockReceipt> unlocks = null)
+        internal PlayerProgress(string profileId, IEnumerable<MissionClaim> claims, IEnumerable<string> initialUnits = null, IEnumerable<UnitUnlockReceipt> unlocks = null, IEnumerable<CampaignClaim> campaignClaims = null)
         {
             RewardRules.Id(profileId); ProfileId = profileId;
             var array = claims.ToArray();
             var initial = (initialUnits ?? Array.Empty<string>()).ToArray();
             var spent = (unlocks ?? Array.Empty<UnitUnlockReceipt>()).ToArray();
+            var completions = (campaignClaims ?? Array.Empty<CampaignClaim>()).ToArray();
+            if (completions.Any(c => c == null) || completions.Length + array.Length + spent.Length > RewardRules.MaximumClaims ||
+                completions.Select(c => c.CampaignId).Distinct(StringComparer.Ordinal).Count() != completions.Length || completions.Count(c => c.IsStarterBonus) > 1)
+                throw new ArgumentException("Invalid campaign receipt history.");
+            CampaignClaims = Array.AsReadOnly(completions);
             foreach (string id in initial) RewardRules.Id(id);
             if (initial.Length > 4096 || initial.Distinct(StringComparer.Ordinal).Count() != initial.Length)
                 throw new ArgumentException("Invalid initial ownership.");
@@ -91,7 +97,7 @@ namespace Ninefold.Core.Progression
                 throw new InvalidOperationException("Invalid or full transaction ledger.");
             if (spent.Select(u => u.OperationId).Distinct(StringComparer.Ordinal).Count() != spent.Length)
                 throw new ArgumentException("Duplicate unlock operation.");
-            var owned = initial.Concat(spent.Select(u => u.UnitId)).ToArray();
+            var owned = initial.Concat(spent.Select(u => u.UnitId)).Concat(completions.SelectMany(c => c.GrantedUnits)).ToArray();
             if (owned.Distinct(StringComparer.Ordinal).Count() != owned.Length) throw new ArgumentException("Unit unlocked more than once.");
             InitialUnits = Array.AsReadOnly(initial); OwnedUnits = Array.AsReadOnly(owned); Unlocks = Array.AsReadOnly(spent);
             if (array.Length > RewardRules.MaximumClaims) throw new InvalidOperationException("Claim ledger requires migration; never discard receipts.");
@@ -106,7 +112,9 @@ namespace Ninefold.Core.Progression
                     throw new ArgumentException("Invalid first-clear history.");
                 missions.Add(group.Key, new MissionProgress(group.Key, victories));
             }
-            foreach (var grant in array.SelectMany(c => c.Grants))
+            foreach (var completion in completions)
+                if (completion.RequiredMissions.Any(id => !missions.ContainsKey(id))) throw new ArgumentException("Campaign receipt missing required mission wins.");
+            foreach (var grant in array.SelectMany(c => c.Grants).Concat(completions.SelectMany(c => c.Grants)))
             {
                 totals.TryGetValue(grant.ResourceId, out decimal amount);
                 totals[grant.ResourceId] = checked(amount + grant.Amount);

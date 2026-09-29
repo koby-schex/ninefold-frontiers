@@ -46,9 +46,9 @@ namespace Ninefold.Core.Flow
         }
         public bool IsAvailable(PlayerProgress progress) => available(progress ?? throw new ArgumentNullException(nameof(progress)));
         internal BattleTurnController Build(string attempt, IReadOnlyList<string> squad) => factory(attempt, squad);
-        internal SquadFailure Validate(PlayerProgress progress, IReadOnlyDictionary<string, RosterUnit> roster, string[] squad)
+        internal SquadFailure Validate(PlayerProgress progress, IReadOnlyDictionary<string, RosterUnit> roster, string[] squad, bool replay = false)
         {
-            if (!IsAvailable(progress)) return SquadFailure.MissionLocked;
+            if (!replay && !IsAvailable(progress)) return SquadFailure.MissionLocked;
             if (squad.Length < MinimumSquad || squad.Length > MaximumSquad) return SquadFailure.Size;
             if (squad.Any(id => id == null || !roster.ContainsKey(id))) return SquadFailure.UnknownUnit;
             if (squad.Distinct(StringComparer.Ordinal).Count() != squad.Length) return SquadFailure.DuplicateUnit;

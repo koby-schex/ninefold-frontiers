@@ -14,12 +14,12 @@ files. Only this flow may write its stores during the session. Saved profile own
 
 Battle saves use a flow-version/profile/content identity derived from these IDs.
 Raw battle-store saves from earlier scaffolding are not automatically imported;
-keep them separate or provide an explicit migration. Profile saves use progress schema 2 with schema-1 read compatibility (see UnitOwnership.md). Content revision changes also require migration or a
+keep them separate or provide an explicit migration. Profile saves use progress schema 3 with schema-1/2 read compatibility (see CampaignProgression.md). Content revision changes also require migration or a
 separate development save directory.
 
 `Missions` exposes the authored catalog. `IsAvailable(progress)` supplies its
-mission-specific progress gate. No campaign map or prerequisite structure is
-invented here. Mission reward policies remain explicit trusted authored inputs.
+mission-specific progress gate. An optional validated campaign catalog now supplies authored prerequisite structure
+(see CampaignProgression.md); no production campaign content is invented here. Mission reward policies remain explicit trusted authored inputs.
 
 ## Squad validation
 

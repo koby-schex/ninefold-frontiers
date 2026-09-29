@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using Ninefold.Core.Missions;
+using Ninefold.Core.Campaigns;
 using Ninefold.Core.Persistence;
 
 namespace Ninefold.Core.Progression
@@ -108,7 +109,7 @@ namespace Ninefold.Core.Progression
                 bool first = victory && !previous.Progress.Missions.ContainsKey(result.MissionId);
                 var grants = victory ? (first ? policy.FirstClear : policy.Replay) : Array.Empty<ResourceGrant>();
                 receipt = new MissionClaim(result.AttemptId, result.MissionId, fingerprint, result.Outcome, first, policy.Revision, grants);
-                var progress = new PlayerProgress(profileId, previous.Progress.Claims.Concat(new[] { receipt }), previous.Progress.InitialUnits, previous.Progress.Unlocks);
+                var progress = new PlayerProgress(profileId, previous.Progress.Claims.Concat(new[] { receipt }), previous.Progress.InitialUnits, previous.Progress.Unlocks, previous.Progress.CampaignClaims);
                 files.WriteDurable(1 - previous.Slot, ProgressSave.Encode(progress));
                 // Nothing is published until the complete ledger has been flushed.
                 return new ClaimResult(new LoadedProgress(progress, recovered), receipt, false);
@@ -131,9 +132,27 @@ namespace Ninefold.Core.Progression
                 if (previous.Progress.Balance(definition.FragmentResourceId) < definition.Cost) throw new InvalidOperationException("Insufficient unit fragments.");
                 var receipt = new UnitUnlockReceipt(operationId, definition);
                 var progress = new PlayerProgress(profileId, previous.Progress.Claims, previous.Progress.InitialUnits,
-                    previous.Progress.Unlocks.Concat(new[] { receipt }));
+                    previous.Progress.Unlocks.Concat(new[] { receipt }), previous.Progress.CampaignClaims);
                 files.WriteDurable(1 - previous.Slot, ProgressSave.Encode(progress));
                 return new UnlockResult(new LoadedProgress(progress, recovered), receipt, false);
+            }
+        }
+        public CampaignClaimResult ClaimCampaign(string campaignId, CampaignCatalog catalog)
+        {
+            RewardRules.Id(campaignId);
+            lock (gate)
+            {
+                var previous = Latest(out bool recovered) ?? throw new InvalidOperationException("Profile absent.");
+                var prior = previous.Progress.CampaignClaims.FirstOrDefault(c => c.CampaignId == campaignId);
+                if (prior != null) return new CampaignClaimResult(new LoadedProgress(previous.Progress, recovered), prior, true);
+                if (catalog == null) throw new ArgumentNullException(nameof(catalog));
+                var receipt = catalog.Prepare(campaignId, previous.Progress);
+                var progress = new PlayerProgress(profileId, previous.Progress.Claims, previous.Progress.InitialUnits,
+                    previous.Progress.Unlocks, previous.Progress.CampaignClaims.Concat(new[] { receipt }));
+                if (receipt.IsStarterBonus && catalog.Inspect(receipt.NextCampaignId, progress).AvailableMissions.Count == 0)
+                    throw new InvalidOperationException("Starter reward must open a playable next campaign entry.");
+                files.WriteDurable(1 - previous.Slot, ProgressSave.Encode(progress));
+                return new CampaignClaimResult(new LoadedProgress(progress, recovered), receipt, false);
             }
         }
         private Record Latest(out bool recovered)
@@ -156,8 +175,8 @@ namespace Ninefold.Core.Progression
             {
                 var newer = ordered[0].Progress; var older = ordered[1].Progress;
                 SaveIO.Require(newer.Generation == older.Generation + 1 && newer.Claims.Count >= older.Claims.Count &&
-                    newer.Unlocks.Count >= older.Unlocks.Count, "Conflicting progress generations.");
-                var prefix = new PlayerProgress(profileId, newer.Claims.Take(older.Claims.Count), newer.InitialUnits, newer.Unlocks.Take(older.Unlocks.Count));
+                    newer.Unlocks.Count >= older.Unlocks.Count && newer.CampaignClaims.Count >= older.CampaignClaims.Count, "Conflicting progress generations.");
+                var prefix = new PlayerProgress(profileId, newer.Claims.Take(older.Claims.Count), newer.InitialUnits, newer.Unlocks.Take(older.Unlocks.Count), newer.CampaignClaims.Take(older.CampaignClaims.Count));
                 SaveIO.Require(ProgressSave.Encode(prefix).SequenceEqual(ProgressSave.Encode(older)), "Conflicting progress histories.");
             }
             recovered = damaged;

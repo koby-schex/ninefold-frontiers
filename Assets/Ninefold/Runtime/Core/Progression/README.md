@@ -1,7 +1,7 @@
 # Progression
 
-Plain C# mission progress, resource rewards, saved unit ownership and fragment
-unlocks. See `Docs/MissionRewards.md` and `Docs/UnitOwnership.md` for transaction
-semantics, schema compatibility and recovery limits.
+Plain C# mission rewards, unit ownership, fragment unlocks and campaign completion
+receipts. See `Docs/MissionRewards.md`, `Docs/UnitOwnership.md` and
+`Docs/CampaignProgression.md` for transactions, compatibility and recovery limits.
 
-Production costs, post-unlock advancement and special campaign grants remain unauthored.
+Production reward content and post-unlock advancement remain unauthored.
