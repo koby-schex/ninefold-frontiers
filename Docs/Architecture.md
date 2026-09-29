@@ -4,7 +4,7 @@ Core turn scheduling, action/movement budgets, ability availability/costs and
 single-target health resolution, supplied-path movement validation, destination routing, direct targeting,
 finite mission objectives/outcomes, and bounded enemy turn behavior are implemented. Other responsibilities below remain planned; see CombatTurns.md and
 AbilityUse.md, HealthResolution.md, Battlefield.md, Pathfinding.md, Missions.md,
-EnemyTurns.md and BattleSaves.md for exact implementation boundaries.
+EnemyTurns.md, BattleSaves.md and MissionRewards.md for exact implementation boundaries.
 
 - **Core:** plain C# rules and committed state; no UnityEngine references. Combat,
   missions, progression and saves have reserved folders. Commands validate legal
@@ -14,8 +14,9 @@ EnemyTurns.md and BattleSaves.md for exact implementation boundaries.
 - **Content:** stable IDs and versioned definitions reference unit/ability/mission
   data. Saves store IDs and state, never scene-object references.
 - **Persistence:** versioned battle snapshots and alternating-file recovery are implemented.
-  Content/version migrations, campaign profiles and durable once-only reward records
-  remain deferred. Binary schema v1 and SHA-256 are for integrity, not tamper-proof storage.
+  Separate profile checkpoints now persist mission completion and reward receipts together.
+  Content/version migrations, production campaign unlocks and economy remain deferred.
+  Binary schemas and SHA-256 are for integrity, not tamper-proof storage.
 - **Services:** optional cloud sync, purchases and future online play sit outside
   the installed offline solo loop. No service SDKs are included in this scaffold.
 
