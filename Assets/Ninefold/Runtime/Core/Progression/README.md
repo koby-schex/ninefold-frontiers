@@ -1,6 +1,7 @@
 # Progression
 
-Plain C# mission progress and durable reward receipts. See `Docs/MissionRewards.md`
-for first-clear/replay semantics, integration order and recovery limits.
+Plain C# mission progress, resource rewards, saved unit ownership and fragment
+unlocks. See `Docs/MissionRewards.md` and `Docs/UnitOwnership.md` for transaction
+semantics, schema compatibility and recovery limits.
 
-Production rewards, unit progression and campaign unlocks remain unauthored.
+Production costs, post-unlock advancement and special campaign grants remain unauthored.

@@ -71,3 +71,6 @@ protection, recovery limits and deferred production economy work.
 
 The [mission flow](Docs/MissionFlow.md) now connects squad validation, saved battle
 commands, resume, result claims and return to selection without Unity UI.
+
+[Saved unit ownership](Docs/UnitOwnership.md) now drives squad and faction campaign
+checks, with configurable fragment unlock costs and durable spending receipts.

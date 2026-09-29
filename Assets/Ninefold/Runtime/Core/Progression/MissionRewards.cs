@@ -66,21 +66,38 @@ namespace Ninefold.Core.Progression
         { MissionId = mission; VictoryCount = victories.LongLength; FirstClearAttemptId = victories[0].AttemptId; }
     }
 
-    /// <summary>Immutable earned-only ledger. Balances and completions are derived from the same receipts.</summary>
+    /// <summary>Immutable reward and unlock ledger. Balances and completions are derived from the same receipts.</summary>
     public sealed class PlayerProgress
     {
         public string ProfileId { get; }
         public IReadOnlyList<MissionClaim> Claims { get; }
+        public IReadOnlyList<string> InitialUnits { get; }
+        public IReadOnlyList<string> OwnedUnits { get; }
+        public IReadOnlyList<UnitUnlockReceipt> Unlocks { get; }
+        public long Generation => Claims.Count + Unlocks.Count + 1L;
+        public bool Owns(string unitId) => OwnedUnits.Contains(unitId, StringComparer.Ordinal);
         public IReadOnlyDictionary<string, long> Balances { get; }
         public IReadOnlyDictionary<string, MissionProgress> Missions { get; }
-        internal PlayerProgress(string profileId, IEnumerable<MissionClaim> claims)
+        internal PlayerProgress(string profileId, IEnumerable<MissionClaim> claims, IEnumerable<string> initialUnits = null, IEnumerable<UnitUnlockReceipt> unlocks = null)
         {
             RewardRules.Id(profileId); ProfileId = profileId;
             var array = claims.ToArray();
+            var initial = (initialUnits ?? Array.Empty<string>()).ToArray();
+            var spent = (unlocks ?? Array.Empty<UnitUnlockReceipt>()).ToArray();
+            foreach (string id in initial) RewardRules.Id(id);
+            if (initial.Length > 4096 || initial.Distinct(StringComparer.Ordinal).Count() != initial.Length)
+                throw new ArgumentException("Invalid initial ownership.");
+            if (array.Length + spent.Length > RewardRules.MaximumClaims || spent.Any(u => u == null))
+                throw new InvalidOperationException("Invalid or full transaction ledger.");
+            if (spent.Select(u => u.OperationId).Distinct(StringComparer.Ordinal).Count() != spent.Length)
+                throw new ArgumentException("Duplicate unlock operation.");
+            var owned = initial.Concat(spent.Select(u => u.UnitId)).ToArray();
+            if (owned.Distinct(StringComparer.Ordinal).Count() != owned.Length) throw new ArgumentException("Unit unlocked more than once.");
+            InitialUnits = Array.AsReadOnly(initial); OwnedUnits = Array.AsReadOnly(owned); Unlocks = Array.AsReadOnly(spent);
             if (array.Length > RewardRules.MaximumClaims) throw new InvalidOperationException("Claim ledger requires migration; never discard receipts.");
             if (array.Select(c => c.AttemptId).Distinct(StringComparer.Ordinal).Count() != array.Length)
                 throw new ArgumentException("Duplicate attempt receipt.");
-            var balances = new Dictionary<string, long>(StringComparer.Ordinal);
+            var totals = new Dictionary<string, decimal>(StringComparer.Ordinal);
             var missions = new Dictionary<string, MissionProgress>(StringComparer.Ordinal);
             foreach (var group in array.Where(c => c.Outcome == MissionOutcome.Victory).GroupBy(c => c.MissionId, StringComparer.Ordinal))
             {
@@ -91,9 +108,16 @@ namespace Ninefold.Core.Progression
             }
             foreach (var grant in array.SelectMany(c => c.Grants))
             {
-                balances.TryGetValue(grant.ResourceId, out long amount);
-                balances[grant.ResourceId] = checked(amount + grant.Amount);
+                totals.TryGetValue(grant.ResourceId, out decimal amount);
+                totals[grant.ResourceId] = checked(amount + grant.Amount);
             }
+            foreach (var unlock in spent)
+            {
+                totals.TryGetValue(unlock.FragmentResourceId, out decimal amount);
+                if (amount < unlock.Cost) throw new ArgumentException("Unlock ledger exceeds earned fragments.");
+                totals[unlock.FragmentResourceId] = amount - unlock.Cost;
+            }
+            var balances = totals.ToDictionary(p => p.Key, p => checked((long)p.Value), StringComparer.Ordinal);
             Claims = Array.AsReadOnly(array);
             Balances = new ReadOnlyDictionary<string, long>(balances);
             Missions = new ReadOnlyDictionary<string, MissionProgress>(missions);

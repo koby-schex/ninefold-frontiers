@@ -43,15 +43,19 @@ internal static partial class Program
         internal readonly ProgressFiles Profiles = new ProgressFiles();
         internal MissionFlow Make(MissionEntry[] entries = null, RosterUnit[] roster = null, string profile = "flow-profile")
             => new MissionFlow(Battles, Profiles, profile, "abstract-flow-v1", entries ?? new[] { FlowEntry() }, roster ?? FlowRoster());
-        internal MissionFlow Create() { var f = Make(); f.CreateProfile(); return f; }
+        internal MissionFlow Create()
+        {
+            new LocalProgressStore(Profiles, "flow-profile").Create(FlowRoster().Where(u => u.Id != "locked").Select(u => u.Id));
+            var f = Make(); f.Open(); return f;
+        }
         internal MissionFlow Reopen() { var f = Make(); f.Open(); return f; }
     }
     private static RosterUnit[] FlowRoster() => new[]
     {
-        new RosterUnit("a", "faction", false, true), new RosterUnit("c", "faction", false, true),
-        new RosterUnit("d", "faction", false, true), new RosterUnit("locked", "faction", false, false),
-        new RosterUnit("x", "faction", true, true), new RosterUnit("y", "other", true, true),
-        new RosterUnit("z", "other", false, true)
+        new RosterUnit("a", "faction", false, new UnitUnlockDefinition("a", "fragment-a", 5, "test-v1")), new RosterUnit("c", "faction", false, new UnitUnlockDefinition("c", "fragment-c", 5, "test-v1")),
+        new RosterUnit("d", "faction", false, new UnitUnlockDefinition("d", "fragment-d", 5, "test-v1")), new RosterUnit("locked", "faction", false, new UnitUnlockDefinition("locked", "fragment-locked", 5, "test-v1")),
+        new RosterUnit("x", "faction", true, new UnitUnlockDefinition("x", "fragment-x", 5, "test-v1")), new RosterUnit("y", "other", true, new UnitUnlockDefinition("y", "fragment-y", 5, "test-v1")),
+        new RosterUnit("z", "other", false, new UnitUnlockDefinition("z", "fragment-z", 5, "test-v1"))
     };
     private static MissionEntry FlowEntry(string id = "test-mission", string faction = null, bool campaign = false,
         Func<PlayerProgress, bool> available = null)
@@ -66,9 +70,9 @@ internal static partial class Program
     private static void FlowCreate()
     {
         var x = new FlowFixture(); var f = x.Make(); Equal(true, f.NeedsReload);
-        Throws<InvalidOperationException>(() => f.Open()); f.CreateProfile(); Equal(MissionFlowPhase.Selection, f.Phase);
+        Throws<InvalidOperationException>(() => f.Open()); f.CreateProfile(new[] { "a", "c", "d" }); Equal(MissionFlowPhase.Selection, f.Phase);
         Equal<BattleTurnController>(null, f.ReadBattle()); Equal(0, f.Progress.Claims.Count);
-        Throws<InvalidOperationException>(() => f.CreateProfile()); f.Open(); Equal(false, f.NeedsReload);
+        Throws<InvalidOperationException>(() => f.CreateProfile(new[] { "a", "c", "d" })); f.Open(); Equal(false, f.NeedsReload);
     }
     private static void FlowComplete()
     {

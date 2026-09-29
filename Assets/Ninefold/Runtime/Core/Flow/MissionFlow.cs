@@ -36,6 +36,8 @@ namespace Ninefold.Core.Flow
             if (catalog.Any(x => x == null) || owned.Any(x => x == null)) throw new ArgumentException("Null catalog entry.");
             entries = catalog.ToDictionary(m => m.Id, StringComparer.Ordinal);
             roster = owned.ToDictionary(u => u.Id, StringComparer.Ordinal);
+            if (owned.Select(u => u.Unlock.FragmentResourceId).Distinct(StringComparer.Ordinal).Count() != owned.Length)
+                throw new ArgumentException("Each unit requires its own fragment resource.");
             Missions = Array.AsReadOnly(catalog);
             // Bind battle snapshots to profile identity as well as content version.
             using var sha = SHA256.Create();
@@ -43,13 +45,19 @@ namespace Ninefold.Core.Flow
             battles = new LocalBattleStore(battleFiles, revision);
             profiles = new LocalProgressStore(progressFiles, profileId);
         }
-        public void CreateProfile()
+        public void CreateProfile(IEnumerable<string> starterUnits)
         {
             Enter(false);
             try
             {
                 if (battles.Load() != null) throw new InvalidOperationException("Battle exists; recover its profile instead of creating one.");
-                try { profiles.Create(); } catch { NeedsReload = true; throw; }
+                if (starterUnits == null) throw new ArgumentNullException(nameof(starterUnits));
+                var starters = starterUnits.ToArray();
+                if (starters.Length != 3 || starters.Distinct(StringComparer.Ordinal).Count() != 3 ||
+                    starters.Any(id => id == null || !roster.ContainsKey(id) || roster[id].IsApex) ||
+                    starters.Select(id => roster[id].FactionId).Distinct(StringComparer.Ordinal).Count() != 1)
+                    throw new ArgumentException("Starter roster must contain three standard units from one faction.");
+                try { profiles.Create(starters); } catch { NeedsReload = true; throw; }
                 LoadCore();
             }
             finally { busy = false; }
@@ -156,6 +164,21 @@ namespace Ninefold.Core.Flow
                 catch { NeedsReload = true; throw; }
                 Progress = claimed.Saved.Progress; Receipt = claimed.Receipt; Recovered |= claimed.Saved.Recovered;
                 return Receipt;
+            }
+            finally { busy = false; }
+        }
+        public UnlockResult UnlockUnit(string operationId, string unitId)
+        {
+            Enter(true);
+            try
+            {
+                if (Phase != MissionFlowPhase.Selection) throw new InvalidOperationException("Return to selection before unlocking units.");
+                if (unitId == null || !roster.TryGetValue(unitId, out var unit)) throw new ArgumentException("Unknown unit.");
+                UnlockResult unlocked;
+                try { unlocked = profiles.Unlock(operationId, unit.Unlock); }
+                catch { NeedsReload = true; throw; }
+                Progress = unlocked.Saved.Progress; Recovered |= unlocked.Saved.Recovered;
+                return unlocked;
             }
             finally { busy = false; }
         }

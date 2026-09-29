@@ -11,11 +11,12 @@ namespace Ninefold.Core.Flow
         public string Id { get; }
         public string FactionId { get; }
         public bool IsApex { get; }
-        public bool IsUnlocked { get; }
-        public RosterUnit(string id, string factionId, bool isApex, bool isUnlocked)
+        public UnitUnlockDefinition Unlock { get; }
+        public RosterUnit(string id, string factionId, bool isApex, UnitUnlockDefinition unlock)
         {
             RewardRules.Id(id); RewardRules.Id(factionId);
-            Id = id; FactionId = factionId; IsApex = isApex; IsUnlocked = isUnlocked;
+            if (unlock == null || unlock.UnitId != id) throw new ArgumentException("Matching unlock definition required.");
+            Id = id; FactionId = factionId; IsApex = isApex; Unlock = unlock;
         }
     }
     public enum SquadFailure { None, MissionLocked, Size, UnknownUnit, DuplicateUnit, LockedUnit, MultipleApex, WrongFaction, CampaignRoster }
@@ -52,11 +53,11 @@ namespace Ninefold.Core.Flow
             if (squad.Any(id => id == null || !roster.ContainsKey(id))) return SquadFailure.UnknownUnit;
             if (squad.Distinct(StringComparer.Ordinal).Count() != squad.Length) return SquadFailure.DuplicateUnit;
             var units = squad.Select(id => roster[id]).ToArray();
-            if (units.Any(u => !u.IsUnlocked)) return SquadFailure.LockedUnit;
+            if (units.Any(u => !progress.Owns(u.Id))) return SquadFailure.LockedUnit;
             if (units.Count(u => u.IsApex) > 1) return SquadFailure.MultipleApex;
             if (FactionId != null && units.Any(u => u.FactionId != FactionId)) return SquadFailure.WrongFaction;
             // Entry gate uses owned standard units, not the size of an individual mission's squad.
-            if (IsCampaign && roster.Values.Count(u => u.IsUnlocked && !u.IsApex && u.FactionId == FactionId) < 3) return SquadFailure.CampaignRoster;
+            if (IsCampaign && roster.Values.Count(u => progress.Owns(u.Id) && !u.IsApex && u.FactionId == FactionId) < 3) return SquadFailure.CampaignRoster;
             return SquadFailure.None;
         }
     }
