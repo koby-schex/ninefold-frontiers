@@ -74,3 +74,6 @@ commands, resume, result claims and return to selection without Unity UI.
 
 [Saved unit ownership](Docs/UnitOwnership.md) now drives squad and faction campaign
 checks, with configurable fragment unlock costs and durable spending receipts.
+
+[Campaign progression](Docs/CampaignProgression.md) now supports authored mission
+prerequisites, saved completion and one-time starter/ordinary campaign rewards.

@@ -10,7 +10,7 @@ namespace Ninefold.Core.Progression
 {
     internal static class ProgressSave
     {
-        private const int Version = 2;
+        private const int Version = 3;
         internal static string Fingerprint(BattleResult result)
         {
             using var stream = new MemoryStream();
@@ -48,6 +48,15 @@ namespace Ninefold.Core.Progression
                     w.Write(u.OperationId); w.Write(u.UnitId); w.Write(u.FragmentResourceId);
                     w.Write(u.Cost); w.Write(u.DefinitionRevision);
                 }
+                w.Write(progress.CampaignClaims.Count);
+                foreach (var c in progress.CampaignClaims)
+                {
+                    w.Write(c.CampaignId); w.Write(c.DefinitionRevision); SaveIO.Strings(w, c.RequiredMissions);
+                    w.Write(c.Grants.Count);
+                    foreach (var grant in c.Grants) { w.Write(grant.ResourceId); w.Write(grant.Amount); }
+                    SaveIO.Strings(w, c.GrantedUnits); w.Write(c.IsStarterBonus);
+                    if (c.IsStarterBonus) w.Write(c.NextCampaignId);
+                }
             }
             var bytes = BattleSave.Pack(stream.ToArray());
             Decode(bytes, progress.ProfileId); // Validate limits and schema before writing any slot.
@@ -62,7 +71,7 @@ namespace Ninefold.Core.Progression
                 if (SaveIO.Text(r) != "ninefold-progress")
                     throw new IncompatibleSaveException("Unsupported progress schema; preserve files.");
                 int schema = r.ReadInt32();
-                if (schema != 1 && schema != Version) throw new IncompatibleSaveException("Unsupported progress schema; preserve files.");
+                if (schema < 1 || schema > Version) throw new IncompatibleSaveException("Unsupported progress schema; preserve files.");
                 string storedId = SaveIO.Text(r);
                 if (storedId != profileId) throw new IncompatibleSaveException("Wrong profile; preserve files.");
                 int count = r.ReadInt32();
@@ -88,8 +97,20 @@ namespace Ninefold.Core.Progression
                     long cost = r.ReadInt64(); string revision = SaveIO.Text(r);
                     unlocks[i] = new UnitUnlockReceipt(operation, new UnitUnlockDefinition(unit, resource, cost, revision));
                 }
+                int completionCount = schema < 3 ? 0 : r.ReadInt32();
+                SaveIO.Require(completionCount >= 0 && completionCount <= RewardRules.MaximumClaims - count - unlockCount, "Invalid campaign receipt count.");
+                var completions = new CampaignClaim[completionCount];
+                for (int i = 0; i < completionCount; i++)
+                {
+                    string id = SaveIO.Text(r), revision = SaveIO.Text(r); var required = SaveIO.Strings(r);
+                    var grants = new ResourceGrant[SaveIO.Count(r)];
+                    for (int j = 0; j < grants.Length; j++) grants[j] = new ResourceGrant(SaveIO.Text(r), r.ReadInt64());
+                    var units = SaveIO.Strings(r); byte starter = r.ReadByte(); SaveIO.Require(starter <= 1, "Invalid starter flag.");
+                    string next = starter == 1 ? SaveIO.Text(r) : null;
+                    completions[i] = new CampaignClaim(id, revision, required, grants, units, starter == 1, next);
+                }
                 SaveIO.Require(stream.Position == stream.Length, "Trailing progress data.");
-                return new PlayerProgress(storedId, claims, initial, unlocks);
+                return new PlayerProgress(storedId, claims, initial, unlocks, completions);
             }
             catch (Exception ex) when (ex is ArgumentException || ex is FormatException || ex is OverflowException || ex is InvalidOperationException)
             { throw new InvalidDataException("Invalid progress snapshot.", ex); }
