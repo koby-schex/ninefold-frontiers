@@ -45,7 +45,7 @@ namespace Ninefold.Core.Progression
     public sealed class LoadedProgress
     {
         public PlayerProgress Progress { get; }
-        public long Generation => Progress.Claims.Count + 1L;
+        public long Generation => Progress.Generation;
         public bool Recovered { get; }
         internal LoadedProgress(PlayerProgress progress, bool recovered) { Progress = progress; Recovered = recovered; }
     }
@@ -78,12 +78,12 @@ namespace Ninefold.Core.Progression
                 return record == null ? null : new LoadedProgress(record.Progress, recovered);
             }
         }
-        public LoadedProgress Create()
+        public LoadedProgress Create(System.Collections.Generic.IEnumerable<string> initiallyOwned = null)
         {
             lock (gate)
             {
                 if (Latest(out _) != null) throw new InvalidOperationException("Profile already exists.");
-                var progress = new PlayerProgress(profileId, Array.Empty<MissionClaim>());
+                var progress = new PlayerProgress(profileId, Array.Empty<MissionClaim>(), initiallyOwned);
                 files.WriteDurable(0, ProgressSave.Encode(progress));
                 return new LoadedProgress(progress, false);
             }
@@ -108,10 +108,32 @@ namespace Ninefold.Core.Progression
                 bool first = victory && !previous.Progress.Missions.ContainsKey(result.MissionId);
                 var grants = victory ? (first ? policy.FirstClear : policy.Replay) : Array.Empty<ResourceGrant>();
                 receipt = new MissionClaim(result.AttemptId, result.MissionId, fingerprint, result.Outcome, first, policy.Revision, grants);
-                var progress = new PlayerProgress(profileId, previous.Progress.Claims.Concat(new[] { receipt }));
+                var progress = new PlayerProgress(profileId, previous.Progress.Claims.Concat(new[] { receipt }), previous.Progress.InitialUnits, previous.Progress.Unlocks);
                 files.WriteDurable(1 - previous.Slot, ProgressSave.Encode(progress));
                 // Nothing is published until the complete ledger has been flushed.
                 return new ClaimResult(new LoadedProgress(progress, recovered), receipt, false);
+            }
+        }
+        public UnlockResult Unlock(string operationId, UnitUnlockDefinition definition)
+        {
+            RewardRules.Id(operationId);
+            if (definition == null) throw new ArgumentNullException(nameof(definition));
+            lock (gate)
+            {
+                var previous = Latest(out bool recovered) ?? throw new InvalidOperationException("Profile absent.");
+                var prior = previous.Progress.Unlocks.FirstOrDefault(u => u.OperationId == operationId);
+                if (prior != null)
+                {
+                    if (prior.UnitId != definition.UnitId) throw new InvalidOperationException("Unlock operation reused for another unit.");
+                    return new UnlockResult(new LoadedProgress(previous.Progress, recovered), prior, true);
+                }
+                if (previous.Progress.Owns(definition.UnitId)) throw new InvalidOperationException("Unit already owned.");
+                if (previous.Progress.Balance(definition.FragmentResourceId) < definition.Cost) throw new InvalidOperationException("Insufficient unit fragments.");
+                var receipt = new UnitUnlockReceipt(operationId, definition);
+                var progress = new PlayerProgress(profileId, previous.Progress.Claims, previous.Progress.InitialUnits,
+                    previous.Progress.Unlocks.Concat(new[] { receipt }));
+                files.WriteDurable(1 - previous.Slot, ProgressSave.Encode(progress));
+                return new UnlockResult(new LoadedProgress(progress, recovered), receipt, false);
             }
         }
         private Record Latest(out bool recovered)
@@ -128,15 +150,15 @@ namespace Ninefold.Core.Progression
                 catch (InvalidDataException) { damaged = true; }
                 catch (EndOfStreamException) { damaged = true; }
             }
-            var ordered = records.Where(r => r != null).OrderByDescending(r => r.Progress.Claims.Count).ToArray();
+            var ordered = records.Where(r => r != null).OrderByDescending(r => r.Progress.Generation).ToArray();
             SaveIO.Require(ordered.Length != 0 || !damaged, "No valid progress save remains; do not reset the profile.");
             if (ordered.Length == 2)
             {
-                var newer = ordered[0].Progress.Claims; var older = ordered[1].Progress.Claims;
-                SaveIO.Require(newer.Count == older.Count + 1, "Conflicting progress generations.");
-                // Reject unrelated or edited histories, including different rewards for the same result.
-                var prefix = new PlayerProgress(profileId, newer.Take(older.Count));
-                SaveIO.Require(ProgressSave.Encode(prefix).SequenceEqual(ProgressSave.Encode(ordered[1].Progress)), "Conflicting progress histories.");
+                var newer = ordered[0].Progress; var older = ordered[1].Progress;
+                SaveIO.Require(newer.Generation == older.Generation + 1 && newer.Claims.Count >= older.Claims.Count &&
+                    newer.Unlocks.Count >= older.Unlocks.Count, "Conflicting progress generations.");
+                var prefix = new PlayerProgress(profileId, newer.Claims.Take(older.Claims.Count), newer.InitialUnits, newer.Unlocks.Take(older.Unlocks.Count));
+                SaveIO.Require(ProgressSave.Encode(prefix).SequenceEqual(ProgressSave.Encode(older)), "Conflicting progress histories.");
             }
             recovered = damaged;
             return ordered.FirstOrDefault();

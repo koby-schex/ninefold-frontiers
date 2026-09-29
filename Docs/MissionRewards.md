@@ -2,7 +2,8 @@
 
 This is a plain C# offline foundation, not a finished campaign UI or production
 economy. All test resources and amounts are abstract placeholders. No lore,
-rosters, character fragments, Apex unlocks or campaign completion awards are authored here.
+production rosters, fragment costs, Apex unlocks or campaign completion awards are authored here.
+UnitOwnership.md describes the added configurable fragment-unlock infrastructure.
 
 ## Transaction contract
 
@@ -25,7 +26,8 @@ Empty bundles are valid. Defeat records an attempt with no grants and does not
 consume the mission's first clear or alter earlier progress. Optional objectives
 are fingerprinted but have no separate reward rule in this implementation.
 
-Balances and mission records are derived from these same receipts. A claim
+Mission records are derived from these receipts; balances now also subtract committed
+unit-unlock costs (see UnitOwnership.md). A claim
 publishes a new snapshot only after the complete ledger is flushed. Checked
 arithmetic, invalid definitions or size limits reject before writing. There is
 no API that saves a stale caller-owned profile over newer durable progress.
@@ -51,8 +53,8 @@ always consult the current progress store.
 
 `progress.0.save` and `progress.1.save` are separate from battle save files. Each
 uses an explicit progress schema/profile identity inside the existing bounded,
-checksummed save envelope. The receipt count determines the generation (empty
-profile = 1). Two valid files must be consecutive generations with identical
+checksummed save envelope. The combined mission-claim and unlock receipt count determines the generation
+(empty profile = 1). Two valid files must be consecutive generations with identical
 history prefixes. Incompatible schemas/identities or conflicting histories block
 writes; malformed data may fall back to the other valid checkpoint.
 
@@ -68,9 +70,9 @@ is read-only and does not repair the damaged slot; the next new claim replaces i
 
 - Single-process, single-writer ownership; the store serializes calls on one
   instance. Multiple concurrent store instances/cloud writers are unsupported.
-- Earned resource totals only: no spending, inventory, unit upgrades/unlocks,
-  purchases, randomness, campaign gates or starter campaign rewards yet.
-- Full-ledger checkpoints, up to 100,000 receipts and the envelope's 8 MiB bound.
+- Resource totals now support fragment spending for unit unlocks. Unit upgrades,
+  purchases, randomness and special starter campaign rewards remain deferred.
+- Full-ledger checkpoints, up to 100,000 combined claim/unlock receipts and the envelope's 8 MiB bound.
   Hitting either limit rejects safely. Receipts are never evicted to make space;
   scalable journal/compaction and migration are needed before production scale.
 - No Unity lifecycle integration or device/IL2CPP validation yet. The filesystem

@@ -2,21 +2,19 @@
 
 `MissionFlow` connects mission selection, squad validation, battle checkpoints,
 results and reward receipts without Unity. This is a headless integration boundary;
-there are no menus, production missions, unit unlock implementations or new canon.
+there are no menus, production missions, production unit progression or new canon.
 
 ## Ownership and setup
 
 Construct one flow on the simulation thread with profile-specific battle/progress
 file adapters, a stable profile ID, a content revision, authored mission entries
-and an immutable roster snapshot. Call `Open` to load an existing profile, or
-explicitly `CreateProfile` for a new one. Never respond to load failure by resetting
-files. Only this flow may write its stores during the session. Recreate it with a
-fresh roster after the future unit-unlock system commits ownership changes.
+and an immutable unit definition catalog. Call `Open` to load an existing profile, or
+explicitly `CreateProfile(starterUnits)` for a new one. Never respond to load failure by resetting
+files. Only this flow may write its stores during the session. Saved profile ownership supplies unlocked state; `UnlockUnit` refreshes it immediately.
 
 Battle saves use a flow-version/profile/content identity derived from these IDs.
 Raw battle-store saves from earlier scaffolding are not automatically imported;
-keep them separate or provide an explicit migration. Profile saves retain the
-existing progress schema. Content revision changes also require migration or a
+keep them separate or provide an explicit migration. Profile saves use progress schema 2 with schema-1 read compatibility (see UnitOwnership.md). Content revision changes also require migration or a
 separate development save directory.
 
 `Missions` exposes the authored catalog. `IsAvailable(progress)` supplies its
