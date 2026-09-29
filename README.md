@@ -64,3 +64,7 @@ See [FP-01 roadmap](Docs/Production/FP01.md), [architecture](Docs/Architecture.m
 
 The Project's current Master Lore & World-Building Archive governs all Ninefold
 content. This public scaffold does not redistribute unpublished lore or visual masters.
+
+Mission completion and resource reward receipts now persist together in a separate
+offline profile. See [Mission rewards](Docs/MissionRewards.md) for duplicate-claim
+protection, recovery limits and deferred production economy work.
