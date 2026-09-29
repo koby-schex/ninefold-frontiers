@@ -4,11 +4,13 @@ Core turn scheduling, action/movement budgets, ability availability/costs and
 single-target health resolution, supplied-path movement validation, destination routing, direct targeting,
 finite mission objectives/outcomes, and bounded enemy turn behavior are implemented. Other responsibilities below remain planned; see CombatTurns.md and
 AbilityUse.md, HealthResolution.md, Battlefield.md, Pathfinding.md, Missions.md,
-EnemyTurns.md, BattleSaves.md and MissionRewards.md for exact implementation boundaries.
+EnemyTurns.md, BattleSaves.md, MissionRewards.md and MissionFlow.md for exact implementation boundaries.
 
 - **Core:** plain C# rules and committed state; no UnityEngine references. Combat,
   missions, progression and saves have reserved folders. Commands validate legal
   targets, movement and action budget before changing state.
+- **Flow:** headless mission selection, squad checks, saved-command execution,
+  result claiming and resume coordinate Core stores. See MissionFlow.md.
 - **Presentation:** Unity components render committed state and collect intent.
   Animation timing must not determine damage, objective progress or reward grants.
 - **Content:** stable IDs and versioned definitions reference unit/ability/mission
