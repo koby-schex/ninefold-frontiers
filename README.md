@@ -68,3 +68,6 @@ content. This public scaffold does not redistribute unpublished lore or visual m
 Mission completion and resource reward receipts now persist together in a separate
 offline profile. See [Mission rewards](Docs/MissionRewards.md) for duplicate-claim
 protection, recovery limits and deferred production economy work.
+
+The [mission flow](Docs/MissionFlow.md) now connects squad validation, saved battle
+commands, resume, result claims and return to selection without Unity UI.
