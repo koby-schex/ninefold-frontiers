@@ -80,3 +80,6 @@ prerequisites, saved completion and one-time starter/ordinary campaign rewards.
 
 [Unit advancement](Docs/UnitAdvancement.md) now persists post-unlock fragment
 spending and bounded bonuses, applied once to each new battle deployment.
+
+[Unit customization](Docs/UnitCustomization.md) adds saved, freely reversible stat
+trade-offs, combined additively with advancement for new battles.

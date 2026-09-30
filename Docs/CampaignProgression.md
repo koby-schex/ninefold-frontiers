@@ -76,14 +76,14 @@ tries to attach it to a different campaign ID. Other campaigns cannot repeat it.
 
 ## Save compatibility and limits
 
-Progress schema 3 introduced campaign receipts. The current writer uses schema 4
-(advancement); schemas 1–3 remain readable without
-rewriting them on load; the next committed transaction writes schema 4. Schema-1
+Progress schema 3 introduced campaign receipts. The current writer uses schema 5
+(customization); schemas 1–4 remain readable without
+rewriting them on load; the next committed transaction writes schema 5. Schema-1
 ownership is still empty because it was never stored. Schema-2 ownership, spending
 and mission receipts remain intact. Mixed-version checkpoint pairs are supported.
 
 Generation and the existing 100,000-transaction limit include mission claims,
-fragment unlocks, campaign receipts and advancement. Prefix validation checks all four histories.
+fragment unlocks, campaign receipts, advancement and customization. Prefix validation checks all five histories.
 Resources, unit ownership and completion receipts either commit together or remain
 at the previous valid checkpoint. Failed/ambiguous flow writes require `Open` before
 further actions. The existing 8 MiB bound, single-writer requirement and possible

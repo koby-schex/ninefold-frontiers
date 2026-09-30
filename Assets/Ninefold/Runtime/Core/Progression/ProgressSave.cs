@@ -10,7 +10,7 @@ namespace Ninefold.Core.Progression
 {
     internal static class ProgressSave
     {
-        private const int Version = 4;
+        private const int Version = 5;
         internal static string Fingerprint(BattleResult result)
         {
             using var stream = new MemoryStream();
@@ -63,6 +63,13 @@ namespace Ninefold.Core.Progression
                     w.Write(a.OperationId); w.Write(a.UnitId); w.Write(a.Rank); w.Write(a.FragmentResourceId);
                     w.Write(a.Cost); w.Write(a.DefinitionRevision);
                     w.Write(a.TotalBonus.Health); w.Write(a.TotalBonus.Armor); w.Write(a.TotalBonus.Power);
+                }
+                w.Write(progress.CustomizationReceipts.Count);
+                foreach (var c in progress.CustomizationReceipts)
+                {
+                    w.Write(c.OperationId); w.Write(c.UnitId); w.Write(c.OptionId != null);
+                    if (c.OptionId != null) w.Write(c.OptionId);
+                    w.Write(c.DefinitionRevision); w.Write(c.Bonus.Health); w.Write(c.Bonus.Armor); w.Write(c.Bonus.Power);
                 }
             }
             var bytes = BattleSave.Pack(stream.ToArray());
@@ -126,8 +133,18 @@ namespace Ninefold.Core.Progression
                     var bonus = new AdvancementBonus(r.ReadInt32(), r.ReadInt32(), r.ReadInt32());
                     advances[i] = new AdvancementReceipt(operation, unit, rank, resource, cost, revision, bonus);
                 }
+                int choiceCount = schema < 5 ? 0 : r.ReadInt32();
+                SaveIO.Require(choiceCount >= 0 && choiceCount <= RewardRules.MaximumClaims - count - unlockCount - completionCount - advancementCount, "Invalid customization count.");
+                var choices = new CustomizationReceipt[choiceCount];
+                for (int i = 0; i < choiceCount; i++)
+                {
+                    string operation = SaveIO.Text(r), unit = SaveIO.Text(r); byte hasOption = r.ReadByte();
+                    SaveIO.Require(hasOption <= 1, "Invalid customization flag."); string option = hasOption == 1 ? SaveIO.Text(r) : null;
+                    string revision = SaveIO.Text(r); var bonus = new CustomizationBonus(r.ReadInt32(), r.ReadInt32(), r.ReadInt32());
+                    choices[i] = new CustomizationReceipt(operation, unit, option, revision, bonus);
+                }
                 SaveIO.Require(stream.Position == stream.Length, "Trailing progress data.");
-                return new PlayerProgress(storedId, claims, initial, unlocks, completions, advances);
+                return new PlayerProgress(storedId, claims, initial, unlocks, completions, advances, choices);
             }
             catch (Exception ex) when (ex is ArgumentException || ex is FormatException || ex is OverflowException || ex is InvalidOperationException)
             { throw new InvalidDataException("Invalid progress snapshot.", ex); }

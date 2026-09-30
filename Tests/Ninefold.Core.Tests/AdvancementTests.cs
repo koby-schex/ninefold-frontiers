@@ -144,7 +144,7 @@ internal static partial class Program
         var x=new CampaignFixture(); x.Finish(); x.Store.ClaimCampaign("starter",x.Catalog);
         for(int slot=0;slot<2;slot++)
         {
-            var current=x.Files.Inner.Slots[slot]; var bytes=current.Take(current.Length-36).Concat(new byte[32]).ToArray();
+            var current=x.Files.Inner.Slots[slot]; var bytes=current.Take(current.Length-40).Concat(new byte[32]).ToArray();
             using var stream=new MemoryStream(bytes); using var r=new BinaryReader(stream); stream.Position=8; r.ReadString();
             Array.Copy(BitConverter.GetBytes(3),0,bytes,(int)stream.Position,4); Rehash(bytes); x.Files.Inner.Slots[slot]=bytes;
         }
@@ -158,9 +158,9 @@ internal static partial class Program
         internal readonly LocalProgressStore Store;
         internal int BaseHealth=100, BaseArmor=20, BaseDamage=40;
         internal AdvancementFixture() { Store=new LocalProgressStore(Files,"advance-profile"); Store.Create(new[] { "a","c","d" }); Store.Claim(Result(),Rewards()); }
-        internal MissionFlow Flow()
+        internal MissionFlow Flow(UnitCustomizationDefinition customization = null)
         {
-            var roster=FlowRoster().Select(u=>u.Id=="a" ? new RosterUnit("a","faction",false,UnlockDef("a"),AdvanceDef()) : u).ToArray();
+            var roster=FlowRoster().Select(u=>u.Id=="a" ? new RosterUnit("a","faction",false,UnlockDef("a"),AdvanceDef(),customization) : u).ToArray();
             return new MissionFlow(Battles,Files,"advance-profile","advance-content",new[] { Entry("mixed",false),Entry("campaign",true) },roster);
         }
         private MissionEntry Entry(string id,bool campaign)

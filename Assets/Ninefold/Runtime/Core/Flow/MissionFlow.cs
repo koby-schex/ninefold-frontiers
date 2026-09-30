@@ -125,8 +125,8 @@ namespace Ninefold.Core.Flow
                 if (draft?.Mission == null || draft.IsBattleEnded || draft.Mission.Result != null || draft.Mission.Definition.MissionId != missionId ||
                     draft.Mission.Definition.AttemptId != attempt || !draft.Mission.Definition.Squad.SequenceEqual(squad))
                     throw new InvalidOperationException("Factory must return a fresh battle matching mission, attempt and squad.");
-                var bonuses = squad.Select(Progress.GetAdvancement).Where(a => a.Rank > 0).ToDictionary(a => a.UnitId, a => a.Bonus, StringComparer.Ordinal);
-                draft.ApplyDeploymentAdvancement(bonuses);
+                var bonuses = squad.ToDictionary(id => id, Progress.GetDeploymentModifiers, StringComparer.Ordinal).Where(p => !p.Value.IsNeutral).ToDictionary(p => p.Key, p => p.Value, StringComparer.Ordinal);
+                draft.ApplyDeploymentModifiers(bonuses);
                 Commit(draft);
             }
             finally { busy = false; }
@@ -204,6 +204,21 @@ namespace Ninefold.Core.Flow
                 catch { NeedsReload = true; throw; }
                 Progress = advanced.Saved.Progress; Recovered |= advanced.Saved.Recovered;
                 return advanced;
+            }
+            finally { busy = false; }
+        }
+        public CustomizationResult CustomizeUnit(string operationId, string unitId, string optionId)
+        {
+            Enter(true);
+            try
+            {
+                if (Phase != MissionFlowPhase.Selection) throw new InvalidOperationException("Return to selection before changing customization.");
+                if (unitId == null || !roster.TryGetValue(unitId, out var unit)) throw new ArgumentException("Unknown unit.");
+                CustomizationResult changed;
+                try { changed = profiles.Customize(operationId, unitId, optionId, unit.Customization); }
+                catch { NeedsReload = true; throw; }
+                Progress = changed.Saved.Progress; Recovered |= changed.Saved.Recovered;
+                return changed;
             }
             finally { busy = false; }
         }

@@ -77,16 +77,25 @@ namespace Ninefold.Core.Progression
         public IReadOnlyList<CampaignClaim> CampaignClaims { get; }
         public IReadOnlyList<AdvancementReceipt> AdvancementReceipts { get; }
         public IReadOnlyDictionary<string, UnitAdvancementState> Advancements { get; }
+        public IReadOnlyList<CustomizationReceipt> CustomizationReceipts { get; }
+        public IReadOnlyDictionary<string, UnitCustomizationState> Customizations { get; }
+        public UnitCustomizationState GetCustomization(string unitId)
+        {
+            if (!Owns(unitId)) throw new ArgumentException("Unit is not owned.");
+            return Customizations.TryGetValue(unitId, out var state) ? state : new UnitCustomizationState(unitId, null, CustomizationBonus.None);
+        }
+        public DeploymentModifiers GetDeploymentModifiers(string unitId)
+            => DeploymentModifiers.Combine(GetAdvancement(unitId).Bonus, GetCustomization(unitId).Bonus);
         public UnitAdvancementState GetAdvancement(string unitId)
         {
             if (!Owns(unitId)) throw new ArgumentException("Unit is not owned.");
             return Advancements.TryGetValue(unitId, out var state) ? state : new UnitAdvancementState(unitId, 0, AdvancementBonus.None);
         }
-        public long Generation => Claims.Count + Unlocks.Count + CampaignClaims.Count + AdvancementReceipts.Count + 1L;
+        public long Generation => Claims.Count + Unlocks.Count + CampaignClaims.Count + AdvancementReceipts.Count + CustomizationReceipts.Count + 1L;
         public bool Owns(string unitId) => OwnedUnits.Contains(unitId, StringComparer.Ordinal);
         public IReadOnlyDictionary<string, long> Balances { get; }
         public IReadOnlyDictionary<string, MissionProgress> Missions { get; }
-        internal PlayerProgress(string profileId, IEnumerable<MissionClaim> claims, IEnumerable<string> initialUnits = null, IEnumerable<UnitUnlockReceipt> unlocks = null, IEnumerable<CampaignClaim> campaignClaims = null, IEnumerable<AdvancementReceipt> advancementReceipts = null)
+        internal PlayerProgress(string profileId, IEnumerable<MissionClaim> claims, IEnumerable<string> initialUnits = null, IEnumerable<UnitUnlockReceipt> unlocks = null, IEnumerable<CampaignClaim> campaignClaims = null, IEnumerable<AdvancementReceipt> advancementReceipts = null, IEnumerable<CustomizationReceipt> customizationReceipts = null)
         {
             RewardRules.Id(profileId); ProfileId = profileId;
             var array = claims.ToArray();
@@ -102,6 +111,11 @@ namespace Ninefold.Core.Progression
                 advances.Select(a => a.OperationId).Distinct(StringComparer.Ordinal).Count() != advances.Length)
                 throw new ArgumentException("Invalid advancement receipt history.");
             AdvancementReceipts = Array.AsReadOnly(advances);
+            var choices = (customizationReceipts ?? Array.Empty<CustomizationReceipt>()).ToArray();
+            if (choices.Any(c => c == null) || array.Length + spent.Length + completions.Length + advances.Length + choices.Length > RewardRules.MaximumClaims ||
+                choices.Select(c => c.OperationId).Distinct(StringComparer.Ordinal).Count() != choices.Length)
+                throw new ArgumentException("Invalid customization receipt history.");
+            CustomizationReceipts = Array.AsReadOnly(choices);
             foreach (string id in initial) RewardRules.Id(id);
             if (initial.Length > 4096 || initial.Distinct(StringComparer.Ordinal).Count() != initial.Length)
                 throw new ArgumentException("Invalid initial ownership.");
@@ -125,6 +139,15 @@ namespace Ninefold.Core.Progression
                 advancement[a.UnitId] = new UnitAdvancementState(a.UnitId, a.Rank, a.TotalBonus);
             }
             Advancements = new ReadOnlyDictionary<string, UnitAdvancementState>(advancement);
+            var customization = new Dictionary<string, UnitCustomizationState>(StringComparer.Ordinal);
+            foreach (var c in choices)
+            {
+                if (!Owns(c.UnitId)) throw new ArgumentException("Customization requires ownership.");
+                customization[c.UnitId] = new UnitCustomizationState(c.UnitId, c.OptionId, c.Bonus);
+            }
+            Customizations = new ReadOnlyDictionary<string, UnitCustomizationState>(customization);
+            foreach (string unit in customization.Keys) GetDeploymentModifiers(unit); // Validate combined bounds.
+
             var totals = new Dictionary<string, decimal>(StringComparer.Ordinal);
             var missions = new Dictionary<string, MissionProgress>(StringComparer.Ordinal);
             foreach (var group in array.Where(c => c.Outcome == MissionOutcome.Victory).GroupBy(c => c.MissionId, StringComparer.Ordinal))
