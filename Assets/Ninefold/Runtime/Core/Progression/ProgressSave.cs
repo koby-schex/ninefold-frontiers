@@ -10,7 +10,7 @@ namespace Ninefold.Core.Progression
 {
     internal static class ProgressSave
     {
-        private const int Version = 3;
+        private const int Version = 4;
         internal static string Fingerprint(BattleResult result)
         {
             using var stream = new MemoryStream();
@@ -56,6 +56,13 @@ namespace Ninefold.Core.Progression
                     foreach (var grant in c.Grants) { w.Write(grant.ResourceId); w.Write(grant.Amount); }
                     SaveIO.Strings(w, c.GrantedUnits); w.Write(c.IsStarterBonus);
                     if (c.IsStarterBonus) w.Write(c.NextCampaignId);
+                }
+                w.Write(progress.AdvancementReceipts.Count);
+                foreach (var a in progress.AdvancementReceipts)
+                {
+                    w.Write(a.OperationId); w.Write(a.UnitId); w.Write(a.Rank); w.Write(a.FragmentResourceId);
+                    w.Write(a.Cost); w.Write(a.DefinitionRevision);
+                    w.Write(a.TotalBonus.Health); w.Write(a.TotalBonus.Armor); w.Write(a.TotalBonus.Power);
                 }
             }
             var bytes = BattleSave.Pack(stream.ToArray());
@@ -109,8 +116,18 @@ namespace Ninefold.Core.Progression
                     string next = starter == 1 ? SaveIO.Text(r) : null;
                     completions[i] = new CampaignClaim(id, revision, required, grants, units, starter == 1, next);
                 }
+                int advancementCount = schema < 4 ? 0 : r.ReadInt32();
+                SaveIO.Require(advancementCount >= 0 && advancementCount <= RewardRules.MaximumClaims - count - unlockCount - completionCount, "Invalid advancement count.");
+                var advances = new AdvancementReceipt[advancementCount];
+                for (int i = 0; i < advancementCount; i++)
+                {
+                    string operation = SaveIO.Text(r), unit = SaveIO.Text(r); int rank = r.ReadInt32(); string resource = SaveIO.Text(r);
+                    long cost = r.ReadInt64(); string revision = SaveIO.Text(r);
+                    var bonus = new AdvancementBonus(r.ReadInt32(), r.ReadInt32(), r.ReadInt32());
+                    advances[i] = new AdvancementReceipt(operation, unit, rank, resource, cost, revision, bonus);
+                }
                 SaveIO.Require(stream.Position == stream.Length, "Trailing progress data.");
-                return new PlayerProgress(storedId, claims, initial, unlocks, completions);
+                return new PlayerProgress(storedId, claims, initial, unlocks, completions, advances);
             }
             catch (Exception ex) when (ex is ArgumentException || ex is FormatException || ex is OverflowException || ex is InvalidOperationException)
             { throw new InvalidDataException("Invalid progress snapshot.", ex); }

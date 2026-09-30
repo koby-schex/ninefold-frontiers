@@ -12,11 +12,14 @@ namespace Ninefold.Core.Flow
         public string FactionId { get; }
         public bool IsApex { get; }
         public UnitUnlockDefinition Unlock { get; }
-        public RosterUnit(string id, string factionId, bool isApex, UnitUnlockDefinition unlock)
+        public UnitAdvancementDefinition Advancement { get; }
+        public RosterUnit(string id, string factionId, bool isApex, UnitUnlockDefinition unlock, UnitAdvancementDefinition advancement = null)
         {
             RewardRules.Id(id); RewardRules.Id(factionId);
             if (unlock == null || unlock.UnitId != id) throw new ArgumentException("Matching unlock definition required.");
-            Id = id; FactionId = factionId; IsApex = isApex; Unlock = unlock;
+            if (advancement != null && (advancement.UnitId != id || advancement.FragmentResourceId != unlock.FragmentResourceId))
+                throw new ArgumentException("Advancement must match this unit and its fragment resource.");
+            Id = id; FactionId = factionId; IsApex = isApex; Unlock = unlock; Advancement = advancement;
         }
     }
     public enum SquadFailure { None, MissionLocked, Size, UnknownUnit, DuplicateUnit, LockedUnit, MultipleApex, WrongFaction, CampaignRoster }

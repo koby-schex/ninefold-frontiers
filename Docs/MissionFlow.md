@@ -14,7 +14,7 @@ files. Only this flow may write its stores during the session. Saved profile own
 
 Battle saves use a flow-version/profile/content identity derived from these IDs.
 Raw battle-store saves from earlier scaffolding are not automatically imported;
-keep them separate or provide an explicit migration. Profile saves use progress schema 3 with schema-1/2 read compatibility (see CampaignProgression.md). Content revision changes also require migration or a
+keep them separate or provide an explicit migration. Profile saves use progress schema 4 with schema-1/2/3 read compatibility (see UnitAdvancement.md). Content revision changes also require migration or a
 separate development save directory.
 
 `Missions` exposes the authored catalog. `IsAvailable(progress)` supplies its
@@ -93,3 +93,6 @@ detached snapshots, invalid factories, nested callbacks, interrupted command and
 reward writes, lost acknowledgements, recovered claimed attempts, profile identity
 and missing content. Windows/Linux CI runs these against the same Core code Unity
 will use. Unity scene wiring, touch UI, IL2CPP and iPhone testing remain deferred.
+
+Saved advancement is applied once to new deployments by the flow; resumed battles
+retain their stored stats. See UnitAdvancement.md for supported bonuses and caps.

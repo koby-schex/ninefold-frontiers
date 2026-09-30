@@ -2,7 +2,7 @@
 
 This foundation persists ownership and fragment-based unlock transactions. Unit IDs,
 fragment resources and costs in tests are placeholders, not production balance or
-canon. Unit level/stat upgrades, post-unlock fragment advancement remain future work. Configurable campaign
+canon. Configurable post-unlock fragment advancement is now implemented in UnitAdvancement.md. Configurable campaign
 completion grants and the starter Apex award are now implemented separately in
 CampaignProgression.md; their production content remains unauthored.
 
@@ -41,8 +41,8 @@ use the current authored requirement. The flow looks up the unit's trusted defin
 the lower-level store is not an anti-cheat boundary for arbitrary definitions.
 
 Fragments left over after unlocking remain in the balance, and later fragments can
-continue accumulating. They are reserved for the future post-unlock advancement
-system; this PR does not invent that system or convert fragments automatically.
+continue accumulating. They can fund explicitly requested advancement under the authored definition
+(see UnitAdvancement.md); fragments are never spent automatically.
 
 ## Squad and campaign integration
 
@@ -57,13 +57,13 @@ partway through an active attempt. This is an integration boundary, not final UI
 
 Progress schema 2 introduced immutable initial ownership and append-only unlock receipts.
 Balances are earned resources minus committed unlock costs; ownership is the initial
-roster plus committed unlock receipts. A generation now advances for each mission claim, unlock or campaign receipt. Both files must contain consecutive, consistent transaction histories.
+roster plus committed unlock receipts. A generation now advances for each mission claim, unlock, campaign receipt or advancement. Both files must contain consecutive, consistent transaction histories.
 The combined ledger retains the existing 100,000-transaction/8 MiB limits and
 single-writer constraint. No receipt is silently removed.
 
 Schema 1 profiles remain readable with all mission receipts and balances intact.
 Because they never stored ownership, they yield **empty ownership**, not an invented
-starter roster. Reading does not rewrite files. The current writer uses schema 3 (campaign receipts), and mixed supported-schema
+starter roster. Reading does not rewrite files. The current writer uses schema 4 (advancement receipts), and mixed supported-schema
 checkpoint pairs are supported. Older development
 profiles need a future explicit authored ownership migration before use as a playable
 starter account; do not reset them or reissue rewards automatically.

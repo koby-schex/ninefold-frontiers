@@ -75,11 +75,18 @@ namespace Ninefold.Core.Progression
         public IReadOnlyList<string> OwnedUnits { get; }
         public IReadOnlyList<UnitUnlockReceipt> Unlocks { get; }
         public IReadOnlyList<CampaignClaim> CampaignClaims { get; }
-        public long Generation => Claims.Count + Unlocks.Count + CampaignClaims.Count + 1L;
+        public IReadOnlyList<AdvancementReceipt> AdvancementReceipts { get; }
+        public IReadOnlyDictionary<string, UnitAdvancementState> Advancements { get; }
+        public UnitAdvancementState GetAdvancement(string unitId)
+        {
+            if (!Owns(unitId)) throw new ArgumentException("Unit is not owned.");
+            return Advancements.TryGetValue(unitId, out var state) ? state : new UnitAdvancementState(unitId, 0, AdvancementBonus.None);
+        }
+        public long Generation => Claims.Count + Unlocks.Count + CampaignClaims.Count + AdvancementReceipts.Count + 1L;
         public bool Owns(string unitId) => OwnedUnits.Contains(unitId, StringComparer.Ordinal);
         public IReadOnlyDictionary<string, long> Balances { get; }
         public IReadOnlyDictionary<string, MissionProgress> Missions { get; }
-        internal PlayerProgress(string profileId, IEnumerable<MissionClaim> claims, IEnumerable<string> initialUnits = null, IEnumerable<UnitUnlockReceipt> unlocks = null, IEnumerable<CampaignClaim> campaignClaims = null)
+        internal PlayerProgress(string profileId, IEnumerable<MissionClaim> claims, IEnumerable<string> initialUnits = null, IEnumerable<UnitUnlockReceipt> unlocks = null, IEnumerable<CampaignClaim> campaignClaims = null, IEnumerable<AdvancementReceipt> advancementReceipts = null)
         {
             RewardRules.Id(profileId); ProfileId = profileId;
             var array = claims.ToArray();
@@ -90,6 +97,11 @@ namespace Ninefold.Core.Progression
                 completions.Select(c => c.CampaignId).Distinct(StringComparer.Ordinal).Count() != completions.Length || completions.Count(c => c.IsStarterBonus) > 1)
                 throw new ArgumentException("Invalid campaign receipt history.");
             CampaignClaims = Array.AsReadOnly(completions);
+            var advances = (advancementReceipts ?? Array.Empty<AdvancementReceipt>()).ToArray();
+            if (advances.Any(a => a == null) || array.Length + spent.Length + completions.Length + advances.Length > RewardRules.MaximumClaims ||
+                advances.Select(a => a.OperationId).Distinct(StringComparer.Ordinal).Count() != advances.Length)
+                throw new ArgumentException("Invalid advancement receipt history.");
+            AdvancementReceipts = Array.AsReadOnly(advances);
             foreach (string id in initial) RewardRules.Id(id);
             if (initial.Length > 4096 || initial.Distinct(StringComparer.Ordinal).Count() != initial.Length)
                 throw new ArgumentException("Invalid initial ownership.");
@@ -103,6 +115,16 @@ namespace Ninefold.Core.Progression
             if (array.Length > RewardRules.MaximumClaims) throw new InvalidOperationException("Claim ledger requires migration; never discard receipts.");
             if (array.Select(c => c.AttemptId).Distinct(StringComparer.Ordinal).Count() != array.Length)
                 throw new ArgumentException("Duplicate attempt receipt.");
+            var advancement = new Dictionary<string, UnitAdvancementState>(StringComparer.Ordinal);
+            foreach (var a in advances)
+            {
+                if (!Owns(a.UnitId)) throw new ArgumentException("Advancement requires ownership.");
+                advancement.TryGetValue(a.UnitId, out var prior);
+                if (a.Rank != (prior?.Rank ?? 0) + 1 || (prior != null && (!prior.Bonus.Within(a.TotalBonus) || prior.Bonus.Same(a.TotalBonus))))
+                    throw new ArgumentException("Invalid advancement sequence.");
+                advancement[a.UnitId] = new UnitAdvancementState(a.UnitId, a.Rank, a.TotalBonus);
+            }
+            Advancements = new ReadOnlyDictionary<string, UnitAdvancementState>(advancement);
             var totals = new Dictionary<string, decimal>(StringComparer.Ordinal);
             var missions = new Dictionary<string, MissionProgress>(StringComparer.Ordinal);
             foreach (var group in array.Where(c => c.Outcome == MissionOutcome.Victory).GroupBy(c => c.MissionId, StringComparer.Ordinal))
@@ -124,6 +146,12 @@ namespace Ninefold.Core.Progression
                 totals.TryGetValue(unlock.FragmentResourceId, out decimal amount);
                 if (amount < unlock.Cost) throw new ArgumentException("Unlock ledger exceeds earned fragments.");
                 totals[unlock.FragmentResourceId] = amount - unlock.Cost;
+            }
+            foreach (var advance in advances)
+            {
+                totals.TryGetValue(advance.FragmentResourceId, out decimal amount);
+                if (amount < advance.Cost) throw new ArgumentException("Advancement exceeds earned fragments.");
+                totals[advance.FragmentResourceId] = amount - advance.Cost;
             }
             var balances = totals.ToDictionary(p => p.Key, p => checked((long)p.Value), StringComparer.Ordinal);
             Claims = Array.AsReadOnly(array);
