@@ -1,7 +1,7 @@
 # Post-unlock unit advancement
 
 This plain C# foundation adds permanent fragment-funded advancement. It is separate
-from future player-selected stat customization. Test costs, rank counts and bonuses
+from player-selected stat customization (see UnitCustomization.md). Test costs, rank counts and bonuses
 are provisional engineering values, not production economy or locked canon.
 
 ## Definition and persistence
@@ -58,6 +58,9 @@ units, and power bonuses require battlefield ability profiles. Low-level trusted
 `HealthAction` calls bypass those profiles, so authored gameplay should continue
 using the battlefield command path rather than constructing unrelated raw amounts.
 
+Saved customization now combines additively with advancement over base stats,
+within a provisional +15% combined per-stat ceiling. See UnitCustomization.md.
+
 The battle save stores resolved stats. `Open`/resume does not reapply bonuses or
 update an in-progress battle to a newer profile rank. New battles use the latest
 saved advancement; existing battles retain their original deployment. Unselected
@@ -65,13 +68,14 @@ units and enemies do not receive the player's bonus.
 
 ## Recovery and compatibility
 
-Progress schema 4 adds advancement receipts. Schemas 1–3 remain readable, with rank
+Progress schema 4 introduced advancement receipts; the current writer uses schema 5
+for customization. Schemas 1–4 remain readable, with rank
 zero until advancement receipts exist. Reading does not rewrite files. The next
-transaction writes schema 4, preserving mission claims, ownership, unlock spending
+transaction writes schema 5, preserving mission claims, ownership, unlock spending
 and campaign grants. Mixed-version checkpoint pairs are supported.
 
 All transaction writers preserve advancement history. Generation and the existing
-100,000-receipt limit now include advancement receipts. The 8 MiB bound and
+100,000-receipt limit now include advancement and customization receipts. The 8 MiB bound and
 single-writer ownership still apply. Bonuses, ranks and spending commit together;
 ambiguous writes require a flow reload and retry with the original operation ID.
 Corruption recovery can roll back one whole checkpoint; this is not protection
@@ -81,5 +85,4 @@ Tests cover ownership, costs/caps, bounded definitions, sequential ranks, immuta
 snapshots, historical receipts, concurrent retries on one store, failed/torn/
 unacknowledged writes, corruption recovery, earlier schemas, campaign Apex awards,
 subsequent transactions, real filesystem reopening and actual battle health, armor,
-damage/healing, shared progression and resume behavior. Production balancing, player
-customization, UI, Unity/IL2CPP and device validation remain deferred.
+damage/healing, shared progression and resume behavior. Production balancing, UI, Unity/IL2CPP and device validation remain deferred.

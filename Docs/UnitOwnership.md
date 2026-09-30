@@ -57,13 +57,13 @@ partway through an active attempt. This is an integration boundary, not final UI
 
 Progress schema 2 introduced immutable initial ownership and append-only unlock receipts.
 Balances are earned resources minus committed unlock costs; ownership is the initial
-roster plus committed unlock receipts. A generation now advances for each mission claim, unlock, campaign receipt or advancement. Both files must contain consecutive, consistent transaction histories.
+roster plus committed unlock receipts. A generation now advances for each mission claim, unlock, campaign receipt, advancement or customization. Both files must contain consecutive, consistent transaction histories.
 The combined ledger retains the existing 100,000-transaction/8 MiB limits and
 single-writer constraint. No receipt is silently removed.
 
 Schema 1 profiles remain readable with all mission receipts and balances intact.
 Because they never stored ownership, they yield **empty ownership**, not an invented
-starter roster. Reading does not rewrite files. The current writer uses schema 4 (advancement receipts), and mixed supported-schema
+starter roster. Reading does not rewrite files. The current writer uses schema 5 (customization receipts), and mixed supported-schema
 checkpoint pairs are supported. Older development
 profiles need a future explicit authored ownership migration before use as a playable
 starter account; do not reset them or reissue rewards automatically.

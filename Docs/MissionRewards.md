@@ -54,7 +54,7 @@ always consult the current progress store.
 
 `progress.0.save` and `progress.1.save` are separate from battle save files. Each
 uses an explicit progress schema/profile identity inside the existing bounded,
-checksummed save envelope. The combined mission-claim, unlock, campaign and advancement receipt count determines the generation
+checksummed save envelope. The combined mission-claim, unlock, campaign, advancement and customization receipt count determines the generation
 (empty profile = 1). Two valid files must be consecutive generations with identical
 history prefixes. Incompatible schemas/identities or conflicting histories block
 writes; malformed data may fall back to the other valid checkpoint.
@@ -71,9 +71,9 @@ is read-only and does not repair the damaged slot; the next new claim replaces i
 
 - Single-process, single-writer ownership; the store serializes calls on one
   instance. Multiple concurrent store instances/cloud writers are unsupported.
-- Resource totals now support fragment spending for unit unlocks. Player-selected customization,
+- Resource totals now support fragment spending for unit unlocks. Production customization choices,
   purchases, randomness and production starter campaign reward content remains deferred.
-- Full-ledger checkpoints, up to 100,000 combined claim/unlock/campaign/advancement receipts and the envelope's 8 MiB bound.
+- Full-ledger checkpoints, up to 100,000 combined claim/unlock/campaign/advancement/customization receipts and the envelope's 8 MiB bound.
   Hitting either limit rejects safely. Receipts are never evicted to make space;
   scalable journal/compaction and migration are needed before production scale.
 - No Unity lifecycle integration or device/IL2CPP validation yet. The filesystem

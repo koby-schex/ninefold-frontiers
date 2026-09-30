@@ -221,7 +221,7 @@ internal static partial class Program
     }
     private static byte[] SchemaTwo(byte[] current)
     {
-        var bytes=current.Take(current.Length-40).Concat(new byte[32]).ToArray();
+        var bytes=current.Take(current.Length-44).Concat(new byte[32]).ToArray();
         using var stream=new MemoryStream(bytes); using var r=new BinaryReader(stream); stream.Position=8; r.ReadString();
         Array.Copy(BitConverter.GetBytes(2),0,bytes,(int)stream.Position,4); Rehash(bytes); return bytes;
     }

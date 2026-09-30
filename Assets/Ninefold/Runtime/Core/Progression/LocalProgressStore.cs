@@ -109,7 +109,7 @@ namespace Ninefold.Core.Progression
                 bool first = victory && !previous.Progress.Missions.ContainsKey(result.MissionId);
                 var grants = victory ? (first ? policy.FirstClear : policy.Replay) : Array.Empty<ResourceGrant>();
                 receipt = new MissionClaim(result.AttemptId, result.MissionId, fingerprint, result.Outcome, first, policy.Revision, grants);
-                var progress = new PlayerProgress(profileId, previous.Progress.Claims.Concat(new[] { receipt }), previous.Progress.InitialUnits, previous.Progress.Unlocks, previous.Progress.CampaignClaims, previous.Progress.AdvancementReceipts);
+                var progress = new PlayerProgress(profileId, previous.Progress.Claims.Concat(new[] { receipt }), previous.Progress.InitialUnits, previous.Progress.Unlocks, previous.Progress.CampaignClaims, previous.Progress.AdvancementReceipts, previous.Progress.CustomizationReceipts);
                 files.WriteDurable(1 - previous.Slot, ProgressSave.Encode(progress));
                 // Nothing is published until the complete ledger has been flushed.
                 return new ClaimResult(new LoadedProgress(progress, recovered), receipt, false);
@@ -132,7 +132,7 @@ namespace Ninefold.Core.Progression
                 if (previous.Progress.Balance(definition.FragmentResourceId) < definition.Cost) throw new InvalidOperationException("Insufficient unit fragments.");
                 var receipt = new UnitUnlockReceipt(operationId, definition);
                 var progress = new PlayerProgress(profileId, previous.Progress.Claims, previous.Progress.InitialUnits,
-                    previous.Progress.Unlocks.Concat(new[] { receipt }), previous.Progress.CampaignClaims, previous.Progress.AdvancementReceipts);
+                    previous.Progress.Unlocks.Concat(new[] { receipt }), previous.Progress.CampaignClaims, previous.Progress.AdvancementReceipts, previous.Progress.CustomizationReceipts);
                 files.WriteDurable(1 - previous.Slot, ProgressSave.Encode(progress));
                 return new UnlockResult(new LoadedProgress(progress, recovered), receipt, false);
             }
@@ -148,7 +148,7 @@ namespace Ninefold.Core.Progression
                 if (catalog == null) throw new ArgumentNullException(nameof(catalog));
                 var receipt = catalog.Prepare(campaignId, previous.Progress);
                 var progress = new PlayerProgress(profileId, previous.Progress.Claims, previous.Progress.InitialUnits,
-                    previous.Progress.Unlocks, previous.Progress.CampaignClaims.Concat(new[] { receipt }), previous.Progress.AdvancementReceipts);
+                    previous.Progress.Unlocks, previous.Progress.CampaignClaims.Concat(new[] { receipt }), previous.Progress.AdvancementReceipts, previous.Progress.CustomizationReceipts);
                 if (receipt.IsStarterBonus && catalog.Inspect(receipt.NextCampaignId, progress).AvailableMissions.Count == 0)
                     throw new InvalidOperationException("Starter reward must open a playable next campaign entry.");
                 files.WriteDurable(1 - previous.Slot, ProgressSave.Encode(progress));
@@ -177,9 +177,38 @@ namespace Ninefold.Core.Progression
                 var receipt = new AdvancementReceipt(operationId, definition.UnitId, current.Rank + 1, definition.FragmentResourceId,
                     step.FragmentCost, definition.Revision, step.TotalBonus);
                 var progress = new PlayerProgress(profileId, previous.Progress.Claims, previous.Progress.InitialUnits,
-                    previous.Progress.Unlocks, previous.Progress.CampaignClaims, previous.Progress.AdvancementReceipts.Concat(new[] { receipt }));
+                    previous.Progress.Unlocks, previous.Progress.CampaignClaims, previous.Progress.AdvancementReceipts.Concat(new[] { receipt }), previous.Progress.CustomizationReceipts);
                 files.WriteDurable(1 - previous.Slot, ProgressSave.Encode(progress));
                 return new AdvancementResult(new LoadedProgress(progress, recovered), receipt, false);
+            }
+        }
+        public CustomizationResult Customize(string operationId, string unitId, string optionId, UnitCustomizationDefinition definition = null)
+        {
+            RewardRules.Id(operationId); RewardRules.Id(unitId);
+            if (optionId != null) RewardRules.Id(optionId);
+            lock (gate)
+            {
+                var previous = Latest(out bool recovered) ?? throw new InvalidOperationException("Profile absent.");
+                var prior = previous.Progress.CustomizationReceipts.FirstOrDefault(c => c.OperationId == operationId);
+                if (prior != null)
+                {
+                    if (prior.UnitId != unitId || prior.OptionId != optionId) throw new InvalidOperationException("Customization operation reused for another choice.");
+                    return new CustomizationResult(new LoadedProgress(previous.Progress, recovered), prior, true);
+                }
+                if (!previous.Progress.Owns(unitId)) throw new ArgumentException("Unit is not owned.");
+                var bonus = CustomizationBonus.None; string revision = "reset-v1";
+                if (optionId != null)
+                {
+                    if (definition == null || definition.UnitId != unitId) throw new ArgumentException("Matching customization definition required.");
+                    var option = definition.Options.FirstOrDefault(o => o.Id == optionId) ?? throw new ArgumentException("Unknown customization choice.");
+                    bonus = option.Bonus; revision = definition.Revision;
+                }
+                var receipt = new CustomizationReceipt(operationId, unitId, optionId, revision, bonus);
+                var progress = new PlayerProgress(profileId, previous.Progress.Claims, previous.Progress.InitialUnits,
+                    previous.Progress.Unlocks, previous.Progress.CampaignClaims, previous.Progress.AdvancementReceipts,
+                    previous.Progress.CustomizationReceipts.Concat(new[] { receipt }));
+                files.WriteDurable(1 - previous.Slot, ProgressSave.Encode(progress));
+                return new CustomizationResult(new LoadedProgress(progress, recovered), receipt, false);
             }
         }
         private Record Latest(out bool recovered)
@@ -202,8 +231,8 @@ namespace Ninefold.Core.Progression
             {
                 var newer = ordered[0].Progress; var older = ordered[1].Progress;
                 SaveIO.Require(newer.Generation == older.Generation + 1 && newer.Claims.Count >= older.Claims.Count &&
-                    newer.Unlocks.Count >= older.Unlocks.Count && newer.CampaignClaims.Count >= older.CampaignClaims.Count && newer.AdvancementReceipts.Count >= older.AdvancementReceipts.Count, "Conflicting progress generations.");
-                var prefix = new PlayerProgress(profileId, newer.Claims.Take(older.Claims.Count), newer.InitialUnits, newer.Unlocks.Take(older.Unlocks.Count), newer.CampaignClaims.Take(older.CampaignClaims.Count), newer.AdvancementReceipts.Take(older.AdvancementReceipts.Count));
+                    newer.Unlocks.Count >= older.Unlocks.Count && newer.CampaignClaims.Count >= older.CampaignClaims.Count && newer.AdvancementReceipts.Count >= older.AdvancementReceipts.Count && newer.CustomizationReceipts.Count >= older.CustomizationReceipts.Count, "Conflicting progress generations.");
+                var prefix = new PlayerProgress(profileId, newer.Claims.Take(older.Claims.Count), newer.InitialUnits, newer.Unlocks.Take(older.Unlocks.Count), newer.CampaignClaims.Take(older.CampaignClaims.Count), newer.AdvancementReceipts.Take(older.AdvancementReceipts.Count), newer.CustomizationReceipts.Take(older.CustomizationReceipts.Count));
                 SaveIO.Require(ProgressSave.Encode(prefix).SequenceEqual(ProgressSave.Encode(older)), "Conflicting progress histories.");
             }
             recovered = damaged;
