@@ -125,6 +125,8 @@ namespace Ninefold.Core.Flow
                 if (draft?.Mission == null || draft.IsBattleEnded || draft.Mission.Result != null || draft.Mission.Definition.MissionId != missionId ||
                     draft.Mission.Definition.AttemptId != attempt || !draft.Mission.Definition.Squad.SequenceEqual(squad))
                     throw new InvalidOperationException("Factory must return a fresh battle matching mission, attempt and squad.");
+                var bonuses = squad.Select(Progress.GetAdvancement).Where(a => a.Rank > 0).ToDictionary(a => a.UnitId, a => a.Bonus, StringComparer.Ordinal);
+                draft.ApplyDeploymentAdvancement(bonuses);
                 Commit(draft);
             }
             finally { busy = false; }
@@ -186,6 +188,22 @@ namespace Ninefold.Core.Flow
                 catch { NeedsReload = true; throw; }
                 Progress = unlocked.Saved.Progress; Recovered |= unlocked.Saved.Recovered;
                 return unlocked;
+            }
+            finally { busy = false; }
+        }
+        public AdvancementResult AdvanceUnit(string operationId, string unitId)
+        {
+            Enter(true);
+            try
+            {
+                if (Phase != MissionFlowPhase.Selection) throw new InvalidOperationException("Return to selection before advancing units.");
+                if (unitId == null || !roster.TryGetValue(unitId, out var unit) || unit.Advancement == null)
+                    throw new ArgumentException("No authored advancement for this unit.");
+                AdvancementResult advanced;
+                try { advanced = profiles.Advance(operationId, unit.Advancement); }
+                catch { NeedsReload = true; throw; }
+                Progress = advanced.Saved.Progress; Recovered |= advanced.Saved.Recovered;
+                return advanced;
             }
             finally { busy = false; }
         }

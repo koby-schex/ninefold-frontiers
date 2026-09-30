@@ -77,3 +77,6 @@ checks, with configurable fragment unlock costs and durable spending receipts.
 
 [Campaign progression](Docs/CampaignProgression.md) now supports authored mission
 prerequisites, saved completion and one-time starter/ordinary campaign rewards.
+
+[Unit advancement](Docs/UnitAdvancement.md) now persists post-unlock fragment
+spending and bounded bonuses, applied once to each new battle deployment.
