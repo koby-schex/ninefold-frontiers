@@ -12,10 +12,10 @@ namespace Ninefold.Core.Content
     /// <summary>Engineering fixture only. Names, bodies, numbers and short campaigns are NOT production content.</summary>
     public static class AbstractContentPackage
     {
-        public static ContentCatalog Create()
+        public static ContentCatalog Create(bool withPassives = false)
         {
             var abilities = new[] {
-                AbilityContent.PassivePlaceholder("fixture-passive"),
+                withPassives ? new AbilityContent("fixture-passive", new PassiveDefinition(PassiveTrigger.OwnerActivationStarted, "fixture-focus")) : AbilityContent.PassivePlaceholder("fixture-passive"),
                 new AbilityContent("fixture-normal", new FieldAbility(AbilitySlot.NormalAttack, HealthEffectKind.Damage, 40, 12, true)),
                 new AbilityContent("fixture-main", new FieldAbility(AbilitySlot.Main, HealthEffectKind.Healing, 30, 12, false)),
                 new AbilityContent("fixture-signature", new FieldAbility(AbilitySlot.Signature, HealthEffectKind.Damage, 60, 12, true)) };
@@ -50,9 +50,10 @@ namespace Ninefold.Core.Content
                 new CampaignDefinition("fixture-starter", "fixture-a", "fixture-v1", new[] { new CampaignMission("fixture-opening"), new CampaignMission("fixture-finale", new[] { "fixture-opening" }) },
                     new[] { new ResourceGrant("fixture-resource", 5) }, new StarterCampaignBonus("fixture-a-5", new[] { new NextFactionBundle("fixture-followup", new[] { "fixture-b-1", "fixture-b-2", "fixture-b-3" }) })),
                 new CampaignDefinition("fixture-followup", "fixture-b", "fixture-v1", new[] { new CampaignMission("fixture-next") }, Array.Empty<ResourceGrant>()) };
-            return new ContentCatalog(new ContentManifest("abstract-flow", "fixture-v1", "balance-v1", ContentClassification.AbstractFixture),
+            return new ContentCatalog(new ContentManifest("abstract-flow", withPassives ? "fixture-passives-v1" : "fixture-v1", "balance-v1", ContentClassification.AbstractFixture),
                 units.Where(u => u.Roster != null).Select(u => u.Roster.Unlock.FragmentResourceId).Concat(new[] { "fixture-resource" }),
-                abilities, new[] { kit }, units, missions, rewards, campaigns, new[] { "fixture-a-1", "fixture-a-2", "fixture-a-3" });
+                abilities, new[] { kit }, units, missions, rewards, campaigns, new[] { "fixture-a-1", "fixture-a-2", "fixture-a-3" },
+                withPassives ? new[] { new StatusDefinition("fixture-focus", 0, 1000, 2, 2, StatusStacking.AddStackAndRefresh) } : Array.Empty<StatusDefinition>());
         }
     }
 }

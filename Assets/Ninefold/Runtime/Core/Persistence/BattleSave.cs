@@ -15,7 +15,7 @@ namespace Ninefold.Core.Persistence
     /// <summary>Explicit binary schema. Call only on the simulation thread at completed-command boundaries.</summary>
     public static class BattleSave
     {
-        public const int Version = 1;
+        public const int Version = 2;
         public const int MaximumBytes = 8 * 1024 * 1024;
         public static byte[] Capture(BattleTurnController battle, string contentRevision)
         {
@@ -37,10 +37,10 @@ namespace Ninefold.Core.Persistence
             CheckRevision(expectedContentRevision);
             try
             {
-                using var stream = new MemoryStream(Unpack(bytes),false);
+                using var stream = new MemoryStream(Unpack(bytes, out int version),false);
                 using var reader = new BinaryReader(stream);
                 if (SaveIO.Text(reader) != expectedContentRevision) throw new IncompatibleSaveException("Content revision mismatch; migration required.");
-                var battle = BattleTurnController.ReadSave(reader);
+                var battle = BattleTurnController.ReadSave(reader, version);
                 SaveIO.Require(stream.Position == stream.Length,"Trailing snapshot data.");
                 return battle;
             }
@@ -62,7 +62,8 @@ namespace Ninefold.Core.Persistence
             var hash = sha.ComputeHash(stream.ToArray());
             w.Write(hash); w.Flush(); return stream.ToArray();
         }
-        internal static byte[] Unpack(byte[] bytes)
+        internal static byte[] Unpack(byte[] bytes) => Unpack(bytes, out _);
+        internal static byte[] Unpack(byte[] bytes, out int version)
         {
             SaveIO.Require(bytes != null && bytes.Length >= 40 && bytes.Length <= MaximumBytes,"Invalid save size.");
             using var sha = SHA256.Create();
@@ -70,7 +71,8 @@ namespace Ninefold.Core.Persistence
             SaveIO.Require(hash.SequenceEqual(bytes.Skip(bytes.Length-32)),"Save checksum mismatch.");
             using var r = new BinaryReader(new MemoryStream(bytes,false));
             SaveIO.Require(r.ReadInt32() == 0x4E465356,"Invalid save marker.");
-            if (r.ReadInt32() != Version) throw new IncompatibleSaveException("Unsupported save version; preserve files.");
+            version = r.ReadInt32();
+            if (version < 1 || version > Version) throw new IncompatibleSaveException("Unsupported save version; preserve files.");
             return r.ReadBytes(bytes.Length-40);
         }
     }
