@@ -51,7 +51,7 @@ internal static partial class Program
         return b;
     }
     private static void StatusNextRound(BattleTurnController b)
-    { Drain(b); b.StartNextRound(); b.BeginNextActivation(); }
+    { if (b.CurrentActivation != null) b.EndActivation(b.CurrentActivation.ActivationId); Drain(b); b.StartNextRound(); b.BeginNextActivation(); }
     private static HealthEffectPreview StatusHit(BattleTurnController b, AbilitySlot slot=AbilitySlot.NormalAttack)
     {
         Equal(true,b.Battlefield.TryApplyEffect(b.CurrentActivation.ActivationId,slot,"b",out var result,out _,out _)); return result;
