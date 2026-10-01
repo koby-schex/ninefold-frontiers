@@ -114,3 +114,8 @@ remain required integration gates. No canon, PF1-8 or locked visual masters chan
 Passive/status definitions, bindings and active counters are now saved. Schema 1
 remains readable with empty effect state. See [effects](PassiveStatusEffects.md)
 for event timing, migration and integrity details.
+
+## Schema 3 addition
+
+Field ability profiles now preserve standalone/compound status components and
+target rules. Versions 1 and 2 remain readable. See [active ability effects](ActiveAbilityEffects.md).

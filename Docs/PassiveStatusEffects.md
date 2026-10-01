@@ -37,9 +37,9 @@ that owner. Ending the battle freezes remaining state for result inspection.
 `Statuses.Apply` and `Remove` are trusted simulation operations for authored rules,
 not arbitrary client commands or cost-free player controls. They reject terminal
 battles. Unknown definitions reject; applying to an ineligible owner returns false.
-Definitions/passives must be registered before the first round. Future active
-ability status applications must validate targeting and commit action costs as one
-command; that UI/ability adapter is not included here.
+Definitions/passives must be registered before the first round. Active field abilities now validate targeting and commit action costs and effects
+as one command; see [active ability effects](ActiveAbilityEffects.md). UI remains
+deferred.
 
 Temporary values are summed across IDs and stacks, then clamped to +/-50% per stat.
 Individual definitions are limited to +/-50%, 1–10 stacks and 1–100 owner activations.
@@ -65,7 +65,7 @@ stacks/durations. Schema 1 loads with empty status state and is upgraded on the 
 save. Checks reject unknown IDs, duplicate entries, invalid counters and effects on
 removed/defeated owners. Old content revisions still need their existing revision
 match; schema compatibility does not bypass content compatibility. The local record
-envelope accepts versions 1 and 2, and unknown future versions still block writes.
+envelope accepts supported battle versions (currently 1–3), and unknown future versions still block writes.
 Profile schema is unchanged. Checksums detect corruption, not malicious save edits.
 
 `MissionFlow.Execute` checkpoints a detached command result. A torn write recovers

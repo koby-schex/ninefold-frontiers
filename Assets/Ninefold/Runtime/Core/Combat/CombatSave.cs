@@ -53,9 +53,10 @@ namespace Ninefold.Core.Combat
                     && owner.ActivationCount > 0 && a.MovementRemaining >= 0m && a.MovementRemaining <= owner.Definition.MovementAllowance,"Invalid active turn.");
             }
             b.Abilities.ReadSave(r); b.Health.ReadSave(r);
-            if (r.ReadBoolean()) b.Battlefield = BattlefieldController.ReadSave(b,r);
+            if (r.ReadBoolean()) b.Battlefield = BattlefieldController.ReadSave(b,r,version);
             if (r.ReadBoolean()) b.Mission = MissionController.ReadSave(b,r);
             if (version >= 2) b.Statuses.ReadSave(r);
+            b.Battlefield?.ValidateStatusReferences();
             return b;
         }
     }

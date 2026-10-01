@@ -57,9 +57,13 @@ namespace Ninefold.Core.Combat
         /// <summary>Validates and previews without spending actions or changing any state.</summary>
         public bool TryPreview(long activationId, HealthAction request,
             out HealthEffectPreview preview, out HealthActionFailure failure)
+            => TryPreviewCore(activationId, request, out preview, out failure, false);
+
+        internal bool TryPreviewCore(long activationId, HealthAction request,
+            out HealthEffectPreview preview, out HealthActionFailure failure, bool allowFullHealth)
         {
             preview = null;
-            failure = Validate(activationId, request);
+            failure = Validate(activationId, request, allowFullHealth);
             if (failure != HealthActionFailure.None) return false;
             var target = units[request.TargetId];
             int amount = turns.Statuses.EffectivePower(turns.CurrentActivation.UnitId, request.Amount);
@@ -82,9 +86,13 @@ namespace Ninefold.Core.Combat
         /// <summary>Recomputes a fresh preview then commits ability costs and its health result.</summary>
         public bool TryApply(long activationId, HealthAction request,
             out HealthEffectPreview result, out HealthActionFailure failure)
+            => TryApplyCore(activationId, request, out result, out failure, true);
+
+        internal bool TryApplyCore(long activationId, HealthAction request,
+            out HealthEffectPreview result, out HealthActionFailure failure, bool evaluateMission)
         {
             result = null;
-            if (!TryPreview(activationId, request, out var preview, out failure)) return false;
+            if (!TryPreviewCore(activationId, request, out var preview, out failure, !evaluateMission)) return false;
             if (!turns.Abilities.TryUse(activationId, request.Slot, out _))
             {
                 failure = HealthActionFailure.AbilityUnavailable;
@@ -96,11 +104,11 @@ namespace Ninefold.Core.Combat
             else if (preview.Kind == HealthEffectKind.Damage && preview.HealthChanged > 0)
                 turns.Statuses.Trigger(request.TargetId, PassiveTrigger.OwnerSurvivedDamage);
             result = preview;
-            turns.Mission?.Evaluate();
+            if (evaluateMission) turns.Mission?.Evaluate();
             return true;
         }
 
-        private HealthActionFailure Validate(long activationId, HealthAction request)
+        private HealthActionFailure Validate(long activationId, HealthAction request, bool allowFullHealth)
         {
             if (request == null) return HealthActionFailure.InvalidRequest;
             if (turns.Abilities.GetAvailability(activationId, request.Slot) != AbilityUseFailure.None)
@@ -118,7 +126,7 @@ namespace Ninefold.Core.Combat
                 case TargetingVerdict.Obstructed: return HealthActionFailure.Obstructed;
                 case TargetingVerdict.Incompatible: return HealthActionFailure.Incompatible;
             }
-            if (request.Kind == HealthEffectKind.Healing && target.Current == target.Definition.MaximumHealth)
+            if (request.Kind == HealthEffectKind.Healing && !allowFullHealth && target.Current == target.Definition.MaximumHealth)
                 return HealthActionFailure.AlreadyFullHealth;
             return HealthActionFailure.None;
         }

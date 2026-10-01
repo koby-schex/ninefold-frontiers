@@ -80,7 +80,7 @@ namespace Ninefold.Core.Combat
 
             EnemyPlan healing = null;
             foreach (var slot in Slots)
-                if (PreviewAt(actor.Position,slot,turn.UnitId,out var preview) && preview.Kind == HealthEffectKind.Healing
+                if (PreviewAt(actor.Position,slot,turn.UnitId,out var preview) && preview.Kind == HealthEffectKind.Healing && preview.HealthChanged > 0
                     && (healing == null || preview.HealthChanged > healing.Effect.HealthChanged))
                     healing = new EnemyPlan(activationId,turn.UnitId,targetId:turn.UnitId,slot:slot,effect:preview);
             if (behavior.Style == EnemyStyle.Defensive && healing != null) { plan = healing; return true; }
@@ -124,8 +124,8 @@ namespace Ninefold.Core.Combat
             bool PreviewAt(FieldPoint point, AbilitySlot slot, string target, out HealthEffectPreview preview)
             {
                 preview = null;
-                return BuildAction(activationId,slot,target,out var action,out _,point)
-                    && turns.Health.TryPreview(activationId,action,out preview,out _);
+                if (!PreviewAbilityAt(activationId,slot,target,point,out var full,out _,out _,out _) || full.Health == null) return false;
+                preview = full.Health; return true;
             }
             void AddCandidate(decimal x, decimal z)
             {

@@ -89,3 +89,6 @@ reference/geometry validation and an abstract end-to-end package to mission flow
 
 [Passive/status effects](Docs/PassiveStatusEffects.md) add deterministic passive
 triggers, bounded temporary armor/power modifiers and resumable stacks/durations.
+
+[Active ability effects](Docs/ActiveAbilityEffects.md) connect target-validated health
+and status components with compound previews, one action cost and saved results.

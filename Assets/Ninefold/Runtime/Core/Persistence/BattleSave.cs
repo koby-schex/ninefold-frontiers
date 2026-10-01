@@ -15,7 +15,7 @@ namespace Ninefold.Core.Persistence
     /// <summary>Explicit binary schema. Call only on the simulation thread at completed-command boundaries.</summary>
     public static class BattleSave
     {
-        public const int Version = 2;
+        public const int Version = 3;
         public const int MaximumBytes = 8 * 1024 * 1024;
         public static byte[] Capture(BattleTurnController battle, string contentRevision)
         {

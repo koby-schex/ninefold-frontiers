@@ -17,24 +17,6 @@ namespace Ninefold.Core.Combat
         internal MovementPreview(FieldPoint[] path, decimal cost) { Path = Array.AsReadOnly(path); Cost = cost; }
     }
 
-    /// <summary>Trusted authored single-target profile; clients select a slot and target, not damage/range.</summary>
-    public sealed class FieldAbility
-    {
-        public AbilitySlot Slot { get; }
-        public HealthEffectKind Kind { get; }
-        public int Amount { get; }
-        public decimal Range { get; }
-        public bool UsesCover { get; }
-        public FieldAbility(AbilitySlot slot, HealthEffectKind kind, int amount, decimal range, bool usesCover)
-        {
-            if (!Enum.IsDefined(typeof(AbilitySlot),slot) || slot == AbilitySlot.Passive) throw new ArgumentOutOfRangeException(nameof(slot));
-            if (!Enum.IsDefined(typeof(HealthEffectKind),kind)) throw new ArgumentOutOfRangeException(nameof(kind));
-            if (amount <= 0 || range < 0m || range > 10000m) throw new ArgumentOutOfRangeException(nameof(amount));
-            if (kind == HealthEffectKind.Healing && usesCover) throw new ArgumentException("Healing does not use cover.");
-            Slot = slot; Kind = kind; Amount = amount; Range = range; UsesCover = usesCover;
-        }
-    }
-
     /// <summary>Single-threaded spatial commands. All previews are pure; confirmations recalculate.</summary>
     public sealed partial class BattlefieldController
     {
@@ -103,49 +85,6 @@ namespace Ninefold.Core.Combat
             turns.SpendMovement(activationId, result.Cost);
             units[id].Position = result.Path[result.Path.Count-1];
             turns.Mission?.Evaluate();
-            return true;
-        }
-
-        public bool TryPreviewEffect(long activationId, AbilitySlot slot, string targetId,
-            out HealthEffectPreview preview, out FieldFailure failure, out HealthActionFailure healthFailure)
-        {
-            preview = null; healthFailure = HealthActionFailure.None;
-            if (!BuildAction(activationId, slot, targetId, out var action, out failure)) return false;
-            if (turns.Health.TryPreview(activationId, action, out preview, out healthFailure)) return true;
-            return Fail(FieldFailure.HealthRejected, out failure);
-        }
-
-        public bool TryApplyEffect(long activationId, AbilitySlot slot, string targetId,
-            out HealthEffectPreview result, out FieldFailure failure, out HealthActionFailure healthFailure)
-        {
-            result = null; healthFailure = HealthActionFailure.None;
-            if (!BuildAction(activationId, slot, targetId, out var action, out failure)) return false;
-            if (turns.Health.TryApply(activationId, action, out result, out healthFailure)) return true;
-            return Fail(FieldFailure.HealthRejected, out failure);
-        }
-
-        private bool BuildAction(long activationId, AbilitySlot slot, string targetId, out HealthAction action, out FieldFailure failure, FieldPoint? actorPosition = null)
-        {
-            action = null; failure = FieldFailure.None;
-            if (!Active(activationId)) return Fail(FieldFailure.InactiveTurn, out failure);
-            if (!units.TryGetValue(turns.CurrentActivation.UnitId, out var actor)) return Fail(FieldFailure.MissingPosition, out failure);
-            if (targetId == null || !units.TryGetValue(targetId, out var target) || !turns.IsUnitEligible(targetId))
-                return Fail(FieldFailure.InvalidTarget, out failure);
-            if (!actor.Abilities.TryGetValue(slot, out var profile)) return Fail(FieldFailure.InvalidRequest, out failure);
-            var from = FieldPoint.Add(actorPosition ?? actor.Position, actor.Body.AttackOffset);
-            var targetPosition = targetId == turns.CurrentActivation.UnitId ? actorPosition ?? target.Position : target.Position;
-            var to = FieldPoint.Add(targetPosition, target.Body.TargetOffset);
-            if (FieldPoint.Distance(from,to) > profile.Range) return Fail(FieldFailure.OutOfRange, out failure);
-            decimal cover = 0m;
-            foreach (var obstacle in Map.Obstacles)
-                if (obstacle.Bounds.Intersects(from, to, out _, out _))
-                {
-                    if (obstacle.BlocksShots) return Fail(FieldFailure.Obstructed, out failure);
-                    if (profile.UsesCover) cover = Math.Max(cover, obstacle.CoverReduction);
-                }
-            var verdict = profile.Kind == HealthEffectKind.Healing && !actor.HealingTargets.Contains(targetId)
-                ? TargetingVerdict.Incompatible : TargetingVerdict.Legal;
-            action = new HealthAction(slot, profile.Kind, targetId, profile.Amount, verdict, new DamageMitigation(cover,0m));
             return true;
         }
 
