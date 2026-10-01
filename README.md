@@ -83,3 +83,6 @@ spending and bounded bonuses, applied once to each new battle deployment.
 
 [Unit customization](Docs/UnitCustomization.md) adds saved, freely reversible stat
 trade-offs, combined additively with advancement for new battles.
+
+[Content catalog](Docs/ContentCatalog.md) connects versioned shared definitions,
+reference/geometry validation and an abstract end-to-end package to mission flow.
