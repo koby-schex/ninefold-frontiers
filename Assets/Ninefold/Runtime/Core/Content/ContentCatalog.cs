@@ -16,6 +16,7 @@ namespace Ninefold.Core.Content
     {
         public ContentManifest Manifest { get; }
         public IReadOnlyList<string> Resources { get; }
+        public IReadOnlyDictionary<string, StatusDefinition> Statuses { get; }
         public IReadOnlyDictionary<string, AbilityContent> Abilities { get; }
         public IReadOnlyDictionary<string, KitContent> Kits { get; }
         public IReadOnlyDictionary<string, UnitContent> Units { get; }
@@ -28,12 +29,15 @@ namespace Ninefold.Core.Content
 
         public ContentCatalog(ContentManifest manifest, IEnumerable<string> resources, IEnumerable<AbilityContent> abilities,
             IEnumerable<KitContent> kits, IEnumerable<UnitContent> units, IEnumerable<MissionContent> missions,
-            IEnumerable<MissionRewardPolicy> rewards, IEnumerable<CampaignDefinition> campaigns, IEnumerable<string> starterUnits)
+            IEnumerable<MissionRewardPolicy> rewards, IEnumerable<CampaignDefinition> campaigns, IEnumerable<string> starterUnits, IEnumerable<StatusDefinition> statuses = null)
         {
             Manifest = manifest ?? throw new ArgumentNullException(nameof(manifest));
+            Statuses = Index(statuses ?? Array.Empty<StatusDefinition>(), d => d.Id);
             Resources = ContentIds.Copy(resources); Abilities = Index(abilities, a => a.Id); Kits = Index(kits, k => k.Id);
             Units = Index(units, u => u.Id); Missions = Index(missions, m => m.Id); Rewards = Index(rewards, r => r.MissionId);
             Campaigns = Array.AsReadOnly(ContentIds.Items(campaigns, c => c.Id)); StarterUnits = ContentIds.Copy(starterUnits);
+            foreach (var a in Abilities.Values.Where(a => a.Passive != null))
+                if (!Statuses.ContainsKey(a.Passive.StatusId)) throw new ArgumentException("Ability " + a.Id + " references unknown passive status.");
             foreach (var k in Kits.Values)
                 InContext("kit " + k.Id, () => {
                     for (int slot = 0; slot < 4; slot++)
@@ -130,6 +134,7 @@ namespace Ninefold.Core.Content
                 .Concat(m.Actors.Select(a => (Id: a.Id, Unit: Units[a.UnitId], Position: a.Position, Hostile: a.IsHostile))).ToArray();
             var battle = new BattleTurnController(deployed.Select(a => new UnitTurnDefinition(a.Id, a.Unit.Initiative, a.Unit.Movement)));
             var field = battle.ConfigureBattlefield(m.Map);
+            foreach (var status in Statuses.Values) battle.Statuses.RegisterStatus(status);
             foreach (var a in deployed)
             {
                 var kit = Kits[a.Unit.KitId];
@@ -137,6 +142,11 @@ namespace Ninefold.Core.Content
                 battle.Health.RegisterHealth(a.Id, new UnitHealthDefinition(a.Hostile ? "hostile" : "friendly", a.Unit.Health, a.Unit.Armor));
                 field.Register(a.Id, a.Position, a.Unit.Body, kit.AbilityIds.Skip(1).Select(id => Abilities[id].Effect),
                     deployed.Where(other => other.Hostile == a.Hostile).Select(other => other.Id));
+            }
+            foreach (var a in deployed)
+            {
+                var passive = Abilities[Kits[a.Unit.KitId].AbilityIds[0]].Passive;
+                if (passive != null) battle.Statuses.RegisterPassive(a.Id, passive);
             }
             foreach (var a in m.Actors.Where(a => a.IsHostile)) field.RegisterEnemy(a.Id, a.Behavior);
             var objectives = m.Objectives.Select(o => Bind(o, squad)).ToArray();

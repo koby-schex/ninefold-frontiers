@@ -36,6 +36,7 @@ namespace Ninefold.Core.Combat
         public bool IsBattleEnded { get; private set; }
         public BattleAbilityController Abilities { get; }
         public BattleHealthController Health { get; }
+        public BattleStatusController Statuses { get; }
         public BattlefieldController Battlefield { get; private set; }
         public MissionController Mission { get; private set; }
         public ActivationView CurrentActivation => active;
@@ -58,6 +59,7 @@ namespace Ninefold.Core.Combat
         {
             if (initialUnits == null)
                 throw new ArgumentNullException(nameof(initialUnits));
+            Statuses = new BattleStatusController(this);
             Abilities = new BattleAbilityController(this);
             Health = new BattleHealthController(this, damageRules ?? DamageRules.Provisional);
             foreach (var unit in initialUnits)
@@ -108,6 +110,7 @@ namespace Ninefold.Core.Combat
             EnsureBattleOpen();
             var unit = FindUnit(unitId);
             unit.Eligible = false;
+            Statuses.Clear(unitId);
             if (active != null && active.UnitId == unitId)
                 active = null;
         }
@@ -157,6 +160,7 @@ namespace Ninefold.Core.Combat
                 activationSequence = nextActivationId;
                 unit.ActivationCount = nextOwnerCount;
                 nextIndex++;
+                Statuses.Trigger(unit.Definition.UnitId, PassiveTrigger.OwnerActivationStarted);
                 return active;
             }
             return null;
@@ -187,7 +191,8 @@ namespace Ninefold.Core.Combat
         /// <summary>Forfeits unused resources; they never carry over to another activation.</summary>
         public void EndActivation(long activationId)
         {
-            RequireActivation(activationId);
+            var turn = RequireActivation(activationId);
+            Statuses.EndActivation(turn.UnitId);
             active = null;
         }
 

@@ -86,3 +86,6 @@ trade-offs, combined additively with advancement for new battles.
 
 [Content catalog](Docs/ContentCatalog.md) connects versioned shared definitions,
 reference/geometry validation and an abstract end-to-end package to mission flow.
+
+[Passive/status effects](Docs/PassiveStatusEffects.md) add deterministic passive
+triggers, bounded temporary armor/power modifiers and resumable stacks/durations.

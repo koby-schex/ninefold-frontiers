@@ -146,7 +146,7 @@ internal static partial class Program
     {
         var bytes=BattleSave.Capture(FieldBattle(),SaveRevision);
         Throws<IncompatibleSaveException>(()=>BattleSave.Restore(bytes,"other-content"));
-        Array.Copy(BitConverter.GetBytes(2),0,bytes,4,4); Rehash(bytes);
+        Array.Copy(BitConverter.GetBytes(BattleSave.Version+1),0,bytes,4,4); Rehash(bytes);
         Throws<IncompatibleSaveException>(()=>BattleSave.Restore(bytes,SaveRevision));
     }
     private static void SaveInvalidState()
@@ -206,7 +206,7 @@ internal static partial class Program
     private static void StoreIncompatible()
     {
         var files=new FakeSaveFiles(); var store=new LocalBattleStore(files,SaveRevision); store.Save(FieldBattle());
-        var newer=files.Slots[0].ToArray(); Array.Copy(BitConverter.GetBytes(2),0,newer,4,4); Rehash(newer); files.Slots[1]=newer;
+        var newer=files.Slots[0].ToArray(); Array.Copy(BitConverter.GetBytes(BattleSave.Version+1),0,newer,4,4); Rehash(newer); files.Slots[1]=newer;
         Throws<IncompatibleSaveException>(()=>store.Load()); Throws<IncompatibleSaveException>(()=>store.Save(FieldBattle()));
         Equal(true,newer.SequenceEqual(files.Slots[1]));
     }

@@ -62,16 +62,17 @@ namespace Ninefold.Core.Combat
             failure = Validate(activationId, request);
             if (failure != HealthActionFailure.None) return false;
             var target = units[request.TargetId];
+            int amount = turns.Statuses.EffectivePower(turns.CurrentActivation.UnitId, request.Amount);
             int resolved;
             int after;
             if (request.Kind == HealthEffectKind.Damage)
             {
-                resolved = Rules.Calculate(request.Amount, target.Definition.Armor, request.Mitigation);
+                resolved = Rules.Calculate(amount, turns.Statuses.EffectiveArmor(request.TargetId, target.Definition.Armor), request.Mitigation);
                 after = target.Current - Math.Min(target.Current, resolved);
             }
             else
             {
-                resolved = Math.Min(request.Amount, target.Definition.MaximumHealth - target.Current);
+                resolved = Math.Min(amount, target.Definition.MaximumHealth - target.Current);
                 after = target.Current + resolved;
             }
             preview = new HealthEffectPreview(request.TargetId, request.Kind, target.Current, after, resolved);
@@ -92,6 +93,8 @@ namespace Ninefold.Core.Combat
             // No callbacks or external interleaving between validated costs and this assignment.
             units[request.TargetId].Current = preview.HealthAfter;
             if (preview.DefeatsTarget) turns.RemoveUnit(request.TargetId);
+            else if (preview.Kind == HealthEffectKind.Damage && preview.HealthChanged > 0)
+                turns.Statuses.Trigger(request.TargetId, PassiveTrigger.OwnerSurvivedDamage);
             result = preview;
             turns.Mission?.Evaluate();
             return true;

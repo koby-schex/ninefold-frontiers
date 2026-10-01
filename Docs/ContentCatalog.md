@@ -30,8 +30,9 @@ This PR contains no production lore or visual masters.
   `$`. Dictionary/list views and nested definition inputs are immutable.
 - Kits resolve exactly one passive, normal attack, main and signature ID, in the
   correct slots. Active effects use existing deterministic damage/healing rules.
-  **Passive definitions are explicitly inert placeholders.** Passive mechanics
-  have not been implemented. External-condition signature readiness is rejected
+  Passive definitions may bind a validated status rule (see
+  [passive/status effects](PassiveStatusEffects.md)) or remain explicitly inert
+  placeholders. External-condition signature readiness is rejected
   until there is a supported authored condition binding.
 - Units own base health, armor, initiative, movement, body and kit. Range/power live
   on abilities. Optional roster definitions supply faction, Apex classification,
@@ -67,7 +68,7 @@ budget; this is an engineering limit, not a new locked design decision.
 
 ## Abstract package and execution
 
-`AbstractContentPackage.Create()` contains two artificial factions, each with four
+`AbstractContentPackage.Create()` (or `Create(true)` with an abstract passive) contains two artificial factions, each with four
 standards and one Apex, one noncollectible enemy template, two starter missions,
 one follow-up mission and a mixed-squad encounter. Its names, stats, body boxes,
 fixed reward bundles and short campaign lengths are test values only. Production

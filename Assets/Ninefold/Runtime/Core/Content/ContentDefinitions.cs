@@ -44,7 +44,10 @@ namespace Ninefold.Core.Content
         public string Id { get; }
         public AbilitySlot Slot { get; }
         public FieldAbility Effect { get; }
-        public bool IsPassivePlaceholder => Slot == AbilitySlot.Passive;
+        public PassiveDefinition Passive { get; }
+        public bool IsPassivePlaceholder => Slot == AbilitySlot.Passive && Passive == null;
+        public AbilityContent(string id, PassiveDefinition passive)
+        { ContentIds.Check(id); Id = id; Passive = passive ?? throw new ArgumentNullException(nameof(passive)); Slot = AbilitySlot.Passive; }
         public AbilityContent(string id, FieldAbility effect)
         { ContentIds.Check(id); Id = id; Effect = effect ?? throw new ArgumentNullException(nameof(effect)); Slot = effect.Slot; }
         private AbilityContent(string id) { ContentIds.Check(id); Id = id; Slot = AbilitySlot.Passive; }

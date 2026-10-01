@@ -24,8 +24,9 @@ namespace Ninefold.Core.Combat
             Abilities.WriteSave(w); Health.WriteSave(w);
             w.Write(Battlefield != null); Battlefield?.WriteSave(w);
             w.Write(Mission != null); Mission?.WriteSave(w);
+            Statuses.WriteSave(w);
         }
-        internal static BattleTurnController ReadSave(BinaryReader r)
+        internal static BattleTurnController ReadSave(BinaryReader r, int version)
         {
             var b = new BattleTurnController(Array.Empty<UnitTurnDefinition>(),new DamageRules(r.ReadInt32(),r.ReadDecimal(),r.ReadBoolean()));
             int count = SaveIO.Count(r);
@@ -54,6 +55,7 @@ namespace Ninefold.Core.Combat
             b.Abilities.ReadSave(r); b.Health.ReadSave(r);
             if (r.ReadBoolean()) b.Battlefield = BattlefieldController.ReadSave(b,r);
             if (r.ReadBoolean()) b.Mission = MissionController.ReadSave(b,r);
+            if (version >= 2) b.Statuses.ReadSave(r);
             return b;
         }
     }

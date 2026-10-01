@@ -108,3 +108,9 @@ GitHub Actions validates repository structure and runs the full Core suite on Wi
 and Linux. The authoring workspace was unavailable for this PR, so no local compile is
 claimed. Unity import, IL2CPP, real iPhone suspension/termination and storage performance
 remain required integration gates. No canon, PF1-8 or locked visual masters change.
+
+## Schema 2 addition
+
+Passive/status definitions, bindings and active counters are now saved. Schema 1
+remains readable with empty effect state. See [effects](PassiveStatusEffects.md)
+for event timing, migration and integrity details.
