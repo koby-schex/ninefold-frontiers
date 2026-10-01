@@ -44,7 +44,9 @@ namespace Ninefold.Core.Content
                         if (!Abilities.TryGetValue(k.AbilityIds[slot], out var a) || (int)a.Slot != slot)
                             throw new ArgumentException("Missing ability or incorrect slot: " + k.AbilityIds[slot]);
                 });
-            foreach (var a in Abilities.Values.Where(a => a.Effect != null))
+            foreach (var a in Abilities.Values.Where(a => a.Effect?.StatusId != null))
+                if (!Statuses.ContainsKey(a.Effect.StatusId)) throw new ArgumentException("Ability " + a.Id + " references unknown active status.");
+            foreach (var a in Abilities.Values.Where(a => a.Effect?.HasHealthEffect == true))
                 InContext("ability " + a.Id, () => DeploymentModifiers.Scale(a.Effect.Amount, DeploymentModifiers.ProvisionalMaximumBasisPoints));
             foreach (var u in Units.Values)
                 InContext("unit " + u.Id, () => {

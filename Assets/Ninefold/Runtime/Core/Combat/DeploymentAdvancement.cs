@@ -45,8 +45,7 @@ namespace Ninefold.Core.Combat
             foreach (var pair in bonuses.Where(p => p.Value.Power != 0))
             {
                 if (!units.TryGetValue(pair.Key, out var placement)) throw new InvalidOperationException("Modified unit needs ability profiles.");
-                updates.Add(pair.Key, placement.Abilities.Values.Select(a => new FieldAbility(a.Slot, a.Kind,
-                    DeploymentModifiers.Scale(a.Amount, pair.Value.Power), a.Range, a.UsesCover)).ToArray());
+                updates.Add(pair.Key, placement.Abilities.Values.Select(a => a.WithAmount(a.HasHealthEffect ? DeploymentModifiers.Scale(a.Amount, pair.Value.Power) : 0)).ToArray());
             }
             return () => { foreach (var pair in updates) foreach (var ability in pair.Value) units[pair.Key].Abilities[ability.Slot] = ability; };
         }

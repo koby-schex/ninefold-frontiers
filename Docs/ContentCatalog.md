@@ -88,3 +88,6 @@ handoff, ordinary completion, mixed-faction compatibility and enemy behavior.
 Negative cases cover missing/duplicate references, slots, geometry, aliases,
 resources, revisions and immutable collections. Run through the existing .NET
 console suite and repository checks. Unity import, IL2CPP and devices remain pending.
+
+Active field profiles can now reference declared status definitions and explicit
+target rules, including standalone support effects; see [active abilities](ActiveAbilityEffects.md).

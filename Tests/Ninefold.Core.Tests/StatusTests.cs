@@ -144,7 +144,7 @@ internal static partial class Program
     }
     private static void StatusLegacy()
     {
-        var b=FieldBattle(); var bytes=BattleSave.Capture(b,SaveRevision);
+        var b=HealthBattle(); var bytes=BattleSave.Capture(b,SaveRevision);
         // Schema 1 is identical through Mission, without the three empty effect collections.
         bytes=bytes.Take(bytes.Length-44).Concat(new byte[32]).ToArray(); Array.Copy(BitConverter.GetBytes(1),0,bytes,4,4); Rehash(bytes);
         var restored=BattleSave.Restore(bytes,SaveRevision); Equal(0,restored.Statuses.GetStatuses("a").Count); SameSave(b,restored);
