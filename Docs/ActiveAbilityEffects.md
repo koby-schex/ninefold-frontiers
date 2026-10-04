@@ -55,9 +55,9 @@ activation ends count, including the current activation for self support.
 
 Legacy `TryPreviewEffect`/`TryApplyEffect` health-shaped APIs still work for health
 profiles with attachments, but reject standalone status profiles before spending.
-Use the compound API to display attached status results. Enemy health-based planning
-now validates compound profiles and executes their attachments. It still chooses
-by damage/healing value; strategic standalone support/debuff selection is deferred.
+Use the compound API to display attached status results. Enemy planning validates compound profiles and executes their attachments.
+Standalone support/debuff selection and explicit ally perception are now implemented
+with provisional local priorities; see [enemy support AI](EnemySupportAI.md).
 
 ## Persistence and validation
 

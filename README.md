@@ -92,3 +92,6 @@ triggers, bounded temporary armor/power modifiers and resumable stacks/durations
 
 [Active ability effects](Docs/ActiveAbilityEffects.md) connect target-validated health
 and status components with compound previews, one action cost and saved results.
+
+[Enemy support AI](Docs/EnemySupportAI.md) adds explicit ally perception and useful
+healing, buff and debuff choices with deterministic, bounded planning.
