@@ -37,10 +37,15 @@ namespace Ninefold.Core.Flow
         public BattleSession(MissionFlow flow) { this.flow = flow ?? throw new ArgumentNullException(nameof(flow)); }
         public BattleSessionView Read()
         {
-            var b = flow.ReadBattle(); // Also refuses access after an ambiguous write until Open/recovery.
-            Bind(b);
+            var b = ReadSnapshot();
             return new BattleSessionView(Phase(b), b);
         }
+        internal BattleTurnController ReadSnapshot()
+        {
+            var b = flow.ReadBattle(); Bind(b); Phase(b); return b;
+        }
+        internal BattleTurnController ReadPlayerSnapshot(long activationId)
+        { var b = ReadSnapshot(); if (b == null) throw new InvalidOperationException("No battle."); RequirePlayer(b,activationId); return b; }
         private void Bind(BattleTurnController b)
         {
             if (b == null) return;
@@ -48,7 +53,7 @@ namespace Ninefold.Core.Flow
             if (attemptId != null && attemptId != id) throw new InvalidOperationException("Create a new session for a new mission attempt.");
             attemptId = id;
         }
-        private BattleSessionPhase Phase(BattleTurnController b)
+        internal BattleSessionPhase Phase(BattleTurnController b)
         {
             if (b == null) return BattleSessionPhase.Selection;
             if (b.Mission?.Result != null) return BattleSessionPhase.Results;
@@ -64,8 +69,10 @@ namespace Ninefold.Core.Flow
             return enemy ? BattleSessionPhase.EnemyInput : BattleSessionPhase.AdvanceRequired;
         }
         /// <summary>Wait for players; run one perceived enemy turn, pass an uncontrolled NPC, or advance one scheduler boundary.</summary>
-        public BattleSessionView Advance(EnemyPerception perception = null)
+        public BattleSessionView Advance(EnemyPerception perception = null) => AdvanceDetailed(perception,out _);
+        internal BattleSessionView AdvanceDetailed(EnemyPerception perception, out EnemyTurnResult enemyResult)
         {
+            enemyResult = null; EnemyTurnResult completed = null;
             var view = Read();
             if (view.Phase == BattleSessionPhase.Selection || view.Phase == BattleSessionPhase.Results || view.Phase == BattleSessionPhase.PlayerInput ||
                 (view.Phase == BattleSessionPhase.EnemyInput && perception == null)) return view;
@@ -75,7 +82,7 @@ namespace Ninefold.Core.Flow
                 {
                     if (Phase(b) == BattleSessionPhase.EnemyInput)
                     {
-                        if (!b.Battlefield.TryRunEnemyTurn(b.CurrentActivation.ActivationId, perception.Opponents, perception.Allies, out _, out var failure))
+                        if (!b.Battlefield.TryRunEnemyTurn(b.CurrentActivation.ActivationId, perception.Opponents, perception.Allies, out completed, out var failure))
                             throw new InvalidOperationException("Enemy command failed: " + failure);
                     }
                     else b.EndActivation(b.CurrentActivation.ActivationId); // Friendly/non-squad NPCs hold position in this adapter.
@@ -89,6 +96,7 @@ namespace Ninefold.Core.Flow
                 else b.BeginNextActivation();
                 b.Mission.Evaluate();
             });
+            enemyResult = completed;
             return Read();
         }
         private void RequirePlayer(BattleTurnController b, long activationId)

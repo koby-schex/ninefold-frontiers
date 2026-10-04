@@ -98,3 +98,5 @@ healing, buff and debuff choices with deterministic, bounded planning.
 
 [Battle session](Docs/BattleSession.md) coordinates saved player commands, enemy
 turns, NPC holds, round resolution and terminal results one step at a time.
+
+[Battle presentation](Docs/BattlePresentation.md) provides detached UI views, pure movement/target previews, and post-save animation event batches.
