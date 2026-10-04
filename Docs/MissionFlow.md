@@ -99,3 +99,8 @@ retain their stored stats. See UnitAdvancement.md for supported bonuses and caps
 
 Free per-unit customization is available at selection; new deployments combine it
 with advancement additively. See UnitCustomization.md for replacement/reset semantics.
+
+## Session adapter
+
+[BattleSession](BattleSession.md) provides the typed player-command and bounded
+scheduling interface for future presentation, backed by these same checkpoints.

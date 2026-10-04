@@ -50,6 +50,7 @@ namespace Ninefold.Core.Combat
     public sealed partial class BattlefieldController
     {
         private readonly Dictionary<string, EnemyBehavior> enemies = new Dictionary<string, EnemyBehavior>(StringComparer.Ordinal);
+        public bool IsEnemyControlled(string id) => id != null && enemies.ContainsKey(id);
         public void RegisterEnemy(string id, EnemyBehavior behavior)
         {
             if (behavior == null) throw new ArgumentNullException(nameof(behavior));
