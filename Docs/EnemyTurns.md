@@ -86,3 +86,8 @@ AI difficulty/balance, stepped animations, performance and Unity/device testing.
 starter enemy and protected traveler rules must be configured in a production adapter;
 these profiles do not supersede them. No canon, PF1-8, locked visual masters or player
 progression are changed.
+
+## Support and debuff extension
+
+Explicit ally perception, standalone status choices and compound previews are now
+supported. See [enemy support AI](EnemySupportAI.md) for updated selection rules.
