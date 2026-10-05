@@ -13,7 +13,7 @@ namespace Ninefold.Core.Views
         private readonly BattleSession session;
         public BattlePresentation(BattleSession session) { this.session = session ?? throw new ArgumentNullException(nameof(session)); }
         public BattleView Read()
-        { var b = session.ReadSnapshot(); return new BattleView(b,session.Phase(b)); }
+        { var b = session.ReadSnapshot(); return new BattleView(b,session.Phase(b),session.BattleVersion); }
         public bool TryPreviewDestination(long activationId, FieldPoint destination, out MovementPreview preview, out FieldFailure failure, int nodeLimit = 64)
             => session.ReadPlayerSnapshot(activationId).Battlefield.TryFindPath(activationId,destination,out preview,out failure,nodeLimit);
         public bool TryPreviewPath(long activationId, IEnumerable<FieldPoint> path, out MovementPreview preview, out FieldFailure failure)
