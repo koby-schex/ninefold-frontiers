@@ -33,3 +33,5 @@ than activation frequency, movement plus one primary action, no chance-to-miss,
 four ability components and a maximum of one player Apex per battle. Implementing
 these rules still requires the approved design specifications; this file does not
 supply balance values or supersede the master.
+
+Presentation consumers use `Views/BattlePresentation`: immutable snapshots and previews read detached state; commands return animation hints only after the session checkpoint succeeds. See [Battle presentation](BattlePresentation.md).
