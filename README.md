@@ -102,3 +102,5 @@ turns, NPC holds, round resolution and terminal results one step at a time.
 [Battle presentation](Docs/BattlePresentation.md) provides detached UI views, pure movement/target previews, and post-save animation event batches.
 
 [Battle interaction](Docs/BattleInteraction.md) adds selection, preview/confirmation, cancellation, animation input guards and selection-independent health overlays for every active battlefield unit.
+
+[Mission preparation and results](Docs/MissionPresentation.md) connects catalog-driven mission cards, squad/stat inspection, offline resume and durable reward collection to the battle interface.
