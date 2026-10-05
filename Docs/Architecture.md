@@ -35,3 +35,5 @@ these rules still requires the approved design specifications; this file does no
 supply balance values or supersede the master.
 
 Presentation consumers use `Views/BattlePresentation`: immutable snapshots and previews read detached state; commands return animation hints only after the session checkpoint succeeds. See [Battle presentation](BattlePresentation.md).
+
+`Views/BattleInteraction` owns transient input intents and animation locks above that facade. Intent validity is bound to an in-memory flow checkpoint identity. Health overlays are always available independently of selection. See [Battle interaction](BattleInteraction.md); actual Unity rendering and gesture recognition remain separate.

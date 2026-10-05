@@ -22,6 +22,8 @@ namespace Ninefold.Core.Flow
         private readonly string revision;
         public CampaignCatalog CampaignCatalog { get; }
         private byte[] snapshot;
+        // In-memory identity only: invalidates UI intents on commit/reload, never serialized.
+        internal object BattleVersion { get; private set; } = new object();
         private bool busy;
         public bool NeedsReload { get; private set; } = true;
         public bool Recovered { get; private set; }
@@ -99,7 +101,7 @@ namespace Ninefold.Core.Flow
                     phase = battle.Mission.Result == null ? MissionFlowPhase.Battle : MissionFlowPhase.Results;
                 }
             }
-            snapshot = next; Progress = profile.Progress; Receipt = null; Phase = phase;
+            snapshot = next; BattleVersion = new object(); Progress = profile.Progress; Receipt = null; Phase = phase;
             Recovered = profile.Recovered || (saved?.Recovered ?? false); NeedsReload = false;
         }
         public SquadFailure ValidateSquad(string missionId, IEnumerable<string> selected)
@@ -158,7 +160,7 @@ namespace Ninefold.Core.Flow
             var committed = BattleSave.Restore(bytes, revision);
             try { battles.Save(committed); }
             catch { NeedsReload = true; throw; }
-            snapshot = bytes; Receipt = null;
+            snapshot = bytes; BattleVersion = new object(); Receipt = null;
             Phase = committed.Mission.Result == null ? MissionFlowPhase.Battle : MissionFlowPhase.Results;
         }
         public MissionClaim ClaimRewards()
@@ -245,7 +247,7 @@ namespace Ninefold.Core.Flow
             {
                 if (Phase != MissionFlowPhase.Results || Receipt == null) throw new InvalidOperationException("Claim the result before leaving.");
                 // No delete/ack file: the durable receipt makes the old battle completed on every reopen.
-                snapshot = null; Receipt = null; Phase = MissionFlowPhase.Selection;
+                snapshot = null; BattleVersion = new object(); Receipt = null; Phase = MissionFlowPhase.Selection;
             }
             finally { busy = false; }
         }

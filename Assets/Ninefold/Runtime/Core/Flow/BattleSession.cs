@@ -33,6 +33,7 @@ namespace Ninefold.Core.Flow
     public sealed class BattleSession
     {
         private readonly MissionFlow flow;
+        internal object BattleVersion => flow.BattleVersion;
         private string attemptId;
         public BattleSession(MissionFlow flow) { this.flow = flow ?? throw new ArgumentNullException(nameof(flow)); }
         public BattleSessionView Read()
