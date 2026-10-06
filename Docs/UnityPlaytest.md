@@ -132,6 +132,40 @@ approved production campaign length.
 
 ## Controls and limitations
 
+### Battle feedback pass
+
+Include these in the same later playtest; no scene regeneration or save reset is needed.
+
+- On a player turn, cyan ground dots show sampled destinations verified by the pathfinder.
+  Dots account for obstacles, occupied spaces and movement cost. They are not a filled
+  reachability map: spaces without dots can still be legal. Tap anywhere legal to preview.
+  Samples are cached per battle revision, hidden during playback/enemy turns and when an
+  ability is selected; the renderer does not run pathfinding every frame.
+- Long-move previews show cost, remaining movement and the stopping point. Cancelling
+  must leave both movement and saves unchanged.
+- Select Attack/Main ability and tap a target. The gold target marker grows, a line links
+  actor and target, and the target badge previews HP before/after. The dock shows actual
+  expected damage/healing (including a defeat prediction), not raw unmitigated attack power.
+- Inspect a different unit with no ability selected: its white marker is distinct from
+  the gold active-unit marker. The dock explicitly says commands still use the active unit.
+- Confirm an action: the state saves before playback. Movement follows the routed segments
+  by distance; enemy movement finishes before its attack cue. Impact cues and floating net
+  health changes come from the committed update. Defeated tokens shrink/tilt before removal.
+  Existing health bars stay visible. Numbers are feedback, not extra damage applications.
+- Turn banners identify player/enemy and active unit. They expire visually without spending
+  time or imposing a solo turn timer. Reselecting does not restart the same turn's banner.
+- Objective badges show ready, move closer, blocked, spent action or unavailable states.
+  The interaction button is enabled only when the core allows it. Move away/back and spend
+  your action to check that readiness refreshes correctly.
+- Enable reduced motion in Settings: transforms skip playback but health changes still
+  appear as stationary text. Pause/reopen while an action resolves: restore the committed
+  state once, without replaying effects as gameplay or granting anything twice.
+
+Movement dots are bounded to at most 168 sampled queries per revision on a single detached
+snapshot. Complex production maps still need device profiling and may need a dedicated
+reachability solver. Current automated checks cover core planning and persistence, not
+Unity rendering, effect legibility, frame rate or touch accuracy.
+
 - Mouse clicks in the Editor use the same pointer path as touch taps. The battlefield
   handles pointer-up only; UI buttons and scroll gestures do not also issue ground commands.
 - A second tap on the same preview confirms it; it is a deliberate two-tap flow with

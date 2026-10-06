@@ -7,6 +7,26 @@ using Ninefold.Core.Missions;
 
 namespace Ninefold.Core.Views
 {
+    public sealed class ReachableSample
+    {
+        public FieldPoint Position { get; }
+        public decimal Cost { get; }
+        internal ReachableSample(FieldPoint position, decimal cost) { Position = position; Cost = cost; }
+    }
+    public sealed class ObjectiveInteractionPreview
+    {
+        public string Id { get; }
+        public InteractionFailure Failure { get; }
+        public bool CanInteract => Failure == InteractionFailure.None;
+        internal ObjectiveInteractionPreview(string id, InteractionFailure failure) { Id = id; Failure = failure; }
+    }
+    public sealed class BattlePlanningView
+    {
+        public IReadOnlyList<ReachableSample> Movement { get; }
+        public IReadOnlyList<ObjectiveInteractionPreview> Objectives { get; }
+        internal BattlePlanningView(IEnumerable<ReachableSample> movement, IEnumerable<ObjectiveInteractionPreview> objectives)
+        { Movement = Array.AsReadOnly(movement.ToArray()); Objectives = Array.AsReadOnly(objectives.ToArray()); }
+    }
     /// <summary>Engine-independent presentation facade. Returns data, never invokes animation callbacks inside a save transaction.</summary>
     public sealed class BattlePresentation
     {
@@ -36,6 +56,28 @@ namespace Ninefold.Core.Views
         }
         public InteractionFailure PreviewInteraction(long activationId, string objective)
             => session.ReadPlayerSnapshot(activationId).Mission.PreviewInteraction(activationId,objective);
+        public BattlePlanningView PreviewPlanning(long activationId)
+        {
+            var b = session.ReadPlayerSnapshot(activationId);
+            var samples = new List<ReachableSample>();
+            var turn = b.CurrentActivation; var origin = b.Battlefield.GetPosition(turn.UnitId);
+            var bounds = b.Battlefield.Map.Bounds;
+            // At most 168 queries on one detached snapshot. Dots are verified destinations,
+            // not an assertion that unsampled ground is unreachable. No per-frame search.
+            decimal spacing = Math.Max(.5m, decimal.Ceiling(turn.MovementRemaining / 6m * 2m) / 2m);
+            if (turn.MovementRemaining > 0)
+                for (int x=-6;x<=6;x++) for (int z=-6;z<=6;z++)
+                {
+                    if (x == 0 && z == 0) continue;
+                    decimal px=origin.X+x*spacing, pz=origin.Z+z*spacing;
+                    if (px < bounds.Min.X || px > bounds.Max.X || pz < bounds.Min.Z || pz > bounds.Max.Z) continue;
+                    var point = new FieldPoint(px,origin.Y,pz);
+                    if (b.Battlefield.TryFindPath(activationId,point,out var route,out _,64)) samples.Add(new ReachableSample(point,route.Cost));
+                }
+            var objectives = b.Mission.Definition.Objectives.Where(o=>o.Interaction!=null)
+                .Select(o=>new ObjectiveInteractionPreview(o.Id,b.Mission.PreviewInteraction(activationId,o.Id)));
+            return new BattlePlanningView(samples,objectives);
+        }
         public bool TryMove(long activationId, IEnumerable<FieldPoint> path, out BattleUpdate update, out FieldFailure failure)
         {
             update = null; var before = Read();

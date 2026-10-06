@@ -20,7 +20,12 @@ internal static partial class Program
         ("Ability selection exposes target verdicts without save mutation", SelectedTargets),
         ("Playtest maps have distinct geometry and all deployable missions validate", DistinctPlaytestMaps),
         ("Playtest layout upgrade preserves ongoing battle and earned progression", PreservePlaytestProfile),
-        ("Playtest layout upgrade fails closed for missing or corrupt profiles", RejectBrokenPlaytestProfile)
+        ("Playtest layout upgrade fails closed for missing or corrupt profiles", RejectBrokenPlaytestProfile),
+        ("Planning samples are affordable legal destinations and do not save", PlanningSamples),
+        ("Planning cache updates after movement and is hidden during playback", PlanningInvalidation),
+        ("Planning is absent during enemy turns", PlanningEnemy),
+        ("Objective readiness follows real action and reach rules", PlanningObjectives),
+        ("Planning samples respect authored map obstacles", PlanningTerrain)
     };
     private static MovementPreview Reachable(BattleTurnController b, FieldPoint goal)
     {
@@ -108,5 +113,61 @@ internal static partial class Program
         oldFiles.Slots[0]=new byte[]{1}; Throws<InvalidOperationException>(()=>PlaytestProfile.Open(oldFiles,current,progress));
         oldFiles.Slots[0]=null; progress.Inner.Slots[0]=new byte[]{1};
         Throws<InvalidDataException>(()=>PlaytestProfile.Open(oldFiles,current,progress)); Equal(1,progress.Inner.Slots[0].Length);
+    }
+    private static void PlanningSamples()
+    {
+        var x=new SessionFixture(); var input=Input(x); string bytes=x.Bytes();
+        var plan=input.ReadPlanning(); Equal(true,plan.Movement.Count>0); Equal(true,plan.Movement.Count<=168);
+        Equal(true,ReferenceEquals(plan,input.ReadPlanning()));
+        var presentation=new BattlePresentation(x.Session);
+        foreach(var point in plan.Movement)
+        {
+            Equal(true,presentation.TryPreviewDestination(x.Id,point.Position,out var path,out _));
+            Equal(path.Cost,point.Cost); Equal(true,point.Cost<=5);
+        }
+        Equal(bytes,x.Bytes()); Equal(5m,input.Read().Battle.Activation.MovementRemaining);
+    }
+    private static void PlanningInvalidation()
+    {
+        var x=new SessionFixture(); var input=Input(x); var before=input.ReadPlanning();
+        input.TapDestination(P(-5,0)); var move=input.TapDestination(P(-5,0));
+        Equal(InputOutcome.Committed,move.Outcome); Equal(0,input.ReadPlanning().Movement.Count);
+        input.CompleteAnimation(move.AnimationId); var after=input.ReadPlanning();
+        Equal(false,ReferenceEquals(before,after)); Equal(0,after.Movement.Count);
+        x.Reopen(); Equal(0,Input(x).ReadPlanning().Movement.Count);
+    }
+    private static void PlanningEnemy()
+    {
+        var x=new SessionFixture(); x.ToEnemy(); var plan=Input(x).ReadPlanning();
+        Equal(0,plan.Movement.Count); Equal(0,plan.Objectives.Count);
+    }
+    private static void PlanningObjectives()
+    {
+        var x=new SessionFixture(stabilize:true); var input=Input(x);
+        var presentation=new BattlePresentation(x.Session);
+        var objective=input.ReadPlanning().Objectives.Single();
+        Equal(presentation.PreviewInteraction(x.Id,objective.Id),objective.Failure);
+        Equal(true,objective.CanInteract);
+        input.SelectAbility(AbilitySlot.NormalAttack); input.TapUnit("b"); var attack=input.TapUnit("b");
+        Equal(InputOutcome.Committed,attack.Outcome); input.CompleteAnimation(attack.AnimationId);
+        Equal(Ninefold.Core.Missions.InteractionFailure.ActionSpent,input.ReadPlanning().Objectives.Single().Failure);
+        var other=new SessionFixture(stabilize:true); var moved=Input(other);
+        moved.TapDestination(P(-3,0)); var result=moved.TapDestination(P(-3,0)); moved.CompleteAnimation(result.AnimationId);
+        Equal(Ninefold.Core.Missions.InteractionFailure.OutOfReach,moved.ReadPlanning().Objectives.Single().Failure);
+    }
+    private static void PlanningTerrain()
+    {
+        var catalog=PlaytestContentPackage.Create();
+        var menu=new MissionPresentation(catalog,new FakeSaveFiles(),new ProgressFiles(),"planning-test");
+        menu.CreateProfile(); menu.SelectMission("fixture-mixed"); menu.SetSquad(new[]{"fixture-a-1"});
+        var input=menu.Start(menu.Read().PlanId); var view=input.Read().Battle;
+        Equal(true,input.ReadPlanning().Movement.Count>0);
+        foreach(var sample in input.ReadPlanning().Movement)
+        {
+            Equal(InputOutcome.Previewed,input.TapDestination(sample.Position).Outcome);
+            Equal(sample.Position,input.Read().Pending.Movement.Path.Last());
+            Equal(sample.Cost,input.Read().Pending.Movement.Cost); input.Cancel();
+        }
+        Equal(5m,input.Read().Battle.Activation.MovementRemaining);
     }
 }

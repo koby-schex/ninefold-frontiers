@@ -20,17 +20,29 @@ namespace Ninefold.Presentation
             public VisualElement Bar, Fill;
             public Label Caption;
             public Vector3 Position;
+            public Vector3 Scale;
             public float Height;
+        }
+        private sealed class FloatingFeedback
+        {
+            public Label Label;
+            public Vector3 Position;
+            public float Born;
+            public bool Moves;
         }
         private readonly GameObject world;
         private readonly Camera camera;
         private readonly Dictionary<string, Token> tokens = new Dictionary<string, Token>();
         private readonly List<Material> materials = new List<Material>();
+        private readonly List<GameObject> movementDots = new List<GameObject>();
+        private readonly Dictionary<string, Label> objectiveLabels = new Dictionary<string, Label>();
+        private readonly Dictionary<string, Vector3> objectivePositions = new Dictionary<string, Vector3>();
+        private readonly List<FloatingFeedback> feedback = new List<FloatingFeedback>();
         private readonly Material friendly, enemy, active, floor, grid, gold, cover, trim, markings;
         private readonly LineRenderer path, range;
         private GameObject terrain;
         private string drawnAttempt;
-        private readonly GameObject destination, selection;
+        private readonly GameObject destination, selection, inspection, impact;
         private VisualElement surface;
         private Bounds framing;
         private readonly List<Rect> barRects = new List<Rect>();
@@ -50,6 +62,9 @@ namespace Ninefold.Presentation
             markings = Make(new Color(.22f, .31f, .37f));
             destination = Primitive("Destination preview", PrimitiveType.Cylinder, Vector3.zero, new Vector3(.7f, .025f, .7f), gold);
             selection = Primitive("Active unit marker", PrimitiveType.Cylinder, Vector3.zero, new Vector3(.95f, .015f, .95f), active);
+            var white = Make(new Color(.9f,.96f,1f));
+            inspection = Primitive("Inspected unit marker",PrimitiveType.Cube,Vector3.zero,new Vector3(1.15f,.015f,1.15f),white);
+            impact = Primitive("Action impact",PrimitiveType.Sphere,Vector3.zero,Vector3.one*.2f,gold); impact.SetActive(false);
             var lineObject = new GameObject("Movement preview"); lineObject.transform.SetParent(world.transform, false);
             path = lineObject.AddComponent<LineRenderer>(); path.sharedMaterial = gold;
             path.startWidth = path.endWidth = .045f; path.useWorldSpace = true;
@@ -79,22 +94,47 @@ namespace Ninefold.Presentation
             Object.Destroy(g.GetComponent<Collider>()); return g;
         }
 
-        public void Show(InteractionView interaction, IReadOnlyList<ObjectiveDefinition> objectives, VisualElement target)
+        public void Show(InteractionView interaction, BattlePlanningView planning, IReadOnlyList<ObjectiveDefinition> objectives, VisualElement target)
         {
             var view = interaction.Battle; var intent = interaction.Pending;
             surface = target; world.SetActive(true); camera.enabled = true;
             if (drawnAttempt != view.AttemptId) { BuildMap(view.Map,objectives); drawnAttempt = view.AttemptId; }
             Reconcile(view);
             foreach (var token in tokens.Values) surface.Add(token.Bar);
+            foreach (var item in feedback) surface.Add(item.Label);
             var actor = view.Units.FirstOrDefault(u => u.Id == view.Activation?.UnitId && u.Position.HasValue);
             selection.SetActive(actor != null);
             if (actor != null) selection.transform.position = Vector(actor.Position.Value) + Vector3.up * .04f;
+            var inspected = view.Units.FirstOrDefault(u=>u.Id==interaction.SelectedUnitId && u.Position.HasValue && u.IsEligible);
+            inspection.SetActive(inspected != null && inspected.Id != actor?.Id);
+            if (inspected != null) inspection.transform.position = Vector(inspected.Position.Value)+Vector3.up*.025f;
+            int count = interaction.SelectedAbility.HasValue ? 0 : planning.Movement.Count;
+            while (movementDots.Count < count)
+                movementDots.Add(Primitive("Reachable sample",PrimitiveType.Cube,Vector3.zero,new Vector3(.13f,.025f,.13f),friendly));
+            for (int i=0;i<movementDots.Count;i++)
+            {
+                movementDots[i].SetActive(i<count);
+                if (i<count) movementDots[i].transform.position=Vector(planning.Movement[i].Position)+Vector3.up*.06f;
+            }
+            foreach (var pair in objectiveLabels)
+            {
+                var state = view.Objectives.First(o=>o.Id==pair.Key);
+                var available = planning.Objectives.FirstOrDefault(o=>o.Id==pair.Key);
+                pair.Value.text = "OBJECTIVE · " + (state.Status != ObjectiveStatus.Active ? state.Status.ToString() : available == null ? "Wait for your turn" : FrontiersPlaytest.ObjectiveReadiness(available.Failure));
+                pair.Value.EnableInClassList("objective-ready",available?.CanInteract == true);
+                surface.Add(pair.Value);
+            }
             path.positionCount = 0; destination.SetActive(false);
             if (intent?.Kind == IntentKind.Movement && actor != null)
             {
                 var points = new[] { actor.Position.Value }.Concat(intent.Movement.Path).Select(p => Vector(p) + Vector3.up * .08f).ToArray();
                 path.positionCount = points.Length; path.SetPositions(points);
                 destination.SetActive(true); destination.transform.position = points.Last();
+            }
+            if (intent?.Kind == IntentKind.Ability && actor != null && tokens.TryGetValue(intent.Target.TargetId,out var aim))
+            {
+                path.positionCount=2;
+                path.SetPositions(new[] { Vector(actor.Position.Value)+Vector3.up,aim.Position });
             }
             // The whole authored arena stays framed; movement never expands or pans the camera.
             var bounds = view.Map.Bounds;
@@ -112,7 +152,16 @@ namespace Ninefold.Presentation
                     range.positionCount = points.Length; range.SetPositions(points);
                 }
             }
-            foreach (var pair in tokens) pair.Value.TargetRing.SetActive(interaction.Targets.Any(t => t.TargetId == pair.Key && t.IsValid));
+            foreach (var pair in tokens)
+            {
+                bool pending = intent?.Kind == IntentKind.Ability && intent.Target.TargetId==pair.Key;
+                pair.Value.TargetRing.SetActive(interaction.Targets.Any(t => t.TargetId == pair.Key && t.IsValid));
+                pair.Value.TargetRing.transform.localScale = pending ? new Vector3(1.35f,.025f,1.35f) : new Vector3(.95f,.025f,.95f);
+                pair.Value.Bar.EnableInClassList("preview-health",pending);
+                if (pending && intent.Target.Effect.Health != null)
+                    pair.Value.Caption.text = "HP "+intent.Target.Effect.Health.HealthBefore+" → "+intent.Target.Effect.Health.HealthAfter;
+            }
+            foreach (var item in feedback) item.Label.BringToFront();
         }
 
         private static Vector3[] ClippedRange(Vector3 origin, float radius, FieldBox bounds)
@@ -147,6 +196,8 @@ namespace Ninefold.Presentation
 
         private void BuildMap(BattlefieldMap map, IReadOnlyList<ObjectiveDefinition> objectives)
         {
+            foreach (var label in objectiveLabels.Values) label.RemoveFromHierarchy();
+            objectiveLabels.Clear(); objectivePositions.Clear();
             if (terrain != null) { terrain.SetActive(false); Object.Destroy(terrain); }
             terrain = new GameObject("Authored arena"); terrain.transform.SetParent(world.transform,false);
             GameObject Shape(string name, Vector3 position, Vector3 scale, Material material)
@@ -187,6 +238,8 @@ namespace Ninefold.Presentation
                 Shape("Objective inset",p+Vector3.up*.07f,new Vector3(.78f,.025f,.78f),floor);
                 Shape("Objective cross X",p+Vector3.up*.09f,new Vector3(.58f,.025f,.1f),active);
                 Shape("Objective cross Z",p+Vector3.up*.09f,new Vector3(.1f,.025f,.58f),active);
+                var label = new Label { pickingMode = PickingMode.Ignore }; label.AddToClassList("objective-marker");
+                objectiveLabels.Add(o.Id,label); objectivePositions.Add(o.Id,p);
             }
         }
 
@@ -208,6 +261,7 @@ namespace Ninefold.Presentation
                     footing.transform.SetParent(t.Body.transform,true);
                     var collar = Primitive("Unit ID collar",PrimitiveType.Cube,new Vector3(0,(float)h.Height*.22f,-.02f),new Vector3(.54f,.12f,.54f),active);
                     collar.transform.SetParent(t.Body.transform,true);
+                    t.Scale=t.Body.transform.localScale;
                     t.TargetRing = Primitive("Valid target marker",PrimitiveType.Cylinder,Vector3.zero,new Vector3(.95f,.025f,.95f),gold);
                     t.TargetRing.SetActive(false);
                     t.Bar = new VisualElement { pickingMode = PickingMode.Ignore }; t.Bar.AddToClassList("health-overlay");
@@ -221,7 +275,7 @@ namespace Ninefold.Presentation
                 t.Bar.EnableInClassList("active-health",h.UnitId == view.Activation?.UnitId);
                 t.Position = Vector(h.Position) + Vector3.up * t.Height / 2;
                 t.TargetRing.transform.position = Vector(h.Position)+Vector3.up*.055f;
-                t.Body.transform.position = t.Position; t.Body.transform.localRotation = Quaternion.identity;
+                t.Body.transform.position = t.Position; t.Body.transform.localRotation = Quaternion.identity; t.Body.transform.localScale=t.Scale;
                 t.Caption.text = FrontiersPlaytest.UnitName(h.UnitId) + "  " + h.CurrentHealth + "/" + h.MaximumHealth;
                 t.Fill.style.width = Length.Percent((float)h.Fraction * 100);
             }
@@ -244,8 +298,24 @@ namespace Ninefold.Presentation
                 needed = Mathf.Max(needed, Mathf.Abs(local.y) + 1.5f, (Mathf.Abs(local.x) + 1) / camera.aspect);
             }
             camera.orthographicSize = needed;
-            // Stable ID order + collision avoidance keeps adjacent units' numeric health readable.
             barRects.Clear();
+            foreach (var pair in objectiveLabels)
+            {
+                var point = Project(objectivePositions[pair.Key],root)-rect.position;
+                pair.Value.style.left=Mathf.Clamp(point.x-90,0,Mathf.Max(0,rect.width-180));
+                pair.Value.style.top=Mathf.Clamp(point.y+12,0,Mathf.Max(0,rect.height-28));
+                barRects.Add(new Rect(Mathf.Clamp(point.x-90,0,Mathf.Max(0,rect.width-180)),Mathf.Clamp(point.y+12,0,Mathf.Max(0,rect.height-28)),180,28));
+            }
+            foreach (var item in feedback.ToArray())
+            {
+                float age=Time.unscaledTime-item.Born;
+                if (age>1.5f) { item.Label.RemoveFromHierarchy(); feedback.Remove(item); continue; }
+                item.Label.style.opacity=Mathf.Clamp01((1.5f-age)/.4f);
+                var point=Project(item.Position+(item.Moves ? Vector3.up*age*.35f : Vector3.zero),root)-rect.position;
+                item.Label.style.left=Mathf.Clamp(point.x-65,0,Mathf.Max(0,rect.width-130));
+                item.Label.style.top=Mathf.Clamp(point.y-24,0,Mathf.Max(0,rect.height-30));
+            }
+            // Stable ID order + collision avoidance keeps adjacent units' numeric health readable.
             foreach (var pair in tokens.OrderBy(p => p.Key, StringComparer.Ordinal))
             {
                 var t = pair.Value;
@@ -291,35 +361,89 @@ namespace Ninefold.Presentation
         public IEnumerator Play(BattleUpdate update, float duration)
         {
             path.positionCount = 0; range.positionCount = 0; destination.SetActive(false);
+            inspection.SetActive(false); impact.SetActive(false);
+            foreach (var dot in movementDots) dot.SetActive(false);
             foreach (var t in tokens.Values) t.TargetRing.SetActive(false);
             // Keep before-state bars visible during playback; reconcile authoritative after-state once finished.
             float elapsed = 0;
             var movement = update.Events.FirstOrDefault(e => e.Kind == BattleEventKind.Movement && e.Movement != null);
             var pulse = update.Events.FirstOrDefault(e => e.Kind == BattleEventKind.AbilityUsed);
+            bool shown = false;
             while (elapsed < duration)
             {
                 elapsed += Time.unscaledDeltaTime; float t = Mathf.Clamp01(elapsed / duration);
-                foreach (var u in update.After.Units.Where(u => u.Position.HasValue))
+                if (!shown && t>=.55f) { AddFeedback(update,true); shown=true; }
+                float moveTime = pulse == null ? t : Mathf.Clamp01(t/.55f);
+                float strike = Mathf.Clamp01((t-.55f)/.45f);
+                foreach (var before in update.Before.Units.Where(u => u.Position.HasValue))
                 {
-                    if (!tokens.TryGetValue(u.Id, out var token)) continue;
-                    var before = update.Before.Units.FirstOrDefault(x => x.Id == u.Id);
-                    if (before?.Position == null) continue;
-                    Vector3 position = Vector3.Lerp(Vector(before.Position.Value), Vector(u.Position.Value), t);
-                    if (movement?.UnitId == u.Id)
+                    if (!tokens.TryGetValue(before.Id, out var token)) continue;
+                    var after = update.After.Units.FirstOrDefault(u=>u.Id==before.Id);
+                    Vector3 position = Vector3.Lerp(Vector(before.Position.Value),Vector(after?.Position ?? before.Position.Value),moveTime);
+                    if (movement?.UnitId == before.Id)
                     {
                         var route = new[] { before.Position.Value }.Concat(movement.Movement.Path).ToArray();
-                        float segment = t * (route.Length - 1); int index = Mathf.Min((int)segment, route.Length - 2);
-                        position = Vector3.Lerp(Vector(route[index]), Vector(route[index + 1]), segment - index);
+                        position = AlongRoute(route,moveTime);
                     }
                     token.Body.transform.position = position + Vector3.up * token.Height / 2;
-                    if (pulse?.UnitId == u.Id) token.Body.transform.localRotation = Quaternion.Euler(0, 0, Mathf.Sin(t * Mathf.PI) * 12);
-                    if (pulse?.TargetId == u.Id) token.Body.transform.position += Vector3.up * Mathf.Sin(t * Mathf.PI) * .18f;
+                    if (before.Id==update.Before.Activation?.UnitId) selection.transform.position=position+Vector3.up*.04f;
+                    if (pulse?.UnitId == before.Id) token.Body.transform.localRotation = Quaternion.Euler(0, 0, Mathf.Sin(strike * Mathf.PI) * 12);
+                    if (pulse?.TargetId == before.Id) token.Body.transform.position += Vector3.up * Mathf.Sin(strike * Mathf.PI) * .18f;
+                    if (after?.Health?.IsDefeated == true)
+                    {
+                        token.Body.transform.localScale=token.Scale*(1-strike*.85f);
+                        token.Body.transform.localRotation=Quaternion.Euler(0,0,strike*70);
+                    }
+                }
+                if (pulse != null && strike>0 && tokens.TryGetValue(pulse.UnitId,out var source) && tokens.TryGetValue(pulse.TargetId,out var target))
+                {
+                    path.positionCount=2; path.SetPositions(new[] { source.Body.transform.position,target.Body.transform.position });
+                    impact.SetActive(true); impact.transform.position=target.Body.transform.position;
+                    impact.transform.localScale=Vector3.one*(.15f+Mathf.Sin(strike*Mathf.PI)*.6f);
+                    impact.GetComponent<Renderer>().sharedMaterial=pulse.AbilityEffect.Health != null && pulse.AbilityEffect.Health.HealthAfter>pulse.AbilityEffect.Health.HealthBefore ? friendly : gold;
                 }
                 yield return null;
             }
+            if (!shown) AddFeedback(update,false);
+            path.positionCount=0; impact.SetActive(false);
             Reconcile(update.After);
         }
-        public void Hide() { world.SetActive(false); camera.enabled = true; camera.rect = new Rect(0, 0, 1, 1); }
+        private static Vector3 AlongRoute(FieldPoint[] route, float fraction)
+        {
+            float total=0; for(int i=1;i<route.Length;i++) total+=Vector3.Distance(Vector(route[i-1]),Vector(route[i]));
+            float remaining=total*fraction;
+            for(int i=1;i<route.Length;i++)
+            {
+                float distance=Vector3.Distance(Vector(route[i-1]),Vector(route[i]));
+                if (remaining<=distance) return Vector3.Lerp(Vector(route[i-1]),Vector(route[i]),distance==0?1:remaining/distance);
+                remaining-=distance;
+            }
+            return Vector(route[route.Length-1]);
+        }
+        private void AddFeedback(BattleUpdate update, bool moves)
+        {
+            void Add(string text, Vector3 position, bool positive)
+            {
+                var label=new Label(text) { pickingMode=PickingMode.Ignore }; label.AddToClassList("combat-float");
+                label.EnableInClassList("healing-float",positive); surface.Add(label);
+                feedback.Add(new FloatingFeedback { Label=label,Position=position,Born=Time.unscaledTime,Moves=moves });
+            }
+            foreach (var after in update.After.Units)
+            {
+                var before=update.Before.Units.FirstOrDefault(u=>u.Id==after.Id);
+                if (before?.Health == null || after.Health == null || !before.Position.HasValue) continue;
+                int delta=after.Health.CurrentHealth-before.Health.CurrentHealth;
+                if (delta==0) continue;
+                Add((delta>0 ? "+"+delta : delta.ToString())+(after.Health.IsDefeated ? " · Defeated" : ""),Vector(after.Position ?? before.Position.Value)+Vector3.up*(float)before.Body.Height,delta>0);
+            }
+            foreach (var change in update.Events.Where(e=>e.Kind==BattleEventKind.ObjectiveChanged))
+                if (objectivePositions.TryGetValue(change.ObjectiveId,out var position)) Add("Objective updated",position+Vector3.up*.8f,true);
+        }
+        public void Hide()
+        {
+            foreach (var item in feedback) item.Label.RemoveFromHierarchy(); feedback.Clear();
+            world.SetActive(false); camera.enabled = true; camera.rect = new Rect(0, 0, 1, 1);
+        }
         public static Vector3 Vector(FieldPoint p) => new Vector3((float)p.X, (float)p.Y, (float)p.Z);
         public void Dispose() { Object.Destroy(world); foreach (var material in materials) Object.Destroy(material); }
     }
