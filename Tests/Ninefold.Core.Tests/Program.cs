@@ -32,7 +32,7 @@ internal static partial class Program
             ("Explicit round lifecycle handles skipped final unit", RoundBoundary),
             ("Fractional path costs do not gain or lose allowance", FractionalMovement),
             ("Mixed abstract teams share the same scheduler", ManyRounds)
-        }.Concat(AbilityTests()).Concat(HealthTests()).Concat(BattlefieldTests()).Concat(PathfindingTests()).Concat(MissionTests()).Concat(EnemyTests()).Concat(SaveTests()).Concat(ProgressTests()).Concat(FlowTests()).Concat(OwnershipTests()).Concat(CampaignTests()).Concat(AdvancementTests()).Concat(CustomizationTests()).Concat(ContentTests()).Concat(StatusTests()).Concat(ActiveEffectTests()).Concat(SupportEnemyTests()).Concat(SessionTests()).Concat(PresentationTests()).Concat(InteractionTests()).Concat(MissionMenuTests()).Concat(CollectionTests()).ToArray();
+        }.Concat(AbilityTests()).Concat(HealthTests()).Concat(BattlefieldTests()).Concat(PathfindingTests()).Concat(MissionTests()).Concat(EnemyTests()).Concat(SaveTests()).Concat(ProgressTests()).Concat(FlowTests()).Concat(OwnershipTests()).Concat(CampaignTests()).Concat(AdvancementTests()).Concat(CustomizationTests()).Concat(ContentTests()).Concat(StatusTests()).Concat(ActiveEffectTests()).Concat(SupportEnemyTests()).Concat(SessionTests()).Concat(PresentationTests()).Concat(InteractionTests()).Concat(MissionMenuTests()).Concat(CollectionTests()).Concat(IntegrationReviewTests()).ToArray();
         int failed = 0;
         foreach (var test in tests)
         {

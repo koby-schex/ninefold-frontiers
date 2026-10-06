@@ -24,6 +24,8 @@ namespace Ninefold.Core.Flow
         private byte[] snapshot;
         // In-memory identity only: invalidates UI intents on commit/reload, never serialized.
         internal object BattleVersion { get; private set; } = new object();
+        // A session cannot outlive reload or adopt a later mission, even if it was never read.
+        internal object SessionVersion { get; private set; } = new object();
         private bool busy;
         public bool NeedsReload { get; private set; } = true;
         public bool Recovered { get; private set; }
@@ -77,6 +79,7 @@ namespace Ninefold.Core.Flow
         }
         private void LoadCore()
         {
+            SessionVersion = new object();
             NeedsReload = true;
             var profile = profiles.Load() ?? throw new InvalidOperationException("Profile absent; explicitly create a new profile.");
             var saved = battles.Load();
@@ -130,6 +133,7 @@ namespace Ninefold.Core.Flow
                 var bonuses = squad.ToDictionary(id => id, Progress.GetDeploymentModifiers, StringComparer.Ordinal).Where(p => !p.Value.IsNeutral).ToDictionary(p => p.Key, p => p.Value, StringComparer.Ordinal);
                 draft.ApplyDeploymentModifiers(bonuses);
                 Commit(draft);
+                SessionVersion = new object();
             }
             finally { busy = false; }
         }

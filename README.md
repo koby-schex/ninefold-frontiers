@@ -106,3 +106,5 @@ turns, NPC holds, round resolution and terminal results one step at a time.
 [Mission preparation and results](Docs/MissionPresentation.md) connects catalog-driven mission cards, squad/stat inspection, offline resume and durable reward collection to the battle interface.
 
 [Unit collection](Docs/CollectionPresentation.md) provides faction browsing, fragment progress, unlock/upgrade/customization previews and guarded confirmations on the shared mission profile.
+
+[Integration review 01](Docs/Production/IntegrationReview01.md) records cross-system journeys, session lifetime hardening and the remaining gates for the first playable Unity scene.
