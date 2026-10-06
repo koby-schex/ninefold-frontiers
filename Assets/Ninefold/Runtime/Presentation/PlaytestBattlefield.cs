@@ -26,7 +26,7 @@ namespace Ninefold.Presentation
         private readonly Camera camera;
         private readonly Dictionary<string, Token> tokens = new Dictionary<string, Token>();
         private readonly List<Material> materials = new List<Material>();
-        private readonly Material friendly, enemy, active, floor, grid, gold;
+        private readonly Material friendly, enemy, active, floor, grid, gold, cover, trim, markings;
         private readonly LineRenderer path, range;
         private GameObject terrain;
         private string drawnAttempt;
@@ -46,6 +46,8 @@ namespace Ninefold.Presentation
             friendly = Make(new Color(.14f, .72f, .8f)); enemy = Make(new Color(.94f, .34f, .27f));
             active = Make(new Color(.94f, .85f, .52f)); floor = Make(new Color(.075f, .12f, .17f));
             grid = Make(new Color(.16f, .23f, .29f)); gold = Make(new Color(.9f, .65f, .25f));
+            cover = Make(new Color(.26f, .35f, .42f)); trim = Make(new Color(.42f, .52f, .57f));
+            markings = Make(new Color(.22f, .31f, .37f));
             destination = Primitive("Destination preview", PrimitiveType.Cylinder, Vector3.zero, new Vector3(.7f, .025f, .7f), gold);
             selection = Primitive("Active unit marker", PrimitiveType.Cylinder, Vector3.zero, new Vector3(.95f, .015f, .95f), active);
             var lineObject = new GameObject("Movement preview"); lineObject.transform.SetParent(world.transform, false);
@@ -55,6 +57,14 @@ namespace Ninefold.Presentation
             var rangeObject = new GameObject("Selected ability range"); rangeObject.transform.SetParent(world.transform,false);
             range = rangeObject.AddComponent<LineRenderer>(); range.sharedMaterial = friendly;
             range.startWidth = range.endWidth = .06f; range.useWorldSpace = true; range.positionCount = 0;
+            // Unlit tactical lines stay readable independently of the scene's lighting.
+            var unlit = Shader.Find("Universal Render Pipeline/Unlit");
+            if (unlit != null)
+            {
+                var routeInk = new Material(unlit) { color = new Color(1f, .79f, .34f) }; materials.Add(routeInk);
+                var rangeInk = new Material(unlit) { color = new Color(.33f, .94f, .91f) }; materials.Add(rangeInk);
+                path.sharedMaterial = routeInk; range.sharedMaterial = rangeInk;
+            }
             camera.orthographic = true; camera.nearClipPlane = .1f; camera.farClipPlane = 100;
             camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = new Color(.04f, .07f, .1f);
             Hide();
@@ -98,17 +108,41 @@ namespace Ninefold.Presentation
                 if (ability != null)
                 {
                     var origin = Vector(actor.Position.Value) + Vector(actor.Body.AttackOffset);
-                    var points = new Vector3[129];
-                    for (int i=0;i<points.Length;i++)
-                    {
-                        float angle = i * Mathf.PI * 2 / (points.Length-1);
-                        points[i] = new Vector3(Mathf.Clamp(origin.x+Mathf.Cos(angle)*(float)ability.Range,(float)bounds.Min.X,(float)bounds.Max.X),.075f,
-                            Mathf.Clamp(origin.z+Mathf.Sin(angle)*(float)ability.Range,(float)bounds.Min.Z,(float)bounds.Max.Z));
-                    }
+                    var points = ClippedRange(origin, (float)ability.Range, bounds);
                     range.positionCount = points.Length; range.SetPositions(points);
                 }
             }
             foreach (var pair in tokens) pair.Value.TargetRing.SetActive(interaction.Targets.Any(t => t.TargetId == pair.Key && t.IsValid));
+        }
+
+        private static Vector3[] ClippedRange(Vector3 origin, float radius, FieldBox bounds)
+        {
+            if (radius <= 0) return Array.Empty<Vector3>();
+            var polygon = new List<Vector3>();
+            for (int i=0;i<128;i++)
+            {
+                float angle=i*Mathf.PI*2/128;
+                polygon.Add(new Vector3(origin.x+Mathf.Cos(angle)*radius,.34f,origin.z+Mathf.Sin(angle)*radius));
+            }
+            // Clip the sampled disk to the arena, rather than projecting circle points onto walls.
+            // This is geometric range only. The core determines target legality and line of sight.
+            void Clip(Func<Vector3,float> distance)
+            {
+                if (polygon.Count == 0) return;
+                var result = new List<Vector3>(); var previous = polygon[polygon.Count-1]; float pd = distance(previous);
+                foreach (var point in polygon)
+                {
+                    float d = distance(point);
+                    if ((d >= 0) != (pd >= 0)) result.Add(Vector3.Lerp(previous,point,pd/(pd-d)));
+                    if (d >= 0) result.Add(point);
+                    previous=point; pd=d;
+                }
+                polygon=result;
+            }
+            Clip(p=>p.x-(float)bounds.Min.X); Clip(p=>(float)bounds.Max.X-p.x);
+            Clip(p=>p.z-(float)bounds.Min.Z); Clip(p=>(float)bounds.Max.Z-p.z);
+            if (polygon.Count > 0) polygon.Add(polygon[0]);
+            return polygon.ToArray();
         }
 
         private void BuildMap(BattlefieldMap map, IReadOnlyList<ObjectiveDefinition> objectives)
@@ -123,20 +157,37 @@ namespace Ninefold.Presentation
             var min = Vector(map.Bounds.Min); var max = Vector(map.Bounds.Max); var center = (min+max)/2;
             float width=max.x-min.x, depth=max.z-min.z;
             Shape("Bounded floor",new Vector3(center.x,-.16f,center.z),new Vector3(width,.3f,depth),floor);
+            Shape("Arena plinth",new Vector3(center.x,-.42f,center.z),new Vector3(width+.4f,.25f,depth+.4f),grid);
             for (int x=(int)Math.Ceiling(min.x);x<=max.x;x++) Shape("Grid X",new Vector3(x,.002f,center.z),new Vector3(.018f,.01f,depth),grid);
             for (int z=(int)Math.Ceiling(min.z);z<=max.z;z++) Shape("Grid Z",new Vector3(center.x,.002f,z),new Vector3(width,.01f,.018f),grid);
             Shape("West boundary",new Vector3(min.x,.15f,center.z),new Vector3(.1f,.3f,depth),gold);
             Shape("East boundary",new Vector3(max.x,.15f,center.z),new Vector3(.1f,.3f,depth),gold);
             Shape("South boundary",new Vector3(center.x,.15f,min.z),new Vector3(width,.3f,.1f),gold);
             Shape("North boundary",new Vector3(center.x,.15f,max.z),new Vector3(width,.3f,.1f),gold);
-            foreach (var o in map.Obstacles) Shape("Cover / obstacle",(Vector(o.Bounds.Min)+Vector(o.Bounds.Max))/2,Vector(o.Bounds.Max)-Vector(o.Bounds.Min),grid);
+            foreach (var o in map.Obstacles)
+            {
+                var a = Vector(o.Bounds.Min); var b = Vector(o.Bounds.Max); var size = b-a; var c = (a+b)/2;
+                Shape("Cover / obstacle",c,size,cover);
+                Shape("Cover top",new Vector3(c.x,b.y+.012f,c.z),new Vector3(size.x,.025f,size.z),trim);
+                // Decorative seams remain inside the authored collision footprint.
+                for (float x=a.x+.3f;x<b.x;x+=.7f)
+                    Shape("Cover seam",new Vector3(x,b.y+.03f,c.z),new Vector3(.035f,.015f,size.z),grid);
+            }
             foreach (var g in map.Ground)
             {
                 var c=(Vector(g.Bounds.Min)+Vector(g.Bounds.Max))/2; var size=Vector(g.Bounds.Max)-Vector(g.Bounds.Min);
-                Shape("Slow ground",new Vector3(c.x,.02f,c.z),new Vector3(size.x,.025f,size.z),gold);
+                Shape("Slow ground",new Vector3(c.x,.02f,c.z),new Vector3(size.x,.025f,size.z),markings);
+                for (float z=(float)g.Bounds.Min.Z+.12f;z<(float)g.Bounds.Max.Z;z+=.35f)
+                    Shape("Slow ground stripe",new Vector3(c.x,.04f,z),new Vector3(size.x,.015f,.06f),gold);
             }
             foreach (var o in objectives.Where(o=>o.Interaction!=null))
-                Shape("Objective "+o.Id,Vector(o.Interaction.Point)+Vector3.up*.04f,new Vector3(.85f,.04f,.85f),active);
+            {
+                var p = Vector(o.Interaction.Point);
+                Shape("Objective "+o.Id,p+Vector3.up*.04f,new Vector3(1.05f,.04f,1.05f),gold);
+                Shape("Objective inset",p+Vector3.up*.07f,new Vector3(.78f,.025f,.78f),floor);
+                Shape("Objective cross X",p+Vector3.up*.09f,new Vector3(.58f,.025f,.1f),active);
+                Shape("Objective cross Z",p+Vector3.up*.09f,new Vector3(.1f,.025f,.58f),active);
+            }
         }
 
         private void Reconcile(BattleView view)
@@ -151,15 +202,23 @@ namespace Ninefold.Presentation
                     t = new Token(); tokens.Add(h.UnitId, t);
                     t.Body = Primitive(h.UnitId, h.IsEnemyControlled ? PrimitiveType.Cube : PrimitiveType.Capsule, Vector3.zero,
                         h.IsEnemyControlled ? new Vector3(.5f, (float)h.Height, .5f) : new Vector3(.5f, (float)h.Height / 2, .5f), h.IsEnemyControlled ? enemy : friendly);
+                    // Abstract tactical tokens: high contrast footing and a readable upper collar.
+                    var footing = Primitive("Unit footing", h.IsEnemyControlled ? PrimitiveType.Cube : PrimitiveType.Cylinder,
+                        Vector3.down * ((float)h.Height/2-.09f), new Vector3(.65f,.07f,.65f), grid);
+                    footing.transform.SetParent(t.Body.transform,true);
+                    var collar = Primitive("Unit ID collar",PrimitiveType.Cube,new Vector3(0,(float)h.Height*.22f,-.02f),new Vector3(.54f,.12f,.54f),active);
+                    collar.transform.SetParent(t.Body.transform,true);
                     t.TargetRing = Primitive("Valid target marker",PrimitiveType.Cylinder,Vector3.zero,new Vector3(.95f,.025f,.95f),gold);
                     t.TargetRing.SetActive(false);
                     t.Bar = new VisualElement { pickingMode = PickingMode.Ignore }; t.Bar.AddToClassList("health-overlay");
+                    t.Bar.EnableInClassList("enemy-health",h.IsEnemyControlled);
                     t.Caption = new Label { pickingMode = PickingMode.Ignore }; t.Bar.Add(t.Caption);
                     var track = new VisualElement { pickingMode = PickingMode.Ignore }; track.AddToClassList("health-track"); t.Bar.Add(track);
                     t.Fill = new VisualElement { pickingMode = PickingMode.Ignore }; t.Fill.AddToClassList("health-fill");
                     t.Fill.style.backgroundColor = h.IsEnemyControlled ? new Color(.96f, .43f, .32f) : new Color(.25f, .87f, .83f); track.Add(t.Fill);
                 }
                 t.Height = (float)h.Height;
+                t.Bar.EnableInClassList("active-health",h.UnitId == view.Activation?.UnitId);
                 t.Position = Vector(h.Position) + Vector3.up * t.Height / 2;
                 t.TargetRing.transform.position = Vector(h.Position)+Vector3.up*.055f;
                 t.Body.transform.position = t.Position; t.Body.transform.localRotation = Quaternion.identity;

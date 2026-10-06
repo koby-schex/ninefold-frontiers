@@ -29,8 +29,12 @@ namespace Ninefold.Presentation
         private PlaytestBattlefield field;
         private VisualElement root, safe, content, surface, controls, heading;
         private Label notice;
-        private string savePath, message = "Choose a test mission. All content is temporary and non-canon.";
-        private enum Page { Home, Battles, Briefing, Collection }
+        private ScrollView menuScroll;
+        private Page renderedPage;
+        private string renderedUnit;
+        private bool renderedOffer;
+        private string savePath, inspectedUnit, message = "Your progress saves automatically.";
+        private enum Page { Home, Battles, Briefing, Collection, Settings }
         private Page page;
         private bool dirty, fatal, suspended, reducedMotion, inBattle, legacyProfile;
         private Coroutine playback;
@@ -39,6 +43,7 @@ namespace Ninefold.Presentation
 
         private void Start()
         {
+            reducedMotion = PlayerPrefs.GetInt("Ninefold.ReducedMotion", 0) == 1;
             var document = GetComponent<UIDocument>();
             if (document.panelSettings == null)
             {
@@ -50,10 +55,10 @@ namespace Ninefold.Presentation
             root.AddToClassList("root");
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
             heading = new VisualElement(); heading.AddToClassList("heading"); safe.Add(heading);
-            Text(heading, "NINEFOLD: FRONTIERS", "title");
-            Text(heading, "ENGINEERING PLAYTEST • NON-CANON CONTENT", "eyebrow");
+            Text(heading, "NINEFOLD", "brand");
+            Text(heading, "F R O N T I E R S", "eyebrow");
             notice = Text(heading, message, "notice");
-            content = new VisualElement(); content.style.flexGrow = 1; safe.Add(content);
+            content = new VisualElement { name = "screen-content" }; safe.Add(content);
             savePath = Path.Combine(Application.persistentDataPath, "AbstractPlaytest-v1");
             Guard(() => {
                 if (BattlefieldCamera == null || FixtureMaterial == null) throw new InvalidOperationException("Run Ninefold > Playtest > Create or Open Integration Scene.");
@@ -90,8 +95,12 @@ namespace Ninefold.Presentation
             if (playback != null) return;
             menuView = menu.Read();
             if (legacyProfile && menuView.Phase == MissionFlowPhase.Selection) { OpenProfile(); menuView = menu.Read(); }
+            bool offerOpen = page == Page.Collection && menuView.Phase == MissionFlowPhase.Selection && menu.Collection.Read().Pending != null;
+            var scrollOffset = menuScroll != null && renderedPage == page && renderedUnit == inspectedUnit && renderedOffer == offerOpen ? menuScroll.scrollOffset : Vector2.zero;
+            menuScroll = null;
             content.Clear(); surface = null; controls = null; pointer = -1;
             notice.text = message;
+            root.EnableInClassList("battle-mode", menuView.Phase == MissionFlowPhase.Battle && inBattle);
             if (menuView.Phase == MissionFlowPhase.Battle && inBattle)
             {
                 content.style.backgroundColor = Color.clear;
@@ -102,36 +111,52 @@ namespace Ninefold.Presentation
             {
                 content.style.backgroundColor = new Color(.035f, .063f, .094f);
                 input = null; battleView = null; field.Hide();
-                var scroll = new ScrollView(); scroll.style.flexGrow = 1; content.Add(scroll);
+                var scroll = new ScrollView(); scroll.AddToClassList("page-scroll"); content.Add(scroll);
                 if (menuView.Phase == MissionFlowPhase.Results) BuildResults(scroll);
+                else if (page == Page.Settings) BuildSettings(scroll);
                 else if (menuView.Phase == MissionFlowPhase.Battle || page == Page.Home) BuildHome(scroll);
                 else if (page == Page.Collection) BuildCollection(scroll);
                 else if (page == Page.Briefing) BuildBriefing(scroll);
                 else BuildSelection(scroll);
+                menuScroll = scroll; renderedPage = page; renderedUnit = inspectedUnit; renderedOffer = offerOpen;
+                scroll.schedule.Execute(() => scroll.scrollOffset = scrollOffset);
+                if (menuView.Phase != MissionFlowPhase.Results && page != Page.Briefing) BuildNavigation(content);
             }
         }
 
         private void BuildHome(VisualElement parent)
         {
-            Text(parent, "Your next battle", "section");
-            Text(parent, "Choose a campaign mission, play a quick combat encounter, or manage your units.", "detail");
             bool active = menuView.Phase == MissionFlowPhase.Battle;
+            var hero = Card(parent, "hero");
+            Text(hero, "YOUR NEXT STEP", "eyebrow");
+            Text(hero, active ? "Return to the field" : "Choose your frontier", "display-title");
+            Text(hero, active ? "Your battle is saved. Continue where you left off." : "Advance through a campaign or jump into a standalone encounter.", "detail");
             if (active)
             {
-                Text(parent, "Battle saved • " + MissionName(menuView.Resume.MissionId), "preview");
-                Button(parent, "Resume battle", () => { inBattle = true; message = "Battle resumed."; });
+                Text(hero, MissionName(menuView.Resume.MissionId), "section");
+                Primary(hero, "Resume battle  ›", () => { inBattle = true; message = "Battle resumed."; });
             }
-            Button(parent, "Campaigns", () => { page = Page.Battles; message = "Choose a mission. Locked missions show what you need next."; }, !active);
-            Button(parent, "Quick battle", () => SelectMission("fixture-mixed"), !active);
-            Button(parent, "Units & upgrades", () => page = Page.Collection, !active);
-            if (active) Text(parent, "Finish this battle to start another or change your collection.", "detail");
+            else Primary(hero, "Explore campaigns  ›", () => Navigate(Page.Battles));
+            Text(parent, "PLAY YOUR WAY", "eyebrow");
+            var quick = Card(parent);
+            Text(quick, "Quick battle", "section");
+            Text(quick, "Mix factions. Defeat the opposition. Shared unit progression.", "detail");
+            Button(quick, "Prepare squad  ›", () => SelectMission("fixture-mixed"), !active);
+            if (active) Text(quick, "Finish your saved battle to begin another.", "hint");
+            var collection = Card(parent);
+            Text(collection, "Your units", "section");
+            Text(collection, menuView.Units.Count(u => u.Owned) + " unlocked • inspect stats, fragments and upgrades", "detail");
+            Button(collection, "Open collection  ›", () => Navigate(Page.Collection), !active);
+            Text(parent, "CAMPAIGN PROGRESS", "eyebrow");
             foreach (var c in menuView.Campaigns)
             {
-                Text(parent, (c.CampaignId == "fixture-starter" ? "Test campaign A" : "Test campaign B") + " • " + c.CompletedMissions + "/" + c.TotalMissions + " complete", "detail");
+                var card = Card(parent);
+                Text(card, c.CampaignId == "fixture-starter" ? "Test campaign A" : "Test campaign B", "section");
+                Meter(card, c.CompletedMissions, c.TotalMissions);
+                Text(card, c.CompletedMissions + " / " + c.TotalMissions + " missions completed", "hint");
                 if (!active && c.IsComplete && !c.RewardsClaimed)
-                    Button(parent, "Collect campaign completion reward", () => { menu.ClaimCampaign(c.CampaignId); message = "Campaign rewards collected. New units and missions are available."; });
+                    Primary(card, "Collect completion reward", () => { menu.ClaimCampaign(c.CampaignId); message = "Campaign rewards collected. New units and missions are available."; });
             }
-            Button(parent, reducedMotion ? "Animations: reduced" : "Animations: normal", () => reducedMotion = !reducedMotion);
         }
 
         private void SelectMission(string id)
@@ -143,63 +168,111 @@ namespace Ninefold.Presentation
 
         private void BuildSelection(VisualElement parent)
         {
-            Button(parent, "‹ Home", () => page = Page.Home);
-            Text(parent, "Campaigns", "section");
+            Text(parent, "Campaigns", "display-title");
+            Text(parent, "Choose a mission, prepare your squad, then deploy.", "detail");
             foreach (var group in menuView.Missions.Where(m => m.Definition.IsCampaign).GroupBy(m => m.Definition.FactionId))
             {
                 Text(parent, group.Key == "fixture-a" ? "Test campaign A" : "Test campaign B", "section");
                 foreach (var m in group.OrderBy(m => m.Definition.Id == "fixture-opening" ? 0 : 1))
                 {
                     string id = m.Definition.Id;
-                    Button(parent, MissionName(id) + (m.IsReplay ? " • completed / replay" : !m.Available ? " • locked" : " • available"), () => SelectMission(id), m.Available);
-                    Text(parent, Description(id), "detail");
-                    if (!m.Available) Text(parent, m.FactionRosterLocked ? "Unlock three standard units from this faction." : "Complete " + string.Join(", ", m.MissingPrerequisites.Select(MissionName)) + " first.", "hint");
+                    var card = Card(parent, m.Available ? "mission-card" : "locked-card");
+                    Text(card, m.IsReplay ? "COMPLETED · REPLAY AVAILABLE" : !m.Available ? "LOCKED" : "READY TO PLAY", "eyebrow");
+                    Text(card, MissionName(id), "section");
+                    Text(card, Description(id), "detail");
+                    Text(card, "Faction squad • " + m.Definition.MinimumSquad + "–" + m.Definition.MaximumSquad + " units", "hint");
+                    if (!m.Available) Text(card, m.FactionRosterLocked ? "Unlock three standard units from this faction." : "Complete " + string.Join(", ", m.MissingPrerequisites.Select(MissionName)) + " first.", "hint");
+                    Button(card, m.IsReplay ? "Replay mission  ›" : "Prepare squad  ›", () => SelectMission(id), m.Available);
                 }
             }
         }
 
         private void BuildBriefing(VisualElement parent)
         {
-            Button(parent, "‹ Home", () => page = Page.Home);
+            Button(parent, "‹ Back", () => Navigate(catalog.Missions[menuView.SelectedMissionId].IsCampaign ? Page.Battles : Page.Home));
             var definition = catalog.Missions[menuView.SelectedMissionId];
-            Text(parent, MissionName(definition.Id), "section"); Text(parent, Description(definition.Id), "detail");
-            Text(parent, "Squad • " + menuView.Squad.Count + "/" + definition.MaximumSquad + " selected • maximum one Apex", "section");
+            Text(parent, "MISSION BRIEFING", "eyebrow");
+            Text(parent, MissionName(definition.Id), "display-title");
+            var brief = Card(parent);
+            Text(brief, "Your objective", "section"); Text(brief, Description(definition.Id), "detail");
+            BuildMapPreview(brief, definition);
+            Text(brief, "No timer • progress retained after defeat", "hint");
+            Text(parent, "Choose your squad", "section");
+            Text(parent, menuView.Squad.Count + " / " + definition.MaximumSquad + " selected • maximum one Apex", "detail");
+            var roster = Row(parent); roster.AddToClassList("unit-grid");
             foreach (var u in menuView.Units.Where(u => u.EligibleForMission))
             {
                 string id = u.Definition.Id; bool selected = menuView.Squad.Contains(id);
-                Button(parent, (selected ? "✓ " : "+ ") + UnitName(id) + (u.Definition.Roster.IsApex ? " • Apex" : "") + "\n" + Stats(u), () => {
+                bool canAdd = selected || (menuView.Squad.Count < definition.MaximumSquad && (!u.Definition.Roster.IsApex || !menuView.Units.Any(x => menuView.Squad.Contains(x.Definition.Id) && x.Definition.Roster.IsApex)));
+                var tile = Button(roster, "", () => {
                     var squad = menu.Read().Squad.ToList(); if (!squad.Remove(id)) squad.Add(id); menu.SetSquad(squad);
-                });
+                }, canAdd);
+                tile.AddToClassList("unit-tile"); tile.EnableInClassList("selected", selected);
+                UnitBadge(tile, id, u.Definition.Roster.IsApex);
+                Text(tile, UnitName(id), "section");
+                Text(tile, u.Definition.Roster.IsApex ? "APEX" : "STANDARD", "eyebrow");
+                Text(tile, "HP " + u.Health + " • Armor " + u.Armor, "detail");
+                Text(tile, "Move " + u.Movement + " • Initiative " + u.Initiative, "hint");
+                Text(tile, selected ? "SELECTED" : canAdd ? "+ ADD TO SQUAD" : "SQUAD LIMIT", "tile-state");
             }
             string plan = menuView.PlanId;
-            Button(parent, "Deploy squad", () => { input = menu.Start(plan); inBattle = true; message = "Tap ground to preview movement. Choose Attack to see its range and valid targets."; }, menuView.CanStart);
+            var deploy = Card(content, "deploy-dock");
+            Text(deploy, menuView.Squad.Count + " units ready • " + MissionName(definition.Id), "hint");
+            Primary(deploy, "Deploy squad  ›", () => { input = menu.Start(plan); inBattle = true; message = "Tap ground to preview a move. Select an ability to find targets."; }, menuView.CanStart);
             if (!menuView.CanStart) Text(parent, "Select between " + definition.MinimumSquad + " and " + definition.MaximumSquad + " eligible units, with at most one Apex. " + menuView.SquadFailure, "detail");
         }
 
         private void BuildCollection(VisualElement parent)
         {
-            Button(parent, "‹ Home", () => { menu.Collection.Cancel(); page = Page.Home; });
             var view = menu.Collection.Read();
+            Text(parent, "Your collection", "display-title");
+            Text(parent, "Select a unit to inspect its kit and progression.", "detail");
+            var units = view.Factions.SelectMany(f => f.Units).ToArray();
+            if (inspectedUnit == null || !units.Any(u => u.Unit.Definition.Id == inspectedUnit)) inspectedUnit = units.First().Unit.Definition.Id;
+            var current = units.First(u => u.Unit.Definition.Id == inspectedUnit);
+            var detail = Card(parent, "unit-detail");
+            UnitBadge(detail, inspectedUnit, current.Unit.Definition.Roster.IsApex);
+            Text(detail, UnitName(inspectedUnit), "display-title");
+            Text(detail, (current.Unit.Owned ? "UNLOCKED" : "LOCKED") + (current.Unit.Definition.Roster.IsApex ? " · APEX" : " · STANDARD"), "eyebrow");
+            var stats = Row(detail); stats.AddToClassList("stat-row");
+            Stat(stats, "HEALTH", current.Unit.Health.ToString()); Stat(stats, "ARMOR", current.Unit.Armor.ToString());
+            Stat(stats, "INITIATIVE", current.Unit.Initiative.ToString()); Stat(stats, "MOVEMENT", current.Unit.Movement.ToString("0.##"));
+            Text(detail, "Rank " + current.Unit.Rank + " • " + current.Fragments + " fragments", "section");
+            var offer = current.Unit.Owned ? current.Advance : current.Unlock;
+            Meter(detail, current.Fragments, Math.Max(1, offer.Cost));
+            Text(detail, offer.CanConfirm ? "Ready to " + (current.Unit.Owned ? "advance" : "unlock") : CollectionReason(offer), "hint");
+            var operation = current.Unit.Owned ? CollectionOperation.Advance : CollectionOperation.Unlock;
+            Primary(detail, (current.Unit.Owned ? "Advance unit" : "Unlock unit") + " · " + offer.Cost + " fragments", () => menu.Collection.Preview(operation, inspectedUnit), offer.CanConfirm);
+            if (current.Unit.Owned)
+                Button(detail, current.Unit.CustomizationId == null ? "Adjust health / armor" : "Reset stat adjustment", () => menu.Collection.Preview(CollectionOperation.Customize, inspectedUnit, current.Unit.CustomizationId == null ? "fixture-health" : null));
+            Text(detail, "ABILITY KIT", "eyebrow");
+            foreach (var ability in current.Unit.Abilities)
+                Text(detail, AbilityName(ability.Slot) + " · " + (ability.IsPassivePlaceholder ? "Not implemented in this test kit" : ability.Slot == AbilitySlot.Passive ? "Automatic effect" : ability.Effect.Kind + " " + ability.Effect.Amount + " · Range " + ability.Effect.Range), "detail");
             if (view.Pending != null)
             {
+                detail.style.display = DisplayStyle.None;
                 var p = view.Pending;
-                Text(parent, p.Operation + " " + UnitName(p.UnitId), "section");
-                Text(parent, "Cost " + p.Cost + " / balance " + p.Balance + " fragments\nHP " + p.Before.Health + " → " + p.After.Health + " • Armor " + p.Before.Armor + " → " + p.After.Armor + "\n" + (p.CanConfirm ? "Confirm to save this change." : p.Block.ToString()), "detail");
-                Button(parent, "Confirm upgrade", () => { menu.Collection.Confirm(p.Id); message = "Collection change saved."; }, p.CanConfirm);
-                Button(parent, "Cancel preview", () => menu.Collection.Cancel());
+                var confirmation = Card(parent, "confirmation");
+                Text(confirmation, "Review change · " + UnitName(p.UnitId), "section");
+                Text(confirmation, "Health  " + p.Before.Health + " → " + p.After.Health + "\nArmor  " + p.Before.Armor + " → " + p.After.Armor + "\nRank  " + p.RankBefore + " → " + p.RankAfter, "detail");
+                Text(confirmation, p.ResourceId == null ? "No fragment cost" : "Spend " + p.Cost + " of your " + p.Balance + " fragments", "preview");
+                Primary(confirmation, "Confirm & save", () => { menu.Collection.Confirm(p.Id); message = "Unit updated. Changes apply across modes."; }, p.CanConfirm);
+                Button(confirmation, "Cancel", () => menu.Collection.Cancel());
+                return;
             }
             foreach (var faction in view.Factions)
             {
                 Text(parent, faction.Id == "fixture-a" ? "Test faction A" : "Test faction B", "section");
+                var roster = Row(parent); roster.AddToClassList("unit-grid");
                 foreach (var u in faction.Units)
                 {
                     string id = u.Unit.Definition.Id;
-                    Text(parent, UnitName(id) + (u.Unit.Owned ? " • owned" : " • locked") + "\n" + Stats(u.Unit) + "\nFragments: " + u.Fragments + " • Rank: " + u.Unit.Rank, "detail");
-                    var operation = u.Unit.Owned ? CollectionOperation.Advance : CollectionOperation.Unlock;
-                    var offer = u.Unit.Owned ? u.Advance : u.Unlock;
-                    Button(parent, operation + " • " + offer.Cost + " fragments" + (offer.CanConfirm ? "" : " • " + offer.Block), () => menu.Collection.Preview(operation, id), offer.CanConfirm);
-                    if (u.Unit.Owned)
-                        Button(parent, u.Unit.CustomizationId == null ? "Preview health / armor trade-off" : "Preview reset customization", () => menu.Collection.Preview(CollectionOperation.Customize, id, u.Unit.CustomizationId == null ? "fixture-health" : null));
+                    var tile = Button(roster, "", () => { menu.Collection.Cancel(); inspectedUnit = id; });
+                    tile.AddToClassList("unit-tile"); tile.EnableInClassList("selected", id == inspectedUnit);
+                    UnitBadge(tile, id, u.Unit.Definition.Roster.IsApex);
+                    Text(tile, UnitName(id), "section");
+                    Text(tile, u.Unit.Owned ? "Rank " + u.Unit.Rank : "Locked", "detail");
+                    Text(tile, u.Fragments + " fragments", "hint");
                 }
             }
         }
@@ -207,18 +280,31 @@ namespace Ninefold.Presentation
         private void BuildResults(VisualElement parent)
         {
             var r = menuView.Results;
-            Text(parent, r.Result.Outcome.ToString(), "section");
-            Text(parent, MissionName(r.Result.MissionId) + " • round " + r.Result.Round + "\n" + r.Result.Reason, "detail");
-            Text(parent, r.Grants.Count == 0 ? "No rewards this attempt. Your units and progression are kept." : string.Join("\n", r.Grants.Select(g => ResourceName(g.ResourceId) + " +" + g.Amount)), "detail");
-            Button(parent, r.Claimed ? "Rewards saved" : "Claim & save rewards", () => { menu.ClaimRewards(r.Result.AttemptId); message = "Rewards saved once for this attempt."; }, r.CanClaim);
-            Button(parent, "Return home", () => { menu.ReturnToSelection(r.Result.AttemptId); page = Page.Home; inBattle = false; message = "Battle complete. Choose your next activity."; }, r.Claimed);
+            var summary = Card(parent, "hero");
+            Text(summary, "BATTLE COMPLETE", "eyebrow");
+            Text(summary, r.Result.Outcome.ToString(), "display-title");
+            Text(summary, MissionName(r.Result.MissionId) + " • round " + r.Result.Round + "\n" + r.Result.Reason, "detail");
+            Text(summary, "Your units and progression are retained.", "hint");
+            var rewards = Card(parent);
+            Text(rewards, "Battle rewards", "section");
+            Text(rewards, r.Grants.Count == 0 ? "No rewards this attempt." : string.Join("\n", r.Grants.Select(g => "+" + g.Amount + "  " + ResourceName(g.ResourceId))), "reward-list");
+            Primary(rewards, r.Claimed ? "Rewards saved" : "Collect rewards", () => { menu.ClaimRewards(r.Result.AttemptId); message = "Rewards saved."; }, r.CanClaim);
+            Primary(parent, "Return home", () => { menu.ReturnToSelection(r.Result.AttemptId); page = Page.Home; inBattle = false; message = "Battle complete. Choose your next activity."; }, r.Claimed);
         }
 
         private void BuildBattle()
         {
             var b = battleView.Battle;
-            Text(content, MissionName(b.MissionId) + " • round " + b.Round, "section");
-            Text(content, "Turn: " + UnitName(b.Activation?.UnitId) + "  |  Next: " + string.Join(" › ", b.UpcomingTurns.Take(4).Select(UnitName)), "detail");
+            var top = Card(content, "battle-header");
+            var line = Row(top);
+            Text(line, MissionName(b.MissionId) + " · Round " + b.Round, "section");
+            Button(line, "Home", () => { input.Cancel(); inBattle = false; Navigate(Page.Home); }, !battleView.IsAnimating);
+            foreach (var o in b.Objectives)
+                Text(top, (o.Kind == ObjectiveKind.Stabilize ? "Stabilize the gold objective" : "Defeat the opposition") + " · " + o.Progress + "/" + o.Required, "objective-text");
+            var turns = Row(top); turns.AddToClassList("turn-strip");
+            var actor = b.Units.FirstOrDefault(u => u.Id == b.Activation?.UnitId);
+            Text(turns, (actor?.IsEnemyControlled == true ? "ENEMY · " : "NOW · ") + UnitName(b.Activation?.UnitId), "current-turn");
+            foreach (var id in b.UpcomingTurns.Take(3)) Text(turns, UnitName(id), "turn-chip");
             surface = new VisualElement { name = "battle-surface" }; surface.style.flexGrow = 1; surface.style.minHeight = 100;
             surface.style.overflow = Overflow.Hidden; content.Add(surface);
             surface.RegisterCallback<PointerDownEvent>(e => {
@@ -234,7 +320,7 @@ namespace Ninefold.Presentation
             });
             field.Show(battleView, catalog.Missions[b.MissionId].Objectives, surface);
             // Fixed footer height prevents previews changing the camera viewport under a second tap.
-            var footer = new ScrollView(); footer.style.height = 330; footer.style.flexShrink = 0;
+            var footer = new ScrollView(); footer.AddToClassList("battle-dock");
             content.Add(footer);
             controls = new VisualElement(); controls.AddToClassList("controls"); footer.Add(controls);
             BuildControls();
@@ -245,15 +331,15 @@ namespace Ninefold.Presentation
             controls.Clear();
             var b = battleView.Battle;
             bool ready = !battleView.IsAnimating && !suspended;
-            foreach (var o in b.Objectives) Text(controls, o.Kind + " • " + o.Progress + "/" + o.Required + " • " + o.Status, "detail");
-            if (b.Activation != null) Text(controls, "Move " + b.Activation.MovementRemaining.ToString("0.##") + " • Action " + (b.Activation.PrimaryActionAvailable ? "ready" : "spent"), "detail");
+            if (b.Activation != null) Text(controls, UnitName(b.Activation.UnitId) + " · Movement " + b.Activation.MovementRemaining.ToString("0.##") + " · " + (b.Activation.PrimaryActionAvailable ? "1 action ready" : "Action spent"), "actor-status");
             var selected = b.Units.FirstOrDefault(u => u.Id == battleView.SelectedUnitId);
             if (selected?.Health != null) Text(controls, UnitName(selected.Id) + " • HP " + selected.Health.CurrentHealth + "/" + selected.Health.MaximumHealth + " • Armor " + selected.EffectiveArmor, "detail");
             var row = Row(controls);
             foreach (var a in b.Actions.Where(a => a.Slot != AbilitySlot.Passive))
             {
                 var slot = a.Slot;
-                var button = Button(row, slot == AbilitySlot.NormalAttack ? "Attack" : slot == AbilitySlot.Main ? "Heal" : "Signature", () => Handle(input.SelectAbility(slot)), ready && a.CanSelect);
+                var button = Button(row, AbilityName(slot) + "\n" + (a.CanSelect ? slot == AbilitySlot.Signature ? "Once per battle" : "Select target" : ActionReason(a)), () => Handle(input.SelectAbility(slot)), ready && a.CanSelect);
+                button.AddToClassList("ability-button");
                 button.tooltip = a.CanSelect ? "Select, then tap a target to preview." : a.Block + " / " + a.RuleFailure;
                 if (battleView.SelectedAbility == slot) button.AddToClassList("selected");
             }
@@ -261,27 +347,24 @@ namespace Ninefold.Presentation
             {
                 var actor = b.Units.First(u => u.Id == b.Activation.UnitId);
                 var ability = actor.Abilities.First(a => a.Slot == battleView.SelectedAbility.Value);
-                Text(controls, "Range " + ability.Range + " • outlined units are valid targets. Walls can block attacks.", "detail");
-                foreach (var t in battleView.Targets.Where(t => b.Units.Any(u => u.Id == t.TargetId && u.IsEligible && (ability.Target == AbilityTarget.Enemy ? u.IsEnemyControlled : u.IsPlayerSquad))))
-                    Text(controls, UnitName(t.TargetId) + (t.IsValid ? " • target available" : " • " + (t.FieldFailure == FieldFailure.HealthRejected ? t.HealthFailure.ToString() : t.FieldFailure.ToString())), "hint");
+                Text(controls, "Range " + ability.Range + " · " + battleView.Targets.Count(t => t.IsValid) + " valid targets marked in gold", "hint");
             }
             if (battleView.Pending != null)
             {
                 var p = battleView.Pending;
                 string preview = p.Kind == IntentKind.Movement ? "Move cost " + p.Movement.Cost.ToString("0.##") + (p.RequestedDestination.HasValue && !p.RequestedDestination.Value.Equals(p.Movement.Path.Last()) ? " • stops at this turn’s movement limit" : "") : p.Kind == IntentKind.Interaction ? "Stabilize • uses this turn's action" : UnitName(p.Target.TargetId) + " • HP " + p.Target.Effect.Health?.HealthBefore + " → " + p.Target.Effect.Health?.HealthAfter;
-                Text(controls, preview, "preview");
-                Button(controls, "Confirm " + p.Kind, () => Handle(input.Confirm(p.Id)), ready);
+                var confirm = Row(controls); confirm.AddToClassList("intent-row");
+                Text(confirm, preview, "preview");
+                Primary(confirm, p.Kind == IntentKind.Movement ? "Move here" : p.Kind == IntentKind.Interaction ? "Stabilize" : "Use ability", () => Handle(input.Confirm(p.Id)), ready);
             }
+            else Text(controls, battleView.IsAnimating ? "Resolving action…" : b.Phase != BattleSessionPhase.PlayerInput ? "Enemy turn…" : battleView.SelectedAbility.HasValue ? "Tap a marked unit to preview the effect." : "Tap the ground to preview movement.", "hint");
             row = Row(controls);
             Button(row, "Cancel / move", () => Handle(input.Cancel()), ready);
             if (b.Objectives.Any(o => o.Kind == ObjectiveKind.Stabilize && o.Status == ObjectiveStatus.Active))
                 Button(row, "Stabilize", () => Handle(input.TapObjective("primary")), ready && b.Phase == BattleSessionPhase.PlayerInput);
             long activation = b.Activation?.ActivationId ?? 0;
             Button(row, "End turn", () => Handle(input.EndTurn(activation)), ready && b.Phase == BattleSessionPhase.PlayerInput);
-            row = Row(controls);
-            Button(row, "Home (saved)", () => { input.Cancel(); inBattle = false; page = Page.Home; }, ready);
-            Button(row, reducedMotion ? "Motion: reduced" : "Motion: normal", () => reducedMotion = !reducedMotion, ready);
-            Text(controls, "Tap twice on the same destination/target to confirm, or use Confirm. No turn timer.", "hint");
+            Text(controls, "Tap again to confirm · Cyan: allies · Red: enemies · Gold: objective / target", "legend");
         }
 
         private void Pick(Vector2 panelPosition)
@@ -298,8 +381,8 @@ namespace Ninefold.Presentation
 
         private void Handle(BattleInputResult result)
         {
-            message = result.Outcome == InputOutcome.Rejected ? "Unavailable: " + result.FieldFailure + " / " + result.HealthFailure + " / " + result.InteractionFailure
-                : result.Outcome == InputOutcome.Previewed ? "Preview only — confirm to commit." : result.Outcome == InputOutcome.Selected ? "Selection updated." : "Saved • " + result.Outcome;
+            message = result.Outcome == InputOutcome.Rejected ? RejectionReason(result)
+                : result.Outcome == InputOutcome.Previewed ? "Preview ready. Tap again or confirm below." : result.Outcome == InputOutcome.Selected ? "Choose a target or destination." : result.Outcome == InputOutcome.Committed ? "Progress saved." : "Ready.";
             notice.text = message;
             if (result.AnimationId != null)
             {
@@ -360,6 +443,122 @@ namespace Ninefold.Presentation
                 Text(content, savePath ?? "", "detail");
             }
         }
+        private void Navigate(Page destinationPage)
+        {
+            menu.Collection.Cancel(); page = destinationPage; menuScroll = null;
+            message = "Your progress saves automatically.";
+        }
+        private void BuildNavigation(VisualElement parent)
+        {
+            var nav = Row(parent); nav.AddToClassList("navigation");
+            bool activeBattle = menuView.Phase == MissionFlowPhase.Battle;
+            foreach (var target in new[] { Page.Home, Page.Battles, Page.Collection, Page.Settings })
+            {
+                var destinationPage = target;
+                var label = target == Page.Battles ? "Campaigns" : target == Page.Collection ? "Units" : target.ToString();
+                var button = Button(nav, label, () => Navigate(destinationPage), !activeBattle || target == Page.Home || target == Page.Settings);
+                button.EnableInClassList("selected", page == target);
+            }
+        }
+        private void BuildSettings(VisualElement parent)
+        {
+            Text(parent, "Settings & help", "display-title");
+            var motion = Card(parent);
+            Text(motion, "Battle animations", "section");
+            Text(motion, "Reduced motion skips movement and action playback without changing the battle rules.", "detail");
+            Button(motion, reducedMotion ? "Reduced motion: ON" : "Reduced motion: OFF", () => {
+                reducedMotion = !reducedMotion; PlayerPrefs.SetInt("Ninefold.ReducedMotion", reducedMotion ? 1 : 0); PlayerPrefs.Save();
+            });
+            var help = Card(parent);
+            Text(help, "How to play", "section");
+            Text(help, "1. Tap ground to preview a move.\n2. Tap the same destination again, or select Move here.\n3. Select an ability, then a marked target. Review the effect before confirming.\n4. End your turn when ready. There is no timer.", "detail");
+            Text(help, "Long moves stop at your remaining movement allowance. Walls, units and arena boundaries still limit valid destinations.", "detail");
+            Text(help, "Cyan units are allies; red units are enemies. Gold marks objectives and valid targets. Striped ground costs extra movement.", "detail");
+            Text(parent, "DEVELOPMENT BUILD", "eyebrow");
+            Text(parent, "Units, maps and badges in this build are abstract test content. They are not the final Ninefold art or canonical faction designs.", "detail");
+        }
+        private static string AbilityName(AbilitySlot slot) => slot == AbilitySlot.NormalAttack ? "Attack" : slot == AbilitySlot.Main ? "Main ability" : slot == AbilitySlot.Passive ? "Passive" : "Signature";
+        private static string ActionReason(BattleActionView action)
+        {
+            if (action.Block == ActionBlock.NotPlayerTurn) return "Wait for your turn";
+            switch (action.RuleFailure)
+            {
+                case AbilityUseFailure.PrimaryActionSpent: return "Action spent";
+                case AbilityUseFailure.MainOnCooldown: return "On cooldown";
+                case AbilityUseFailure.SignatureNotReady: return "Attack to prepare";
+                case AbilityUseFailure.SignatureAlreadyUsed: return "Already used";
+                default: return "Unavailable";
+            }
+        }
+        private static string CollectionReason(CollectionOffer offer)
+        {
+            switch (offer.Block)
+            {
+                case CollectionBlock.InsufficientFragments: return offer.MissingFragments + " more fragments needed";
+                case CollectionBlock.MaximumRank: return "Maximum test rank reached";
+                case CollectionBlock.NotAtSelection: return "Finish your saved battle first";
+                default: return "No upgrade available";
+            }
+        }
+        private static string RejectionReason(BattleInputResult result)
+        {
+            switch (result.FieldFailure)
+            {
+                case FieldFailure.IllegalDestination: return "Choose an unoccupied spot inside the battlefield.";
+                case FieldFailure.OutOfRange: return "Target is out of range. Move closer first.";
+                case FieldFailure.Obstructed: return "Terrain blocks this attack. Find a clear angle.";
+                case FieldFailure.BlockedPath: case FieldFailure.PathNotFound: return "There is no clear route to that spot.";
+                case FieldFailure.InsufficientMovement: return "No movement remaining for that route.";
+                case FieldFailure.InvalidTarget: return "Choose a valid target for this ability.";
+                default: return result.InteractionFailure != InteractionFailure.None ? "Move into reach of the objective and keep your action available." : "That action is unavailable. Check your target and remaining action.";
+            }
+        }
+        private static VisualElement Card(VisualElement parent, string extra = null)
+        {
+            var card = new VisualElement(); card.AddToClassList("card");
+            if (extra != null) card.AddToClassList(extra); parent.Add(card); return card;
+        }
+        private static void BuildMapPreview(VisualElement parent, MissionContent mission)
+        {
+            Text(parent, "BATTLEFIELD OVERVIEW", "eyebrow");
+            var map = new VisualElement { pickingMode = PickingMode.Ignore }; map.AddToClassList("map-preview"); parent.Add(map);
+            var bounds = mission.Map.Bounds;
+            float width = (float)(bounds.Max.X-bounds.Min.X), depth = (float)(bounds.Max.Z-bounds.Min.Z);
+            void Mark(float x, float z, float w, float d, string cls)
+            {
+                var item = new VisualElement { pickingMode = PickingMode.Ignore }; item.AddToClassList(cls);
+                item.style.position = Position.Absolute;
+                item.style.left = Length.Percent((x-(float)bounds.Min.X)/width*100);
+                item.style.top = Length.Percent(((float)bounds.Max.Z-z-d)/depth*100);
+                item.style.width = Length.Percent(w/width*100); item.style.height = Length.Percent(d/depth*100); map.Add(item);
+            }
+            foreach (var ground in mission.Map.Ground)
+                Mark((float)ground.Bounds.Min.X,(float)ground.Bounds.Min.Z,(float)(ground.Bounds.Max.X-ground.Bounds.Min.X),(float)(ground.Bounds.Max.Z-ground.Bounds.Min.Z),"map-slow");
+            foreach (var obstacle in mission.Map.Obstacles)
+                Mark((float)obstacle.Bounds.Min.X,(float)obstacle.Bounds.Min.Z,(float)(obstacle.Bounds.Max.X-obstacle.Bounds.Min.X),(float)(obstacle.Bounds.Max.Z-obstacle.Bounds.Min.Z),"map-cover");
+            foreach (var objective in mission.Objectives.Where(o=>o.Interaction!=null))
+                Mark((float)objective.Interaction.Point.X-.5f,(float)objective.Interaction.Point.Z-.5f,1,1,"map-objective");
+            foreach (var point in mission.Deployment)
+                Mark((float)point.X-.2f,(float)point.Z-.2f,.4f,.4f,"map-deploy");
+            Text(parent, "Cyan: deployment · Gray: cover · Amber: slow ground · Gold: objective", "hint");
+        }
+        private Button Primary(VisualElement parent, string label, Action action, bool enabled = true)
+        { var button = Button(parent, label, action, enabled); button.AddToClassList("primary"); return button; }
+        private static void Meter(VisualElement parent, long value, long maximum)
+        {
+            var track = new VisualElement(); track.AddToClassList("progress-track"); parent.Add(track);
+            var fill = new VisualElement(); fill.AddToClassList("progress-fill");
+            fill.style.width = Length.Percent(maximum <= 0 ? 0 : Mathf.Clamp01((float)value / maximum) * 100); track.Add(fill);
+        }
+        private static void Stat(VisualElement parent, string label, string value)
+        { var item = Card(parent, "stat"); Text(item, value, "section"); Text(item, label, "hint"); }
+        private static void UnitBadge(VisualElement parent, string id, bool apex)
+        {
+            // Abstract ID badges, not faction emblems or substitutes for locked visual masters.
+            var badge = new VisualElement { pickingMode = PickingMode.Ignore }; badge.AddToClassList("unit-badge");
+            badge.EnableInClassList("apex-badge", apex); badge.EnableInClassList("faction-b", id.StartsWith("fixture-b-"));
+            Text(badge, UnitName(id), "badge-id").pickingMode = PickingMode.Ignore; parent.Add(badge);
+        }
         private Button Button(VisualElement parent, string label, Action action, bool enabled = true)
         {
             var b = new Button(() => { if (!fatal && !dirty && !suspended && playback == null) Guard(() => { action(); dirty = true; }); }) { text = label };
@@ -368,7 +567,6 @@ namespace Ninefold.Presentation
         private static VisualElement Row(VisualElement parent) { var row = new VisualElement(); row.AddToClassList("row"); parent.Add(row); return row; }
         private static Label Text(VisualElement parent, string text, string cls) { var l = new Label(text); l.AddToClassList(cls); parent.Add(l); return l; }
         public static string UnitName(string id) => id == null ? "—" : id.Replace("fixture-enemy-", "Enemy ").Replace("fixture-a-", "A").Replace("fixture-b-", "B");
-        private static string Stats(PreparationUnit u) => "HP " + u.Health + " • Armor " + u.Armor + " • Initiative " + u.Initiative + " • Move " + u.Movement;
         private static string ResourceName(string id) => id.StartsWith("fragment-") ? UnitName(id.Substring(9)) + " fragments" : "Test supplies";
         private static string Description(string id) => id == "fixture-mixed" ? "Defeat the enemy. Use either side of the central cover island to approach." : id == "fixture-opening" ? "Stabilize the marked objective. An open center with offset side cover." : id == "fixture-finale" ? "Stabilize the objective. A northern barrier and slow central ground change your routes." : "Stabilize the objective with faction B units. Offset walls create an asymmetric arena.";
         private static string MissionName(string id) => id == "fixture-opening" ? "Stabilization" : id == "fixture-mixed" ? "Quick combat" : id == "fixture-finale" ? "Campaign finale" : "Faction B: stabilization";
