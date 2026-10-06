@@ -91,7 +91,7 @@ internal static partial class Program
     }
     private static void InputInvalidMove()
     {
-        var x=new SessionFixture(); var i=Input(x); i.TapDestination(P(1,0)); string before=x.Bytes(); var r=i.TapDestination(P(19,19));
+        var x=new SessionFixture(); var i=Input(x); i.TapDestination(P(1,0)); string before=x.Bytes(); var r=i.TapDestination(P(21,21));
         Equal(InputOutcome.Rejected,r.Outcome); Equal(false,r.FieldFailure==FieldFailure.None); Equal(false,i.Read().CanConfirm); Equal(before,x.Bytes());
     }
     private static void InputCancel()

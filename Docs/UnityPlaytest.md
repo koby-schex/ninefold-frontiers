@@ -41,9 +41,11 @@ packages to work around it. The `Ninefold` menu appears only after scripts compi
 4. Open the **Game** tab. In its resolution/aspect dropdown, add a **Fixed Resolution**
    of **540 × 960**, named `Portrait playtest`, then select it. Fit/scale the preview
    to your editor window. Maximize the Game tab if needed.
-5. Press Unity's **Play** button at the top. You should see mission selection.
+5. Press Unity's **Play** button at the top. You should see Home with Campaigns, Quick battle, and Units & upgrades.
 
 The scene setup command reopens an existing integration scene instead of replacing it.
+It also repairs a missing UI Document Panel Settings reference and saves that repair.
+Existing non-null panel assignments are preserved.
 It does not run automatically or add the test scene to the player build list.
 If mouse/touch UI is unresponsive, check **Edit > Project Settings > Player > Other
 Settings > Configuration > Active Input Handling**. This fixture uses Unity's built-in
@@ -55,23 +57,23 @@ If Unity asks for an editor restart after an input-setting change, allow the res
 
 ### Stabilization and saving
 
-1. Select **01 · Stabilization test**. Three owned test units are selected automatically.
+1. From Home choose **Campaigns**, then **Stabilization**. Three owned test units are selected automatically.
    You can deselect/reselect units before deploying; invalid squads disable Deploy.
 2. Choose **Deploy**. You should see cyan capsules with numeric health bars, a grid,
    and a gold active-unit marker. Every active unit has a health bar without selection.
 3. Click empty ground near the active unit. A route and movement cost should preview.
    **Cancel / move** must not spend movement. Preview again and use **Confirm Movement**,
    or tap the same destination marker again. The unit should move once.
-4. Choose **Reload / resume**. Position and remaining movement should be preserved.
+4. Choose **Home (saved)**, then **Resume battle**. Position and remaining movement should be preserved.
    An unconfirmed preview should not survive a reload.
 5. Choose **Stabilize**, then **Confirm Interaction**. If you moved outside its reach,
    move closer on a later turn; the test objective is at the original A1 deployment.
-6. On Victory, choose **Claim & save rewards**, then **Return to missions**. The claim
+6. On Victory, choose **Claim & save rewards**, then **Return home**. The claim
    becomes unavailable after use. Replaying this mission uses its smaller replay reward.
 
 ### Combat and enemy turns
 
-1. Select **02 · Combat test**, keep the three units and deploy.
+1. From Home choose **Quick battle**, keep the three units and deploy.
 2. Confirm that cyan allies and the red enemy all have visible health bars.
 3. Tap **Attack**, then the enemy. The preview shows its health before and after.
    Confirm, or tap that enemy again. Its health should change once, with no miss roll.
@@ -86,14 +88,29 @@ If Unity asks for an editor restart after an input-setting change, allow the res
 
 ### Shared progression
 
-From mission selection, open **Unit collection & upgrades**. First-clear rewards can
+From Home, open **Units & upgrades**. First-clear rewards can
 unlock A4 and advance A1. Preview an upgrade, cancel it, then preview and confirm it;
 only confirmation should spend fragments. Try the free health/armor trade-off and
-check the same stats in squad preparation. Complete **03 · Starter completion test**
-after the opening test, claim its mission reward, then claim the separate starter
+check the same stats in squad preparation. Complete **Campaign finale**
+after the opening test, claim its mission reward, then return Home to claim the separate starter
 campaign completion reward. A5 and B1/B2/B3 should become owned; the faction B test
 becomes available. This shortened fixture tests one-time reward behavior, not the
 approved production campaign length.
+
+## Next-pass acceptance checks
+
+- Home separates Campaigns, Quick battle and Units & upgrades. A saved battle shows Resume.
+  Campaign mission selection opens a separate briefing/squad screen before Deploy.
+- Four new fixture arenas have different bounds/obstacle layouts. Gold edge rails mark the
+  legal battlefield. Units cannot cross those edges; the camera does not chase units outward.
+- Select Attack: a cyan range boundary appears and valid targets receive gold markers.
+  Walls still block attacks; the target verdict and health preview are authoritative. The
+  outline is nominal range clipped to the flat arena, not a promise that every point has line of sight.
+- Click a legal destination beyond the movement budget: preview shows the reachable stopping
+  point and cost. Confirm moves only to that point. Obstacles, units and slow terrain affect
+  the route. No movement is queued for later turns. Outside-map, occupied and unreachable
+  destinations still reject without spending movement.
+- Finish an old saved battle before judging the new maps; it intentionally retains its old layout.
 
 ## Controls and limitations
 
@@ -105,7 +122,7 @@ approved production campaign length.
   control of it. Attack/heal/signature buttons always refer to the active unit.
 - Actions commit to disk **before** basic movement/attack feedback plays. During that
   feedback, gameplay input is locked. **Motion: reduced** skips the interpolation.
-- The camera automatically frames the current living units. Manual camera gestures,
+- The camera keeps the full authored battlefield in a fixed frame. Manual camera gestures,
   production terrain/verticality, cinematic animations, audio, final accessibility and
   device performance tuning are future work. Passive is an explicit placeholder here.
 - The bottom control area scrolls if needed, keeping its height stable when a preview
@@ -113,7 +130,10 @@ approved production campaign length.
 
 ## Saves and recovery
 
-Test saves live in `Application.persistentDataPath/AbstractPlaytest-v1`, separate from
+Test progression remains in `Application.persistentDataPath/AbstractPlaytest-v1`. New arena
+battles use its `Layouts-v2` subfolder. Existing unclaimed battles resume with their old
+catalog until completed/claimed, then new battles use the distinct layouts. Progression
+and reward receipts stay shared: no copies, resets or duplicate grants. These files are separate from
 future production profiles. On Windows this is under `%USERPROFILE%\AppData\LocalLow`
 with Unity's configured company/product folders. All writes use the existing two-slot
 battle/profile stores. No save-on-quit is required; accepted commands already checkpoint.

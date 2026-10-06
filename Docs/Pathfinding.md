@@ -66,3 +66,11 @@ slopes, forced movement, traversal exceptions, movement discounts and performanc
 real maps/devices remain deferred. The existing map volume must explicitly mark holes
 as blockers. Routing does not grant flying, climbing, gap-crossing or faction powers.
 No canon, PF1-8, locked visual masters or unit balance values change in this PR.
+# Affordable movement previews
+
+`TryFindReachablePath` finds a legal route to a destination and returns its affordable
+prefix when the full route exceeds remaining movement. It uses the existing terrain
+cost and body collision rules; preview never spends resources. Illegal destinations,
+out-of-map positions, disconnected routes and exhausted budgets remain rejected.
+Truncation uses the supported six-decimal coordinate precision and revalidates the
+prefix. The original `TryFindPath` / `TryMoveTo` APIs remain strict full-route operations.
