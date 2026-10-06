@@ -1,5 +1,10 @@
 # Saved battle session
 
+Construct from an opened flow. A session binds its attempt and lifetime immediately;
+reload or a subsequent mission start expires it. Retained reads and commands then
+throw before saving. Recreate the session/presentation/input controller after these
+boundaries; ordinary battle commands retain the existing session.
+
 `BattleSession` coordinates a running `MissionFlow` for a future presentation layer.
 It is a single-threaded, untimed adapter, not a Unity component or an autoplay loop.
 Each `Advance` commits at most one completed step, allowing the caller to animate

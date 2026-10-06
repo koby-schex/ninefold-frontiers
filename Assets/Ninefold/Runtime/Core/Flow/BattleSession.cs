@@ -33,9 +33,15 @@ namespace Ninefold.Core.Flow
     public sealed class BattleSession
     {
         private readonly MissionFlow flow;
+        private readonly object sessionVersion;
         internal object BattleVersion => flow.BattleVersion;
         private string attemptId;
-        public BattleSession(MissionFlow flow) { this.flow = flow ?? throw new ArgumentNullException(nameof(flow)); }
+        public BattleSession(MissionFlow flow)
+        {
+            this.flow = flow ?? throw new ArgumentNullException(nameof(flow));
+            sessionVersion = flow.SessionVersion;
+            Bind(flow.ReadBattle());
+        }
         public BattleSessionView Read()
         {
             var b = ReadSnapshot();
@@ -49,6 +55,8 @@ namespace Ninefold.Core.Flow
         { var b = ReadSnapshot(); if (b == null) throw new InvalidOperationException("No battle."); RequirePlayer(b,activationId); return b; }
         private void Bind(BattleTurnController b)
         {
+            if (!ReferenceEquals(sessionVersion,flow.SessionVersion))
+                throw new InvalidOperationException("Session expired; create a new session after reload or mission start.");
             if (b == null) return;
             string id = b.Mission?.Definition.AttemptId ?? throw new InvalidOperationException("Session requires a mission.");
             if (attemptId != null && attemptId != id) throw new InvalidOperationException("Create a new session for a new mission attempt.");

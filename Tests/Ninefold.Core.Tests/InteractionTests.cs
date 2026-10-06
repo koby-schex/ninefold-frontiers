@@ -147,7 +147,8 @@ internal static partial class Program
     private static void InputSameFlowReload()
     {
         var x=new SessionFixture(); var i=Input(x); i.TapDestination(P(1,0)); string id=i.Read().Pending.Id;
-        x.Flow.Open(); Equal(InputOutcome.Stale,i.Confirm(id).Outcome); Equal(P(0,0),Bar(i,"a").Position);
+        x.Flow.Open(); Throws<InvalidOperationException>(()=>i.Confirm(id));
+        x.Session=new BattleSession(x.Flow); i=Input(x); Equal(P(0,0),Bar(i,"a").Position); Equal(InputOutcome.NoPreview,i.Confirm(id).Outcome);
     }
     private static void InputRefresh()
     {
