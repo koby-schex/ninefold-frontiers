@@ -19,12 +19,13 @@ namespace Ninefold.Core.Views
         public AbilitySlot? Slot { get; }
         public TargetPreview Target { get; }
         public string ObjectiveId { get; }
+        public FieldPoint? RequestedDestination { get; }
         internal object Version { get; }
         internal BattleIntent(BattleView view, IntentKind kind, MovementPreview movement = null,
-            AbilitySlot? slot = null, TargetPreview target = null, string objective = null)
+            AbilitySlot? slot = null, TargetPreview target = null, string objective = null, FieldPoint? requestedDestination = null)
         {
             Version = view.Version; ActivationId = view.Activation.ActivationId; ActorId = view.Activation.UnitId;
-            Kind = kind; Movement = movement; Slot = slot; Target = target; ObjectiveId = objective;
+            Kind = kind; Movement = movement; RequestedDestination = requestedDestination; Slot = slot; Target = target; ObjectiveId = objective;
         }
     }
     public sealed class InteractionView
@@ -36,8 +37,9 @@ namespace Ninefold.Core.Views
         public string AnimationId { get; }
         public bool IsAnimating => AnimationId != null;
         public bool CanConfirm => Pending != null && !IsAnimating;
-        internal InteractionView(BattleView battle, string unit, AbilitySlot? ability, BattleIntent pending, string animation)
-        { Battle = battle; SelectedUnitId = unit; SelectedAbility = ability; Pending = pending; AnimationId = animation; }
+        public System.Collections.Generic.IReadOnlyList<TargetPreview> Targets { get; }
+        internal InteractionView(BattleView battle, string unit, AbilitySlot? ability, BattleIntent pending, string animation, System.Collections.Generic.IReadOnlyList<TargetPreview> targets)
+        { Battle = battle; SelectedUnitId = unit; SelectedAbility = ability; Pending = pending; AnimationId = animation; Targets = targets; }
     }
     public sealed class BattleInputResult
     {
@@ -67,7 +69,8 @@ namespace Ninefold.Core.Views
         public InteractionView Read()
         {
             var view = Synchronize();
-            return new InteractionView(view,selectedUnit,selectedAbility,pending,animationId);
+            var targets = selectedAbility.HasValue && Player(view) ? presentation.PreviewTargets(view.Activation.ActivationId,selectedAbility.Value) : Array.AsReadOnly(Array.Empty<TargetPreview>());
+            return new InteractionView(view,selectedUnit,selectedAbility,pending,animationId,targets);
         }
         private BattleView Synchronize()
         {
@@ -114,12 +117,12 @@ namespace Ninefold.Core.Views
             if (animationId != null) return Result(InputOutcome.Locked);
             var view = Synchronize();
             if (!Player(view)) return Result(InputOutcome.Rejected);
-            if (pending?.Kind == IntentKind.Movement && pending.Movement.Path.Last().Equals(destination)) return Confirm(pending.Id);
+            if (pending?.Kind == IntentKind.Movement && (pending.Movement.Path.Last().Equals(destination) || pending.RequestedDestination.Equals(destination))) return Confirm(pending.Id);
             ClearChoices();
-            if (!presentation.TryPreviewDestination(view.Activation.ActivationId,destination,out var movement,out var failure))
+            if (!presentation.TryPreviewReachableDestination(view.Activation.ActivationId,destination,out var movement,out var failure))
                 return new BattleInputResult(InputOutcome.Rejected,field:failure);
             selectedUnit = view.Activation.UnitId; choiceVersion = view.Version;
-            pending = new BattleIntent(view,IntentKind.Movement,movement:movement); return Result(InputOutcome.Previewed);
+            pending = new BattleIntent(view,IntentKind.Movement,movement:movement,requestedDestination:destination); return Result(InputOutcome.Previewed);
         }
         public BattleInputResult TapObjective(string objectiveId)
         {

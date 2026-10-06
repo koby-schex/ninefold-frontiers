@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Ninefold.Core.Combat;
 using Ninefold.Core.Views;
+using Ninefold.Core.Missions;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
@@ -15,7 +16,7 @@ namespace Ninefold.Presentation
     {
         private sealed class Token
         {
-            public GameObject Body;
+            public GameObject Body, TargetRing;
             public VisualElement Bar, Fill;
             public Label Caption;
             public Vector3 Position;
@@ -26,11 +27,12 @@ namespace Ninefold.Presentation
         private readonly Dictionary<string, Token> tokens = new Dictionary<string, Token>();
         private readonly List<Material> materials = new List<Material>();
         private readonly Material friendly, enemy, active, floor, grid, gold;
-        private readonly LineRenderer path;
+        private readonly LineRenderer path, range;
+        private GameObject terrain;
+        private string drawnAttempt;
         private readonly GameObject destination, selection;
         private VisualElement surface;
         private Bounds framing;
-        private string framedAttempt;
         private readonly List<Rect> barRects = new List<Rect>();
 
         public PlaytestBattlefield(Transform parent, Camera camera, Material template)
@@ -44,18 +46,15 @@ namespace Ninefold.Presentation
             friendly = Make(new Color(.14f, .72f, .8f)); enemy = Make(new Color(.94f, .34f, .27f));
             active = Make(new Color(.94f, .85f, .52f)); floor = Make(new Color(.075f, .12f, .17f));
             grid = Make(new Color(.16f, .23f, .29f)); gold = Make(new Color(.9f, .65f, .25f));
-            Primitive("Test floor", PrimitiveType.Cube, new Vector3(5, -.16f, 5), new Vector3(30, .3f, 30), floor);
-            for (int i = -10; i <= 20; i++)
-            {
-                Primitive("Grid X", PrimitiveType.Cube, new Vector3(i, .002f, 5), new Vector3(.018f, .01f, 30), grid);
-                Primitive("Grid Z", PrimitiveType.Cube, new Vector3(5, .002f, i), new Vector3(30, .01f, .018f), grid);
-            }
             destination = Primitive("Destination preview", PrimitiveType.Cylinder, Vector3.zero, new Vector3(.7f, .025f, .7f), gold);
             selection = Primitive("Active unit marker", PrimitiveType.Cylinder, Vector3.zero, new Vector3(.95f, .015f, .95f), active);
             var lineObject = new GameObject("Movement preview"); lineObject.transform.SetParent(world.transform, false);
             path = lineObject.AddComponent<LineRenderer>(); path.sharedMaterial = gold;
             path.startWidth = path.endWidth = .045f; path.useWorldSpace = true;
             path.positionCount = 0;
+            var rangeObject = new GameObject("Selected ability range"); rangeObject.transform.SetParent(world.transform,false);
+            range = rangeObject.AddComponent<LineRenderer>(); range.sharedMaterial = friendly;
+            range.startWidth = range.endWidth = .06f; range.useWorldSpace = true; range.positionCount = 0;
             camera.orthographic = true; camera.nearClipPlane = .1f; camera.farClipPlane = 100;
             camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = new Color(.04f, .07f, .1f);
             Hide();
@@ -70,9 +69,11 @@ namespace Ninefold.Presentation
             Object.Destroy(g.GetComponent<Collider>()); return g;
         }
 
-        public void Show(BattleView view, BattleIntent intent, VisualElement target)
+        public void Show(InteractionView interaction, IReadOnlyList<ObjectiveDefinition> objectives, VisualElement target)
         {
+            var view = interaction.Battle; var intent = interaction.Pending;
             surface = target; world.SetActive(true); camera.enabled = true;
+            if (drawnAttempt != view.AttemptId) { BuildMap(view.Map,objectives); drawnAttempt = view.AttemptId; }
             Reconcile(view);
             foreach (var token in tokens.Values) surface.Add(token.Bar);
             var actor = view.Units.FirstOrDefault(u => u.Id == view.Activation?.UnitId && u.Position.HasValue);
@@ -85,21 +86,64 @@ namespace Ninefold.Presentation
                 path.positionCount = points.Length; path.SetPositions(points);
                 destination.SetActive(true); destination.transform.position = points.Last();
             }
-            // Fit living units and a movement preview with a margin, rather than shrinking tokens to fit the entire empty fixture map.
-            // Freeze framing while a preview is armed, so a second tap lands on the same world point.
-            if (intent == null || framedAttempt != view.AttemptId)
+            // The whole authored arena stays framed; movement never expands or pans the camera.
+            var bounds = view.Map.Bounds;
+            framing = new Bounds((Vector(bounds.Min)+Vector(bounds.Max))/2,
+                new Vector3((float)(bounds.Max.X-bounds.Min.X),2,(float)(bounds.Max.Z-bounds.Min.Z)));
+            framing.center = new Vector3(framing.center.x,1,framing.center.z);
+            range.positionCount = 0;
+            if (actor != null && interaction.SelectedAbility.HasValue)
             {
-                framing = new Bounds(new Vector3(3, 0, 0), new Vector3(8, 2, 5));
-                foreach (var u in view.Units.Where(u => u.IsEligible && u.Position.HasValue)) framing.Encapsulate(Vector(u.Position.Value) + Vector3.up);
-                framing.Expand(3); framedAttempt = view.AttemptId;
+                var ability = actor.Abilities.FirstOrDefault(a => a.Slot == interaction.SelectedAbility.Value);
+                if (ability != null)
+                {
+                    var origin = Vector(actor.Position.Value) + Vector(actor.Body.AttackOffset);
+                    var points = new Vector3[129];
+                    for (int i=0;i<points.Length;i++)
+                    {
+                        float angle = i * Mathf.PI * 2 / (points.Length-1);
+                        points[i] = new Vector3(Mathf.Clamp(origin.x+Mathf.Cos(angle)*(float)ability.Range,(float)bounds.Min.X,(float)bounds.Max.X),.075f,
+                            Mathf.Clamp(origin.z+Mathf.Sin(angle)*(float)ability.Range,(float)bounds.Min.Z,(float)bounds.Max.Z));
+                    }
+                    range.positionCount = points.Length; range.SetPositions(points);
+                }
             }
+            foreach (var pair in tokens) pair.Value.TargetRing.SetActive(interaction.Targets.Any(t => t.TargetId == pair.Key && t.IsValid));
+        }
+
+        private void BuildMap(BattlefieldMap map, IReadOnlyList<ObjectiveDefinition> objectives)
+        {
+            if (terrain != null) { terrain.SetActive(false); Object.Destroy(terrain); }
+            terrain = new GameObject("Authored arena"); terrain.transform.SetParent(world.transform,false);
+            GameObject Shape(string name, Vector3 position, Vector3 scale, Material material)
+            {
+                var item = Primitive(name,PrimitiveType.Cube,position,scale,material);
+                item.transform.SetParent(terrain.transform,true); return item;
+            }
+            var min = Vector(map.Bounds.Min); var max = Vector(map.Bounds.Max); var center = (min+max)/2;
+            float width=max.x-min.x, depth=max.z-min.z;
+            Shape("Bounded floor",new Vector3(center.x,-.16f,center.z),new Vector3(width,.3f,depth),floor);
+            for (int x=(int)Math.Ceiling(min.x);x<=max.x;x++) Shape("Grid X",new Vector3(x,.002f,center.z),new Vector3(.018f,.01f,depth),grid);
+            for (int z=(int)Math.Ceiling(min.z);z<=max.z;z++) Shape("Grid Z",new Vector3(center.x,.002f,z),new Vector3(width,.01f,.018f),grid);
+            Shape("West boundary",new Vector3(min.x,.15f,center.z),new Vector3(.1f,.3f,depth),gold);
+            Shape("East boundary",new Vector3(max.x,.15f,center.z),new Vector3(.1f,.3f,depth),gold);
+            Shape("South boundary",new Vector3(center.x,.15f,min.z),new Vector3(width,.3f,.1f),gold);
+            Shape("North boundary",new Vector3(center.x,.15f,max.z),new Vector3(width,.3f,.1f),gold);
+            foreach (var o in map.Obstacles) Shape("Cover / obstacle",(Vector(o.Bounds.Min)+Vector(o.Bounds.Max))/2,Vector(o.Bounds.Max)-Vector(o.Bounds.Min),grid);
+            foreach (var g in map.Ground)
+            {
+                var c=(Vector(g.Bounds.Min)+Vector(g.Bounds.Max))/2; var size=Vector(g.Bounds.Max)-Vector(g.Bounds.Min);
+                Shape("Slow ground",new Vector3(c.x,.02f,c.z),new Vector3(size.x,.025f,size.z),gold);
+            }
+            foreach (var o in objectives.Where(o=>o.Interaction!=null))
+                Shape("Objective "+o.Id,Vector(o.Interaction.Point)+Vector3.up*.04f,new Vector3(.85f,.04f,.85f),active);
         }
 
         private void Reconcile(BattleView view)
         {
             var living = new HashSet<string>(view.HealthOverlays.Select(h => h.UnitId), StringComparer.Ordinal);
             foreach (string id in tokens.Keys.Where(id => !living.Contains(id)).ToArray())
-            { Object.Destroy(tokens[id].Body); tokens[id].Bar.RemoveFromHierarchy(); tokens.Remove(id); }
+            { Object.Destroy(tokens[id].Body); Object.Destroy(tokens[id].TargetRing); tokens[id].Bar.RemoveFromHierarchy(); tokens.Remove(id); }
             foreach (var h in view.HealthOverlays)
             {
                 if (!tokens.TryGetValue(h.UnitId, out var t))
@@ -107,6 +151,8 @@ namespace Ninefold.Presentation
                     t = new Token(); tokens.Add(h.UnitId, t);
                     t.Body = Primitive(h.UnitId, h.IsEnemyControlled ? PrimitiveType.Cube : PrimitiveType.Capsule, Vector3.zero,
                         h.IsEnemyControlled ? new Vector3(.5f, (float)h.Height, .5f) : new Vector3(.5f, (float)h.Height / 2, .5f), h.IsEnemyControlled ? enemy : friendly);
+                    t.TargetRing = Primitive("Valid target marker",PrimitiveType.Cylinder,Vector3.zero,new Vector3(.95f,.025f,.95f),gold);
+                    t.TargetRing.SetActive(false);
                     t.Bar = new VisualElement { pickingMode = PickingMode.Ignore }; t.Bar.AddToClassList("health-overlay");
                     t.Caption = new Label { pickingMode = PickingMode.Ignore }; t.Bar.Add(t.Caption);
                     var track = new VisualElement { pickingMode = PickingMode.Ignore }; track.AddToClassList("health-track"); t.Bar.Add(track);
@@ -115,6 +161,7 @@ namespace Ninefold.Presentation
                 }
                 t.Height = (float)h.Height;
                 t.Position = Vector(h.Position) + Vector3.up * t.Height / 2;
+                t.TargetRing.transform.position = Vector(h.Position)+Vector3.up*.055f;
                 t.Body.transform.position = t.Position; t.Body.transform.localRotation = Quaternion.identity;
                 t.Caption.text = FrontiersPlaytest.UnitName(h.UnitId) + "  " + h.CurrentHealth + "/" + h.MaximumHealth;
                 t.Fill.style.width = Length.Percent((float)h.Fraction * 100);
@@ -184,7 +231,8 @@ namespace Ninefold.Presentation
 
         public IEnumerator Play(BattleUpdate update, float duration)
         {
-            path.positionCount = 0; destination.SetActive(false);
+            path.positionCount = 0; range.positionCount = 0; destination.SetActive(false);
+            foreach (var t in tokens.Values) t.TargetRing.SetActive(false);
             // Keep before-state bars visible during playback; reconcile authoritative after-state once finished.
             float elapsed = 0;
             var movement = update.Events.FirstOrDefault(e => e.Kind == BattleEventKind.Movement && e.Movement != null);

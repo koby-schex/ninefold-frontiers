@@ -16,6 +16,8 @@ namespace Ninefold.Core.Views
         { var b = session.ReadSnapshot(); return new BattleView(b,session.Phase(b),session.BattleVersion); }
         public bool TryPreviewDestination(long activationId, FieldPoint destination, out MovementPreview preview, out FieldFailure failure, int nodeLimit = 64)
             => session.ReadPlayerSnapshot(activationId).Battlefield.TryFindPath(activationId,destination,out preview,out failure,nodeLimit);
+        public bool TryPreviewReachableDestination(long activationId, FieldPoint destination, out MovementPreview preview, out FieldFailure failure, int nodeLimit = 64)
+            => session.ReadPlayerSnapshot(activationId).Battlefield.TryFindReachablePath(activationId,destination,out preview,out failure,nodeLimit);
         public bool TryPreviewPath(long activationId, IEnumerable<FieldPoint> path, out MovementPreview preview, out FieldFailure failure)
             => session.ReadPlayerSnapshot(activationId).Battlefield.TryPreviewMovement(activationId,path,out preview,out failure);
         public TargetPreview PreviewTarget(long activationId, AbilitySlot slot, string target)

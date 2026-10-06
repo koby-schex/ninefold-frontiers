@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using Ninefold.Presentation;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -23,8 +24,7 @@ namespace Ninefold.Editor
             if (EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Stop Play mode before creating/opening the scene.");
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
             var existing = AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath);
-            if (existing != null) { EditorSceneManager.OpenScene(ScenePath); return; }
-            if (File.Exists(ScenePath)) throw new InvalidOperationException("Unexpected existing file at " + ScenePath);
+            if (existing == null && File.Exists(ScenePath)) throw new InvalidOperationException("Unexpected existing file at " + ScenePath);
             if (GraphicsSettings.defaultRenderPipeline == null)
                 throw new InvalidOperationException("First run Ninefold > Setup > Configure Foundation, then run this command again.");
             var style = AssetDatabase.LoadAssetAtPath<StyleSheet>("Assets/Ninefold/Runtime/Presentation/Playtest.uss");
@@ -45,6 +45,19 @@ namespace Ninefold.Editor
                 if (shader == null) throw new InvalidOperationException("URP Lit shader is unavailable. Finish package import first.");
                 var m = new Material(shader); m.SetFloat("_Smoothness", .3f); return m;
             });
+            if (existing != null)
+            {
+                var opened = EditorSceneManager.OpenScene(ScenePath);
+                bool changed = false;
+                foreach (var existingApp in opened.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<FrontiersPlaytest>(true)))
+                {
+                    var doc = existingApp.GetComponent<UIDocument>();
+                    if (doc.panelSettings == null) { AssignPanel(doc,panel); changed = true; }
+                }
+                if (changed && !EditorSceneManager.SaveScene(opened)) throw new InvalidOperationException("Could not save the repaired panel reference.");
+                Debug.Log(changed ? "Repaired missing PlaytestPanel reference and saved the scene." : "Integration scene opened; existing references preserved.");
+                return;
+            }
             var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
             var camera = Camera.main;
             if (camera == null) throw new InvalidOperationException("Default scene did not create a main camera.");
@@ -55,12 +68,24 @@ namespace Ninefold.Editor
             background.clearFlags = CameraClearFlags.SolidColor;
             background.backgroundColor = new Color(.035f, .063f, .094f);
             var host = new GameObject("Frontiers — abstract integration playtest");
-            var document = host.AddComponent<UIDocument>(); document.panelSettings = panel;
+            var document = host.AddComponent<UIDocument>();
             var app = host.AddComponent<FrontiersPlaytest>();
             app.BattlefieldCamera = camera; app.FixtureMaterial = material; app.ScreenStyles = style;
+            // Assign after adding all components, then serialize explicitly before saving the scene.
+            AssignPanel(document,panel); EditorUtility.SetDirty(app);
             if (!EditorSceneManager.SaveScene(scene, ScenePath)) throw new InvalidOperationException("Could not save the integration scene.");
             AssetDatabase.SaveAssets(); Selection.activeGameObject = host;
             Debug.Log("Integration playtest created. Open the Game tab, choose a 540 × 960 portrait resolution, and press Play. This is non-canon fixture content; see Docs/UnityPlaytest.md.");
+        }
+
+        private static void AssignPanel(UIDocument document, PanelSettings panel)
+        {
+            document.panelSettings = panel;
+            var serialized = new SerializedObject(document);
+            var property = serialized.FindProperty("m_PanelSettings");
+            if (property == null) throw new InvalidOperationException("UIDocument panel serialization changed; inspect the pinned Unity version.");
+            property.objectReferenceValue = panel; serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(document);
         }
 
         private static T Asset<T>(string path, Func<T> create) where T : UnityEngine.Object

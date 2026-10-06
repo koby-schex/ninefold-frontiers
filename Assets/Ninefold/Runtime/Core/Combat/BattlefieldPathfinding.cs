@@ -12,6 +12,10 @@ namespace Ninefold.Core.Combat
         /// </summary>
         public bool TryFindPath(long activationId, FieldPoint destination, out MovementPreview preview,
             out FieldFailure failure, int maximumNodes = 256)
+            => FindPath(activationId,destination,out preview,out failure,maximumNodes,false);
+
+        private bool FindPath(long activationId, FieldPoint destination, out MovementPreview preview,
+            out FieldFailure failure, int maximumNodes, bool allowBeyondBudget)
         {
             preview = null; failure = FieldFailure.None;
             if (!Active(activationId)) return Fail(FieldFailure.InactiveTurn, out failure);
@@ -23,11 +27,13 @@ namespace Ninefold.Core.Combat
             if (start.Y != destination.Y) return Fail(FieldFailure.UnsupportedElevation, out failure);
             if (!LegalPosition(id, actor, destination)) return Fail(FieldFailure.IllegalDestination, out failure);
             decimal minimumCost = Math.Ceiling(FieldPoint.Distance(start,destination)*1000000m)/1000000m;
-            if (minimumCost > turns.CurrentActivation.MovementRemaining)
+            if (!allowBeyondBudget && minimumCost > turns.CurrentActivation.MovementRemaining)
                 return Fail(FieldFailure.InsufficientMovement, out failure);
             // A clear normal-ground straight line cannot be improved by a detour.
             if (ClearSegment(id, actor, start, destination) && SegmentCost(start,destination,actor.Body) == minimumCost)
-                return TryPreviewMovement(activationId,new[] { destination },out preview,out failure);
+            {
+                preview = new MovementPreview(new[] { destination }, minimumCost); return true;
+            }
 
             var candidates = new HashSet<FieldPoint> { start, destination };
             foreach (var obstacle in Map.Obstacles)
@@ -53,12 +59,12 @@ namespace Ninefold.Core.Combat
                 if (current < 0) return Fail(FieldFailure.PathNotFound, out failure);
                 if (current == endIndex)
                 {
-                    if (distance[current] > turns.CurrentActivation.MovementRemaining)
+                    if (!allowBeyondBudget && distance[current] > turns.CurrentActivation.MovementRemaining)
                         return Fail(FieldFailure.InsufficientMovement, out failure);
                     var path = new List<FieldPoint>();
                     for (int at = endIndex; at != startIndex; at = previous[at]) path.Add(nodes[at]);
                     path.Reverse();
-                    return TryPreviewMovement(activationId,path,out preview,out failure);
+                    preview = new MovementPreview(path.ToArray(),distance[current]); return true;
                 }
                 visited[current] = true;
                 for (int next=0; next<nodes.Length; next++)
@@ -88,6 +94,39 @@ namespace Ninefold.Core.Combat
                     }
                 return true;
             }
+        }
+
+        /// <summary>Preview the affordable prefix of a legal route. Never bypasses map bounds, occupancy or terrain cost.</summary>
+        public bool TryFindReachablePath(long activationId, FieldPoint destination, out MovementPreview preview,
+            out FieldFailure failure, int maximumNodes = 256)
+        {
+            preview = null;
+            if (!FindPath(activationId,destination,out var full,out failure,maximumNodes,true)) return false;
+            decimal remaining = turns.CurrentActivation.MovementRemaining;
+            if (remaining <= 0) return Fail(FieldFailure.InsufficientMovement,out failure);
+            if (full.Cost <= remaining) return TryPreviewMovement(activationId,full.Path,out preview,out failure);
+            string id = turns.CurrentActivation.UnitId; var actor = units[id]; var from = actor.Position;
+            var path = new List<FieldPoint>();
+            foreach (var to in full.Path)
+            {
+                decimal cost = SegmentCost(from,to,actor.Body);
+                if (cost <= remaining) { path.Add(to); remaining -= cost; from = to; continue; }
+                // Search along this segment using the exact weighted/collision rules. Round to the
+                // supported coordinate quantum, then revalidate the final prefix before exposing it.
+                decimal lo = 0, hi = 1; var best = from;
+                for (int i = 0; i < 60; i++)
+                {
+                    decimal t = (lo + hi) / 2;
+                    var candidate = new FieldPoint(decimal.Round(from.X+(to.X-from.X)*t,6),from.Y,decimal.Round(from.Z+(to.Z-from.Z)*t,6));
+                    if (LegalPosition(id,actor,candidate) && ClearSegment(id,actor,from,candidate) && SegmentCost(from,candidate,actor.Body) <= remaining)
+                    { lo = t; best = candidate; }
+                    else hi = t;
+                }
+                if (!best.Equals(from)) path.Add(best);
+                break;
+            }
+            if (path.Count == 0) return Fail(FieldFailure.InsufficientMovement,out failure);
+            return TryPreviewMovement(activationId,path,out preview,out failure);
         }
 
         /// <summary>Replans against current state and commits only a fully validated route.</summary>
