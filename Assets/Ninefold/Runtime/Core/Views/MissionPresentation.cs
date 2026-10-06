@@ -19,14 +19,16 @@ namespace Ninefold.Core.Views
         private PlayerProgress planProgress;
         private BattleInteraction interaction;
         public bool NeedsReload => flow.NeedsReload;
+        public CollectionPresentation Collection { get; }
         public MissionPresentation(ContentCatalog catalog, IBattleSaveFiles battles, IProgressSaveFiles profiles, string profileId)
         {
             this.catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             flow = catalog.CreateFlow(battles,profiles,profileId);
+            Collection = new CollectionPresentation(catalog,flow);
         }
         public void CreateProfile() { flow.CreateProfile(catalog.StarterUnits); Reset(); }
         public void Open() { flow.Open(); Reset(); }
-        private void Reset() { missionId = null; squad = Array.Empty<string>(); planId = null; planProgress = null; interaction = null; }
+        private void Reset() { missionId = null; squad = Array.Empty<string>(); planId = null; planProgress = null; interaction = null; Collection.Cancel(); }
         private void Ready() { if (flow.NeedsReload) throw new InvalidOperationException("Open/recover the profile before using mission screens."); }
         private void Selection()
         { Ready(); if (flow.Phase != MissionFlowPhase.Selection) throw new InvalidOperationException("Finish and claim the current battle before preparing another."); }

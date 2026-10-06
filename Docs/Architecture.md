@@ -39,3 +39,5 @@ Presentation consumers use `Views/BattlePresentation`: immutable snapshots and p
 `Views/BattleInteraction` owns transient input intents and animation locks above that facade. Intent validity is bound to an in-memory flow checkpoint identity. Health overlays are always available independently of selection. See [Battle interaction](BattleInteraction.md); actual Unity rendering and gesture recognition remain separate.
 
 `Views/MissionPresentation` constructs its flow from the same content catalog used for mission and unit display. Preparation delegates launch validation to that flow; results consume its durable claims. See [Mission preparation and results](MissionPresentation.md).
+
+Its `Collection` interface shares that same flow. Collection previews use deployment modifier math and bind confirmations to the displayed offer and current profile/battle state. Persistence and spending remain in `MissionFlow` and `LocalProgressStore`. See [Unit collection](CollectionPresentation.md).
