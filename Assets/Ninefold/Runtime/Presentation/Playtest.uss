@@ -1,0 +1,21 @@
+.root { flex-grow: 1; color: rgb(230, 239, 245); font-size: 15px; }
+#safe-area { position: absolute; padding-left: 12px; padding-right: 12px; padding-bottom: 8px; }
+.heading { padding-top: 12px; padding-bottom: 8px; background-color: rgb(9, 16, 24); }
+.title { font-size: 22px; -unity-font-style: bold; letter-spacing: 2px; }
+.eyebrow { font-size: 10px; color: rgb(237, 193, 107); margin-top: 3px; letter-spacing: 1px; }
+.notice { font-size: 12px; white-space: normal; min-height: 32px; margin-top: 5px; color: rgb(166, 193, 210); }
+.section { font-size: 18px; -unity-font-style: bold; margin-top: 8px; margin-bottom: 5px; white-space: normal; }
+.detail { font-size: 13px; white-space: normal; margin-top: 3px; margin-bottom: 3px; }
+.hint { font-size: 11px; white-space: normal; color: rgb(166, 193, 210); margin-top: 4px; }
+.preview { font-size: 13px; white-space: normal; color: rgb(237, 193, 107); margin-top: 4px; }
+Button { min-height: 42px; margin-top: 4px; margin-bottom: 4px; margin-left: 0; margin-right: 0; padding-left: 10px; padding-right: 10px; padding-top: 7px; padding-bottom: 7px; background-color: rgb(28, 48, 63); color: rgb(235, 244, 249); border-width: 1px; border-color: rgb(57, 83, 99); border-radius: 7px; white-space: normal; font-size: 14px; }
+Button:hover { background-color: rgb(37, 68, 83); }
+Button:active, Button.selected { background-color: rgb(40, 88, 98); border-color: rgb(100, 215, 211); }
+Button:disabled { opacity: 0.45; }
+.row { flex-direction: row; }
+.row > Button { flex-grow: 1; flex-basis: 0; margin-right: 4px; }
+.controls { padding-top: 5px; padding-bottom: 4px; background-color: rgb(9, 16, 24); }
+.health-overlay { position: absolute; width: 96px; height: 32px; background-color: rgba(7, 14, 22, 0.94); border-radius: 4px; padding-left: 4px; padding-right: 4px; padding-top: 2px; }
+.health-overlay > Label { font-size: 11px; -unity-text-align: middle-center; color: white; height: 18px; }
+.health-track { height: 5px; background-color: rgb(57, 68, 79); }
+.health-fill { height: 5px; }

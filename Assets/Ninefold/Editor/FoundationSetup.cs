@@ -70,7 +70,7 @@ namespace Ninefold.Editor
             if (EditorBuildSettings.scenes.Length == 0)
                 EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
             AssetDatabase.SaveAssets();
-            Debug.Log("Ninefold foundation configured. Review and commit generated settings, assets and package lock. No gameplay is implemented.");
+            Debug.Log("Ninefold foundation configured. Next: Ninefold > Playtest > Create or Open Integration Scene. Review generated settings, assets and package lock before committing.");
         }
 
         private static void EnsureVacant(string path)

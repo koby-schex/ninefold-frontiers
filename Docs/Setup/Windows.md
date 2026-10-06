@@ -17,6 +17,9 @@ a new template. Open with the pinned Editor and let packages resolve.
   text serialization, visible meta files, and assigned URP pipeline.
 - Confirm `Assets/Ninefold/Scenes/Bootstrap.unity` contains only a camera and light.
   No game interaction is expected. Verify the scene is in the build scene list.
+- Run **Ninefold > Playtest > Create or Open Integration Scene** and follow
+  [the playable integration checklist](../UnityPlaytest.md). Gameplay is in that
+  separate scene; Bootstrap remains the foundation-only scene.
 - Run setup again: no duplicate scene/renderer/pipeline assets, no new GUIDs.
 - Close and reopen: no compile or missing-reference errors.
 - Review and commit generated `ProjectSettings`, `Packages/packages-lock.json`,
