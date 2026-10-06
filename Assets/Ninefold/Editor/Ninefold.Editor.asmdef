@@ -2,6 +2,7 @@
   "name": "Ninefold.Editor",
   "rootNamespace": "Ninefold.Editor",
   "references": [
+    "Ninefold.Presentation",
     "Unity.RenderPipelines.Universal.Runtime",
     "Unity.RenderPipelines.Core.Runtime"
   ],
