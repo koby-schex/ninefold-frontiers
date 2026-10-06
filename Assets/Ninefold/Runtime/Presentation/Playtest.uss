@@ -75,3 +75,9 @@ Button.primary:disabled { background-color: rgb(35, 67, 72); color: rgb(143, 174
 .health-overlay > Label { font-size: 11px; -unity-text-align: middle-center; color: white; height: 18px; }
 .health-track { height: 5px; background-color: rgb(57, 68, 79); }
 .health-fill { height: 5px; }
+.turn-cue { position: absolute; top: 8px; left: 12%; right: 12%; padding: 10px; background-color: rgba(10, 34, 44, 0.96); border-width: 1px; border-color: rgb(119, 225, 212); border-radius: 8px; color: rgb(220, 251, 243); font-size: 16px; -unity-font-style: bold; -unity-text-align: middle-center; white-space: normal; }
+.objective-marker { position: absolute; width: 180px; min-height: 24px; padding: 4px; background-color: rgba(28, 25, 19, 0.96); border-width: 1px; border-color: rgb(160, 131, 71); border-radius: 5px; color: rgb(243, 211, 145); font-size: 10px; -unity-text-align: middle-center; white-space: normal; }
+.objective-marker.objective-ready { border-color: rgb(125, 236, 204); color: rgb(151, 247, 223); }
+.health-overlay.preview-health { border-width: 2px; border-color: rgb(255, 211, 103); background-color: rgb(46, 37, 17); }
+.combat-float { position: absolute; width: 130px; padding: 5px; background-color: rgba(24, 12, 17, 0.96); border-radius: 5px; color: rgb(255, 162, 138); font-size: 15px; -unity-font-style: bold; -unity-text-align: middle-center; white-space: normal; }
+.combat-float.healing-float { color: rgb(135, 247, 210); background-color: rgba(9, 29, 25, 0.96); }

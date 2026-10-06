@@ -63,6 +63,8 @@ namespace Ninefold.Core.Views
         private AbilitySlot? selectedAbility;
         private object choiceVersion;
         private BattleIntent pending;
+        private object planningVersion;
+        private BattlePlanningView planning;
         public BattleInteraction(BattlePresentation presentation)
         { this.presentation = presentation ?? throw new ArgumentNullException(nameof(presentation)); }
 
@@ -71,6 +73,18 @@ namespace Ninefold.Core.Views
             var view = Synchronize();
             var targets = selectedAbility.HasValue && Player(view) ? presentation.PreviewTargets(view.Activation.ActivationId,selectedAbility.Value) : Array.AsReadOnly(Array.Empty<TargetPreview>());
             return new InteractionView(view,selectedUnit,selectedAbility,pending,animationId,targets);
+        }
+        public BattlePlanningView ReadPlanning()
+        {
+            var view = Synchronize();
+            if (!Player(view) || animationId != null)
+                return new BattlePlanningView(Array.Empty<ReachableSample>(),Array.Empty<ObjectiveInteractionPreview>());
+            if (planning == null || !ReferenceEquals(planningVersion,view.Version))
+            {
+                planning = presentation.PreviewPlanning(view.Activation.ActivationId);
+                planningVersion = view.Version;
+            }
+            return planning;
         }
         private BattleView Synchronize()
         {

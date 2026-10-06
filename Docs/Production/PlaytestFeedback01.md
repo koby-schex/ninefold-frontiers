@@ -88,3 +88,18 @@ map gameplay geometry, save format or progression rules change. Reduced motion i
 UI preference. Final 3D characters, environment assets, animation, sound and mobile GPU
 profiling remain separate production work. Repository/core CI cannot certify Unity rendering;
 the consolidated checklist in `Docs/UnityPlaytest.md` is the remaining visual/input gate.
+
+## Battle feedback pass
+
+Movement guidance now uses bounded, cached pathfinder samples instead of an approximate
+circle that could imply travel through obstacles. Exact route/remaining movement still
+previews on a tap. Objective readiness comes from the mission's interaction validator.
+Target feedback displays net expected health change, highlights the pending target and
+distinguishes the inspected unit from the initiative actor. Post-save playback adds health
+numbers, impact cues, distance-paced movement and a defeat pose; reduced motion preserves
+textual feedback while skipping transformation playback. These remain abstract effects.
+
+Planning reads use detached simulation snapshots and do not write saves. Regression coverage
+checks legal/affordable samples, cache invalidation, enemy/playback suppression, objective
+reach/action gating, authored obstacles and resumed movement budgets. Unity import/rendering
+and mobile cost remain unverified until the consolidated playtest/device profiling gates.

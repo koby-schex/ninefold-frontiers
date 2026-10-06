@@ -26,6 +26,10 @@ namespace Ninefold.Presentation
         private BattleInteraction input;
         private MissionMenuView menuView;
         private InteractionView battleView;
+        private Label turnCue;
+        private string announcedAttempt;
+        private long announcedActivation;
+        private float turnCueUntil;
         private PlaytestBattlefield field;
         private VisualElement root, safe, content, surface, controls, heading;
         private Label notice;
@@ -77,6 +81,7 @@ namespace Ninefold.Presentation
             safe.style.left = tl.x; safe.style.top = tl.y;
             safe.style.width = br.x - tl.x; safe.style.height = br.y - tl.y;
             if (dirty && !fatal) { dirty = false; Guard(Refresh); }
+            if (turnCue != null && Time.unscaledTime >= turnCueUntil) turnCue.style.display = DisplayStyle.None;
             if (fatal || suspended || input == null || playback != null || battleView == null) return;
             if (battleView.Battle.Phase == BattleSessionPhase.EnemyInput || battleView.Battle.Phase == BattleSessionPhase.AdvanceRequired)
                 Guard(() => Handle(input.Advance(new EnemyPerception(
@@ -318,7 +323,15 @@ namespace Ninefold.Presentation
                 pointer = -1; e.StopPropagation();
                 if (tap && !dirty && playback == null && !suspended) Guard(() => Pick((Vector2)e.position));
             });
-            field.Show(battleView, catalog.Missions[b.MissionId].Objectives, surface);
+            field.Show(battleView, input.ReadPlanning(), catalog.Missions[b.MissionId].Objectives, surface);
+            if (b.Activation != null)
+            {
+                if (announcedAttempt != b.AttemptId || announcedActivation != b.Activation.ActivationId)
+                { announcedAttempt = b.AttemptId; announcedActivation = b.Activation.ActivationId; turnCueUntil = Time.unscaledTime + 1.6f; }
+                turnCue = Text(surface, (actor?.IsEnemyControlled == true ? "ENEMY TURN" : "YOUR TURN") + " · " + UnitName(b.Activation.UnitId), "turn-cue");
+                turnCue.pickingMode = PickingMode.Ignore;
+                turnCue.style.display = Time.unscaledTime < turnCueUntil ? DisplayStyle.Flex : DisplayStyle.None;
+            }
             // Fixed footer height prevents previews changing the camera viewport under a second tap.
             var footer = new ScrollView(); footer.AddToClassList("battle-dock");
             content.Add(footer);
@@ -333,7 +346,7 @@ namespace Ninefold.Presentation
             bool ready = !battleView.IsAnimating && !suspended;
             if (b.Activation != null) Text(controls, UnitName(b.Activation.UnitId) + " · Movement " + b.Activation.MovementRemaining.ToString("0.##") + " · " + (b.Activation.PrimaryActionAvailable ? "1 action ready" : "Action spent"), "actor-status");
             var selected = b.Units.FirstOrDefault(u => u.Id == battleView.SelectedUnitId);
-            if (selected?.Health != null) Text(controls, UnitName(selected.Id) + " • HP " + selected.Health.CurrentHealth + "/" + selected.Health.MaximumHealth + " • Armor " + selected.EffectiveArmor, "detail");
+            if (selected?.Health != null) Text(controls, "Inspecting " + UnitName(selected.Id) + " · HP " + selected.Health.CurrentHealth + "/" + selected.Health.MaximumHealth + " · Armor " + selected.EffectiveArmor + (selected.Id != b.Activation?.UnitId ? " · commands still use " + UnitName(b.Activation?.UnitId) : ""), "hint");
             var row = Row(controls);
             foreach (var a in b.Actions.Where(a => a.Slot != AbilitySlot.Passive))
             {
@@ -352,7 +365,7 @@ namespace Ninefold.Presentation
             if (battleView.Pending != null)
             {
                 var p = battleView.Pending;
-                string preview = p.Kind == IntentKind.Movement ? "Move cost " + p.Movement.Cost.ToString("0.##") + (p.RequestedDestination.HasValue && !p.RequestedDestination.Value.Equals(p.Movement.Path.Last()) ? " • stops at this turn’s movement limit" : "") : p.Kind == IntentKind.Interaction ? "Stabilize • uses this turn's action" : UnitName(p.Target.TargetId) + " • HP " + p.Target.Effect.Health?.HealthBefore + " → " + p.Target.Effect.Health?.HealthAfter;
+                string preview = p.Kind == IntentKind.Movement ? "Move " + p.Movement.Cost.ToString("0.##") + " · " + (b.Activation.MovementRemaining-p.Movement.Cost).ToString("0.##") + " remaining" + (p.RequestedDestination.HasValue && !p.RequestedDestination.Value.Equals(p.Movement.Path.Last()) ? " · stops at movement limit" : "") : p.Kind == IntentKind.Interaction ? "Stabilize · uses this turn's action" : TargetSummary(p.Target);
                 var confirm = Row(controls); confirm.AddToClassList("intent-row");
                 Text(confirm, preview, "preview");
                 Primary(confirm, p.Kind == IntentKind.Movement ? "Move here" : p.Kind == IntentKind.Interaction ? "Stabilize" : "Use ability", () => Handle(input.Confirm(p.Id)), ready);
@@ -360,11 +373,14 @@ namespace Ninefold.Presentation
             else Text(controls, battleView.IsAnimating ? "Resolving action…" : b.Phase != BattleSessionPhase.PlayerInput ? "Enemy turn…" : battleView.SelectedAbility.HasValue ? "Tap a marked unit to preview the effect." : "Tap the ground to preview movement.", "hint");
             row = Row(controls);
             Button(row, "Cancel / move", () => Handle(input.Cancel()), ready);
-            if (b.Objectives.Any(o => o.Kind == ObjectiveKind.Stabilize && o.Status == ObjectiveStatus.Active))
-                Button(row, "Stabilize", () => Handle(input.TapObjective("primary")), ready && b.Phase == BattleSessionPhase.PlayerInput);
+            foreach (var objective in input.ReadPlanning().Objectives.Where(o=>b.Objectives.Any(x=>x.Id==o.Id && x.Status==ObjectiveStatus.Active)))
+            {
+                string id = objective.Id;
+                Button(row, "Stabilize\n" + ObjectiveReadiness(objective.Failure), () => Handle(input.TapObjective(id)), ready && objective.CanInteract);
+            }
             long activation = b.Activation?.ActivationId ?? 0;
             Button(row, "End turn", () => Handle(input.EndTurn(activation)), ready && b.Phase == BattleSessionPhase.PlayerInput);
-            Text(controls, "Tap again to confirm · Cyan: allies · Red: enemies · Gold: objective / target", "legend");
+            Text(controls, "Dots: verified reachable spots; gaps may still be reachable. Gold: active / target. White: inspected unit.", "legend");
         }
 
         private void Pick(Vector2 panelPosition)
@@ -396,7 +412,7 @@ namespace Ninefold.Presentation
         {
             // Always yield once so the coroutine field is set before completion, including reduced motion.
             yield return null;
-            var frames = field.Play(result.Update, reducedMotion ? 0 : .4f);
+            var frames = field.Play(result.Update, reducedMotion ? 0 : .85f);
             while (true)
             {
                 bool more = false; object frame = null; Exception error = null;
@@ -478,6 +494,26 @@ namespace Ninefold.Presentation
             Text(parent, "Units, maps and badges in this build are abstract test content. They are not the final Ninefold art or canonical faction designs.", "detail");
         }
         private static string AbilityName(AbilitySlot slot) => slot == AbilitySlot.NormalAttack ? "Attack" : slot == AbilitySlot.Main ? "Main ability" : slot == AbilitySlot.Passive ? "Passive" : "Signature";
+        private static string TargetSummary(TargetPreview preview)
+        {
+            var health = preview.Effect.Health;
+            if (health == null) return UnitName(preview.TargetId) + " · Apply status " + preview.Effect.Status?.StatusId;
+            int change = health.HealthAfter-health.HealthBefore;
+            return UnitName(preview.TargetId) + " · " + (change < 0 ? -change + " damage" : change > 0 ? change + " healing" : "No health change") + "\nHP " + health.HealthBefore + " → " + health.HealthAfter + (health.HealthAfter == 0 ? " · Defeated" : "");
+        }
+        public static string ObjectiveReadiness(InteractionFailure failure)
+        {
+            switch (failure)
+            {
+                case InteractionFailure.None: return "Ready · 1 action";
+                case InteractionFailure.ActionSpent: return "Action spent";
+                case InteractionFailure.OutOfReach: return "Move closer";
+                case InteractionFailure.Obstructed: return "Path blocked";
+                case InteractionFailure.IneligibleActor: return "Needs another unit";
+                case InteractionFailure.Unavailable: return "Unavailable";
+                default: return "Wait for your turn";
+            }
+        }
         private static string ActionReason(BattleActionView action)
         {
             if (action.Block == ActionBlock.NotPlayerTurn) return "Wait for your turn";
