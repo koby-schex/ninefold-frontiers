@@ -41,7 +41,12 @@ packages to work around it. The `Ninefold` menu appears only after scripts compi
 4. Open the **Game** tab. In its resolution/aspect dropdown, add a **Fixed Resolution**
    of **540 × 960**, named `Portrait playtest`, then select it. Fit/scale the preview
    to your editor window. Maximize the Game tab if needed.
-5. Press Unity's **Play** button at the top. You should see Home with Campaigns, Quick battle, and Units & upgrades.
+5. Press Unity's **Play** button at the top. You should see Home with a campaign/resume card,
+   Quick battle, and Your units. Bottom navigation contains Home, Campaigns, Units and Settings.
+
+For an existing working scene, the visual pass needs only a pull and script import. Open your
+existing `IntegrationPlaytest` scene and press Play; do not regenerate assets or reset saves.
+Use the create/open command only if you need to locate the scene or repair a missing panel.
 
 The scene setup command reopens an existing integration scene instead of replacing it.
 It also repairs a missing UI Document Panel Settings reference and saves that repair.
@@ -57,18 +62,18 @@ If Unity asks for an editor restart after an input-setting change, allow the res
 
 ### Stabilization and saving
 
-1. From Home choose **Campaigns**, then **Stabilization**. Three owned test units are selected automatically.
+1. From Home choose **Explore campaigns**, then **Prepare squad** on Stabilization. Three owned test units are selected automatically.
    You can deselect/reselect units before deploying; invalid squads disable Deploy.
 2. Choose **Deploy**. You should see cyan capsules with numeric health bars, a grid,
    and a gold active-unit marker. Every active unit has a health bar without selection.
 3. Click empty ground near the active unit. A route and movement cost should preview.
-   **Cancel / move** must not spend movement. Preview again and use **Confirm Movement**,
+   **Cancel / move** must not spend movement. Preview again and use **Move here**,
    or tap the same destination marker again. The unit should move once.
-4. Choose **Home (saved)**, then **Resume battle**. Position and remaining movement should be preserved.
+4. Choose **Home** in the battle header, then **Resume battle**. Position and remaining movement should be preserved.
    An unconfirmed preview should not survive a reload.
-5. Choose **Stabilize**, then **Confirm Interaction**. If you moved outside its reach,
+5. Choose **Stabilize**, then **Stabilize** in the confirmation row. If you moved outside its reach,
    move closer on a later turn; the test objective is at the original A1 deployment.
-6. On Victory, choose **Claim & save rewards**, then **Return home**. The claim
+6. On Victory, choose **Collect rewards**, then **Return home**. The claim
    becomes unavailable after use. Replaying this mission uses its smaller replay reward.
 
 ### Combat and enemy turns
@@ -80,7 +85,7 @@ If Unity asks for an editor restart after an input-setting change, allow the res
 4. **End turn** to use the next unit. To see the enemy act, pass your remaining player
    turns without defeating it. Enemy turns and round boundaries advance automatically;
    player turns have no timer.
-5. Try **Heal** on a damaged ally. A full-health target is rejected without spending
+5. Try **Main ability** (healing in this test kit) on a damaged ally. A full-health target is rejected without spending
    the action. Signature starts locked in this fixture and becomes ready after that
    unit has used a normal attack; it still requires an available action on a later turn.
 6. While the battle is active, stop Play mode and press Play again. The current saved
@@ -88,7 +93,7 @@ If Unity asks for an editor restart after an input-setting change, allow the res
 
 ### Shared progression
 
-From Home, open **Units & upgrades**. First-clear rewards can
+From Home, open **Open collection** or **Units** in the bottom navigation. First-clear rewards can
 unlock A4 and advance A1. Preview an upgrade, cancel it, then preview and confirm it;
 only confirmation should spend fragments. Try the free health/armor trade-off and
 check the same stats in squad preparation. Complete **Campaign finale**
@@ -99,10 +104,23 @@ approved production campaign length.
 
 ## Next-pass acceptance checks
 
-- Home separates Campaigns, Quick battle and Units & upgrades. A saved battle shows Resume.
-  Campaign mission selection opens a separate briefing/squad screen before Deploy.
-- Four new fixture arenas have different bounds/obstacle layouts. Gold edge rails mark the
+- Home has one prominent campaign/resume action, secondary Quick battle and collection cards,
+  and campaign progress meters. Bottom navigation highlights the current page.
+- Mission cards distinguish ready, completed and locked states and explain unlock requirements.
+  Briefing includes a data-derived top-down map, squad cards and a persistent Deploy dock.
+  Selected squad cards have a border and explicit SELECTED label. Full/Apex limits prevent additions.
+- Collection opens one focused unit detail panel, with stats, fragments, rank and ability kit.
+  Choosing an upgrade opens a focused before/after confirmation; Cancel spends nothing.
+  An unimplemented test passive is explicitly labelled, not presented as a functioning effect.
+- Settings has play instructions and a reduced-motion preference retained between runs.
+- Battle has a compact objective/initiative header, a dedicated action dock and readable
+  unavailable-action labels. The dock scrolls on small views but does not resize for a preview.
+  Health badges distinguish enemies and the active unit while remaining visible for everyone.
+- Inspect at 540×960 and 540×1170 portrait. Check scrolling, clipping, button readability,
+  confirm/cancel flows, repeated taps and camera stability. Do this as one consolidated later playtest.
+- Four fixture arenas have different bounds/obstacle layouts. Gold edge rails mark the
   legal battlefield. Units cannot cross those edges; the camera does not chase units outward.
+  Raised cover tops, striped slow ground and cross-shaped objective plates improve readability.
 - Select Attack: a cyan range boundary appears and valid targets receive gold markers.
   Walls still block attacks; the target verdict and health preview are authoritative. The
   outline is nominal range clipped to the flat arena, not a promise that every point has line of sight.
@@ -121,7 +139,7 @@ approved production campaign length.
 - The active initiative unit receives commands; inspecting another unit does not take
   control of it. Attack/heal/signature buttons always refer to the active unit.
 - Actions commit to disk **before** basic movement/attack feedback plays. During that
-  feedback, gameplay input is locked. **Motion: reduced** skips the interpolation.
+  feedback, gameplay input is locked. **Settings > Reduced motion** skips the interpolation.
 - The camera keeps the full authored battlefield in a fixed frame. Manual camera gestures,
   production terrain/verticality, cinematic animations, audio, final accessibility and
   device performance tuning are future work. Passive is an explicit placeholder here.

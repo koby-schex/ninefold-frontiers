@@ -61,3 +61,30 @@ Windows Unity visual/input verification of this pass remains a user playtest gat
 
 Generated scene/settings changes from the user's first import are still local to their
 Windows clone. Preserve them when pulling; they have not been captured remotely yet.
+
+## Consolidated visual and usability pass
+
+Koby requested a larger batch before the next playtest because launching a test takes time
+and the presentation must be readable enough to evaluate the systems. This pass therefore
+covers the full home-to-results flow in one update, with a single later Windows review.
+
+- Navy panels, cyan primary actions, gold highlights, clearer type hierarchy and consistent
+  touch targets replace the undifferentiated button list. These are provisional interface
+  styling choices, not new faction colors, symbols, logos or locked visual masters.
+- Home, Campaigns, Units and Settings have persistent navigation. Resume takes priority
+  when a saved battle exists. Campaign locks include actionable requirements.
+- Mission briefing shows an overview derived from the actual map and explicit squad
+  selection states, with Deploy fixed outside the scroll area. Squad toggles preserve scroll.
+- Collection focuses on one unit at a time. Upgrade/customization confirmation shows actual
+  before/after values and spending separately from browsing; navigation cancels previews.
+- Battle objectives and initiative are separate from the action dock. Ability buttons explain
+  cooldown, spent action and signature readiness; common rejected inputs use readable text.
+- Cover tops, terrain stripes, objective plates, unit footing/collars and persistent health
+  badges improve the abstract arena. Range uses polygon clipping to the arena and an unlit
+  line above the edge rails. Legal targets still come exclusively from the combat rules.
+
+This pass changes presentation only: no canonical content, reward tables, unit balance,
+map gameplay geometry, save format or progression rules change. Reduced motion is a local
+UI preference. Final 3D characters, environment assets, animation, sound and mobile GPU
+profiling remain separate production work. Repository/core CI cannot certify Unity rendering;
+the consolidated checklist in `Docs/UnityPlaytest.md` is the remaining visual/input gate.
