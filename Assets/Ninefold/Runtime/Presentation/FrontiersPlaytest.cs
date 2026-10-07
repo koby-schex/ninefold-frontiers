@@ -38,8 +38,9 @@ namespace Ninefold.Presentation
         private string renderedUnit;
         private bool renderedOffer;
         private string savePath, inspectedUnit, message = "Your progress saves automatically.";
-        private enum Page { Home, Battles, Briefing, Collection, Settings }
+        private enum Page { Home, Battles, Missions, Briefing, Squad, Collection, Settings }
         private Page page;
+        private string selectedCampaign;
         private bool dirty, fatal, suspended, reducedMotion, inBattle, legacyProfile;
         private Coroutine playback;
         private int pointer = -1;
@@ -100,6 +101,7 @@ namespace Ninefold.Presentation
             if (playback != null) return;
             menuView = menu.Read();
             if (legacyProfile && menuView.Phase == MissionFlowPhase.Selection) { OpenProfile(); menuView = menu.Read(); }
+            if ((page == Page.Briefing || page == Page.Squad) && menuView.SelectedMissionId == null) page = Page.Home;
             bool offerOpen = page == Page.Collection && menuView.Phase == MissionFlowPhase.Selection && menu.Collection.Read().Pending != null;
             var scrollOffset = menuScroll != null && renderedPage == page && renderedUnit == inspectedUnit && renderedOffer == offerOpen ? menuScroll.scrollOffset : Vector2.zero;
             menuScroll = null;
@@ -122,109 +124,157 @@ namespace Ninefold.Presentation
                 else if (menuView.Phase == MissionFlowPhase.Battle || page == Page.Home) BuildHome(scroll);
                 else if (page == Page.Collection) BuildCollection(scroll);
                 else if (page == Page.Briefing) BuildBriefing(scroll);
+                else if (page == Page.Squad) BuildSquad(scroll);
+                else if (page == Page.Missions) BuildMissionList(scroll);
                 else BuildSelection(scroll);
                 menuScroll = scroll; renderedPage = page; renderedUnit = inspectedUnit; renderedOffer = offerOpen;
                 scroll.schedule.Execute(() => scroll.scrollOffset = scrollOffset);
-                if (menuView.Phase != MissionFlowPhase.Results && page != Page.Briefing) BuildNavigation(content);
+                if (menuView.Phase != MissionFlowPhase.Results && page != Page.Briefing && page != Page.Squad) BuildNavigation(content);
             }
+        }
+
+        private static string CampaignName(string id) => id == "fixture-starter" ? "Test campaign A" : "Test campaign B";
+
+        private void ClaimCampaign(string id)
+        {
+            menu.ClaimCampaign(id);
+            message = "Completion rewards collected. Your campaign progress is saved.";
         }
 
         private void BuildHome(VisualElement parent)
         {
             bool active = menuView.Phase == MissionFlowPhase.Battle;
+            var next = menuView.NextCampaignMission;
+            string claim = menuView.ClaimableCampaignId;
+            Text(parent, "COMMAND", "eyebrow");
+            Text(parent, "Welcome back", "display-title");
             var hero = Card(parent, "hero");
-            Text(hero, "YOUR NEXT STEP", "eyebrow");
-            Text(hero, active ? "Return to the field" : "Choose your frontier", "display-title");
-            Text(hero, active ? "Your battle is saved. Continue where you left off." : "Advance through a campaign or jump into a standalone encounter.", "detail");
-            if (active)
-            {
-                Text(hero, MissionName(menuView.Resume.MissionId), "section");
-                Primary(hero, "Resume battle  ›", () => { inBattle = true; message = "Battle resumed."; });
-            }
-            else Primary(hero, "Explore campaigns  ›", () => Navigate(Page.Battles));
-            Text(parent, "PLAY YOUR WAY", "eyebrow");
+            Text(hero, active ? "BATTLE IN PROGRESS" : claim != null ? "CAMPAIGN COMPLETE" : "YOUR NEXT MISSION", "eyebrow");
+            Text(hero, active ? MissionName(menuView.Resume.MissionId) : claim != null ? CampaignName(claim) : next != null ? MissionName(next.Definition.Id) : "Explore the frontiers", "display-title");
+            Text(hero, active ? "Your battle is saved. Continue where you left off." : claim != null ? "Collect your one-time completion rewards before continuing." : next != null ? CampaignName(next.CampaignId) + " • Untimed solo battle" : "Browse campaigns to replay missions or check unlock requirements.", "detail");
+            if (active) Primary(hero, "Resume battle  ›", () => { inBattle = true; message = "Battle resumed."; });
+            else if (claim != null) Primary(hero, "Collect completion rewards  ›", () => ClaimCampaign(claim));
+            else if (next != null) Primary(hero, "Continue campaign  ›", () => SelectMission(next.Definition.Id));
+            else Primary(hero, "Browse campaigns  ›", () => Navigate(Page.Battles));
+            Text(parent, "MORE TO EXPLORE", "eyebrow");
             var quick = Card(parent);
             Text(quick, "Quick battle", "section");
-            Text(quick, "Mix factions. Defeat the opposition. Shared unit progression.", "detail");
-            Button(quick, "Prepare squad  ›", () => SelectMission("fixture-mixed"), !active);
-            if (active) Text(quick, "Finish your saved battle to begin another.", "hint");
+            Text(quick, "Standalone encounter • mix faction units", "detail");
+            Button(quick, "View mission  ›", () => SelectMission("fixture-mixed"), !active);
             var collection = Card(parent);
             Text(collection, "Your units", "section");
-            Text(collection, menuView.Units.Count(u => u.Owned) + " unlocked • inspect stats, fragments and upgrades", "detail");
+            Text(collection, menuView.Units.Count(u => u.Owned) + " unlocked • stats, fragments and upgrades", "detail");
             Button(collection, "Open collection  ›", () => Navigate(Page.Collection), !active);
-            Text(parent, "CAMPAIGN PROGRESS", "eyebrow");
-            foreach (var c in menuView.Campaigns)
-            {
-                var card = Card(parent);
-                Text(card, c.CampaignId == "fixture-starter" ? "Test campaign A" : "Test campaign B", "section");
-                Meter(card, c.CompletedMissions, c.TotalMissions);
-                Text(card, c.CompletedMissions + " / " + c.TotalMissions + " missions completed", "hint");
-                if (!active && c.IsComplete && !c.RewardsClaimed)
-                    Primary(card, "Collect completion reward", () => { menu.ClaimCampaign(c.CampaignId); message = "Campaign rewards collected. New units and missions are available."; });
-            }
+            if (active) Text(parent, "Finish your saved battle to prepare another mission or change progression.", "hint");
+            Text(parent, "Abstract playtest content • campaign lengths and unit labels are fixtures.", "hint");
         }
 
         private void SelectMission(string id)
         {
-            menu.SelectMission(id); var view = menu.Read(); var mission = catalog.Missions[id];
-            menu.SetSquad(view.Units.Where(u => u.EligibleForMission && !u.Definition.Roster.IsApex).Take(mission.MaximumSquad).Select(u => u.Definition.Id));
-            page = Page.Briefing; message = "Review the mission and your squad, then deploy.";
+            var view = menu.Read();
+            if (view.SelectedMissionId != id)
+            {
+                menu.SelectMission(id); view = menu.Read();
+                menu.SetSquad(view.Units.Where(u => u.EligibleForMission && !u.Definition.Roster.IsApex).Take(catalog.Missions[id].MaximumSquad).Select(u => u.Definition.Id));
+            }
+            selectedCampaign = view.Missions.Single(m => m.Definition.Id == id).CampaignId;
+            Navigate(Page.Briefing); message = "Review the objective, then choose your squad.";
         }
 
         private void BuildSelection(VisualElement parent)
         {
             Text(parent, "Campaigns", "display-title");
-            Text(parent, "Choose a mission, prepare your squad, then deploy.", "detail");
-            foreach (var group in menuView.Missions.Where(m => m.Definition.IsCampaign).GroupBy(m => m.Definition.FactionId))
+            Text(parent, "Each campaign uses its own faction. Unlock three standard units to enter.", "detail");
+            foreach (var c in menuView.Campaigns)
             {
-                Text(parent, group.Key == "fixture-a" ? "Test campaign A" : "Test campaign B", "section");
-                foreach (var m in group.OrderBy(m => m.Definition.Id == "fixture-opening" ? 0 : 1))
-                {
-                    string id = m.Definition.Id;
-                    var card = Card(parent, m.Available ? "mission-card" : "locked-card");
-                    Text(card, m.IsReplay ? "COMPLETED · REPLAY AVAILABLE" : !m.Available ? "LOCKED" : "READY TO PLAY", "eyebrow");
-                    Text(card, MissionName(id), "section");
-                    Text(card, Description(id), "detail");
-                    Text(card, "Faction squad • " + m.Definition.MinimumSquad + "–" + m.Definition.MaximumSquad + " units", "hint");
-                    if (!m.Available) Text(card, m.FactionRosterLocked ? "Unlock three standard units from this faction." : "Complete " + string.Join(", ", m.MissingPrerequisites.Select(MissionName)) + " first.", "hint");
-                    Button(card, m.IsReplay ? "Replay mission  ›" : "Prepare squad  ›", () => SelectMission(id), m.Available);
-                }
+                string id = c.CampaignId;
+                var mission = menuView.Missions.First(m => m.CampaignId == id);
+                var card = Card(parent, c.CanEnter ? "mission-card" : "locked-card");
+                Text(card, !c.CanEnter ? "FACTION LOCKED" : c.IsComplete ? "COMPLETED" : "AVAILABLE", "eyebrow");
+                Text(card, CampaignName(id), "section");
+                Meter(card, c.CompletedMissions, c.TotalMissions);
+                Text(card, c.CompletedMissions + " / " + c.TotalMissions + " missions completed", "detail");
+                if (!c.CanEnter) Text(card, mission.OwnedFactionStandards + " / 3 standard units unlocked. Apex units do not count toward entry.", "hint");
+                if (c.IsComplete && !c.RewardsClaimed) Primary(card, "Collect completion rewards", () => ClaimCampaign(id));
+                Button(card, "View missions  ›", () => { selectedCampaign = id; Navigate(Page.Missions); });
             }
+        }
+
+        private void BuildMissionList(VisualElement parent)
+        {
+            Button(parent, "‹ All campaigns", () => Navigate(Page.Battles));
+            Text(parent, CampaignName(selectedCampaign), "display-title");
+            var authored = catalog.Campaigns.Single(c => c.Id == selectedCampaign);
+            int number = 0;
+            foreach (var node in authored.Missions)
+            {
+                var m = menuView.Missions.Single(x => x.Definition.Id == node.MissionId);
+                string id = m.Definition.Id;
+                var card = Card(parent, m.Available ? "mission-card" : "locked-card");
+                Text(card, "MISSION " + (++number).ToString("00") + " · " + (m.IsReplay ? "COMPLETED" : m.Available ? "AVAILABLE" : "LOCKED"), "eyebrow");
+                Text(card, MissionName(id), "section");
+                Text(card, Description(id), "detail");
+                if (!m.Available) Text(card, m.FactionRosterLocked ? "Unlock three standard units from this faction." : "Complete " + string.Join(", ", m.MissingPrerequisites.Select(MissionName)) + " first.", "hint");
+                Button(card, m.IsReplay ? "Review replay  ›" : "View briefing  ›", () => SelectMission(id), m.Available);
+            }
+        }
+
+        private void PreparationHeader(VisualElement parent, bool squad)
+        {
+            Text(parent, squad ? "1  BRIEFING   /   2  SQUAD" : "1  BRIEFING   /   2  SQUAD NEXT", "step-label");
+            Text(parent, MissionName(menuView.SelectedMissionId), "display-title");
         }
 
         private void BuildBriefing(VisualElement parent)
         {
-            Button(parent, "‹ Back", () => Navigate(catalog.Missions[menuView.SelectedMissionId].IsCampaign ? Page.Battles : Page.Home));
             var definition = catalog.Missions[menuView.SelectedMissionId];
-            Text(parent, "MISSION BRIEFING", "eyebrow");
-            Text(parent, MissionName(definition.Id), "display-title");
+            Button(parent, definition.IsCampaign ? "‹ Mission list" : "‹ Home", () => Navigate(definition.IsCampaign ? Page.Missions : Page.Home));
+            PreparationHeader(parent, false);
             var brief = Card(parent);
             Text(brief, "Your objective", "section"); Text(brief, Description(definition.Id), "detail");
             BuildMapPreview(brief, definition);
-            Text(brief, "No timer • progress retained after defeat", "hint");
+            Text(brief, "Untimed turns • no character or progression loss on defeat", "hint");
+            var rewards = Card(parent);
+            var mission = menuView.Missions.Single(m => m.Definition.Id == definition.Id);
+            Text(rewards, mission.IsReplay ? "Replay victory rewards" : "First-clear victory rewards", "section");
+            Text(rewards, mission.VictoryRewards.Count == 0 ? "No resource rewards for this mission." : string.Join("\n", mission.VictoryRewards.Select(g => "+" + g.Amount + "  " + ResourceName(g.ResourceId))), "reward-list");
+            Text(rewards, "Collect after victory. Campaign completion rewards are separate and one-time.", "hint");
+            var dock = Card(content, "deploy-dock");
+            Text(dock, definition.MinimumSquad + "–" + definition.MaximumSquad + " units • " + (definition.IsCampaign ? "faction squad" : "mixed factions allowed"), "hint");
+            Primary(dock, "Choose squad  ›", () => Navigate(Page.Squad));
+        }
+
+        private void BuildSquad(VisualElement parent)
+        {
+            var definition = catalog.Missions[menuView.SelectedMissionId];
+            Button(parent, "‹ Mission briefing", () => Navigate(Page.Briefing));
+            PreparationHeader(parent, true);
             Text(parent, "Choose your squad", "section");
-            Text(parent, menuView.Squad.Count + " / " + definition.MaximumSquad + " selected • maximum one Apex", "detail");
-            var roster = Row(parent); roster.AddToClassList("unit-grid");
-            foreach (var u in menuView.Units.Where(u => u.EligibleForMission))
+            Text(parent, "Select " + definition.MinimumSquad + "–" + definition.MaximumSquad + " units • maximum one Apex", "detail");
+            Text(parent, "Tap a selected unit to remove it. Tap an available unit to add it.", "hint");
+            bool hasApex = menuView.Units.Any(x => menuView.Squad.Contains(x.Definition.Id) && x.Definition.Roster.IsApex);
+            foreach (var u in menuView.Units.Where(u => definition.FactionId == null || u.Definition.Roster.FactionId == definition.FactionId))
             {
                 string id = u.Definition.Id; bool selected = menuView.Squad.Contains(id);
-                bool canAdd = selected || (menuView.Squad.Count < definition.MaximumSquad && (!u.Definition.Roster.IsApex || !menuView.Units.Any(x => menuView.Squad.Contains(x.Definition.Id) && x.Definition.Roster.IsApex)));
-                var tile = Button(roster, "", () => {
+                string blocked = !u.Owned ? "LOCKED · unlock in collection" : u.Definition.Roster.IsApex && hasApex ? "ONE APEX LIMIT · remove your selected Apex" : menuView.Squad.Count >= definition.MaximumSquad ? "SQUAD FULL · remove a unit first" : null;
+                bool canAdd = u.EligibleForMission && (selected || blocked == null);
+                var tile = Button(parent, "", () => {
                     var squad = menu.Read().Squad.ToList(); if (!squad.Remove(id)) squad.Add(id); menu.SetSquad(squad);
                 }, canAdd);
-                tile.AddToClassList("unit-tile"); tile.EnableInClassList("selected", selected);
-                UnitBadge(tile, id, u.Definition.Roster.IsApex);
-                Text(tile, UnitName(id), "section");
-                Text(tile, u.Definition.Roster.IsApex ? "APEX" : "STANDARD", "eyebrow");
-                Text(tile, "HP " + u.Health + " • Armor " + u.Armor, "detail");
-                Text(tile, "Move " + u.Movement + " • Initiative " + u.Initiative, "hint");
-                Text(tile, selected ? "SELECTED" : canAdd ? "+ ADD TO SQUAD" : "SQUAD LIMIT", "tile-state");
+                tile.AddToClassList("squad-card"); tile.EnableInClassList("selected", selected);
+                var row = Row(tile); UnitBadge(row, id, u.Definition.Roster.IsApex);
+                var identity = new VisualElement(); identity.AddToClassList("unit-identity"); row.Add(identity);
+                Text(identity, UnitName(id), "section");
+                Text(identity, (u.Definition.Roster.IsApex ? "APEX" : "STANDARD") + " · Rank " + u.Rank, "eyebrow");
+                Text(tile, "Health " + u.Health + " • Armor " + u.Armor, "detail");
+                var attack = u.Abilities.Single(a => a.Slot == AbilitySlot.NormalAttack).Effect;
+                Text(tile, "Move " + u.Movement + " • Initiative " + u.Initiative + " • Range " + attack.Range, "hint");
+                Text(tile, selected ? "SELECTED · tap to remove" : blocked ?? "+ ADD TO SQUAD", "tile-state");
             }
             string plan = menuView.PlanId;
             var deploy = Card(content, "deploy-dock");
-            Text(deploy, menuView.Squad.Count + " units ready • " + MissionName(definition.Id), "hint");
+            Text(deploy, menuView.Squad.Count + " / " + definition.MaximumSquad + " selected • " + (menuView.CanStart ? "Ready to deploy" : "Choose at least " + definition.MinimumSquad + " eligible units"), "hint");
             Primary(deploy, "Deploy squad  ›", () => { input = menu.Start(plan); inBattle = true; message = "Tap ground to preview a move. Select an ability to find targets."; }, menuView.CanStart);
-            if (!menuView.CanStart) Text(parent, "Select between " + definition.MinimumSquad + " and " + definition.MaximumSquad + " eligible units, with at most one Apex. " + menuView.SquadFailure, "detail");
         }
 
         private void BuildCollection(VisualElement parent)
@@ -473,7 +523,7 @@ namespace Ninefold.Presentation
                 var destinationPage = target;
                 var label = target == Page.Battles ? "Campaigns" : target == Page.Collection ? "Units" : target.ToString();
                 var button = Button(nav, label, () => Navigate(destinationPage), !activeBattle || target == Page.Home || target == Page.Settings);
-                button.EnableInClassList("selected", page == target);
+                button.EnableInClassList("selected", page == target || target == Page.Battles && page == Page.Missions);
             }
         }
         private void BuildSettings(VisualElement parent)
