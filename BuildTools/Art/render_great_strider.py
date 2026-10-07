@@ -13,17 +13,17 @@ ROOT=Path(__file__).resolve().parents[2]
 
 def normalize(v): return v/np.maximum(np.linalg.norm(v,axis=-1,keepdims=True),1e-12)
 
-def render(data, eye, size=(880,1000), extent=7.0):
+def render(data, eye, size=(880,1000), extent=7.0, target=(0,3,0), fit=True):
     w,h=size
-    target=np.array([0,3.0,0]); eye=np.array(eye,dtype=float)
+    target=np.array(target,dtype=float); eye=np.array(eye,dtype=float)
     forward=normalize(target-eye); right=normalize(np.cross(forward,[0,1,0])); up=np.cross(right,forward)
     vertices=np.array([v for p in data['parts'] for v in p['vertices']])
     horizontal=(vertices-target)@right
-    scale=min(h/extent,(w-36)/max(np.ptp(horizontal),1))
+    scale=min(h/extent,(w-36)/max(np.ptp(horizontal),1)) if fit else h/extent
     image=Image.new('RGB',size,(224,224,216))
     # Neutral studio ground and soft contact shadow; geometry uses a depth buffer.
     shadow=Image.new('RGBA',size); dr=ImageDraw.Draw(shadow)
-    ground=int(h/2+3*scale*up[1])
+    ground=int(h/2+target[1]*scale*up[1])
     dr.ellipse((w*.18,ground-27,w*.82,ground+35),fill=(35,38,41,85))
     image=Image.alpha_composite(image.convert('RGBA'),shadow.filter(ImageFilter.GaussianBlur(22)))
     pixels=np.array(image)[:,:,:3].copy(); depth=np.full((h,w),np.inf)
@@ -73,11 +73,20 @@ if __name__=='__main__':
     args=p.parse_args(); data=json.loads((args.source/'review_mesh.json').read_text())
     sheet=Image.new('RGB',(1600,1120),(238,237,229)); draw=ImageDraw.Draw(sheet)
     draw.text((42,25),'NINEFOLD: FRONTIERS  /  GREAT STRIDER',font=font(30),fill='#262c32')
-    draw.text((43,70),'ACTUAL MESH • FORM STUDY 01 • 6.0 m • NOT FINAL GAME ART',font=font(17),fill='#596069')
+    draw.text((43,70),'ACTUAL MESH • FORM STUDY 02 • 6.0 m • NOT FINAL GAME ART',font=font(17),fill='#596069')
     views=[((9,6.5,12),(30,125),(840,885),'THREE-QUARTER'),((0,4,15),(886,125),(340,885),'FRONT'),((15,4,0),(1230,125),(340,885),'SIDE')]
     for eye,pos,size,label in views:
         sheet.paste(render(data,eye,size,7.2),pos)
         draw.text((pos[0]+15,1024),label,font=font(18),fill='#333b43')
     draw.text((42,1074),'Editable anatomy, sensory sails, recessed cradle and Avarin operator. Rig / textures / animation pending.',font=font(17),fill='#596069')
     sheet.save(args.source/'GreatStrider-Review.png')
+    detail=render(data,(0,4.4,8),(1100,900),2.35,(0,4.45,.20),False)
+    detail.save(args.source/'GreatStrider-Detail.png')
+    mobile=Image.new('RGB',(390,844),(238,237,229))
+    mobile.paste(render(data,(8,12,10),(390,620),9.5),(0,100))
+    md=ImageDraw.Draw(mobile)
+    md.text((15,24),'TACTICAL READABILITY STUDY',font=font(19),fill='#262c32')
+    md.text((15,55),'390 px portrait / proposed camera',font=font(15),fill='#596069')
+    md.text((15,750),'Actual mesh - no Unity/device claim',font=font(14),fill='#596069')
+    mobile.save(args.source/'GreatStrider-Mobile.png')
     print(args.source/'GreatStrider-Review.png')

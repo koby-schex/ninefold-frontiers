@@ -37,6 +37,9 @@ assert abs(min(v[1] for v in vertices))<1e-5
 assert abs(max(v[1] for v in vertices)-6)<1e-5
 assert len([n for n in parts if n.startswith('Ilyth_Limb_')])==4
 assert len([n for n in parts if n.startswith('Ilyth_SensorySail_')])==2
+assert 'Avarin_CrescentMantle' in parts
+assert len([n for n in parts if n.startswith('Avarin_SensoryRibbon_')])==6
+assert len([n for n in parts if n.startswith('Cradle_Attachment_')])==4
 known={line.split()[1] for line in (folder/'GreatStrider.mtl').read_text().splitlines() if line.startswith('newmtl ')}
 assert materials<=known
 print(f'PASS: {len(parts)} parts; {len(vertices)} vertices; {len(faces)} triangles; 6.0 m; closed consistently wound parts; reproducible files.')

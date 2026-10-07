@@ -1,0 +1,42 @@
+name: Great Strider art review
+on:
+  pull_request:
+    paths:
+      - 'BuildTools/Art/**'
+      - 'SourceArt/GreatStrider/**'
+      - '.github/workflows/art-review.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'BuildTools/Art/**'
+      - 'SourceArt/GreatStrider/**'
+      - '.github/workflows/art-review.yml'
+permissions:
+  contents: read
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r BuildTools/Art/requirements-review.txt
+      - run: python BuildTools/Art/build_great_strider.py
+      - run: python BuildTools/Art/validate_great_strider.py
+      - run: python BuildTools/Art/render_great_strider.py
+      - run: python BuildTools/Art/compare_great_strider.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: great-strider-review-${{ github.sha }}
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            SourceArt/GreatStrider/GreatStrider-Review.png
+            SourceArt/GreatStrider/GreatStrider-Detail.png
+            SourceArt/GreatStrider/GreatStrider-Mobile.png
+            SourceArt/GreatStrider/GreatStrider-Comparison.png
+            SourceArt/GreatStrider/manifest.json
