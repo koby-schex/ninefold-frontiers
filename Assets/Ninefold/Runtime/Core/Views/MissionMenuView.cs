@@ -112,6 +112,12 @@ namespace Ninefold.Core.Views
         public bool CanStart => Phase == MissionFlowPhase.Selection && SelectedMissionId != null && SquadFailure == Ninefold.Core.Flow.SquadFailure.None;
         public BattleView Resume { get; }
         public bool CanResume => Resume != null;
+        // Completion claims take priority because the starter claim opens the next faction.
+        public string ClaimableCampaignId => Phase == MissionFlowPhase.Selection
+            ? Campaigns.FirstOrDefault(c => c.IsComplete && !c.RewardsClaimed)?.CampaignId : null;
+        public MissionCard NextCampaignMission => Phase != MissionFlowPhase.Selection || ClaimableCampaignId != null ? null :
+            Campaigns.SelectMany(c => c.AvailableMissions).Select(id => Missions.Single(m => m.Definition.Id == id))
+                .FirstOrDefault(m => m.Available && !m.IsReplay);
         public MissionResultsView Results { get; }
         internal MissionMenuView(MissionFlowPhase phase, bool recovered, PlayerProgress progress, MissionCard[] missions,
             PreparationUnit[] units, string selected, string[] squad, string plan, SquadFailure? failure, BattleView resume,

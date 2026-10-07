@@ -81,3 +81,12 @@ Button.primary:disabled { background-color: rgb(35, 67, 72); color: rgb(143, 174
 .health-overlay.preview-health { border-width: 2px; border-color: rgb(255, 211, 103); background-color: rgb(46, 37, 17); }
 .combat-float { position: absolute; width: 130px; padding: 5px; background-color: rgba(24, 12, 17, 0.96); border-radius: 5px; color: rgb(255, 162, 138); font-size: 15px; -unity-font-style: bold; -unity-text-align: middle-center; white-space: normal; }
 .combat-float.healing-float { color: rgb(135, 247, 210); background-color: rgba(9, 29, 25, 0.96); }
+
+/* Preparation uses a single readable column at narrow portrait widths. */
+.step-label { font-size: 11px; color: rgb(139, 230, 218); white-space: normal; margin-top: 12px; margin-bottom: 8px; letter-spacing: 1px; }
+Button.squad-card { padding: 14px; margin-bottom: 10px; align-items: stretch; -unity-text-align: upper-left; }
+.squad-card .row { align-items: center; }
+.squad-card .unit-badge { flex-shrink: 0; margin-right: 12px; }
+.unit-identity { flex-grow: 1; flex-shrink: 1; min-width: 0; }
+.squad-card.selected { border-left-width: 4px; }
+.squad-card:disabled .tile-state { color: rgb(180, 190, 201); }

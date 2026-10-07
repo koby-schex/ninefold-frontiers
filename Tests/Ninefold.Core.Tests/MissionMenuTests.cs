@@ -12,6 +12,8 @@ using Ninefold.Core.Views;
 internal static partial class Program
 {
     private static (string Name,Action Run)[] MissionMenuTests() => new (string,Action)[] {
+        ("Home routes through first clear completion claim and next faction", MenuNextCampaign),
+        ("Home never recommends a new mission during battle or results", MenuNextPending),
         ("Mission menu requires explicit profile creation or open", MenuOpen),
         ("Mission cards explain prerequisites and faction roster locks", MenuLocks),
         ("Mission selection and reads never checkpoint", MenuPure),
@@ -61,6 +63,26 @@ internal static partial class Program
         internal void Clear(string id="fixture-opening") { var attempt=Win(id); Menu.ClaimRewards(attempt); Menu.ReturnToSelection(attempt); }
     }
     private static MissionCard Card(MenuFixture x,string id)=>x.Menu.Read().Missions.Single(m=>m.Definition.Id==id);
+    private static void MenuNextCampaign()
+    {
+        var x = new MenuFixture();
+        Equal("fixture-opening", x.Menu.Read().NextCampaignMission.Definition.Id);
+        x.Clear(); Equal("fixture-finale", x.Menu.Read().NextCampaignMission.Definition.Id);
+        x.Clear("fixture-finale"); Equal("fixture-starter", x.Menu.Read().ClaimableCampaignId);
+        Equal<MissionCard>(null, x.Menu.Read().NextCampaignMission);
+        x.Menu.ClaimCampaign("fixture-starter"); Equal<string>(null, x.Menu.Read().ClaimableCampaignId);
+        Equal("fixture-next", x.Menu.Read().NextCampaignMission.Definition.Id);
+        x.Clear("fixture-next");
+        var claim = x.Menu.Read().ClaimableCampaignId; x.Menu.ClaimCampaign(claim);
+        Equal<MissionCard>(null, x.Menu.Read().NextCampaignMission);
+    }
+    private static void MenuNextPending()
+    {
+        var x = new MenuFixture(); x.Prepare(); x.Menu.Start(x.Menu.Read().PlanId);
+        Equal<MissionCard>(null, x.Menu.Read().NextCampaignMission); Equal<string>(null, x.Menu.Read().ClaimableCampaignId);
+        var y = new MenuFixture(); y.Win();
+        Equal<MissionCard>(null, y.Menu.Read().NextCampaignMission); Equal<string>(null, y.Menu.Read().ClaimableCampaignId);
+    }
     private static void MenuOpen()
     {
         var x=new MenuFixture(create:false); Equal(true,x.Menu.NeedsReload); Throws<InvalidOperationException>(()=>x.Menu.Read());
