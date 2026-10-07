@@ -22,6 +22,9 @@
 Thumbs.db
 __pycache__/
 *.pyc
+# Reproducible local art-review output; source mesh and generator are tracked.
+/SourceArt/GreatStrider/review_mesh.json
+/SourceArt/GreatStrider/GreatStrider-Review.png
 # Local credentials and signing material
 .env
 .env.*

@@ -17,7 +17,7 @@ These are proposed production priorities, not new canon. Asset IDs are internal.
 | REF-03 | P0 | Living Veil scale and turnaround sheet | REF-01 | S2 PF5; five lobes, partner and shelter configuration | Pending reviewable sheet |
 | REF-04 | P0 | Burdenbeast scale and turnaround sheet | REF-01 | S2 PF5; eight limbs, platform, Avarin and turning envelope | Pending reviewable sheet |
 | MAP-01 | P0 | Unique meter-scale mission blockout and portrait camera study | REF-02–04 | S4; complete trio fits every required route and destination | Pending |
-| UNIT-01 | P1 | Great Strider production pairing | REF-02, MAP-01 | S2–S3; preserved silhouette, anatomy, equipment and scale | Not built |
+| UNIT-01 | P1 | Great Strider production pairing | REF-02, MAP-01 | S2–S3; preserved silhouette, anatomy, equipment and scale | Initial editable form study exists; final art, rig and integration pending |
 | UNIT-02 | P1 | Living Veil production pairing | REF-03, MAP-01 | S2–S3; membrane readability, correct lobe count and independent partner | Not built |
 | UNIT-03 | P1 | Burdenbeast production pairing | REF-04, MAP-01 | S2–S3; weight, civic infrastructure and correct contact anatomy | Not built |
 | ENV-01 | P1 | Modular traversable ground, edge and broken-ground kit | MAP-01 | S2 PF6 / S3; bounded readable geometry at creature scale | Not built |
@@ -33,6 +33,12 @@ These are proposed production priorities, not new canon. Asset IDs are internal.
 | QA-03 | P2 | Mobile readability and measured performance report | QA-02 | iPhone 14 plus additional environments; record build/device/settings | Not run |
 
 ## Required unit handoff
+
+7 October update: [Great Strider form study 01](../../SourceArt/GreatStrider/README.md)
+contains the first editable OBJ and reproducible source. Koby approved Reference
+Study 02 as visual direction, including its 6.0 m height. The form study remains
+substantially simpler than that reference; it does not complete REF-02, MAP-01 or
+UNIT-01 and does not constitute a locked-canon revision.
 
 Each UNIT deliverable includes editable source files, exportable mesh, UVs,
 material/texture sources, rig, required clips, LODs, collision/selection anchors,
