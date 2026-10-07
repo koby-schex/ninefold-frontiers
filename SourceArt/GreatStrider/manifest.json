@@ -1,0 +1,35 @@
+{
+  "status": "form study; not production ready",
+  "units": "meters",
+  "up": "Y",
+  "forward": "Z",
+  "height": 6,
+  "parts": 86,
+  "vertices": 15496,
+  "triangles": 30648,
+  "materials": [
+    "living_pearl",
+    "soft_charcoal",
+    "grown_mineral",
+    "sail_membrane",
+    "sail_vein",
+    "continuance_frame",
+    "ceramic",
+    "avar_skin",
+    "cloth",
+    "survey_light",
+    "eye"
+  ],
+  "limbs": [
+    "L_Fore",
+    "R_Fore",
+    "L_Rear",
+    "R_Rear"
+  ],
+  "limitations": [
+    "No UV unwrap, skin weights, rig, animation or LODs",
+    "Procedural surfaces require sculpt and topology refinement",
+    "No Unity import or device performance verification",
+    "Reference-study connections are proposals, not new lore"
+  ]
+}
