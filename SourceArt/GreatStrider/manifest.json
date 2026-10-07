@@ -1,12 +1,12 @@
 {
-  "status": "form study; not production ready",
+  "status": "form study 02; not production ready",
   "units": "meters",
   "up": "Y",
   "forward": "Z",
   "height": 6,
-  "parts": 86,
-  "vertices": 15496,
-  "triangles": 30648,
+  "parts": 138,
+  "vertices": 26298,
+  "triangles": 52044,
   "materials": [
     "living_pearl",
     "soft_charcoal",

@@ -34,8 +34,9 @@ These are proposed production priorities, not new canon. Asset IDs are internal.
 
 ## Required unit handoff
 
-7 October update: [Great Strider form study 01](../../SourceArt/GreatStrider/README.md)
-contains the first editable OBJ and reproducible source. Koby approved Reference
+7 October update: [Great Strider form study 02](../../SourceArt/GreatStrider/README.md)
+refines the editable OBJ, mantle, sails, limb coverings and cradle equipment, and
+adds actual-mesh comparison and portrait renders. Koby approved Reference
 Study 02 as visual direction, including its 6.0 m height. The form study remains
 substantially simpler than that reference; it does not complete REF-02, MAP-01 or
 UNIT-01 and does not constitute a locked-canon revision.

@@ -1,11 +1,11 @@
 newmtl living_pearl
-Kd 0.7 0.72 0.69
+Kd 0.62 0.65 0.63
 Ks 0.16 0.16 0.16
 Ns 38
 d 1
 
 newmtl soft_charcoal
-Kd 0.16 0.18 0.2
+Kd 0.12 0.13 0.16
 Ks 0.16 0.16 0.16
 Ns 38
 d 1
@@ -17,7 +17,7 @@ Ns 38
 d 1
 
 newmtl sail_membrane
-Kd 0.36 0.31 0.48
+Kd 0.32 0.28 0.43
 Ks 0.16 0.16 0.16
 Ns 38
 d 1
