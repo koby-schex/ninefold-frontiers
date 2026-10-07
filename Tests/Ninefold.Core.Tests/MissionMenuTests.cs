@@ -55,12 +55,12 @@ internal static partial class Program
         internal string Bytes()=>string.Join("|",Battles.Slots.Concat(Profiles.Inner.Slots).Select(b=>b==null?"null":Convert.ToBase64String(b)));
         internal void Prepare(string id="fixture-opening",params string[] squad)
         { Menu.SelectMission(id); Menu.SetSquad(squad.Length==0?new[] { "fixture-a-1" }:squad); }
-        internal string Win(string id="fixture-opening")
+        internal string Win(string id="fixture-opening",params string[] squad)
         {
-            Prepare(id); var b=Menu.Start(Menu.Read().PlanId); b.TapObjective("primary"); var r=b.TapObjective("primary");
+            Prepare(id,squad); var b=Menu.Start(Menu.Read().PlanId); b.TapObjective("primary"); var r=b.TapObjective("primary");
             Equal(InputOutcome.Committed,r.Outcome); b.CompleteAnimation(r.AnimationId); return Menu.Read().Results.Result.AttemptId;
         }
-        internal void Clear(string id="fixture-opening") { var attempt=Win(id); Menu.ClaimRewards(attempt); Menu.ReturnToSelection(attempt); }
+        internal void Clear(string id="fixture-opening",params string[] squad) { var attempt=Win(id,squad); Menu.ClaimRewards(attempt); Menu.ReturnToSelection(attempt); }
     }
     private static MissionCard Card(MenuFixture x,string id)=>x.Menu.Read().Missions.Single(m=>m.Definition.Id==id);
     private static void MenuNextCampaign()
@@ -72,7 +72,7 @@ internal static partial class Program
         Equal<MissionCard>(null, x.Menu.Read().NextCampaignMission);
         x.Menu.ClaimCampaign("fixture-starter"); Equal<string>(null, x.Menu.Read().ClaimableCampaignId);
         Equal("fixture-next", x.Menu.Read().NextCampaignMission.Definition.Id);
-        x.Clear("fixture-next");
+        x.Clear("fixture-next", "fixture-b-1");
         var claim = x.Menu.Read().ClaimableCampaignId; x.Menu.ClaimCampaign(claim);
         Equal<MissionCard>(null, x.Menu.Read().NextCampaignMission);
     }
