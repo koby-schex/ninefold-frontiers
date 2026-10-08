@@ -1,0 +1,12 @@
+{
+  "approval_date": "2026-10-07",
+  "role": "approved-home-background-derived-illustration",
+  "runtime_asset": "Assets/Ninefold/Resources/Home/Sanctuary.jpg",
+  "dimensions": [
+    853,
+    1844
+  ],
+  "sha256": "8ab4101dde8a7798cd7ef23633c4634d375d662637339056c85868696d75e933",
+  "source_png_sha256": "a2a955a50f0719f6e113f2f22e68d69fcec841d8b8a37a6641c3daaa5a45a76b",
+  "canon_revision": false
+}

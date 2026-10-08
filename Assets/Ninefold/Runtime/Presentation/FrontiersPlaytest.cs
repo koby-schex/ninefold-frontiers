@@ -31,7 +31,7 @@ namespace Ninefold.Presentation
         private long announcedActivation;
         private float turnCueUntil;
         private PlaytestBattlefield field;
-        private VisualElement root, safe, content, surface, controls, heading;
+        private VisualElement root, safe, content, surface, controls, heading, homeBackdrop;
         private Label notice;
         private ScrollView menuScroll;
         private Page renderedPage;
@@ -58,6 +58,10 @@ namespace Ninefold.Presentation
             root = document.rootVisualElement;
             if (ScreenStyles != null) root.styleSheets.Add(ScreenStyles);
             root.AddToClassList("root");
+            var homeStyles = Resources.Load<StyleSheet>("Home/Home");
+            if (homeStyles != null) root.styleSheets.Add(homeStyles);
+            homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
+            root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
             heading = new VisualElement(); heading.AddToClassList("heading"); safe.Add(heading);
             Text(heading, "NINEFOLD", "brand");
@@ -81,6 +85,8 @@ namespace Ninefold.Presentation
             var br = RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(r.xMax, Screen.height - r.yMin));
             safe.style.left = tl.x; safe.style.top = tl.y;
             safe.style.width = br.x - tl.x; safe.style.height = br.y - tl.y;
+            root.EnableInClassList("compact-home", br.y - tl.y < 850);
+            root.EnableInClassList("short-home", br.y - tl.y < 500);
             if (dirty && !fatal) { dirty = false; Guard(Refresh); }
             if (turnCue != null && Time.unscaledTime >= turnCueUntil) turnCue.style.display = DisplayStyle.None;
             if (fatal || suspended || input == null || playback != null || battleView == null) return;
@@ -107,6 +113,12 @@ namespace Ninefold.Presentation
             menuScroll = null;
             content.Clear(); surface = null; controls = null; pointer = -1;
             notice.text = message;
+            bool home = menuView.Phase != MissionFlowPhase.Results && page != Page.Settings &&
+                !(menuView.Phase == MissionFlowPhase.Battle && inBattle) &&
+                (menuView.Phase == MissionFlowPhase.Battle || page == Page.Home);
+            root.EnableInClassList("home-mode", home);
+            heading.style.display = home ? DisplayStyle.None : DisplayStyle.Flex;
+            homeBackdrop.style.display = home ? DisplayStyle.Flex : DisplayStyle.None;
             root.EnableInClassList("battle-mode", menuView.Phase == MissionFlowPhase.Battle && inBattle);
             if (menuView.Phase == MissionFlowPhase.Battle && inBattle)
             {
@@ -118,10 +130,15 @@ namespace Ninefold.Presentation
             {
                 content.style.backgroundColor = new Color(.035f, .063f, .094f);
                 input = null; battleView = null; field.Hide();
+                if (home)
+                {
+                    content.style.backgroundColor = Color.clear;
+                    BuildHomeScreen();
+                    return;
+                }
                 var scroll = new ScrollView(); scroll.AddToClassList("page-scroll"); content.Add(scroll);
                 if (menuView.Phase == MissionFlowPhase.Results) BuildResults(scroll);
                 else if (page == Page.Settings) BuildSettings(scroll);
-                else if (menuView.Phase == MissionFlowPhase.Battle || page == Page.Home) BuildHome(scroll);
                 else if (page == Page.Collection) BuildCollection(scroll);
                 else if (page == Page.Briefing) BuildBriefing(scroll);
                 else if (page == Page.Squad) BuildSquad(scroll);
@@ -141,32 +158,63 @@ namespace Ninefold.Presentation
             message = "Completion rewards collected. Your campaign progress is saved.";
         }
 
-        private void BuildHome(VisualElement parent)
+        private void BuildHomeScreen()
         {
+            var masthead = new VisualElement(); masthead.AddToClassList("home-masthead"); content.Add(masthead);
+            Text(masthead, "NINEFOLD", "home-wordmark");
+            Text(masthead, "F R O N T I E R S", "home-submark");
+            var scroll = new ScrollView(ScrollViewMode.Vertical); scroll.AddToClassList("home-scroll");
+            scroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            content.Add(scroll);
+            // Fill tall portraits with scenery; short/landscape windows scroll without hiding actions.
+            scroll.contentContainer.style.flexGrow = 1;
+            scroll.contentViewport.RegisterCallback<GeometryChangedEvent>(evt =>
+                scroll.contentContainer.style.minHeight = Mathf.Max(0, evt.newRect.height));
+            var vista = new VisualElement { pickingMode = PickingMode.Ignore }; vista.AddToClassList("home-vista"); scroll.Add(vista);
+            var panel = new VisualElement(); panel.AddToClassList("home-actions"); scroll.Add(panel);
             bool active = menuView.Phase == MissionFlowPhase.Battle;
             var next = menuView.NextCampaignMission;
             string claim = menuView.ClaimableCampaignId;
-            Text(parent, "COMMAND", "eyebrow");
-            Text(parent, "Welcome back", "display-title");
-            var hero = Card(parent, "hero");
-            Text(hero, active ? "BATTLE IN PROGRESS" : claim != null ? "CAMPAIGN COMPLETE" : "YOUR NEXT MISSION", "eyebrow");
-            Text(hero, active ? MissionName(menuView.Resume.MissionId) : claim != null ? CampaignName(claim) : next != null ? MissionName(next.Definition.Id) : "Explore the frontiers", "display-title");
-            Text(hero, active ? "Your battle is saved. Continue where you left off." : claim != null ? "Collect your one-time completion rewards before continuing." : next != null ? CampaignName(next.CampaignId) + " • Untimed solo battle" : "Browse campaigns to replay missions or check unlock requirements.", "detail");
-            if (active) Primary(hero, "Resume battle  ›", () => { inBattle = true; message = "Battle resumed."; });
-            else if (claim != null) Primary(hero, "Collect completion rewards  ›", () => ClaimCampaign(claim));
-            else if (next != null) Primary(hero, "Continue campaign  ›", () => SelectMission(next.Definition.Id));
-            else Primary(hero, "Browse campaigns  ›", () => Navigate(Page.Battles));
-            Text(parent, "MORE TO EXPLORE", "eyebrow");
-            var quick = Card(parent);
-            Text(quick, "Quick battle", "section");
-            Text(quick, "Standalone encounter • mix faction units", "detail");
-            Button(quick, "View mission  ›", () => SelectMission("fixture-mixed"), !active);
-            var collection = Card(parent);
-            Text(collection, "Your units", "section");
-            Text(collection, menuView.Units.Count(u => u.Owned) + " unlocked • stats, fragments and upgrades", "detail");
-            Button(collection, "Open collection  ›", () => Navigate(Page.Collection), !active);
-            if (active) Text(parent, "Finish your saved battle to prepare another mission or change progression.", "hint");
-            Text(parent, "Abstract playtest content • campaign lengths and unit labels are fixtures.", "hint");
+            Text(panel, "WORLD 5 · THE CONTINUANCE", "home-kicker");
+            // Keep test content honest: the artwork is approved, the fixture campaign is not the story campaign.
+            Text(panel, active ? "Return to the field" : claim != null ? "Campaign complete" : next != null ? CampaignName(next.CampaignId) : "Explore the frontiers", "home-title");
+            Text(panel, active ? MissionName(menuView.Resume.MissionId) + " · Battle saved" : claim != null ? CampaignName(claim) + " · One-time rewards ready" : next != null ? MissionName(next.Definition.Id) + " · Your next mission" : "Replay missions or discover campaign requirements.", "home-summary");
+            Button main;
+            if (active) main = Button(panel, "RESUME BATTLE  ›", () => { inBattle = true; message = "Battle resumed."; });
+            else if (claim != null) main = Button(panel, "COLLECT REWARDS  ›", () => ClaimCampaign(claim));
+            else if (next != null) main = Button(panel, "CONTINUE CAMPAIGN  ›", () => SelectMission(next.Definition.Id));
+            else main = Button(panel, "BROWSE CAMPAIGNS  ›", () => Navigate(Page.Battles));
+            main.AddToClassList("home-primary");
+            var shortcuts = Row(panel); shortcuts.AddToClassList("home-shortcuts");
+            HomeShortcut(shortcuts, "Quick Battle", "Mixed-faction missions", "routes", () => SelectMission("fixture-mixed"), !active);
+            HomeShortcut(shortcuts, "Your Units", menuView.Units.Count(u => u.Owned) + " unlocked · Collection", "units", () => Navigate(Page.Collection), !active);
+            if (active) Text(panel, "Finish your saved battle to change progression or prepare another mission.", "home-status");
+            else if (message != "Your progress saves automatically.") Text(panel, message, "home-status");
+            Text(panel, "PLAYTEST · Abstract missions and units", "home-fixture");
+            var nav = Row(content); nav.AddToClassList("home-navigation");
+            foreach (var target in new[] { Page.Home, Page.Battles, Page.Collection, Page.Settings })
+            {
+                var destination = target;
+                string label = target == Page.Battles ? "Campaigns" : target == Page.Collection ? "Units" : target.ToString();
+                var button = Button(nav, "", () => Navigate(destination), !active || target == Page.Home || target == Page.Settings);
+                button.AddToClassList("home-nav-button"); button.EnableInClassList("selected", target == Page.Home);
+                HomeIcon(button, target == Page.Home ? "home" : target == Page.Settings ? "settings" : target == Page.Collection ? "units" : "routes");
+                Text(button, label, "home-nav-label");
+                button.tooltip = label;
+            }
+        }
+
+        private void HomeShortcut(VisualElement parent, string title, string subtitle, string icon, Action action, bool enabled)
+        {
+            var button = Button(parent, "", action, enabled); button.AddToClassList("home-shortcut");
+            HomeIcon(button, icon); Text(button, title, "home-shortcut-title"); Text(button, subtitle, "home-shortcut-detail");
+            button.tooltip = title;
+        }
+
+        private static void HomeIcon(VisualElement parent, string icon)
+        {
+            var image = new Image { image = Resources.Load<Texture2D>("Home/" + icon), pickingMode = PickingMode.Ignore };
+            image.AddToClassList("home-icon"); parent.Add(image);
         }
 
         private void SelectMission(string id)
@@ -501,6 +549,9 @@ namespace Ninefold.Presentation
             catch (Exception e)
             {
                 fatal = true; pointer = -1;
+                heading.style.display = DisplayStyle.Flex;
+                root.RemoveFromClassList("home-mode");
+                homeBackdrop.style.display = DisplayStyle.None;
                 if (playback != null) { StopCoroutine(playback); playback = null; }
                 Debug.LogException(e, this);
                 if (notice != null) notice.text = "Playtest stopped: " + e.Message;

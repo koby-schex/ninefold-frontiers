@@ -26,3 +26,6 @@
 *.ogg filter=lfs diff=lfs merge=lfs -text
 *.mp3 filter=lfs diff=lfs merge=lfs -text
 *.mp4 filter=lfs diff=lfs merge=lfs -text
+# Small, optimized UI assets are ordinary Git blobs so fresh clones work without LFS setup.
+Assets/Ninefold/Resources/Home/*.jpg -filter -diff -merge -text
+Assets/Ninefold/Resources/Home/*.png -filter -diff -merge -text
