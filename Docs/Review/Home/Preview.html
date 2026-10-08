@@ -1,0 +1,139 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Home — browser approximation, not Unity</title><style>.root { flex-grow: 1; color: rgb(233, 241, 246); font-size: 16px; background-color: rgb(8, 15, 23); }
+#safe-area { position: absolute; padding-left: 16px; padding-right: 16px; padding-bottom: 8px; }
+#screen-content { flex-grow: 1; min-height: 0; }
+.heading { flex-shrink: 0; padding-top: 14px; padding-bottom: 8px; border-bottom-width: 1px; border-bottom-color: rgb(39, 59, 73); }
+.brand { font-size: 27px; font-weight: bold; letter-spacing: 5px; }
+.eyebrow { font-size: 11px; font-weight: bold; color: rgb(224, 187, 115); margin-top: 8px; margin-bottom: 6px; letter-spacing: 1px; white-space: normal; }
+.notice { font-size: 12px; white-space: normal; min-height: 30px; margin-top: 8px; color: rgb(170, 196, 211); }
+.page-scroll { flex-grow: 1; min-height: 0; padding-top: 12px; }
+.page-scroll > .unity-scroll-view__content-viewport > .unity-scroll-view__content-container { padding-right: 5px; padding-bottom: 12px; }
+.display-title { font-size: 28px; font-weight: bold; white-space: normal; margin-top: 4px; margin-bottom: 8px; }
+.section { font-size: 18px; font-weight: bold; margin-top: 4px; margin-bottom: 6px; white-space: normal; }
+.detail { font-size: 14px; white-space: normal; margin-top: 4px; margin-bottom: 6px; color: rgb(195, 212, 224); }
+.hint { font-size: 12px; white-space: normal; color: rgb(164, 187, 204); margin-top: 4px; margin-bottom: 4px; }
+.preview, .reward-list { font-size: 15px; white-space: normal; color: rgb(246, 212, 148); margin-top: 5px; margin-bottom: 5px; }
+.card { background-color: rgb(17, 30, 43); border-width: 1px; border-color: rgb(44, 65, 81); border-radius: 12px; padding: 14px; margin-bottom: 12px; flex-shrink: 0; }
+.hero { background-color: rgb(22, 46, 59); border-left-width: 4px; border-left-color: rgb(105, 213, 210); padding: 20px; }
+.locked-card { background-color: rgb(19, 26, 36); border-color: rgb(44, 52, 66); }
+.confirmation { border-color: rgb(224, 187, 115); background-color: rgb(43, 40, 33); }
+Button { min-height: 46px; flex-shrink: 0; margin-top: 5px; margin-bottom: 5px; margin-left: 0; margin-right: 0; padding: 10px; background-color: rgb(29, 49, 65); color: rgb(234, 245, 248); border-width: 1px; border-color: rgb(68, 96, 113); border-radius: 8px; white-space: normal; font-size: 15px; font-weight: bold; }
+Button:hover { background-color: rgb(39, 71, 87); border-color: rgb(126, 188, 199); }
+Button:active, Button.selected { background-color: rgb(30, 70, 79); border-color: rgb(118, 229, 221); }
+Button:focus { border-color: rgb(235, 210, 151); }
+Button:disabled { background-color: rgb(25, 34, 45); color: rgb(135, 154, 170); border-color: rgb(49, 63, 76); }
+Button.primary { background-color: rgb(114, 216, 204); color: rgb(9, 32, 39); border-color: rgb(156, 241, 225); min-height: 50px; }
+Button.primary:hover { background-color: rgb(158, 237, 226); }
+Button.primary:disabled { background-color: rgb(35, 67, 72); color: rgb(143, 174, 180); border-color: rgb(58, 97, 101); }
+.row { flex-direction: row; align-items: stretch; }
+.row > Button { flex-grow: 1; flex-basis: 0; margin-right: 5px; }
+.navigation { flex-shrink: 0; border-top-width: 1px; border-top-color: rgb(50, 71, 86); padding-top: 7px; background-color: rgb(8, 15, 23); }
+.navigation > Button { font-size: 13px; border-width: 0; min-height: 52px; background-color: rgb(15, 27, 38); }
+.navigation > Button.selected { border-bottom-width: 3px; border-bottom-color: rgb(118, 229, 221); color: rgb(146, 234, 225); }
+.unit-grid { flex-wrap: wrap; }
+.unit-grid > Button.unit-tile { flex-grow: 0; flex-basis: 47%; margin-right: 2%; min-width: 0; padding: 12px; -unity-text-align: upper-left; align-items: flex-start; }
+.unit-tile.selected { border-width: 2px; }
+.unit-badge { width: 60px; height: 60px; border-radius: 30px; border-width: 3px; border-color: rgb(103, 217, 220); background-color: rgb(17, 58, 72); justify-content: center; align-items: center; margin-bottom: 6px; }
+.unit-badge.faction-b { border-color: rgb(180, 158, 240); background-color: rgb(46, 36, 70); }
+.unit-badge.apex-badge { border-radius: 9px; border-color: rgb(237, 193, 107); }
+.badge-id { font-size: 22px; font-weight: bold; color: rgb(236, 245, 248); }
+.tile-state { margin-top: 8px; font-size: 11px; color: rgb(162, 233, 220); white-space: normal; }
+.stat-row { flex-wrap: wrap; }
+.stat { flex-basis: 47%; flex-grow: 1; margin-right: 6px; padding: 8px; background-color: rgb(11, 23, 34); }
+.stat .hint { font-size: 10px; }
+.progress-track { height: 7px; flex-shrink: 0; border-radius: 4px; background-color: rgb(7, 18, 28); overflow: hidden; margin-top: 6px; margin-bottom: 6px; }
+.progress-fill { height: 7px; background-color: rgb(114, 216, 204); }
+.deploy-dock { margin-bottom: 0; padding: 10px; border-color: rgb(69, 120, 126); }
+.map-preview { height: 150px; margin-top: 4px; margin-bottom: 5px; background-color: rgb(8, 19, 29); border-width: 2px; border-color: rgb(96, 131, 146); overflow: hidden; }
+.map-cover { background-color: rgb(98, 124, 141); border-width: 1px; border-color: rgb(161, 185, 195); }
+.map-slow { background-color: rgb(118, 89, 43); }
+.map-objective { background-color: rgb(242, 194, 89); }
+.map-deploy { background-color: rgb(96, 236, 221); border-radius: 5px; }
+.battle-mode .brand { font-size: 17px; letter-spacing: 3px; }
+.root.battle-mode { background-color: transparent; }
+.battle-mode .heading { padding-top: 6px; padding-bottom: 3px; }
+.battle-mode .heading > .eyebrow { display: none; }
+.battle-mode .notice { min-height: 28px; margin-top: 2px; font-size: 11px; }
+.battle-header { padding: 8px; margin-top: 6px; margin-bottom: 4px; }
+.battle-header .row > .section { flex-grow: 1; flex-shrink: 1; font-size: 15px; }
+.battle-header .row > Button { flex-grow: 0; flex-basis: 66px; min-height: 36px; font-size: 12px; padding: 5px; margin-top: 0; margin-bottom: 0; }
+.objective-text { font-size: 13px; color: rgb(243, 208, 141); white-space: normal; margin-bottom: 5px; }
+.turn-strip { margin-top: 4px; }
+.current-turn, .turn-chip { padding: 5px; margin-right: 4px; border-radius: 4px; font-size: 11px; background-color: rgb(31, 48, 62); }
+.current-turn { color: rgb(158, 239, 225); background-color: rgb(27, 66, 73); font-weight: bold; }
+#battle-surface { background-color: transparent; }
+.battle-dock { height: 280px; flex-shrink: 0; border-top-width: 2px; border-top-color: rgb(57, 91, 106); }
+.controls { padding-top: 7px; padding-bottom: 4px; padding-left: 3px; padding-right: 3px; background-color: rgb(9, 18, 28); }
+.actor-status { font-size: 13px; font-weight: bold; white-space: normal; color: rgb(206, 235, 235); }
+.ability-button { min-height: 60px; font-size: 13px; }
+.intent-row { align-items: center; background-color: rgb(40, 40, 31); padding: 5px; border-radius: 7px; }
+.intent-row > .preview { flex-grow: 1; flex-shrink: 1; font-size: 12px; }
+.intent-row > Button { flex-grow: 0; flex-basis: 125px; font-size: 13px; }
+.legend { font-size: 10px; color: rgb(158, 185, 201); white-space: normal; margin-top: 4px; }
+.health-overlay { position: absolute; width: 96px; height: 32px; background-color: rgba(7, 14, 22, 0.96); border-radius: 5px; padding-left: 4px; padding-right: 4px; padding-top: 2px; border-left-width: 3px; border-left-color: rgb(101, 228, 218); }
+.health-overlay.enemy-health { border-left-color: rgb(255, 121, 101); }
+.health-overlay.active-health { border-top-width: 2px; border-top-color: rgb(250, 216, 129); }
+.health-overlay > Label { font-size: 11px; text-align: center; color: white; height: 18px; }
+.health-track { height: 5px; background-color: rgb(57, 68, 79); }
+.health-fill { height: 5px; }
+.turn-cue { position: absolute; top: 8px; left: 12%; right: 12%; padding: 10px; background-color: rgba(10, 34, 44, 0.96); border-width: 1px; border-color: rgb(119, 225, 212); border-radius: 8px; color: rgb(220, 251, 243); font-size: 16px; font-weight: bold; text-align: center; white-space: normal; }
+.objective-marker { position: absolute; width: 180px; min-height: 24px; padding: 4px; background-color: rgba(28, 25, 19, 0.96); border-width: 1px; border-color: rgb(160, 131, 71); border-radius: 5px; color: rgb(243, 211, 145); font-size: 10px; text-align: center; white-space: normal; }
+.objective-marker.objective-ready { border-color: rgb(125, 236, 204); color: rgb(151, 247, 223); }
+.health-overlay.preview-health { border-width: 2px; border-color: rgb(255, 211, 103); background-color: rgb(46, 37, 17); }
+.combat-float { position: absolute; width: 130px; padding: 5px; background-color: rgba(24, 12, 17, 0.96); border-radius: 5px; color: rgb(255, 162, 138); font-size: 15px; font-weight: bold; text-align: center; white-space: normal; }
+.combat-float.healing-float { color: rgb(135, 247, 210); background-color: rgba(9, 29, 25, 0.96); }
+
+/* Preparation uses a single readable column at narrow portrait widths. */
+.step-label { font-size: 11px; color: rgb(139, 230, 218); white-space: normal; margin-top: 12px; margin-bottom: 8px; letter-spacing: 1px; }
+Button.squad-card { padding: 14px; margin-bottom: 10px; align-items: stretch; -unity-text-align: upper-left; }
+.squad-card .row { align-items: center; }
+.squad-card .unit-badge { flex-shrink: 0; margin-right: 12px; }
+.unit-identity { flex-grow: 1; flex-shrink: 1; min-width: 0; }
+.squad-card.selected { border-left-width: 4px; }
+.squad-card:disabled .tile-state { color: rgb(180, 190, 201); }
+
+/* Approved sanctuary direction. Scoped to Home; battle HUD and other screens retain their layout. */
+#home-backdrop { position: absolute; left: 0; right: 0; top: 0; bottom: 0; display: none; background-image: url("../../../Assets/Ninefold/Resources/Home/Sanctuary.jpg"); -unity-background-scale-mode: scale-and-crop; }
+.home-mode #safe-area { padding-left: 24px; padding-right: 24px; padding-bottom: 10px; }
+.home-mode #screen-content { background-color: transparent; }
+.home-masthead { flex-shrink: 0; padding-top: 22px; padding-bottom: 12px; background-color: rgba(10, 12, 20, 0.35); }
+.home-wordmark { font-family: DisplaySerif; font-weight: normal; font-size: 46px; letter-spacing: 7px; text-align: center; color: rgb(247, 240, 222); margin: 0; }
+.home-submark { font-family: DisplaySerif; font-weight: normal; font-size: 15px; letter-spacing: 3px; text-align: center; color: rgb(237, 229, 217); margin-top: 6px; }
+.home-scroll { flex-grow: 1; min-height: 0; }
+.home-scroll > .unity-scroll-view__content-viewport > .unity-scroll-view__content-container { padding: 0; }
+.home-vista { min-height: 180px; flex-grow: 1; flex-shrink: 0; }
+.home-actions { flex-shrink: 0; padding: 18px; background-color: rgba(10, 12, 21, 0.90); border-top-width: 1px; border-top-color: rgba(205, 192, 181, 0.55); }
+.home-kicker { white-space: normal; font-size: 13px; letter-spacing: 2px; color: rgb(219, 207, 195); margin-bottom: 9px; }
+.home-title { font-family: DisplaySerif; font-weight: normal; white-space: normal; font-size: 48px; color: rgb(247, 240, 224); margin: 0; }
+.home-summary { white-space: normal; font-size: 18px; color: rgb(211, 202, 218); margin-top: 10px; margin-bottom: 12px; }
+.home-mode Button.home-primary { min-height: 78px; margin-top: 8px; margin-bottom: 12px; padding: 14px; border-radius: 3px; border-width: 2px; border-color: rgb(250, 235, 201); background-color: rgb(226, 211, 180); color: rgb(30, 27, 33); font-size: 20px; letter-spacing: 1px; font-weight: bold; }
+.home-mode Button.home-primary:hover { background-color: rgb(249, 233, 201); }
+.home-mode Button.home-primary:active { background-color: rgb(198, 180, 151); }
+.home-mode Button:focus { border-color: rgb(217, 187, 255); }
+.home-shortcuts { flex-wrap: wrap; }
+.home-shortcuts > Button.home-shortcut { min-width: 170px; flex-basis: 44%; flex-grow: 1; min-height: 128px; margin-right: 4px; margin-left: 4px; border-radius: 3px; border-color: rgb(124, 116, 138); background-color: rgba(28, 27, 42, 0.94); align-items: center; padding: 10px; }
+.home-mode Button.home-shortcut:hover { background-color: rgb(49, 42, 61); }
+.home-icon { width: 34px; height: 34px; flex-shrink: 0; margin-bottom: 5px; -unity-image-tint-color: rgb(240, 228, 217); }
+.home-shortcut-title { font-family: DisplaySerif; font-weight: normal; font-size: 21px; white-space: normal; color: rgb(240, 231, 220); text-align: center; }
+.home-shortcut-detail { font-size: 17px; font-weight: normal; white-space: normal; color: rgb(196, 189, 207); margin-top: 5px; text-align: center; }
+.home-status { white-space: normal; font-size: 18px; color: rgb(229, 207, 178); margin-top: 6px; }
+.home-fixture { white-space: normal; font-size: 12px; color: rgb(173, 163, 188); margin-top: 8px; text-align: center; }
+.home-navigation { flex-shrink: 0; background-color: rgba(11, 12, 22, 0.96); border-top-width: 1px; border-top-color: rgb(140, 126, 150); padding-top: 7px; }
+.home-navigation > Button.home-nav-button { min-height: 84px; min-width: 0; margin: 0; border-radius: 0; border-width: 0; border-bottom-width: 3px; border-bottom-color: transparent; background-color: transparent; padding: 7px 2px; align-items: center; justify-content: center; }
+.home-navigation > Button.home-nav-button.selected { border-bottom-color: rgb(204, 166, 249); background-color: rgba(119, 76, 150, 0.18); }
+.home-navigation > Button.home-nav-button:hover { background-color: rgba(119, 76, 150, 0.28); }
+.home-nav-label { font-size: 18px; color: rgb(228, 219, 235); white-space: normal; font-weight: normal; text-align: center; }
+.home-mode Button:disabled { opacity: 0.45; }
+.compact-home .home-vista { min-height: 30px; }
+.compact-home .home-masthead { padding-top: 8px; padding-bottom: 6px; }
+.compact-home .home-title { font-size: 38px; }
+.compact-home .home-actions { padding: 12px; }
+
+@font-face{font-family:DisplaySerif;src:url('../../../Assets/Ninefold/Resources/Home/DisplaySerif.ttf')}*{box-sizing:border-box}body{margin:0;background:#080f17;font-family:Arial,sans-serif}div,header,main,section,footer{display:flex;flex-direction:column}button{font-family:inherit;border-style:solid;cursor:pointer;display:flex;flex-direction:column;justify-content:center}p{margin:0;flex-shrink:0}#app{position:relative;overflow:hidden}#home-backdrop{display:block;background-size:cover;background-position:center}.home-mode #safe-area{position:absolute;top:0;left:0;right:0;bottom:0;padding-top:20px}.home-masthead{border:0}.home-scroll{overflow-y:auto;display:block}.scroll-inner{display:flex;flex-direction:column;min-height:100%}.home-title{line-height:1.15}.home-primary{align-items:center}.row{display:flex;flex-direction:row}.home-icon{object-fit:contain}.home-actions{border-top-style:solid}.home-navigation{border-top-style:solid}.home-nav-button{align-items:center}button:disabled{cursor:default}#review-message{font-size:16px;color:#eadccc;margin-top:8px}
+.short-home .home-masthead{display:none}.short-home .home-vista{min-height:0}</style><div id="app" class="root home-mode"><div id="home-backdrop"></div><div id="safe-area"><div id="screen-content"><header class="home-masthead"><p class="home-wordmark">NINEFOLD</p><p class="home-submark">F R O N T I E R S</p></header><main class="home-scroll"><div class="scroll-inner"><div class="home-vista"></div><section class="home-actions"><p class="home-kicker">WORLD 5 · THE CONTINUANCE</p><p class="home-title" id="title">Test campaign A</p><p class="home-summary" id="summary">Stabilization · Your next mission</p><button class="home-primary" id="primary">CONTINUE CAMPAIGN ›</button><div class="row home-shortcuts"><button class="home-shortcut" id="quick"><img class="home-icon" src="../../../Assets/Ninefold/Resources/Home/routes.png" alt=""><p class="home-shortcut-title">Quick Battle</p><p class="home-shortcut-detail">Mixed-faction missions</p></button><button class="home-shortcut" id="units"><img class="home-icon" src="../../../Assets/Ninefold/Resources/Home/units.png" alt=""><p class="home-shortcut-title">Your Units</p><p class="home-shortcut-detail">3 unlocked · Collection</p></button></div><p class="home-status" id="status"></p><p class="home-fixture">PLAYTEST · Abstract missions and units</p><p id="review-message" hidden></p></section></div></main><footer class="row home-navigation"></footer></div></div></div><script>
+const q=s=>document.querySelector(s);let state=new URLSearchParams(location.search).get('state')||'continue';
+const labels={resume:['Return to the field','Stabilization · Battle saved','RESUME BATTLE ›'],claim:['Campaign complete','Test campaign A · One-time rewards ready','COLLECT REWARDS ›'],browse:['Explore the frontiers','Replay missions or discover campaign requirements.','BROWSE CAMPAIGNS ›']};if(labels[state])['#title','#summary','#primary'].forEach((s,i)=>q(s).textContent=labels[state][i]);
+['Home','Campaigns','Units','Settings'].forEach((name,i)=>{const b=document.createElement('button');b.className='home-nav-button'+(i===0?' selected':'');b.innerHTML=`<img class="home-icon" src="../../../Assets/Ninefold/Resources/Home/${['home','routes','units','settings'][i]}.png" alt=""><p class="home-nav-label">${name}</p>`;b.disabled=state==='resume'&&(i===1||i===2);q('footer').append(b)});
+if(state==='resume'){q('#quick').disabled=q('#units').disabled=true;q('#status').textContent='Finish your saved battle to change progression or prepare another mission.'}
+document.querySelectorAll('button').forEach(b=>b.onclick=()=>{q('#review-message').hidden=false;q('#review-message').textContent='Layout preview only. This action runs in Unity.'});
+function layout(){const scale=innerWidth/540;q('#app').style.width='540px';q('#app').style.height=(innerHeight/scale)+'px';q('#app').style.zoom=scale;q('#app').classList.toggle('compact-home',innerHeight/scale<850);q('#app').classList.toggle('short-home',innerHeight/scale<500)}addEventListener('resize',layout);layout();
+</script></html>
