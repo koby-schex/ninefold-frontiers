@@ -1,0 +1,151 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Campaign UI — browser approximation</title><style>.root { flex-grow: 1; color: rgb(233, 241, 246); font-size: 16px; background-color: rgb(8, 15, 23); }
+#safe-area { position: absolute; padding-left: 16px; padding-right: 16px; padding-bottom: 8px; }
+#screen-content { flex-grow: 1; min-height: 0; }
+.heading { flex-shrink: 0; padding-top: 14px; padding-bottom: 8px; border-bottom-width: 1px; border-bottom-color: rgb(39, 59, 73); }
+.brand { font-size: 27px; font-weight: bold; letter-spacing: 5px; }
+.eyebrow { font-size: 11px; font-weight: bold; color: rgb(224, 187, 115); margin-top: 8px; margin-bottom: 6px; letter-spacing: 1px; white-space: normal; }
+.notice { font-size: 12px; white-space: normal; min-height: 30px; margin-top: 8px; color: rgb(170, 196, 211); }
+.page-scroll { flex-grow: 1; min-height: 0; padding-top: 12px; }
+.page-scroll > .unity-scroll-view__content-viewport > .unity-scroll-view__content-container { padding-right: 5px; padding-bottom: 12px; }
+.display-title { font-size: 28px; font-weight: bold; white-space: normal; margin-top: 4px; margin-bottom: 8px; }
+.section { font-size: 18px; font-weight: bold; margin-top: 4px; margin-bottom: 6px; white-space: normal; }
+.detail { font-size: 14px; white-space: normal; margin-top: 4px; margin-bottom: 6px; color: rgb(195, 212, 224); }
+.hint { font-size: 12px; white-space: normal; color: rgb(164, 187, 204); margin-top: 4px; margin-bottom: 4px; }
+.preview, .reward-list { font-size: 15px; white-space: normal; color: rgb(246, 212, 148); margin-top: 5px; margin-bottom: 5px; }
+.card { background-color: rgb(17, 30, 43); border-width: 1px; border-color: rgb(44, 65, 81); border-radius: 12px; padding: 14px; margin-bottom: 12px; flex-shrink: 0; }
+.hero { background-color: rgb(22, 46, 59); border-left-width: 4px; border-left-color: rgb(105, 213, 210); padding: 20px; }
+.locked-card { background-color: rgb(19, 26, 36); border-color: rgb(44, 52, 66); }
+.confirmation { border-color: rgb(224, 187, 115); background-color: rgb(43, 40, 33); }
+Button { min-height: 46px; flex-shrink: 0; margin-top: 5px; margin-bottom: 5px; margin-left: 0; margin-right: 0; padding: 10px; background-color: rgb(29, 49, 65); color: rgb(234, 245, 248); border-width: 1px; border-color: rgb(68, 96, 113); border-radius: 8px; white-space: normal; font-size: 15px; font-weight: bold; }
+Button:hover { background-color: rgb(39, 71, 87); border-color: rgb(126, 188, 199); }
+Button:active, Button.selected { background-color: rgb(30, 70, 79); border-color: rgb(118, 229, 221); }
+Button:focus { border-color: rgb(235, 210, 151); }
+Button:disabled { background-color: rgb(25, 34, 45); color: rgb(135, 154, 170); border-color: rgb(49, 63, 76); }
+Button.primary { background-color: rgb(114, 216, 204); color: rgb(9, 32, 39); border-color: rgb(156, 241, 225); min-height: 50px; }
+Button.primary:hover { background-color: rgb(158, 237, 226); }
+Button.primary:disabled { background-color: rgb(35, 67, 72); color: rgb(143, 174, 180); border-color: rgb(58, 97, 101); }
+.row { flex-direction: row; align-items: stretch; }
+.row > Button { flex-grow: 1; flex-basis: 0; margin-right: 5px; }
+.navigation { flex-shrink: 0; border-top-width: 1px; border-top-color: rgb(50, 71, 86); padding-top: 7px; background-color: rgb(8, 15, 23); }
+.navigation > Button { font-size: 13px; border-width: 0; min-height: 52px; background-color: rgb(15, 27, 38); }
+.navigation > Button.selected { border-bottom-width: 3px; border-bottom-color: rgb(118, 229, 221); color: rgb(146, 234, 225); }
+.unit-grid { flex-wrap: wrap; }
+.unit-grid > Button.unit-tile { flex-grow: 0; flex-basis: 47%; margin-right: 2%; min-width: 0; padding: 12px; -unity-text-align: upper-left; align-items: flex-start; }
+.unit-tile.selected { border-width: 2px; }
+.unit-badge { width: 60px; height: 60px; border-radius: 30px; border-width: 3px; border-color: rgb(103, 217, 220); background-color: rgb(17, 58, 72); justify-content: center; align-items: center; margin-bottom: 6px; }
+.unit-badge.faction-b { border-color: rgb(180, 158, 240); background-color: rgb(46, 36, 70); }
+.unit-badge.apex-badge { border-radius: 9px; border-color: rgb(237, 193, 107); }
+.badge-id { font-size: 22px; font-weight: bold; color: rgb(236, 245, 248); }
+.tile-state { margin-top: 8px; font-size: 11px; color: rgb(162, 233, 220); white-space: normal; }
+.stat-row { flex-wrap: wrap; }
+.stat { flex-basis: 47%; flex-grow: 1; margin-right: 6px; padding: 8px; background-color: rgb(11, 23, 34); }
+.stat .hint { font-size: 10px; }
+.progress-track { height: 7px; flex-shrink: 0; border-radius: 4px; background-color: rgb(7, 18, 28); overflow: hidden; margin-top: 6px; margin-bottom: 6px; }
+.progress-fill { height: 7px; background-color: rgb(114, 216, 204); }
+.deploy-dock { margin-bottom: 0; padding: 10px; border-color: rgb(69, 120, 126); }
+.map-preview { height: 150px; margin-top: 4px; margin-bottom: 5px; background-color: rgb(8, 19, 29); border-width: 2px; border-color: rgb(96, 131, 146); overflow: hidden; }
+.map-cover { background-color: rgb(98, 124, 141); border-width: 1px; border-color: rgb(161, 185, 195); }
+.map-slow { background-color: rgb(118, 89, 43); }
+.map-objective { background-color: rgb(242, 194, 89); }
+.map-deploy { background-color: rgb(96, 236, 221); border-radius: 5px; }
+.battle-mode .brand { font-size: 17px; letter-spacing: 3px; }
+.root.battle-mode { background-color: transparent; }
+.battle-mode .heading { padding-top: 6px; padding-bottom: 3px; }
+.battle-mode .heading > .eyebrow { display: none; }
+.battle-mode .notice { min-height: 28px; margin-top: 2px; font-size: 11px; }
+.battle-header { padding: 8px; margin-top: 6px; margin-bottom: 4px; }
+.battle-header .row > .section { flex-grow: 1; flex-shrink: 1; font-size: 15px; }
+.battle-header .row > Button { flex-grow: 0; flex-basis: 66px; min-height: 36px; font-size: 12px; padding: 5px; margin-top: 0; margin-bottom: 0; }
+.objective-text { font-size: 13px; color: rgb(243, 208, 141); white-space: normal; margin-bottom: 5px; }
+.turn-strip { margin-top: 4px; }
+.current-turn, .turn-chip { padding: 5px; margin-right: 4px; border-radius: 4px; font-size: 11px; background-color: rgb(31, 48, 62); }
+.current-turn { color: rgb(158, 239, 225); background-color: rgb(27, 66, 73); font-weight: bold; }
+#battle-surface { background-color: transparent; }
+.battle-dock { height: 280px; flex-shrink: 0; border-top-width: 2px; border-top-color: rgb(57, 91, 106); }
+.controls { padding-top: 7px; padding-bottom: 4px; padding-left: 3px; padding-right: 3px; background-color: rgb(9, 18, 28); }
+.actor-status { font-size: 13px; font-weight: bold; white-space: normal; color: rgb(206, 235, 235); }
+.ability-button { min-height: 60px; font-size: 13px; }
+.intent-row { align-items: center; background-color: rgb(40, 40, 31); padding: 5px; border-radius: 7px; }
+.intent-row > .preview { flex-grow: 1; flex-shrink: 1; font-size: 12px; }
+.intent-row > Button { flex-grow: 0; flex-basis: 125px; font-size: 13px; }
+.legend { font-size: 10px; color: rgb(158, 185, 201); white-space: normal; margin-top: 4px; }
+.health-overlay { position: absolute; width: 96px; height: 32px; background-color: rgba(7, 14, 22, 0.96); border-radius: 5px; padding-left: 4px; padding-right: 4px; padding-top: 2px; border-left-width: 3px; border-left-color: rgb(101, 228, 218); }
+.health-overlay.enemy-health { border-left-color: rgb(255, 121, 101); }
+.health-overlay.active-health { border-top-width: 2px; border-top-color: rgb(250, 216, 129); }
+.health-overlay > Label { font-size: 11px; -unity-text-align: middle-center; color: white; height: 18px; }
+.health-track { height: 5px; background-color: rgb(57, 68, 79); }
+.health-fill { height: 5px; }
+.turn-cue { position: absolute; top: 8px; left: 12%; right: 12%; padding: 10px; background-color: rgba(10, 34, 44, 0.96); border-width: 1px; border-color: rgb(119, 225, 212); border-radius: 8px; color: rgb(220, 251, 243); font-size: 16px; font-weight: bold; -unity-text-align: middle-center; white-space: normal; }
+.objective-marker { position: absolute; width: 180px; min-height: 24px; padding: 4px; background-color: rgba(28, 25, 19, 0.96); border-width: 1px; border-color: rgb(160, 131, 71); border-radius: 5px; color: rgb(243, 211, 145); font-size: 10px; -unity-text-align: middle-center; white-space: normal; }
+.objective-marker.objective-ready { border-color: rgb(125, 236, 204); color: rgb(151, 247, 223); }
+.health-overlay.preview-health { border-width: 2px; border-color: rgb(255, 211, 103); background-color: rgb(46, 37, 17); }
+.combat-float { position: absolute; width: 130px; padding: 5px; background-color: rgba(24, 12, 17, 0.96); border-radius: 5px; color: rgb(255, 162, 138); font-size: 15px; font-weight: bold; -unity-text-align: middle-center; white-space: normal; }
+.combat-float.healing-float { color: rgb(135, 247, 210); background-color: rgba(9, 29, 25, 0.96); }
+
+/* Preparation uses a single readable column at narrow portrait widths. */
+.step-label { font-size: 11px; color: rgb(139, 230, 218); white-space: normal; margin-top: 12px; margin-bottom: 8px; letter-spacing: 1px; }
+Button.squad-card { padding: 14px; margin-bottom: 10px; align-items: stretch; -unity-text-align: upper-left; }
+.squad-card .row { align-items: center; }
+.squad-card .unit-badge { flex-shrink: 0; margin-right: 12px; }
+.unit-identity { flex-grow: 1; flex-shrink: 1; min-width: 0; }
+.squad-card.selected { border-left-width: 4px; }
+.squad-card:disabled .tile-state { color: rgb(180, 190, 201); }
+
+/* Shared sanctuary interface materials, not new faction/world art. */
+.campaign-mode #home-backdrop { opacity: 0.18; }
+.campaign-mode #safe-area { padding-left: 22px; padding-right: 22px; }
+.campaign-mode .heading { background-color: rgba(11, 13, 22, 0.95); border-bottom-color: rgb(105, 93, 120); padding-top: 10px; }
+.campaign-mode .brand { font-family: DisplaySerif; font-weight: normal; font-size: 30px; letter-spacing: 5px; }
+.campaign-mode .heading > .eyebrow { display: none; }
+.campaign-mode .notice { font-size: 16px; min-height: 24px; color: rgb(189, 180, 202); }
+.campaign-mode .page-scroll { background-color: rgba(11, 13, 22, 0.86); padding: 14px 10px 0 10px; }
+.campaign-mode .display-title { font-family: DisplaySerif; font-weight: normal; font-size: 42px; color: rgb(246, 235, 219); }
+.campaign-mode .section { font-size: 25px; color: rgb(240, 230, 217); }
+.campaign-mode .detail { font-size: 20px; color: rgb(215, 207, 223); }
+.campaign-mode .hint { font-size: 17px; color: rgb(183, 177, 199); }
+.campaign-mode .eyebrow, .campaign-status { font-size: 15px; letter-spacing: 1px; color: rgb(221, 204, 178); white-space: normal; margin-top: 5px; margin-bottom: 7px; }
+.campaign-mode .card { background-color: rgba(24, 24, 38, 0.98); border-color: rgb(99, 87, 114); border-radius: 4px; padding: 18px; margin-top: 8px; margin-bottom: 14px; }
+.campaign-mode .campaign-panel { border-top-width: 3px; border-top-color: rgb(193, 167, 224); }
+.campaign-name { font-family: DisplaySerif; font-weight: normal; font-size: 32px; color: rgb(245, 233, 213); white-space: normal; margin-top: 4px; margin-bottom: 10px; }
+.campaign-mode .progress-track { height: 7px; margin-top: 10px; margin-bottom: 10px; background-color: rgb(10, 11, 19); }
+.campaign-mode .progress-fill { background-color: rgb(186, 154, 219); }
+.lock-reason { font-size: 18px; white-space: normal; color: rgb(220, 199, 170); padding: 12px; margin-top: 8px; margin-bottom: 6px; background-color: rgb(37, 31, 37); border-left-width: 2px; border-left-color: rgb(174, 144, 107); }
+.next-mission-label { font-size: 17px; white-space: normal; color: rgb(220, 199, 242); margin-top: 10px; margin-bottom: 5px; }
+.campaign-mode Button { min-height: 76px; font-size: 20px; border-radius: 3px; background-color: rgb(36, 32, 48); border-color: rgb(115, 102, 132); color: rgb(235, 225, 218); padding: 14px; }
+.campaign-mode Button:hover { background-color: rgb(53, 43, 66); }
+.campaign-mode Button.primary { background-color: rgb(226, 211, 180); color: rgb(30, 27, 33); border-color: rgb(248, 231, 195); }
+.campaign-mode Button.primary:hover { background-color: rgb(249, 233, 201); }
+.campaign-mode Button:disabled { background-color: rgb(26, 25, 36); color: rgb(151, 143, 164); border-color: rgb(65, 57, 75); }
+.campaign-mode Button:focus { border-color: rgb(231, 191, 255); }
+.campaign-mode Button.back-link { background-color: transparent; border-width: 0; text-align:left; margin-bottom: 4px; }
+.campaign-mode .locked-card { background-color: rgb(20, 20, 30); border-color: rgb(65, 58, 74); }
+.campaign-mode .next-mission { border-left-width: 4px; border-left-color: rgb(204, 168, 238); }
+.mission-heading { align-items: center; }
+.mission-number { font-family: DisplaySerif; font-size: 34px; color: rgb(162, 140, 184); min-width: 58px; margin-right: 12px; }
+.mission-identity { flex-grow: 1; flex-shrink: 1; min-width: 0; }
+.fixture-note { font-size: 15px; white-space: normal; color: rgb(168, 157, 185); margin: 8px 0; }
+.campaign-mode .step-label { font-size: 16px; color: rgb(205, 181, 228); }
+.campaign-mode .map-preview { height: 270px; border-color: rgb(143, 125, 166); background-color: rgb(11, 14, 23); }
+.campaign-mode .briefing-terrain { padding: 14px; }
+.campaign-mode .briefing-objective { border-left-width: 3px; border-left-color: rgb(218, 198, 159); }
+.briefing-reward { align-items: center; padding: 12px 0; border-bottom-width: 1px; border-bottom-color: rgb(61, 53, 74); }
+.reward-name { font-size: 19px; white-space: normal; color: rgb(223, 214, 231); flex-grow: 1; flex-shrink: 1; }
+.reward-amount { font-size: 23px; color: rgb(241, 218, 180); margin-left: 12px; }
+.campaign-mode .deploy-dock { flex-shrink: 0; background-color: rgb(17, 17, 28); border-color: rgb(137, 117, 153); margin: 0; padding: 10px 16px; }
+.campaign-mode .navigation { background-color: rgb(14, 14, 24); border-top-color: rgb(101, 87, 115); }
+.campaign-mode .navigation > Button { font-size: 18px; min-height: 76px; padding: 8px 2px; background-color: transparent; }
+.campaign-mode .navigation > Button.selected { color: rgb(235, 209, 255); border-bottom-color: rgb(201, 163, 239); background-color: rgb(39, 28, 48); }
+.compact-home.campaign-mode .map-preview { height: 190px; }
+.short-home.campaign-mode .heading { display: none; }
+
+@font-face{font-family:DisplaySerif;src:url('../../../Assets/Ninefold/Resources/Home/DisplaySerif.ttf')}*{box-sizing:border-box}body{margin:0;background:#080f17;font-family:Arial,sans-serif}div,main,header,section,footer{display:flex;flex-direction:column}button{font-family:inherit;border-style:solid;cursor:pointer}p{margin:0}#app{position:relative;overflow:hidden;height:100vh;width:540px}#backdrop{position:absolute;inset:0;background:url('../../../Assets/Ninefold/Resources/Home/Sanctuary.jpg') center/cover;opacity:.18}#safe-area{inset:0;display:flex}#screen-content{min-height:0}main{display:block;overflow-y:auto;flex:1;min-height:0}.row{display:flex;flex-direction:row}.card{border-style:solid}.progress-track{display:block}.map-preview{position:relative;display:block;border-style:solid;flex-shrink:0}.map-preview i{position:absolute}.mission-number{flex-shrink:0}.mission-identity{display:flex}.briefing-reward{display:flex;border-bottom-style:solid}.reward-amount{flex-shrink:0}.navigation{display:flex;flex-direction:row}.navigation button{flex:1;min-width:0}.lock-reason,.next-mission{border-left-style:solid}footer{flex-shrink:0}.deploy-dock{border-style:solid}.detail,.hint{line-height:1.4}.display-title,.campaign-name{line-height:1.2}.heading{flex-shrink:0}.heading .notice{font-size:14px}.map-cover{border-style:solid}.briefing-objective{border-left-style:solid}button:disabled{cursor:default}
+</style><div id="app" class="root campaign-mode"><div id="backdrop"></div><div id="safe-area"><header class="heading"><p class="brand">NINEFOLD</p><p class="notice">Browser layout approximation · not a Unity render</p></header><div id="screen-content"><main class="page-scroll" id="page"></main><footer id="dock"></footer></div></div></div><script>
+const q=s=>document.querySelector(s),t=(s,c='detail')=>`<p class="${c}">${s}</p>`,b=(s,to,cls='',disabled=false)=>`<button class="${cls}" onclick="show('${to}')" ${disabled?'disabled':''}>${s}</button>`,card=(s,c='')=>`<section class="card ${c}">${s}</section>`,meter='<div class="progress-track"><div class="progress-fill" style="width:0%"></div></div>';
+const map=`<div class="map-preview"><i class="map-cover" style="left:9.09%;top:30%;width:18.18%;height:20%"></i><i class="map-cover" style="left:72.73%;top:20%;width:18.18%;height:20%"></i><i class="map-objective" style="left:22.73%;top:65%;width:9.09%;height:10%"></i>${[0,2,4].map(x=>`<i class="map-deploy" style="left:${(x+2.8)/11*100}%;top:68%;width:3.64%;height:4%"></i>`).join('')}</div>`;
+let current='Campaigns';function show(name){current=name;q('#page').scrollTop=0;let content='';q('#dock').innerHTML=`<div class="row navigation">${['Home','Campaigns','Units','Settings'].map(n=>b(n,n,n==='Campaigns'?'selected':'')).join('')}</div>`;
+if(name==='Campaigns'){content=t('CHOOSE YOUR CAMPAIGN','eyebrow')+t('Campaigns','display-title')+t('Unlock three standard units from a faction to enter its campaign.')+card(t('AVAILABLE','campaign-status')+t('Test campaign A','campaign-name')+t('0 / 2 missions completed')+meter+t('3 / 3 standard units for entry','hint')+t('NEXT · Stabilization','next-mission-label')+b('Continue campaign ›','Briefing','primary')+b('View all missions ›','Missions'),'campaign-panel')+card(t('FACTION LOCKED','campaign-status')+t('Test campaign B','campaign-name')+t('0 / 1 missions completed')+meter+t('0 / 3 standard units for entry','hint')+t('Collect this faction’s unit fragments to unlock more standard units. Apex units do not count toward entry.','lock-reason')+b('Preview locked missions ›','Locked'),'campaign-panel locked-card')+t('PLAYTEST · Campaign lengths and faction labels are abstract fixtures.','fixture-note')}
+else if(name==='Missions'||name==='Locked'||name==='Replay'){const locked=name==='Locked',replay=name==='Replay';content=b('‹ All campaigns','Campaigns','back-link')+t('CAMPAIGN MISSIONS','eyebrow')+t('Test campaign '+(locked?'B':'A'),'display-title')+t((replay?'1':'0')+' / '+(locked?'1':'2')+' completed · Untimed solo battles')+meter;for(let i=0;i<(locked?1:2);i++){const unavailable=locked||i===1&&!replay;content+=card(`<div class="row mission-heading">${t('0'+(i+1),'mission-number')}<div class="mission-identity">${t(unavailable?'LOCKED':replay&&i===0?'COMPLETED · REPLAY':'UP NEXT','campaign-status')+t(locked?'Faction B: stabilization':i===0?'Stabilization':'Campaign finale','section')}</div></div>`+t(i===0?'Stabilize the marked objective. An open center with offset side cover.':'Stabilize the objective. A northern barrier and slow central ground change your routes.')+(unavailable?t(locked?'Unlock three standard units from this faction (0 / 3).':'Complete Stabilization first.','lock-reason'):'')+b(unavailable?'Mission locked':replay&&i===0?'Review replay ›':'View briefing ›',replay?'ReplayBriefing':'Briefing',unavailable?'':'primary',unavailable),'mission-entry '+(unavailable?'locked-card':'next-mission'))}}
+else if(name==='Briefing'||name==='ReplayBriefing'){const replay=name==='ReplayBriefing';content=b('‹ Mission list','Missions','back-link')+t('1 BRIEFING / 2 SQUAD NEXT','step-label')+t('Stabilization','display-title')+card(t('BATTLEFIELD OVERVIEW','eyebrow')+map+t('Cyan: deployment · Gray: cover · Amber: slow ground · Gold: objective','hint'),'briefing-terrain')+card(t('YOUR OBJECTIVE','eyebrow')+t('Stabilize the marked objective. An open center with offset side cover.')+t('Untimed turns • no character or progression loss on defeat','hint'),'briefing-objective')+card(t(replay?'Replay victory rewards':'First-clear victory rewards','section')+(replay?[['Test supplies',2]]:[['Test supplies',10],['A1 fragments',5],['A4 fragments',5]]).map(([n,v])=>`<div class="row briefing-reward">${t(n,'reward-name')+t('+'+v,'reward-amount')}</div>`).join('')+t('Collect after victory. Campaign completion rewards are separate and one-time.','hint'));q('#dock').innerHTML=card(t('1–3 units • faction squad','hint')+b('CHOOSE SQUAD ›','Squad','primary'),'deploy-dock')}
+else content=b('‹ Campaigns','Campaigns','back-link')+t(name,'display-title')+t('This screen is outside this visual review. The Unity build retains its existing functionality.');q('#page').innerHTML=content;}
+function layout(){const scale=innerWidth/540;q('#app').style.height=(innerHeight/scale)+'px';q('#app').style.zoom=scale;q('#app').classList.toggle('compact-home',innerHeight/scale<850);q('#app').classList.toggle('short-home',innerHeight/scale<500)}addEventListener('resize',layout);layout();show(new URLSearchParams(location.search).get('screen')||'Campaigns');
+</script></html>

@@ -60,6 +60,8 @@ namespace Ninefold.Presentation
             root.AddToClassList("root");
             var homeStyles = Resources.Load<StyleSheet>("Home/Home");
             if (homeStyles != null) root.styleSheets.Add(homeStyles);
+            var campaignStyles = Resources.Load<StyleSheet>("Home/Campaign");
+            if (campaignStyles != null) root.styleSheets.Add(campaignStyles);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
@@ -116,9 +118,13 @@ namespace Ninefold.Presentation
             bool home = menuView.Phase != MissionFlowPhase.Results && page != Page.Settings &&
                 !(menuView.Phase == MissionFlowPhase.Battle && inBattle) &&
                 (menuView.Phase == MissionFlowPhase.Battle || page == Page.Home);
+            bool campaignScreen = menuView.Phase == MissionFlowPhase.Selection &&
+                (page == Page.Battles || page == Page.Missions || page == Page.Briefing);
+            root.EnableInClassList("campaign-mode", campaignScreen);
+            root.EnableInClassList("briefing-mode", campaignScreen && page == Page.Briefing);
             root.EnableInClassList("home-mode", home);
             heading.style.display = home ? DisplayStyle.None : DisplayStyle.Flex;
-            homeBackdrop.style.display = home ? DisplayStyle.Flex : DisplayStyle.None;
+            homeBackdrop.style.display = home || campaignScreen ? DisplayStyle.Flex : DisplayStyle.None;
             root.EnableInClassList("battle-mode", menuView.Phase == MissionFlowPhase.Battle && inBattle);
             if (menuView.Phase == MissionFlowPhase.Battle && inBattle)
             {
@@ -136,7 +142,9 @@ namespace Ninefold.Presentation
                     BuildHomeScreen();
                     return;
                 }
-                var scroll = new ScrollView(); scroll.AddToClassList("page-scroll"); content.Add(scroll);
+                if (campaignScreen) content.style.backgroundColor = Color.clear;
+                var scroll = new ScrollView(ScrollViewMode.Vertical); scroll.AddToClassList("page-scroll");
+                scroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden; content.Add(scroll);
                 if (menuView.Phase == MissionFlowPhase.Results) BuildResults(scroll);
                 else if (page == Page.Settings) BuildSettings(scroll);
                 else if (page == Page.Collection) BuildCollection(scroll);
@@ -231,39 +239,64 @@ namespace Ninefold.Presentation
 
         private void BuildSelection(VisualElement parent)
         {
+            Text(parent, "CHOOSE YOUR CAMPAIGN", "eyebrow");
             Text(parent, "Campaigns", "display-title");
-            Text(parent, "Each campaign uses its own faction. Unlock three standard units to enter.", "detail");
+            Text(parent, "Unlock three standard units from a faction to enter its campaign.", "detail");
             foreach (var c in menuView.Campaigns)
             {
                 string id = c.CampaignId;
-                var mission = menuView.Missions.First(m => m.CampaignId == id);
-                var card = Card(parent, c.CanEnter ? "mission-card" : "locked-card");
-                Text(card, !c.CanEnter ? "FACTION LOCKED" : c.IsComplete ? "COMPLETED" : "AVAILABLE", "eyebrow");
-                Text(card, CampaignName(id), "section");
-                Meter(card, c.CompletedMissions, c.TotalMissions);
+                var missions = catalog.Campaigns.Single(x => x.Id == id).Missions
+                    .Select(node => menuView.Missions.Single(m => m.Definition.Id == node.MissionId)).ToArray();
+                var next = missions.FirstOrDefault(m => m.Available && !m.IsReplay);
+                var card = Card(parent, "campaign-panel"); card.EnableInClassList("locked-card", !c.CanEnter);
+                Text(card, !c.CanEnter ? "FACTION LOCKED" : c.IsComplete ? "CAMPAIGN COMPLETED" : "AVAILABLE", "campaign-status");
+                Text(card, CampaignName(id), "campaign-name");
                 Text(card, c.CompletedMissions + " / " + c.TotalMissions + " missions completed", "detail");
-                if (!c.CanEnter) Text(card, mission.OwnedFactionStandards + " / 3 standard units unlocked. Apex units do not count toward entry.", "hint");
-                if (c.IsComplete && !c.RewardsClaimed) Primary(card, "Collect completion rewards", () => ClaimCampaign(id));
-                Button(card, "View missions  ›", () => { selectedCampaign = id; Navigate(Page.Missions); });
+                Meter(card, c.CompletedMissions, c.TotalMissions);
+                Text(card, Math.Min(3, missions[0].OwnedFactionStandards) + " / 3 standard units for entry", "hint");
+                if (!c.CanEnter) Text(card, "Collect this faction’s unit fragments to unlock more standard units. Apex units do not count toward entry.", "lock-reason");
+                else if (c.IsComplete && !c.RewardsClaimed)
+                    Primary(card, "Collect completion rewards  ›", () => ClaimCampaign(id));
+                else if (next != null)
+                {
+                    Text(card, "NEXT · " + MissionName(next.Definition.Id), "next-mission-label");
+                    string nextId = next.Definition.Id;
+                    Primary(card, "Continue campaign  ›", () => SelectMission(nextId));
+                }
+                else Text(card, "Completed missions remain available to replay.", "hint");
+                Button(card, c.CanEnter ? "View all missions  ›" : "Preview locked missions  ›", () => { selectedCampaign = id; Navigate(Page.Missions); });
             }
+            Text(parent, "PLAYTEST · Campaign lengths and faction labels are abstract fixtures.", "fixture-note");
         }
 
         private void BuildMissionList(VisualElement parent)
         {
-            Button(parent, "‹ All campaigns", () => Navigate(Page.Battles));
+            Button(parent, "‹ All campaigns", () => Navigate(Page.Battles)).AddToClassList("back-link");
+            Text(parent, "CAMPAIGN MISSIONS", "eyebrow");
             Text(parent, CampaignName(selectedCampaign), "display-title");
+            var progress = menuView.Campaigns.Single(c => c.CampaignId == selectedCampaign);
+            Text(parent, progress.CompletedMissions + " / " + progress.TotalMissions + " completed · Untimed solo battles", "detail");
+            Meter(parent, progress.CompletedMissions, progress.TotalMissions);
             var authored = catalog.Campaigns.Single(c => c.Id == selectedCampaign);
+            string nextId = authored.Missions.Select(n => menuView.Missions.Single(m => m.Definition.Id == n.MissionId))
+                .FirstOrDefault(m => m.Available && !m.IsReplay)?.Definition.Id;
             int number = 0;
             foreach (var node in authored.Missions)
             {
                 var m = menuView.Missions.Single(x => x.Definition.Id == node.MissionId);
                 string id = m.Definition.Id;
-                var card = Card(parent, m.Available ? "mission-card" : "locked-card");
-                Text(card, "MISSION " + (++number).ToString("00") + " · " + (m.IsReplay ? "COMPLETED" : m.Available ? "AVAILABLE" : "LOCKED"), "eyebrow");
-                Text(card, MissionName(id), "section");
+                var card = Card(parent, "mission-entry");
+                card.EnableInClassList("locked-card", !m.Available);
+                card.EnableInClassList("next-mission", id == nextId);
+                var line = Row(card); line.AddToClassList("mission-heading");
+                Text(line, (++number).ToString("00"), "mission-number");
+                var words = new VisualElement(); words.AddToClassList("mission-identity"); line.Add(words);
+                Text(words, !m.Available ? "LOCKED" : m.IsReplay ? "COMPLETED · REPLAY" : id == nextId ? "UP NEXT" : "AVAILABLE", "campaign-status");
+                Text(words, MissionName(id), "section");
                 Text(card, Description(id), "detail");
-                if (!m.Available) Text(card, m.FactionRosterLocked ? "Unlock three standard units from this faction." : "Complete " + string.Join(", ", m.MissingPrerequisites.Select(MissionName)) + " first.", "hint");
-                Button(card, m.IsReplay ? "Review replay  ›" : "View briefing  ›", () => SelectMission(id), m.Available);
+                if (!m.Available) Text(card, m.FactionRosterLocked ? "Unlock three standard units from this faction (" + m.OwnedFactionStandards + " / 3)." : "Complete " + string.Join(", ", m.MissingPrerequisites.Select(MissionName)) + " first.", "lock-reason");
+                var button = Button(card, m.IsReplay ? "Review replay  ›" : !m.Available ? "Mission locked" : "View briefing  ›", () => SelectMission(id), m.Available);
+                if (id == nextId) button.AddToClassList("primary");
             }
         }
 
@@ -276,20 +309,27 @@ namespace Ninefold.Presentation
         private void BuildBriefing(VisualElement parent)
         {
             var definition = catalog.Missions[menuView.SelectedMissionId];
-            Button(parent, definition.IsCampaign ? "‹ Mission list" : "‹ Home", () => Navigate(definition.IsCampaign ? Page.Missions : Page.Home));
+            Button(parent, definition.IsCampaign ? "‹ Mission list" : "‹ Home", () => Navigate(definition.IsCampaign ? Page.Missions : Page.Home)).AddToClassList("back-link");
             PreparationHeader(parent, false);
-            var brief = Card(parent);
-            Text(brief, "Your objective", "section"); Text(brief, Description(definition.Id), "detail");
-            BuildMapPreview(brief, definition);
+            var terrain = Card(parent, "briefing-terrain");
+            BuildMapPreview(terrain, definition);
+            var brief = Card(parent, "briefing-objective");
+            Text(brief, "YOUR OBJECTIVE", "eyebrow"); Text(brief, Description(definition.Id), "detail");
             Text(brief, "Untimed turns • no character or progression loss on defeat", "hint");
             var rewards = Card(parent);
             var mission = menuView.Missions.Single(m => m.Definition.Id == definition.Id);
             Text(rewards, mission.IsReplay ? "Replay victory rewards" : "First-clear victory rewards", "section");
-            Text(rewards, mission.VictoryRewards.Count == 0 ? "No resource rewards for this mission." : string.Join("\n", mission.VictoryRewards.Select(g => "+" + g.Amount + "  " + ResourceName(g.ResourceId))), "reward-list");
+            if (mission.VictoryRewards.Count == 0) Text(rewards, "No resource rewards for this mission.", "hint");
+            foreach (var grant in mission.VictoryRewards)
+            {
+                var row = Row(rewards); row.AddToClassList("briefing-reward");
+                Text(row, ResourceName(grant.ResourceId), "reward-name");
+                Text(row, "+" + grant.Amount, "reward-amount");
+            }
             Text(rewards, "Collect after victory. Campaign completion rewards are separate and one-time.", "hint");
             var dock = Card(content, "deploy-dock");
             Text(dock, definition.MinimumSquad + "–" + definition.MaximumSquad + " units • " + (definition.IsCampaign ? "faction squad" : "mixed factions allowed"), "hint");
-            Primary(dock, "Choose squad  ›", () => Navigate(Page.Squad));
+            Primary(dock, "CHOOSE SQUAD  ›", () => Navigate(Page.Squad));
         }
 
         private void BuildSquad(VisualElement parent)
@@ -551,6 +591,8 @@ namespace Ninefold.Presentation
                 fatal = true; pointer = -1;
                 heading.style.display = DisplayStyle.Flex;
                 root.RemoveFromClassList("home-mode");
+                root.RemoveFromClassList("campaign-mode");
+                root.RemoveFromClassList("briefing-mode");
                 homeBackdrop.style.display = DisplayStyle.None;
                 if (playback != null) { StopCoroutine(playback); playback = null; }
                 Debug.LogException(e, this);
