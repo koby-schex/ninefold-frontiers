@@ -1,0 +1,11 @@
+/* Results share the approved interface materials; no production art is introduced. */
+.results-mode .result-summary { border-top-width: 3px; border-top-color: rgb(222, 201, 162); padding: 24px; }
+.results-mode .result-summary .display-title { font-size: 58px; margin-top: 8px; }
+.results-mode .defeat-summary { border-top-color: rgb(171, 146, 194); }
+.results-mode .result-assurance { font-size: 19px; white-space: normal; color: rgb(181, 224, 205); margin: 12px 0; }
+.results-mode .result-status { font-size: 16px; letter-spacing: 2px; color: rgb(223, 204, 177); margin-top: 8px; }
+.results-mode .result-reward-row { align-items: center; padding: 14px 0; border-bottom-width: 1px; border-bottom-color: rgb(64, 52, 77); }
+.results-mode .reward-identity { flex-grow: 1; flex-shrink: 1; min-width: 0; }
+.results-mode .reward-amount { flex-shrink: 0; font-size: 30px; margin-left: 16px; color: rgb(244, 222, 181); }
+.results-mode .reward-unit-progress { border-left-width: 3px; border-left-color: rgb(163, 136, 192); }
+.results-mode .result-next { border-color: rgb(148, 125, 167); }
