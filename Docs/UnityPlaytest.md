@@ -31,7 +31,28 @@ Open **Window > General > Console**. If there are red compilation errors, stop h
 and send the first error's full text. Do not change Unity versions or install random
 packages to work around it. The `Ninefold` menu appears only after scripts compile.
 
-## 3. Generate the scene explicitly
+## 3. Start from the playtest launcher
+
+Open **Ninefold > Playtest > Launcher** after compilation finishes. Check the Unity,
+render pipeline and stylesheet indicators. If the pipeline is not configured, use
+**Configure foundation**. Then click **START / RESUME PLAYTEST**.
+
+The launcher opens/creates the integration scene through the existing setup command,
+repairs a missing panel reference where needed, opens Game view and enters Play mode.
+Cancelling Unity's unsaved-scene prompt cancels launch. Existing progress resumes;
+there is no reset or erase button. Select **540 × 960** in Game view once for portrait
+review; the launcher does not modify Game view presets.
+
+Use **Capture current report → Copy displayed report** in the launcher to report a
+problem. During play, **Settings → Playtest diagnostics** also offers Refresh/Copy.
+The fatal-error screen offers the same controls. Add the clicks that caused the issue
+and paste the report into the chat. If scripts fail to compile and the Ninefold menu
+is unavailable, copy the first red Console error instead.
+
+See [Playtest diagnostics](PlaytestDiagnostics.md) for report contents and limitations.
+The original manual setup steps remain below.
+
+## 4. Generate the scene explicitly (manual alternative)
 
 1. Run **Ninefold > Setup > Configure Foundation**. Save an existing modified scene
    if Unity asks. This sets up URP and the portrait foundation; Bootstrap is empty.
@@ -58,7 +79,7 @@ UI Toolkit event handling with **Input Manager (Old)**; **Both** also supports i
 the Input System package was independently installed. Do not install it just for this test.
 If Unity asks for an editor restart after an input-setting change, allow the restart.
 
-## 4. First five-minute check
+## 5. First five-minute check
 
 ### Stabilization and saving
 

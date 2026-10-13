@@ -18,11 +18,13 @@ namespace Ninefold.Editor
         private const string MaterialPath = "Assets/Ninefold/Settings/PlaytestFixture.mat";
 
         [MenuItem("Ninefold/Playtest/Create or Open Integration Scene")]
-        public static void CreateOrOpen()
+        public static void CreateOrOpen() => TryCreateOrOpen();
+
+        public static bool TryCreateOrOpen()
         {
             if (Application.unityVersion != "6000.3.21f1") throw new InvalidOperationException("Use Unity 6000.3.21f1 for this project.");
             if (EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Stop Play mode before creating/opening the scene.");
-            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return false;
             var existing = AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath);
             if (existing == null && File.Exists(ScenePath)) throw new InvalidOperationException("Unexpected existing file at " + ScenePath);
             if (GraphicsSettings.defaultRenderPipeline == null)
@@ -56,7 +58,7 @@ namespace Ninefold.Editor
                 }
                 if (changed && !EditorSceneManager.SaveScene(opened)) throw new InvalidOperationException("Could not save the repaired panel reference.");
                 Debug.Log(changed ? "Repaired missing PlaytestPanel reference and saved the scene." : "Integration scene opened; existing references preserved.");
-                return;
+                return true;
             }
             var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
             var camera = Camera.main;
@@ -76,6 +78,7 @@ namespace Ninefold.Editor
             if (!EditorSceneManager.SaveScene(scene, ScenePath)) throw new InvalidOperationException("Could not save the integration scene.");
             AssetDatabase.SaveAssets(); Selection.activeGameObject = host;
             Debug.Log("Integration playtest created. Open the Game tab, choose a 540 × 960 portrait resolution, and press Play. This is non-canon fixture content; see Docs/UnityPlaytest.md.");
+            return true;
         }
 
         private static void AssignPanel(UIDocument document, PanelSettings panel)
