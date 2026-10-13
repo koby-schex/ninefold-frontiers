@@ -66,6 +66,8 @@ namespace Ninefold.Presentation
             if (unitStyles != null) root.styleSheets.Add(unitStyles);
             var battleStyles = Resources.Load<StyleSheet>("Home/Battle");
             if (battleStyles != null) root.styleSheets.Add(battleStyles);
+            var resultStyles = Resources.Load<StyleSheet>("Home/Results");
+            if (resultStyles != null) root.styleSheets.Add(resultStyles);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
@@ -118,14 +120,16 @@ namespace Ninefold.Presentation
             var scrollOffset = menuScroll != null && renderedPage == page && renderedUnit == inspectedUnit && renderedOffer == offerOpen ? menuScroll.scrollOffset : Vector2.zero;
             menuScroll = null;
             content.Clear(); surface = null; controls = null; pointer = -1;
-            notice.text = message;
+            notice.text = menuView.Phase == MissionFlowPhase.Results ? menuView.Results.Claimed ? "Result and rewards saved." : "Battle finished. Review and save your result." : message;
             bool home = menuView.Phase != MissionFlowPhase.Results && page != Page.Settings &&
                 !(menuView.Phase == MissionFlowPhase.Battle && inBattle) &&
                 (menuView.Phase == MissionFlowPhase.Battle || page == Page.Home);
-            bool campaignScreen = menuView.Phase == MissionFlowPhase.Selection &&
+            bool resultsScreen = menuView.Phase == MissionFlowPhase.Results;
+            bool campaignScreen = resultsScreen || menuView.Phase == MissionFlowPhase.Selection &&
                 (page == Page.Battles || page == Page.Missions || page == Page.Briefing || page == Page.Squad || page == Page.Collection);
             root.EnableInClassList("campaign-mode", campaignScreen);
-            root.EnableInClassList("unit-mode", campaignScreen && (page == Page.Squad || page == Page.Collection));
+            root.EnableInClassList("results-mode", resultsScreen);
+            root.EnableInClassList("unit-mode", menuView.Phase == MissionFlowPhase.Selection && (page == Page.Squad || page == Page.Collection));
             root.EnableInClassList("briefing-mode", campaignScreen && page == Page.Briefing);
             root.EnableInClassList("home-mode", home);
             heading.style.display = home || (menuView.Phase == MissionFlowPhase.Battle && inBattle) ? DisplayStyle.None : DisplayStyle.Flex;
@@ -507,16 +511,82 @@ namespace Ninefold.Presentation
         private void BuildResults(VisualElement parent)
         {
             var r = menuView.Results;
-            var summary = Card(parent, "hero");
+            string attempt = r.Result.AttemptId;
+            bool victory = r.Result.Outcome == MissionOutcome.Victory;
+            var summary = Card(parent, "result-summary");
+            summary.EnableInClassList("defeat-summary", !victory);
             Text(summary, "BATTLE COMPLETE", "eyebrow");
-            Text(summary, r.Result.Outcome.ToString(), "display-title");
-            Text(summary, MissionName(r.Result.MissionId) + " • round " + r.Result.Round + "\n" + r.Result.Reason, "detail");
-            Text(summary, "Your units and progression are retained.", "hint");
-            var rewards = Card(parent);
-            Text(rewards, "Battle rewards", "section");
-            Text(rewards, r.Grants.Count == 0 ? "No rewards this attempt." : string.Join("\n", r.Grants.Select(g => "+" + g.Amount + "  " + ResourceName(g.ResourceId))), "reward-list");
-            Primary(rewards, r.Claimed ? "Rewards saved" : "Collect rewards", () => { menu.ClaimRewards(r.Result.AttemptId); message = "Rewards saved."; }, r.CanClaim);
-            Primary(parent, "Return home", () => { menu.ReturnToSelection(r.Result.AttemptId); page = Page.Home; inBattle = false; message = "Battle complete. Choose your next activity."; }, r.Claimed);
+            Text(summary, victory ? "Victory" : "Defeat", "display-title");
+            Text(summary, MissionName(r.Result.MissionId) + " · Round " + r.Result.Round, "section");
+            Text(summary, victory ? "Objective achieved." : "Regroup and try a new approach.", "detail");
+            Text(summary, "Your units and progression are retained.", "result-assurance");
+            Text(summary, r.Claimed ? "SAVED" : "READY TO SAVE", "result-status");
+
+            var rewards = Card(parent, "result-rewards");
+            Text(rewards, !victory ? "Battle rewards" : r.IsFirstClear ? "First-clear rewards" : "Replay rewards", "section");
+            if (r.Grants.Count == 0) Text(rewards, "No resources awarded this attempt.", "detail");
+            foreach (var grant in r.Grants)
+            {
+                var row = Row(rewards); row.AddToClassList("result-reward-row");
+                var identity = new VisualElement(); identity.AddToClassList("reward-identity"); row.Add(identity);
+                Text(identity, ResourceName(grant.ResourceId), "detail");
+                Text(identity, (r.Claimed ? "Total held: " : "Currently held: ") + menuView.Progress.Balance(grant.ResourceId), "hint");
+                Text(row, "+" + grant.Amount, "reward-amount");
+            }
+            Text(rewards, r.Claimed ? r.Grants.Count == 0 ? "Your battle result is saved." : "These rewards are saved to your profile." : "Save this result before continuing.", "hint");
+            Primary(rewards, r.Claimed ? "Result saved" : r.Grants.Count == 0 ? "Save result" : "Collect rewards", () => {
+                menu.ClaimRewards(attempt); menuScroll = null; message = "Result saved. Choose your next step.";
+            }, r.CanClaim);
+
+            if (!r.Claimed)
+            {
+                Text(parent, "After saving, continue your campaign, replay, or review your units.", "hint");
+                return;
+            }
+
+            var collection = menu.Collection.Read();
+            foreach (var unit in collection.Factions.SelectMany(f => f.Units).Where(u => r.Grants.Any(g => g.ResourceId == u.FragmentResourceId)))
+            {
+                var progress = Card(parent, "reward-unit-progress");
+                string id = unit.Unit.Definition.Id;
+                var offer = unit.Unit.Owned ? unit.Advance : unit.Unlock;
+                bool nextRank = offer.RankAfter > offer.RankBefore;
+                bool available = !unit.Unit.Owned || nextRank;
+                bool enough = available && unit.Fragments >= offer.Cost;
+                Text(progress, UnitName(id) + " · " + (unit.Unit.Owned ? "Rank " + unit.Unit.Rank : "Locked"), "section");
+                Text(progress, available ? unit.Fragments + " / " + offer.Cost + " fragments" : unit.Fragments + " fragments held", "detail");
+                if (available) Meter(progress, unit.Fragments, Math.Max(1, offer.Cost));
+                Text(progress, enough ? unit.Unit.Owned ? "Fragments ready for advancement" : "Fragments ready to unlock" : available ? offer.MissingFragments + " more fragments needed" : "No further advancement available in this test kit.", "hint");
+                Button(progress, enough ? "Review unit  ›" : "Inspect unit  ›", () => LeaveResults(attempt, Page.Collection, unitId: id));
+            }
+
+            var next = Card(parent, "result-next");
+            Text(next, "WHAT’S NEXT", "eyebrow");
+            var mission = menuView.Missions.Single(m => m.Definition.Id == r.Result.MissionId);
+            var campaign = menuView.Campaigns.FirstOrDefault(c => c.CampaignId == mission.CampaignId);
+            var nextMission = campaign?.AvailableMissions.Select(id => menuView.Missions.Single(m => m.Definition.Id == id))
+                .FirstOrDefault(m => m.Available && !m.IsReplay);
+            if (campaign != null && campaign.IsComplete && !campaign.RewardsClaimed)
+            {
+                Text(next, "Campaign complete", "section");
+                Text(next, "Your separate, one-time campaign rewards are ready to collect from Home.", "detail");
+                Primary(next, "Review campaign rewards  ›", () => LeaveResults(attempt, Page.Home));
+            }
+            else if (victory && nextMission != null)
+                Primary(next, "Next mission · " + MissionName(nextMission.Definition.Id), () => LeaveResults(attempt, Page.Briefing, nextMission.Definition.Id));
+            if (mission.Available)
+                Button(next, victory ? "Replay mission" : "Prepare another attempt", () => LeaveResults(attempt, Page.Briefing, r.Result.MissionId));
+            Button(next, "View unit collection", () => LeaveResults(attempt, Page.Collection));
+            Button(next, "Browse campaigns", () => LeaveResults(attempt, Page.Battles));
+            Button(next, "Return Home", () => LeaveResults(attempt, Page.Home));
+        }
+
+        private void LeaveResults(string attempt, Page destinationPage, string missionId = null, string unitId = null)
+        {
+            menu.ReturnToSelection(attempt);
+            inBattle = false; inspectedUnit = unitId;
+            Navigate(destinationPage);
+            if (missionId != null) SelectMission(missionId);
         }
 
         private void BuildBattle()
@@ -687,6 +757,7 @@ namespace Ninefold.Presentation
                 heading.style.display = DisplayStyle.Flex;
                 root.RemoveFromClassList("home-mode");
                 root.RemoveFromClassList("campaign-mode");
+                root.RemoveFromClassList("results-mode");
                 root.RemoveFromClassList("unit-mode");
                 root.RemoveFromClassList("briefing-mode");
                 homeBackdrop.style.display = DisplayStyle.None;
