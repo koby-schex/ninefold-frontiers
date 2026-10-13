@@ -1,0 +1,20 @@
+/* Interface treatment only; badges remain abstract test identifiers. */
+.unit-mode .team-summary { border-top-width: 3px; border-top-color: rgb(198, 171, 227); }
+.unit-mode .roster-entry { padding: 12px; }
+.unit-mode Button.squad-card { margin: 0; background-color: rgb(29, 27, 42); border-color: rgb(95, 80, 109); }
+.unit-mode Button.squad-card.selected, .unit-mode Button.unit-tile.selected { background-color: rgb(49, 36, 60); border-color: rgb(210, 179, 242); }
+.unit-mode .tile-state { font-size: 18px; color: rgb(233, 208, 255); }
+.unit-mode .squad-card:disabled .tile-state { color: rgb(185, 176, 197); }
+.unit-mode Button.inspect-button { background-color: transparent; margin-bottom: 0; }
+.unit-mode .unit-badge { width: 72px; height: 72px; border-color: rgb(173, 156, 205); background-color: rgb(42, 34, 59); }
+.unit-mode .unit-badge.faction-b { border-color: rgb(131, 190, 199); background-color: rgb(28, 49, 58); }
+.unit-mode .unit-badge.apex-badge { border-color: rgb(231, 196, 135); }
+.unit-mode .badge-id { font-size: 27px; }
+.unit-mode .stat { flex-basis: 45%; flex-grow: 1; min-width: 0; margin: 4px; padding: 12px; background-color: rgb(16, 17, 28); border-left-width: 2px; border-left-color: rgb(88, 71, 106); }
+.unit-mode .stat .hint { font-size: 15px; color: rgb(183, 173, 201); }
+.unit-mode .stat .section { font-size: 26px; }
+.unit-mode .ability-card { padding: 14px; background-color: rgb(19, 19, 31); border-left-width: 3px; border-left-color: rgb(135, 113, 160); }
+.unit-mode .ability-timing { font-size: 18px; white-space: normal; color: rgb(226, 204, 170); margin-top: 8px; }
+.unit-mode .unit-grid > Button.unit-tile { flex-basis: 47%; padding: 14px; margin-bottom: 10px; }
+.unit-mode .confirmation { border-color: rgb(222, 198, 157); }
+.unit-mode .preview { font-size: 21px; white-space: normal; }
