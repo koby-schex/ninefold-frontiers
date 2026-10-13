@@ -40,7 +40,7 @@ namespace Ninefold.Presentation
         private string savePath, inspectedUnit, message = "Your progress saves automatically.";
         private enum Page { Home, Battles, Missions, Briefing, Squad, Collection, Settings }
         private Page page;
-        private string selectedCampaign;
+        private string selectedCampaign, squadInspection;
         private bool dirty, fatal, suspended, reducedMotion, inBattle, legacyProfile;
         private Coroutine playback;
         private int pointer = -1;
@@ -62,6 +62,8 @@ namespace Ninefold.Presentation
             if (homeStyles != null) root.styleSheets.Add(homeStyles);
             var campaignStyles = Resources.Load<StyleSheet>("Home/Campaign");
             if (campaignStyles != null) root.styleSheets.Add(campaignStyles);
+            var unitStyles = Resources.Load<StyleSheet>("Home/Units");
+            if (unitStyles != null) root.styleSheets.Add(unitStyles);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
@@ -119,8 +121,9 @@ namespace Ninefold.Presentation
                 !(menuView.Phase == MissionFlowPhase.Battle && inBattle) &&
                 (menuView.Phase == MissionFlowPhase.Battle || page == Page.Home);
             bool campaignScreen = menuView.Phase == MissionFlowPhase.Selection &&
-                (page == Page.Battles || page == Page.Missions || page == Page.Briefing);
+                (page == Page.Battles || page == Page.Missions || page == Page.Briefing || page == Page.Squad || page == Page.Collection);
             root.EnableInClassList("campaign-mode", campaignScreen);
+            root.EnableInClassList("unit-mode", campaignScreen && (page == Page.Squad || page == Page.Collection));
             root.EnableInClassList("briefing-mode", campaignScreen && page == Page.Briefing);
             root.EnableInClassList("home-mode", home);
             heading.style.display = home ? DisplayStyle.None : DisplayStyle.Flex;
@@ -335,18 +338,24 @@ namespace Ninefold.Presentation
         private void BuildSquad(VisualElement parent)
         {
             var definition = catalog.Missions[menuView.SelectedMissionId];
-            Button(parent, "‹ Mission briefing", () => Navigate(Page.Briefing));
+            Button(parent, "‹ Mission briefing", () => Navigate(Page.Briefing)).AddToClassList("back-link");
             PreparationHeader(parent, true);
-            Text(parent, "Choose your squad", "section");
+            Text(parent, "Choose your squad", "display-title");
             Text(parent, "Select " + definition.MinimumSquad + "–" + definition.MaximumSquad + " units • maximum one Apex", "detail");
             Text(parent, "Tap a selected unit to remove it. Tap an available unit to add it.", "hint");
             bool hasApex = menuView.Units.Any(x => menuView.Squad.Contains(x.Definition.Id) && x.Definition.Roster.IsApex);
+            var summary = Card(parent, "team-summary");
+            Text(summary, "YOUR TEAM · " + menuView.Squad.Count + " / " + definition.MaximumSquad, "eyebrow");
+            Text(summary, menuView.Squad.Count == 0 ? "No units selected" : string.Join("  •  ", menuView.Squad.Select(UnitName)), "section");
+            Text(summary, (hasApex ? "1 / 1 Apex selected" : "0 / 1 Apex selected") + " · " + (definition.FactionId == null ? "Mixed factions allowed" : "This campaign's faction only"), "hint");
+            Text(parent, "PLAYTEST · Abstract units and badges; not canonical faction designs.", "fixture-note");
             foreach (var u in menuView.Units.Where(u => definition.FactionId == null || u.Definition.Roster.FactionId == definition.FactionId))
             {
                 string id = u.Definition.Id; bool selected = menuView.Squad.Contains(id);
                 string blocked = !u.Owned ? "LOCKED · unlock in collection" : u.Definition.Roster.IsApex && hasApex ? "ONE APEX LIMIT · remove your selected Apex" : menuView.Squad.Count >= definition.MaximumSquad ? "SQUAD FULL · remove a unit first" : null;
                 bool canAdd = u.EligibleForMission && (selected || blocked == null);
-                var tile = Button(parent, "", () => {
+                var entry = Card(parent, "roster-entry");
+                var tile = Button(entry, "", () => {
                     var squad = menu.Read().Squad.ToList(); if (!squad.Remove(id)) squad.Add(id); menu.SetSquad(squad);
                 }, canAdd);
                 tile.AddToClassList("squad-card"); tile.EnableInClassList("selected", selected);
@@ -358,6 +367,8 @@ namespace Ninefold.Presentation
                 var attack = u.Abilities.Single(a => a.Slot == AbilitySlot.NormalAttack).Effect;
                 Text(tile, "Move " + u.Movement + " • Initiative " + u.Initiative + " • Range " + attack.Range, "hint");
                 Text(tile, selected ? "SELECTED · tap to remove" : blocked ?? "+ ADD TO SQUAD", "tile-state");
+                Button(entry, squadInspection == id ? "Close unit details" : "Inspect stats & abilities", () => squadInspection = squadInspection == id ? null : id).AddToClassList("inspect-button");
+                if (squadInspection == id) { BuildUnitStats(entry, u); BuildAbilityKit(entry, u); }
             }
             string plan = menuView.PlanId;
             var deploy = Card(content, "deploy-dock");
@@ -371,38 +382,64 @@ namespace Ninefold.Presentation
             Text(parent, "Your collection", "display-title");
             Text(parent, "Select a unit to inspect its kit and progression.", "detail");
             var units = view.Factions.SelectMany(f => f.Units).ToArray();
-            if (inspectedUnit == null || !units.Any(u => u.Unit.Definition.Id == inspectedUnit)) inspectedUnit = units.First().Unit.Definition.Id;
+            if (!units.Any(u => u.Unit.Definition.Id == inspectedUnit))
+            {
+                inspectedUnit = null;
+                Text(parent, "PLAYTEST · Abstract units and badges; not canonical faction designs.", "fixture-note");
+                BuildCollectionRoster(parent, view);
+                return;
+            }
+            Button(parent, "‹ All units", () => { menu.Collection.Cancel(); inspectedUnit = null; }).AddToClassList("back-link");
             var current = units.First(u => u.Unit.Definition.Id == inspectedUnit);
             var detail = Card(parent, "unit-detail");
+            Text(parent, "PLAYTEST · Abstract units and badges; not canonical faction designs.", "fixture-note");
             UnitBadge(detail, inspectedUnit, current.Unit.Definition.Roster.IsApex);
             Text(detail, UnitName(inspectedUnit), "display-title");
             Text(detail, (current.Unit.Owned ? "UNLOCKED" : "LOCKED") + (current.Unit.Definition.Roster.IsApex ? " · APEX" : " · STANDARD"), "eyebrow");
-            var stats = Row(detail); stats.AddToClassList("stat-row");
-            Stat(stats, "HEALTH", current.Unit.Health.ToString()); Stat(stats, "ARMOR", current.Unit.Armor.ToString());
-            Stat(stats, "INITIATIVE", current.Unit.Initiative.ToString()); Stat(stats, "MOVEMENT", current.Unit.Movement.ToString("0.##"));
+            BuildUnitStats(detail, current.Unit);
             Text(detail, "Rank " + current.Unit.Rank + " • " + current.Fragments + " fragments", "section");
             var offer = current.Unit.Owned ? current.Advance : current.Unlock;
-            Meter(detail, current.Fragments, Math.Max(1, offer.Cost));
+            if (offer.Block != CollectionBlock.MaximumRank)
+            {
+                Text(detail, current.Fragments + " / " + offer.Cost + " fragments · " + (current.Unit.Owned ? "next rank" : "unlock requirement"), "hint");
+                Meter(detail, current.Fragments, Math.Max(1, offer.Cost));
+            }
             Text(detail, offer.CanConfirm ? "Ready to " + (current.Unit.Owned ? "advance" : "unlock") : CollectionReason(offer), "hint");
             var operation = current.Unit.Owned ? CollectionOperation.Advance : CollectionOperation.Unlock;
-            Primary(detail, (current.Unit.Owned ? "Advance unit" : "Unlock unit") + " · " + offer.Cost + " fragments", () => menu.Collection.Preview(operation, inspectedUnit), offer.CanConfirm);
-            if (current.Unit.Owned)
+            if (offer.Block != CollectionBlock.MaximumRank) Primary(detail, (current.Unit.Owned ? "Advance unit" : "Unlock unit") + " · " + offer.Cost + " fragments", () => menu.Collection.Preview(operation, inspectedUnit), offer.CanConfirm);
+            if (current.Unit.Owned && current.Customizations.Any(o => o.Id == "fixture-health"))
                 Button(detail, current.Unit.CustomizationId == null ? "Adjust health / armor" : "Reset stat adjustment", () => menu.Collection.Preview(CollectionOperation.Customize, inspectedUnit, current.Unit.CustomizationId == null ? "fixture-health" : null));
-            Text(detail, "ABILITY KIT", "eyebrow");
-            foreach (var ability in current.Unit.Abilities)
-                Text(detail, AbilityName(ability.Slot) + " · " + (ability.IsPassivePlaceholder ? "Not implemented in this test kit" : ability.Slot == AbilitySlot.Passive ? "Automatic effect" : ability.Effect.Kind + " " + ability.Effect.Amount + " · Range " + ability.Effect.Range), "detail");
+            BuildAbilityKit(detail, current.Unit);
             if (view.Pending != null)
             {
                 detail.style.display = DisplayStyle.None;
                 var p = view.Pending;
                 var confirmation = Card(parent, "confirmation");
                 Text(confirmation, "Review change · " + UnitName(p.UnitId), "section");
-                Text(confirmation, "Health  " + p.Before.Health + " → " + p.After.Health + "\nArmor  " + p.Before.Armor + " → " + p.After.Armor + "\nRank  " + p.RankBefore + " → " + p.RankAfter, "detail");
-                Text(confirmation, p.ResourceId == null ? "No fragment cost" : "Spend " + p.Cost + " of your " + p.Balance + " fragments", "preview");
+                Text(confirmation, p.Operation == CollectionOperation.Unlock ? "Unlock this unit for your roster" : p.Operation == CollectionOperation.Advance ? "Advance this unit's rank" : "Adjust this unit's stats", "eyebrow");
+                Text(confirmation, "CURRENT  →  AFTER CONFIRMATION", "hint");
+                var comparison = Row(confirmation); comparison.AddToClassList("stat-row");
+                Stat(comparison, "HEALTH", p.Before.Health + " → " + p.After.Health);
+                Stat(comparison, "ARMOR", p.Before.Armor + " → " + p.After.Armor);
+                Stat(comparison, "INITIATIVE", p.Before.Initiative + " → " + p.After.Initiative);
+                Stat(comparison, "MOVEMENT", p.Before.Movement + " → " + p.After.Movement);
+                Stat(comparison, "RANK", p.RankBefore + " → " + p.RankAfter);
+                foreach (var after in p.After.Abilities.Where(a => a.Effect != null && a.Effect.HasHealthEffect))
+                {
+                    var before = p.Before.Abilities.Single(a => a.Slot == after.Slot);
+                    Stat(comparison, AbilityName(after.Slot).ToUpperInvariant() + " POWER", before.Effect.Amount + " → " + after.Effect.Amount);
+                }
+                Text(confirmation, p.ResourceId == null ? "No fragment cost" : "Spend " + p.Cost + " fragments · " + p.Balance + " → " + (p.Balance - p.Cost) + " remaining", "preview");
+                Text(confirmation, "Nothing changes until you confirm. Progression is shared across modes.", "hint");
+                if (!p.CanConfirm) Text(confirmation, CollectionReason(p), "lock-reason");
                 Primary(confirmation, "Confirm & save", () => { menu.Collection.Confirm(p.Id); message = "Unit updated. Changes apply across modes."; }, p.CanConfirm);
                 Button(confirmation, "Cancel", () => menu.Collection.Cancel());
                 return;
             }
+        }
+
+        private void BuildCollectionRoster(VisualElement parent, CollectionView view)
+        {
             foreach (var faction in view.Factions)
             {
                 Text(parent, faction.Id == "fixture-a" ? "Test faction A" : "Test faction B", "section");
@@ -414,9 +451,54 @@ namespace Ninefold.Presentation
                     tile.AddToClassList("unit-tile"); tile.EnableInClassList("selected", id == inspectedUnit);
                     UnitBadge(tile, id, u.Unit.Definition.Roster.IsApex);
                     Text(tile, UnitName(id), "section");
-                    Text(tile, u.Unit.Owned ? "Rank " + u.Unit.Rank : "Locked", "detail");
-                    Text(tile, u.Fragments + " fragments", "hint");
+                    Text(tile, (u.Unit.Definition.Roster.IsApex ? "APEX · " : "STANDARD · ") + (u.Unit.Owned ? "Rank " + u.Unit.Rank : "Locked"), "detail");
+                    Text(tile, u.Unit.Owned && u.Advance.Block == CollectionBlock.MaximumRank ? u.Fragments + " fragments held" : u.Fragments + " / " + (u.Unit.Owned ? u.Advance.Cost : u.Unlock.Cost) + " fragments", "hint");
+                    Text(tile, u.Unit.Owned && u.Advance.Block == CollectionBlock.MaximumRank ? "Maximum test rank" : "Inspect unit  ›", "tile-state");
                 }
+            }
+        }
+
+        private static void BuildUnitStats(VisualElement parent, PreparationUnit unit)
+        {
+            var stats = Row(parent); stats.AddToClassList("stat-row");
+            Stat(stats, "HEALTH", unit.Health.ToString()); Stat(stats, "ARMOR", unit.Armor.ToString());
+            Stat(stats, "INITIATIVE", unit.Initiative.ToString()); Stat(stats, "MOVEMENT", unit.Movement.ToString("0.##"));
+            var attack = unit.Abilities.Single(a => a.Slot == AbilitySlot.NormalAttack).Effect;
+            Stat(stats, "ATTACK POWER", attack.Amount.ToString()); Stat(stats, "ATTACK RANGE", attack.Range.ToString("0.##"));
+            Text(parent, "Power is before target defenses. Initiative changes turn order, not the number of turns.", "hint");
+        }
+
+        private static void BuildAbilityKit(VisualElement parent, PreparationUnit unit)
+        {
+            Text(parent, "FOUR ABILITY SLOTS", "eyebrow");
+            foreach (var ability in unit.Abilities.OrderBy(a => a.Slot))
+            {
+                var card = Card(parent, "ability-card");
+                Text(card, AbilityName(ability.Slot), "section");
+                if (ability.Slot == AbilitySlot.Passive)
+                {
+                    Text(card, ability.IsPassivePlaceholder ? "Not implemented in this test kit." : "Automatic · " + ability.Passive.Trigger + " · applies " + ability.Passive.StatusId, "detail");
+                    Text(card, "No action required", "hint");
+                    continue;
+                }
+                var effect = ability.Effect;
+                Text(card, (effect.HasHealthEffect ? effect.Kind + " power " + effect.Amount + " · " : "") + "Range " + effect.Range, "detail");
+                Text(card, "Target: " + (effect.Target == AbilityTarget.AllyOrSelf ? "ally or self" : effect.Target.ToString().ToLowerInvariant()) + (effect.StatusId == null ? "" : " · applies " + effect.StatusId), "hint");
+                string timing = "Available each turn";
+                if (ability.Slot == AbilitySlot.Main)
+                    timing = "Reusable · ready again " + unit.Availability.MainCooldownTurns + " of this unit's turns after use";
+                else if (ability.Slot == AbilitySlot.Signature)
+                {
+                    switch (unit.Availability.SignatureRequirement)
+                    {
+                        case SignatureReadiness.ReadyAtDeployment: timing = "Ready at deployment"; break;
+                        case SignatureReadiness.AfterNormalAttack: timing = "Ready after this unit uses its normal attack"; break;
+                        case SignatureReadiness.AfterMainAbility: timing = "Ready after this unit uses its main ability"; break;
+                        default: timing = "Requires its authored battle condition"; break;
+                    }
+                    timing = "Once per battle · " + timing;
+                }
+                Text(card, timing + " · Costs one action", "ability-timing");
             }
         }
 
@@ -592,6 +674,7 @@ namespace Ninefold.Presentation
                 heading.style.display = DisplayStyle.Flex;
                 root.RemoveFromClassList("home-mode");
                 root.RemoveFromClassList("campaign-mode");
+                root.RemoveFromClassList("unit-mode");
                 root.RemoveFromClassList("briefing-mode");
                 homeBackdrop.style.display = DisplayStyle.None;
                 if (playback != null) { StopCoroutine(playback); playback = null; }
