@@ -64,6 +64,8 @@ namespace Ninefold.Presentation
             if (campaignStyles != null) root.styleSheets.Add(campaignStyles);
             var unitStyles = Resources.Load<StyleSheet>("Home/Units");
             if (unitStyles != null) root.styleSheets.Add(unitStyles);
+            var battleStyles = Resources.Load<StyleSheet>("Home/Battle");
+            if (battleStyles != null) root.styleSheets.Add(battleStyles);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
@@ -126,7 +128,7 @@ namespace Ninefold.Presentation
             root.EnableInClassList("unit-mode", campaignScreen && (page == Page.Squad || page == Page.Collection));
             root.EnableInClassList("briefing-mode", campaignScreen && page == Page.Briefing);
             root.EnableInClassList("home-mode", home);
-            heading.style.display = home ? DisplayStyle.None : DisplayStyle.Flex;
+            heading.style.display = home || (menuView.Phase == MissionFlowPhase.Battle && inBattle) ? DisplayStyle.None : DisplayStyle.Flex;
             homeBackdrop.style.display = home || campaignScreen ? DisplayStyle.Flex : DisplayStyle.None;
             root.EnableInClassList("battle-mode", menuView.Phase == MissionFlowPhase.Battle && inBattle);
             if (menuView.Phase == MissionFlowPhase.Battle && inBattle)
@@ -521,17 +523,23 @@ namespace Ninefold.Presentation
         {
             var b = battleView.Battle;
             var top = Card(content, "battle-header");
-            var line = Row(top);
+            var line = Row(top); line.AddToClassList("battle-title-row");
             Text(line, MissionName(b.MissionId) + " · Round " + b.Round, "section");
             Button(line, "Home", () => { input.Cancel(); inBattle = false; Navigate(Page.Home); }, !battleView.IsAnimating);
             foreach (var o in b.Objectives)
-                Text(top, (o.Kind == ObjectiveKind.Stabilize ? "Stabilize the gold objective" : "Defeat the opposition") + " · " + o.Progress + "/" + o.Required, "objective-text");
+                Text(top, (o.Kind == ObjectiveKind.Stabilize ? "Stabilize objective" : "Defeat opposition") + " · " + o.Progress + "/" + o.Required, "objective-text");
             var turns = Row(top); turns.AddToClassList("turn-strip");
             var actor = b.Units.FirstOrDefault(u => u.Id == b.Activation?.UnitId);
             Text(turns, (actor?.IsEnemyControlled == true ? "ENEMY · " : "NOW · ") + UnitName(b.Activation?.UnitId), "current-turn");
-            foreach (var id in b.UpcomingTurns.Take(3)) Text(turns, UnitName(id), "turn-chip");
+            Text(turns, "NEXT", "turn-next");
+            foreach (var id in b.UpcomingTurns.Take(3))
+            {
+                var chip = Text(turns, UnitName(id), "turn-chip");
+                chip.EnableInClassList("enemy-turn", b.Units.Any(u => u.Id == id && u.IsEnemyControlled));
+            }
+            var stage = new VisualElement(); stage.AddToClassList("battle-stage"); content.Add(stage);
             surface = new VisualElement { name = "battle-surface" }; surface.style.flexGrow = 1; surface.style.minHeight = 100;
-            surface.style.overflow = Overflow.Hidden; content.Add(surface);
+            surface.style.overflow = Overflow.Hidden; stage.Add(surface);
             surface.RegisterCallback<PointerDownEvent>(e => {
                 if (e.button != 0 || !e.isPrimary || pointer != -1) { pointer = -1; return; }
                 pointer = e.pointerId; pointerStart = e.position;
@@ -553,8 +561,9 @@ namespace Ninefold.Presentation
                 turnCue.style.display = Time.unscaledTime < turnCueUntil ? DisplayStyle.Flex : DisplayStyle.None;
             }
             // Fixed footer height prevents previews changing the camera viewport under a second tap.
-            var footer = new ScrollView(); footer.AddToClassList("battle-dock");
-            content.Add(footer);
+            var footer = new ScrollView(ScrollViewMode.Vertical); footer.AddToClassList("battle-dock");
+            footer.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            stage.Add(footer);
             controls = new VisualElement(); controls.AddToClassList("controls"); footer.Add(controls);
             BuildControls();
         }
@@ -564,35 +573,37 @@ namespace Ninefold.Presentation
             controls.Clear();
             var b = battleView.Battle;
             bool ready = !battleView.IsAnimating && !suspended;
-            if (b.Activation != null) Text(controls, UnitName(b.Activation.UnitId) + " · Movement " + b.Activation.MovementRemaining.ToString("0.##") + " · " + (b.Activation.PrimaryActionAvailable ? "1 action ready" : "Action spent"), "actor-status");
+            var activeUnit = b.Units.FirstOrDefault(u => u.Id == b.Activation?.UnitId);
+            Text(controls, message, "battle-message");
+            if (b.Activation != null) Text(controls, (activeUnit?.IsEnemyControlled == true ? "ENEMY · " : "YOUR TURN · ") + UnitName(b.Activation.UnitId) + " · Move " + b.Activation.MovementRemaining.ToString("0.##") + " · " + (b.Activation.PrimaryActionAvailable ? "1 action ready" : "Action spent"), "actor-status");
             var selected = b.Units.FirstOrDefault(u => u.Id == battleView.SelectedUnitId);
             if (selected?.Health != null) Text(controls, "Inspecting " + UnitName(selected.Id) + " · HP " + selected.Health.CurrentHealth + "/" + selected.Health.MaximumHealth + " · Armor " + selected.EffectiveArmor + (selected.Id != b.Activation?.UnitId ? " · commands still use " + UnitName(b.Activation?.UnitId) : ""), "hint");
-            var row = Row(controls);
+            var row = Row(controls); row.AddToClassList("ability-row");
             foreach (var a in b.Actions.Where(a => a.Slot != AbilitySlot.Passive))
             {
                 var slot = a.Slot;
-                var button = Button(row, AbilityName(slot) + "\n" + (a.CanSelect ? slot == AbilitySlot.Signature ? "Once per battle" : "Select target" : ActionReason(a)), () => Handle(input.SelectAbility(slot)), ready && a.CanSelect);
+                var button = Button(row, AbilityName(slot) + "\n" + (AbilityReadiness(a, activeUnit)), () => Handle(input.SelectAbility(slot)), ready && a.CanSelect);
                 button.AddToClassList("ability-button");
-                button.tooltip = a.CanSelect ? "Select, then tap a target to preview." : a.Block + " / " + a.RuleFailure;
+                button.tooltip = a.CanSelect ? "Select, then tap a target to preview." : AbilityReadiness(a, activeUnit) + (slot == AbilitySlot.Main ? " · cooldown counts this unit’s turns" : "");
                 if (battleView.SelectedAbility == slot) button.AddToClassList("selected");
             }
             if (battleView.SelectedAbility.HasValue)
             {
                 var actor = b.Units.First(u => u.Id == b.Activation.UnitId);
                 var ability = actor.Abilities.First(a => a.Slot == battleView.SelectedAbility.Value);
-                Text(controls, "Range " + ability.Range + " · " + battleView.Targets.Count(t => t.IsValid) + " valid targets marked in gold", "hint");
+                Text(controls, "Range " + ability.Range + " · " + battleView.Targets.Count(t => t.IsValid) + " valid targets · gold rings\nRange outline alone does not guarantee line of sight.", "target-guidance");
             }
             if (battleView.Pending != null)
             {
                 var p = battleView.Pending;
-                string preview = p.Kind == IntentKind.Movement ? "Move " + p.Movement.Cost.ToString("0.##") + " · " + (b.Activation.MovementRemaining-p.Movement.Cost).ToString("0.##") + " remaining" + (p.RequestedDestination.HasValue && !p.RequestedDestination.Value.Equals(p.Movement.Path.Last()) ? " · stops at movement limit" : "") : p.Kind == IntentKind.Interaction ? "Stabilize · uses this turn's action" : TargetSummary(p.Target);
+                string preview = p.Kind == IntentKind.Movement ? "Move " + p.Movement.Cost.ToString("0.##") + " · " + (b.Activation.MovementRemaining-p.Movement.Cost).ToString("0.##") + " remaining" + (p.RequestedDestination.HasValue && !p.RequestedDestination.Value.Equals(p.Movement.Path.Last()) ? " · stops short of your requested point" : "") : p.Kind == IntentKind.Interaction ? "Stabilize · uses this turn's action" : TargetSummary(p.Target);
                 var confirm = Row(controls); confirm.AddToClassList("intent-row");
                 Text(confirm, preview, "preview");
                 Primary(confirm, p.Kind == IntentKind.Movement ? "Move here" : p.Kind == IntentKind.Interaction ? "Stabilize" : "Use ability", () => Handle(input.Confirm(p.Id)), ready);
             }
             else Text(controls, battleView.IsAnimating ? "Resolving action…" : b.Phase != BattleSessionPhase.PlayerInput ? "Enemy turn…" : battleView.SelectedAbility.HasValue ? "Tap a marked unit to preview the effect." : "Tap the ground to preview movement.", "hint");
-            row = Row(controls);
-            Button(row, "Cancel / move", () => Handle(input.Cancel()), ready);
+            row = Row(controls); row.AddToClassList("utility-row");
+            Button(row, battleView.Pending != null ? "Cancel preview" : "Move", () => Handle(input.Cancel()), ready);
             foreach (var objective in input.ReadPlanning().Objectives.Where(o=>b.Objectives.Any(x=>x.Id==o.Id && x.Status==ObjectiveStatus.Active)))
             {
                 string id = objective.Id;
@@ -600,7 +611,9 @@ namespace Ninefold.Presentation
             }
             long activation = b.Activation?.ActivationId ?? 0;
             Button(row, "End turn", () => Handle(input.EndTurn(activation)), ready && b.Phase == BattleSessionPhase.PlayerInput);
-            Text(controls, "Dots: verified reachable spots; gaps may still be reachable. Gold: active / target. White: inspected unit.", "legend");
+            var homeButton = Button(controls, "Home · battle saved", () => { input.Cancel(); inBattle = false; Navigate(Page.Home); }, ready);
+            homeButton.AddToClassList("battle-home");
+            Text(controls, "Dots: reachable samples · Gold: active / target · White: inspected\nMovement path ends at the actual stopping point. Tap it again to confirm.", "legend");
         }
 
         private void Pick(Vector2 panelPosition)
@@ -740,15 +753,25 @@ namespace Ninefold.Presentation
                 default: return "Wait for your turn";
             }
         }
-        private static string ActionReason(BattleActionView action)
+        private string AbilityReadiness(BattleActionView action, BattleUnitView actor)
         {
-            if (action.Block == ActionBlock.NotPlayerTurn) return "Wait for your turn";
+            if (action.Block == ActionBlock.NotPlayerTurn) return "Wait for turn";
+            if (action.CanSelect) return action.Slot == AbilitySlot.Signature ? "Ready · once" : "Ready · 1 action";
             switch (action.RuleFailure)
             {
                 case AbilityUseFailure.PrimaryActionSpent: return "Action spent";
-                case AbilityUseFailure.MainOnCooldown: return "On cooldown";
-                case AbilityUseFailure.SignatureNotReady: return "Attack to prepare";
-                case AbilityUseFailure.SignatureAlreadyUsed: return "Already used";
+                case AbilityUseFailure.MainOnCooldown: return "Cooldown: " + actor?.Kit?.MainCooldownRemaining + " turns";
+                case AbilityUseFailure.SignatureNotReady:
+                    if (actor != null && catalog.Units.TryGetValue(actor.Id, out var unit))
+                    {
+                        switch (catalog.Kits[unit.KitId].Availability.SignatureRequirement)
+                        {
+                            case SignatureReadiness.AfterNormalAttack: return "Attack to ready";
+                            case SignatureReadiness.AfterMainAbility: return "Main to ready";
+                        }
+                    }
+                    return "Condition needed";
+                case AbilityUseFailure.SignatureAlreadyUsed: return "Used this battle";
                 default: return "Unavailable";
             }
         }

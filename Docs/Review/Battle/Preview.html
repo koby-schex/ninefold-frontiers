@@ -1,0 +1,161 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Battle UI — browser approximation</title><style>.root { flex-grow: 1; color: rgb(233, 241, 246); font-size: 16px; background-color: rgb(8, 15, 23); }
+#safe-area { position: absolute; padding-left: 16px; padding-right: 16px; padding-bottom: 8px; }
+#screen-content { flex-grow: 1; min-height: 0; }
+.heading { flex-shrink: 0; padding-top: 14px; padding-bottom: 8px; border-bottom-width: 1px; border-bottom-color: rgb(39, 59, 73); }
+.brand { font-size: 27px; font-weight: bold; letter-spacing: 5px; }
+.eyebrow { font-size: 11px; font-weight: bold; color: rgb(224, 187, 115); margin-top: 8px; margin-bottom: 6px; letter-spacing: 1px; white-space: normal; }
+.notice { font-size: 12px; white-space: normal; min-height: 30px; margin-top: 8px; color: rgb(170, 196, 211); }
+.page-scroll { flex-grow: 1; min-height: 0; padding-top: 12px; }
+.page-scroll > .unity-scroll-view__content-viewport > .unity-scroll-view__content-container { padding-right: 5px; padding-bottom: 12px; }
+.display-title { font-size: 28px; font-weight: bold; white-space: normal; margin-top: 4px; margin-bottom: 8px; }
+.section { font-size: 18px; font-weight: bold; margin-top: 4px; margin-bottom: 6px; white-space: normal; }
+.detail { font-size: 14px; white-space: normal; margin-top: 4px; margin-bottom: 6px; color: rgb(195, 212, 224); }
+.hint { font-size: 12px; white-space: normal; color: rgb(164, 187, 204); margin-top: 4px; margin-bottom: 4px; }
+.preview, .reward-list { font-size: 15px; white-space: normal; color: rgb(246, 212, 148); margin-top: 5px; margin-bottom: 5px; }
+.card { background-color: rgb(17, 30, 43); border-width: 1px; border-color: rgb(44, 65, 81); border-radius: 12px; padding: 14px; margin-bottom: 12px; flex-shrink: 0; }
+.hero { background-color: rgb(22, 46, 59); border-left-width: 4px; border-left-color: rgb(105, 213, 210); padding: 20px; }
+.locked-card { background-color: rgb(19, 26, 36); border-color: rgb(44, 52, 66); }
+.confirmation { border-color: rgb(224, 187, 115); background-color: rgb(43, 40, 33); }
+Button { min-height: 46px; flex-shrink: 0; margin-top: 5px; margin-bottom: 5px; margin-left: 0; margin-right: 0; padding: 10px; background-color: rgb(29, 49, 65); color: rgb(234, 245, 248); border-width: 1px; border-color: rgb(68, 96, 113); border-radius: 8px; white-space: normal; font-size: 15px; font-weight: bold; }
+Button:hover { background-color: rgb(39, 71, 87); border-color: rgb(126, 188, 199); }
+Button:active, Button.selected { background-color: rgb(30, 70, 79); border-color: rgb(118, 229, 221); }
+Button:focus { border-color: rgb(235, 210, 151); }
+Button:disabled { background-color: rgb(25, 34, 45); color: rgb(135, 154, 170); border-color: rgb(49, 63, 76); }
+Button.primary { background-color: rgb(114, 216, 204); color: rgb(9, 32, 39); border-color: rgb(156, 241, 225); min-height: 50px; }
+Button.primary:hover { background-color: rgb(158, 237, 226); }
+Button.primary:disabled { background-color: rgb(35, 67, 72); color: rgb(143, 174, 180); border-color: rgb(58, 97, 101); }
+.row { flex-direction: row; align-items: stretch; }
+.row > Button { flex-grow: 1; flex-basis: 0; margin-right: 5px; }
+.navigation { flex-shrink: 0; border-top-width: 1px; border-top-color: rgb(50, 71, 86); padding-top: 7px; background-color: rgb(8, 15, 23); }
+.navigation > Button { font-size: 13px; border-width: 0; min-height: 52px; background-color: rgb(15, 27, 38); }
+.navigation > Button.selected { border-bottom-width: 3px; border-bottom-color: rgb(118, 229, 221); color: rgb(146, 234, 225); }
+.unit-grid { flex-wrap: wrap; }
+.unit-grid > Button.unit-tile { flex-grow: 0; flex-basis: 47%; margin-right: 2%; min-width: 0; padding: 12px; -unity-text-align: upper-left; align-items: flex-start; }
+.unit-tile.selected { border-width: 2px; }
+.unit-badge { width: 60px; height: 60px; border-radius: 30px; border-width: 3px; border-color: rgb(103, 217, 220); background-color: rgb(17, 58, 72); justify-content: center; align-items: center; margin-bottom: 6px; }
+.unit-badge.faction-b { border-color: rgb(180, 158, 240); background-color: rgb(46, 36, 70); }
+.unit-badge.apex-badge { border-radius: 9px; border-color: rgb(237, 193, 107); }
+.badge-id { font-size: 22px; font-weight: bold; color: rgb(236, 245, 248); }
+.tile-state { margin-top: 8px; font-size: 11px; color: rgb(162, 233, 220); white-space: normal; }
+.stat-row { flex-wrap: wrap; }
+.stat { flex-basis: 47%; flex-grow: 1; margin-right: 6px; padding: 8px; background-color: rgb(11, 23, 34); }
+.stat .hint { font-size: 10px; }
+.progress-track { height: 7px; flex-shrink: 0; border-radius: 4px; background-color: rgb(7, 18, 28); overflow: hidden; margin-top: 6px; margin-bottom: 6px; }
+.progress-fill { height: 7px; background-color: rgb(114, 216, 204); }
+.deploy-dock { margin-bottom: 0; padding: 10px; border-color: rgb(69, 120, 126); }
+.map-preview { height: 150px; margin-top: 4px; margin-bottom: 5px; background-color: rgb(8, 19, 29); border-width: 2px; border-color: rgb(96, 131, 146); overflow: hidden; }
+.map-cover { background-color: rgb(98, 124, 141); border-width: 1px; border-color: rgb(161, 185, 195); }
+.map-slow { background-color: rgb(118, 89, 43); }
+.map-objective { background-color: rgb(242, 194, 89); }
+.map-deploy { background-color: rgb(96, 236, 221); border-radius: 5px; }
+.battle-mode .brand { font-size: 17px; letter-spacing: 3px; }
+.root.battle-mode { background-color: transparent; }
+.battle-mode .heading { padding-top: 6px; padding-bottom: 3px; }
+.battle-mode .heading > .eyebrow { display: none; }
+.battle-mode .notice { min-height: 28px; margin-top: 2px; font-size: 11px; }
+.battle-header { padding: 8px; margin-top: 6px; margin-bottom: 4px; }
+.battle-header .row > .section { flex-grow: 1; flex-shrink: 1; font-size: 15px; }
+.battle-header .row > Button { flex-grow: 0; flex-basis: 66px; min-height: 36px; font-size: 12px; padding: 5px; margin-top: 0; margin-bottom: 0; }
+.objective-text { font-size: 13px; color: rgb(243, 208, 141); white-space: normal; margin-bottom: 5px; }
+.turn-strip { margin-top: 4px; }
+.current-turn, .turn-chip { padding: 5px; margin-right: 4px; border-radius: 4px; font-size: 11px; background-color: rgb(31, 48, 62); }
+.current-turn { color: rgb(158, 239, 225); background-color: rgb(27, 66, 73); font-weight: bold; }
+#battle-surface { background-color: transparent; }
+.battle-dock { height: 280px; flex-shrink: 0; border-top-width: 2px; border-top-color: rgb(57, 91, 106); }
+.controls { padding-top: 7px; padding-bottom: 4px; padding-left: 3px; padding-right: 3px; background-color: rgb(9, 18, 28); }
+.actor-status { font-size: 13px; font-weight: bold; white-space: normal; color: rgb(206, 235, 235); }
+.ability-button { min-height: 60px; font-size: 13px; }
+.intent-row { align-items: center; background-color: rgb(40, 40, 31); padding: 5px; border-radius: 7px; }
+.intent-row > .preview { flex-grow: 1; flex-shrink: 1; font-size: 12px; }
+.intent-row > Button { flex-grow: 0; flex-basis: 125px; font-size: 13px; }
+.legend { font-size: 10px; color: rgb(158, 185, 201); white-space: normal; margin-top: 4px; }
+.health-overlay { position: absolute; width: 96px; height: 32px; background-color: rgba(7, 14, 22, 0.96); border-radius: 5px; padding-left: 4px; padding-right: 4px; padding-top: 2px; border-left-width: 3px; border-left-color: rgb(101, 228, 218); }
+.health-overlay.enemy-health { border-left-color: rgb(255, 121, 101); }
+.health-overlay.active-health { border-top-width: 2px; border-top-color: rgb(250, 216, 129); }
+.health-overlay > p { font-size: 11px; text-align: center; color: white; height: 18px; }
+.health-track { height: 5px; background-color: rgb(57, 68, 79); }
+.health-fill { height: 5px; }
+.turn-cue { position: absolute; top: 8px; left: 12%; right: 12%; padding: 10px; background-color: rgba(10, 34, 44, 0.96); border-width: 1px; border-color: rgb(119, 225, 212); border-radius: 8px; color: rgb(220, 251, 243); font-size: 16px; font-weight: bold; text-align: center; white-space: normal; }
+.objective-marker { position: absolute; width: 180px; min-height: 24px; padding: 4px; background-color: rgba(28, 25, 19, 0.96); border-width: 1px; border-color: rgb(160, 131, 71); border-radius: 5px; color: rgb(243, 211, 145); font-size: 10px; text-align: center; white-space: normal; }
+.objective-marker.objective-ready { border-color: rgb(125, 236, 204); color: rgb(151, 247, 223); }
+.health-overlay.preview-health { border-width: 2px; border-color: rgb(255, 211, 103); background-color: rgb(46, 37, 17); }
+.combat-float { position: absolute; width: 130px; padding: 5px; background-color: rgba(24, 12, 17, 0.96); border-radius: 5px; color: rgb(255, 162, 138); font-size: 15px; font-weight: bold; text-align: center; white-space: normal; }
+.combat-float.healing-float { color: rgb(135, 247, 210); background-color: rgba(9, 29, 25, 0.96); }
+
+/* Preparation uses a single readable column at narrow portrait widths. */
+.step-label { font-size: 11px; color: rgb(139, 230, 218); white-space: normal; margin-top: 12px; margin-bottom: 8px; letter-spacing: 1px; }
+Button.squad-card { padding: 14px; margin-bottom: 10px; align-items: stretch; -unity-text-align: upper-left; }
+.squad-card .row { align-items: center; }
+.squad-card .unit-badge { flex-shrink: 0; margin-right: 12px; }
+.unit-identity { flex-grow: 1; flex-shrink: 1; min-width: 0; }
+.squad-card.selected { border-left-width: 4px; }
+.squad-card:disabled .tile-state { color: rgb(180, 190, 201); }
+
+/* Battle UI shares menu materials; battlefield colors retain tactical meaning. */
+.battle-mode .heading { display: none; }
+.battle-mode #safe-area { padding-left: 10px; padding-right: 10px; padding-bottom: 6px; }
+.battle-mode .battle-header { background-color: rgb(18, 18, 29); border-color: rgb(102, 87, 118); border-radius: 3px; padding: 8px 12px; margin-top: 0; }
+.battle-mode .battle-title-row > .section { font-size: 23px; color: rgb(242, 228, 209); font-family: DisplaySerif; }
+.battle-mode .battle-title-row > Button { min-height: 76px; flex-basis: 90px; font-size: 19px; background-color: rgb(37, 30, 48); border-color: rgb(105, 88, 125); }
+.battle-mode .objective-text { font-size: 19px; margin-top: 3px; margin-bottom: 3px; }
+.battle-mode .turn-strip { align-items: center; flex-wrap: wrap; }
+.battle-mode .current-turn, .battle-mode .turn-chip { font-size: 18px; border-radius: 3px; padding: 6px; }
+.battle-mode .current-turn { color: rgb(246, 226, 190); background-color: rgb(61, 47, 34); }
+.battle-mode .turn-chip { background-color: rgb(32, 42, 49); color: rgb(170, 239, 227); }
+.battle-mode .turn-chip.enemy-turn { background-color: rgb(56, 30, 37); color: rgb(255, 179, 162); }
+.battle-mode .turn-next { font-size: 14px; margin: 0 7px; color: rgb(192, 177, 208); }
+.battle-stage { flex-grow: 1; min-height: 0; }
+.battle-mode #battle-surface { flex-shrink: 1; min-width: 0; }
+.battle-mode .battle-dock { height: 350px; background-color: rgb(17, 17, 28); border-top-color: rgb(147, 122, 167); }
+.battle-mode .controls { padding: 8px; background-color: rgb(17, 17, 28); }
+.battle-mode .actor-status { font-size: 19px; color: rgb(243, 226, 198); margin: 5px 0; }
+.battle-mode .battle-message { font-size: 17px; color: rgb(213, 199, 228); white-space: normal; margin-bottom: 4px; }
+.battle-mode .hint, .battle-mode .target-guidance { font-size: 17px; white-space: normal; color: rgb(189, 203, 217); margin: 5px 0; }
+.battle-mode Button { min-height: 76px; font-size: 18px; padding: 8px; border-radius: 3px; background-color: rgb(36, 30, 48); border-color: rgb(110, 91, 129); color: rgb(239, 227, 217); }
+.battle-mode Button:hover { background-color: rgb(56, 43, 70); }
+.battle-mode Button.selected { background-color: rgb(64, 42, 79); border-color: rgb(223, 185, 255); }
+.battle-mode Button:disabled { background-color: rgb(25, 23, 34); color: rgb(160, 151, 174); border-color: rgb(66, 57, 80); }
+.battle-mode Button:focus { border-color: rgb(237, 207, 255); }
+.battle-mode Button.primary { background-color: rgb(226, 211, 180); color: rgb(30, 27, 33); border-color: rgb(248, 231, 195); }
+.battle-mode Button.primary:disabled { background-color: rgb(57, 49, 58); color: rgb(174, 159, 177); }
+.battle-mode .ability-row > Button { min-width: 0; font-size: 18px; }
+.battle-mode .intent-row { flex-direction: column; align-items: stretch; padding: 10px; border-radius: 3px; background-color: rgb(43, 34, 40); }
+.battle-mode .intent-row > .preview { font-size: 20px; flex-shrink: 0; }
+.battle-mode .intent-row > Button { flex-basis: auto; font-size: 20px; }
+.battle-mode .legend { font-size: 15px; color: rgb(178, 165, 193); }
+.battle-mode .health-overlay { width: 148px; height: 60px; background-color: rgba(13, 14, 24, 0.97); border-radius: 3px; }
+.battle-mode .health-overlay > p { font-size: 20px; height: 48px; white-space: normal; }
+.battle-mode .health-track, .battle-mode .health-fill { height: 6px; }
+.battle-mode .turn-cue { font-size: 22px; background-color: rgba(30, 23, 41, 0.96); border-color: rgb(199, 167, 231); }
+.battle-mode .objective-marker { font-size: 14px; }
+.short-home.battle-mode .battle-stage { flex-direction: row; }
+.short-home.battle-mode .battle-dock { height: auto; width: 250px; border-top-width: 0; border-left-width: 2px; border-left-color: rgb(147, 122, 167); }
+.short-home.battle-mode .battle-title-row { display: none; }
+.short-home.battle-mode .battle-header { padding: 3px 8px; }
+.short-home.battle-mode .ability-row, .short-home.battle-mode .utility-row { flex-wrap: wrap; }
+.short-home.battle-mode .ability-row > Button, .short-home.battle-mode .utility-row > Button { flex-basis: 45%; }
+.battle-mode .battle-home { display: none; }
+.short-home.battle-mode .battle-home { display: flex; }
+.battle-mode .objective-marker { height: 48px; }
+.short-home.battle-mode .battle-dock { width: 215px; }
+.short-home.battle-mode .objective-text, .short-home.battle-mode .current-turn, .short-home.battle-mode .turn-chip { font-size: 12px; padding: 2px; }
+.short-home.battle-mode .turn-next { font-size: 10px; }
+.short-home.battle-mode .actor-status { font-size: 13px; }
+.short-home.battle-mode .battle-message, .short-home.battle-mode .hint, .short-home.battle-mode .target-guidance { font-size: 11px; }
+.short-home.battle-mode Button { min-height: 32px; padding: 5px; font-size: 12px; }
+.short-home.battle-mode .ability-row { flex-wrap: nowrap; }
+.short-home.battle-mode .ability-row > Button { flex-basis: 0; font-size: 10px; min-height: 44px; }
+.short-home.battle-mode .intent-row > .preview, .short-home.battle-mode .intent-row > Button { font-size: 13px; }
+.short-home.battle-mode .legend { font-size: 10px; }
+
+@font-face{font-family:DisplaySerif;src:url('../../../Assets/Ninefold/Resources/Home/DisplaySerif.ttf')}*{box-sizing:border-box}body{margin:0;background:#080f17;font-family:Arial}div,section,main,header{display:flex;flex-direction:column}p{margin:0}button{font-family:inherit;border-style:solid;cursor:pointer}#app{position:relative;width:540px;overflow:hidden}#safe-area{inset:0}#screen-content{min-height:0}.card{border-style:solid}.row{display:flex;flex-direction:row}.battle-stage{display:flex;flex-direction:column}#battle-surface{position:relative;flex:1;min-height:100px;overflow:hidden;background:radial-gradient(ellipse at center,#33444e,#101a24)}.battle-dock{overflow-y:auto;overflow-x:hidden;flex-shrink:0}.controls{flex-shrink:0}#board{position:absolute;inset:0;width:100%;height:100%}.health-overlay{border-left-style:solid;z-index:2}.health-overlay p{white-space:pre-line!important}.health-track{display:block}.health-overlay.active-health{border-top-style:solid}.health-overlay.preview-health{border-style:solid}.ability-row button{white-space:pre-line}.battle-title-row{align-items:center}.battle-title-row .section{flex:1}.health-fill{background:#40ddd4}.enemy-health .health-fill{background:#f56e52}.target-guidance,.legend{white-space:pre-line!important}.intent-row{display:flex}.intent-row button{flex:initial}.battle-message{line-height:1.25}.battle-dock .row>button{min-width:0}.short-home .health-overlay{width:112px;height:44px}.short-home .health-overlay>p{font-size:14px;height:32px}.review-note{position:absolute;bottom:5px;left:5px;font-size:13px;color:#d6cde1;background:#14131ecc;padding:3px;pointer-events:none}.short-home .review-note{font-size:10px}
+</style><div id="app" class="root battle-mode"><div id="safe-area"><div id="screen-content"><header class="card battle-header"><div class="row battle-title-row"><p class="section">Quick combat · Round 1</p><button onclick="setState('Idle')">Home</button></div><p class="objective-text">Defeat opposition · 0/1</p><div class="row turn-strip"><p class="current-turn" id="actor">NOW · A1</p><p class="turn-next">NEXT</p><p class="turn-chip">A2</p><p class="turn-chip">A3</p><p class="turn-chip enemy-turn">Enemy 1</p></div></header><div class="battle-stage"><main id="battle-surface"><svg id="board" viewBox="0 0 500 500" preserveAspectRatio="xMidYMid meet"><path d="M60 110 L400 70 L460 380 L100 430 Z" fill="#27363d" stroke="#77989c" stroke-width="4"/><path d="M100 180L420 140M115 250L430 210M125 320L442 280M135 390L452 350M150 100L190 420M235 90L275 405M320 80L360 394" stroke="#41535c" opacity=".6"/><path d="M260 240L320 230L330 300L270 310Z" fill="#5c6d7a" stroke="#94a4ae" stroke-width="3"/><g fill="#43cabb" stroke="#b9f8ee" stroke-width="3"><ellipse cx="160" cy="330" rx="18" ry="30"/><ellipse cx="110" cy="240" rx="18" ry="30"/><ellipse cx="245" cy="370" rx="18" ry="30"/></g><path d="M345 150h32v50h-32Z" fill="#da7560" stroke="#ffd3bd" stroke-width="3"/><g id="range" style="display:none"><ellipse cx="200" cy="270" rx="200" ry="165" fill="none" stroke="#67ded5" stroke-width="3" stroke-dasharray="8 5"/><ellipse cx="360" cy="200" rx="29" ry="12" fill="none" stroke="#f2d18b" stroke-width="4"/></g><g id="path" style="display:none"><path d="M160 350L205 325L215 270L235 225" stroke="#f4d596" stroke-width="5" fill="none"/><circle cx="235" cy="225" r="12" fill="none" stroke="#f4d596" stroke-width="4"/></g></svg><div id="badges"></div><p class="review-note">Abstract browser layout · not a Unity render</p></main><section class="battle-dock"><div class="controls" id="controls"></div></section></div></div></div></div><script>
+const q=s=>document.querySelector(s),t=(s,c='hint')=>`<p class="${c}">${s}</p>`,btn=(s,state,cls='',disabled=false)=>`<button class="${cls}" onclick="setState('${state}')" ${disabled?'disabled':''}>${s}</button>`;
+let state='Idle';function setState(s){state=s;const enemy=s==='Enemy',attack=s==='Attack'||s==='Target',move=s==='Move',target=s==='Target',heal=s==='Heal',spent=s==='Spent';q('#actor').textContent=enemy?'ENEMY · Enemy 1':'NOW · A1';q('#range').style.display=attack?'':'none';q('#path').style.display=move?'':'none';
+q('#badges').innerHTML=[['ALLY A1','100 / 100',19,51,'active-health'],['ALLY A2','100 / 100',1,25,''],['ALLY A3','100 / 100',43,76,''],['Enemy 1',target?'80 → 40':'80 / 80',66,10,'enemy-health '+(target?'preview-health':'')]].map(([n,h,x,y,c])=>`<div class="health-overlay ${c}" data-x="${x}" data-y="${y}" style="left:${x}%;top:${y}%">${t(n+'\\n'+h,'caption')}<div class="health-track"><div class="health-fill" style="width:100%"></div></div></div>`).join('').replaceAll('\\n','\n');
+let html=t(enemy?'Enemy turn…':target||move||heal?'Preview ready. Tap again or confirm below.':'Choose a target or destination.','battle-message')+t((enemy?'ENEMY · Enemy 1':'YOUR TURN · A1')+' · Move 5 · '+(spent?'Action spent':'1 action ready'),'actor-status')+'<div class="row ability-row">'+btn('Attack\\n'+(enemy?'Wait for turn':spent?'Action spent':'Ready · 1 action'),'Attack','ability-button '+(attack?'selected':''),enemy||spent)+btn('Main ability\\n'+(enemy?'Wait for turn':spent?'Action spent':'Cooldown: 2 turns'),'Heal','ability-button',true)+btn('Signature\\n'+(enemy?'Wait for turn':spent?'Action spent':'Attack to ready'),'Target','ability-button',true)+'</div>';
+if(attack)html+=t('Range 12 · 1 valid target · gold rings\nRange outline alone does not guarantee line of sight.','target-guidance');
+if(target||move||heal)html+='<div class="row intent-row">'+t(move?'Move 5 · 0 remaining · stops short of your requested point':heal?'A2 · 30 healing\nHP 50 → 80':'Enemy 1 · 40 damage\nHP 80 → 40','preview')+btn(move?'Move here':'Use ability','Spent','primary')+'</div>';else html+=t(enemy?'Enemy turn…':attack?'Tap a marked unit to preview the effect.':'Tap the ground to preview movement.');
+html+='<div class="row utility-row">'+btn(target||move||heal?'Cancel preview':'Move','Idle')+btn('End turn','Enemy','',enemy)+'</div>'+btn('Home · battle saved','Idle','battle-home')+t('Dots: reachable samples · Gold: active / target · White: inspected\nMovement path ends at the actual stopping point. Tap it again to confirm.','legend')+t('REVIEW STATES — layout only','legend')+'<div class="row utility-row">'+btn('Movement','Move')+btn('Target','Target')+btn('Healing','Heal')+'</div>';q('#controls').innerHTML=html.replaceAll('\\n','\n');q('.battle-dock').scrollTop=0;placeBadges();}
+function placeBadges(){let used=[];const field=q('#battle-surface'),w=field.clientWidth,h=field.clientHeight;for(const e of document.querySelectorAll('.health-overlay')){const ew=e.offsetWidth,eh=e.offsetHeight;let x=Math.max(0,Math.min(w-ew,w*Number(e.dataset.x)/100)),y=Math.max(0,Math.min(h-eh,h*Number(e.dataset.y)/100));const overlap=(x,y)=>used.some(r=>x<r.x+ew&&x+ew>r.x&&y<r.y+eh&&y+eh>r.y);if(overlap(x,y)){let best=Infinity,px=x,py=y;for(let cy=0;cy<=h-eh;cy+=eh+2)for(let cx=0;cx<=w-ew;cx+=ew+2){let dist=(cx-px)**2+(cy-py)**2;if(dist<best&&!overlap(cx,cy)){x=cx;y=cy;best=dist}}}e.style.left=x+'px';e.style.top=y+'px';used.push({x,y})}}
+q('#battle-surface').onclick=()=>setState(state==='Attack'?'Target':'Move');function layout(){const scale=innerWidth/540;q('#app').style.height=innerHeight/scale+'px';q('#app').style.zoom=scale;q('#app').classList.toggle('short-home',innerHeight/scale<500);placeBadges()}addEventListener('resize',layout);layout();setState(new URLSearchParams(location.search).get('state')||'Idle');</script></html>
