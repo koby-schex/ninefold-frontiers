@@ -16,7 +16,7 @@ namespace Ninefold.Presentation
 {
     /// <summary>Abstract integration host, not production content. All rules and writes go through core views.</summary>
     [RequireComponent(typeof(UIDocument))]
-    public sealed class FrontiersPlaytest : MonoBehaviour
+    public sealed partial class FrontiersPlaytest : MonoBehaviour
     {
         public Camera BattlefieldCamera;
         public Material FixtureMaterial;
@@ -87,6 +87,7 @@ namespace Ninefold.Presentation
 
         private void Update()
         {
+            SampleDiagnostics();
             if (root == null || root.panel == null) return;
             var r = Screen.safeArea;
             var tl = RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(r.xMin, Screen.height - r.yMax));
@@ -755,6 +756,7 @@ namespace Ninefold.Presentation
             {
                 fatal = true; pointer = -1;
                 heading.style.display = DisplayStyle.Flex;
+                root.RemoveFromClassList("battle-mode");
                 root.RemoveFromClassList("home-mode");
                 root.RemoveFromClassList("campaign-mode");
                 root.RemoveFromClassList("results-mode");
@@ -767,6 +769,9 @@ namespace Ninefold.Presentation
                 content.Clear(); surface = null; field?.Hide();
                 Text(content, "Your save has not been reset. See the Console for the error. Stop Play mode before copying the save folder for diagnosis.", "detail");
                 Text(content, savePath ?? "", "detail");
+                var diagnosticsScroll = new ScrollView(ScrollViewMode.Vertical);
+                diagnosticsScroll.style.flexGrow = 1; diagnosticsScroll.style.minHeight = 0;
+                content.Add(diagnosticsScroll); BuildDiagnostics(diagnosticsScroll);
             }
         }
         private void Navigate(Page destinationPage)
@@ -789,6 +794,7 @@ namespace Ninefold.Presentation
         private void BuildSettings(VisualElement parent)
         {
             Text(parent, "Settings & help", "display-title");
+            BuildDiagnostics(parent);
             var motion = Card(parent);
             Text(motion, "Battle animations", "section");
             Text(motion, "Reduced motion skips movement and action playback without changing the battle rules.", "detail");
