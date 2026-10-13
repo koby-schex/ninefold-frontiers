@@ -159,7 +159,7 @@ namespace Ninefold.Presentation
                 pair.Value.TargetRing.transform.localScale = pending ? new Vector3(1.35f,.025f,1.35f) : new Vector3(.95f,.025f,.95f);
                 pair.Value.Bar.EnableInClassList("preview-health",pending);
                 if (pending && intent.Target.Effect.Health != null)
-                    pair.Value.Caption.text = "HP "+intent.Target.Effect.Health.HealthBefore+" → "+intent.Target.Effect.Health.HealthAfter;
+                    pair.Value.Caption.text = FrontiersPlaytest.UnitName(pair.Key) + "\n" + intent.Target.Effect.Health.HealthBefore+" → "+intent.Target.Effect.Health.HealthAfter;
             }
             foreach (var item in feedback) item.Label.BringToFront();
         }
@@ -276,7 +276,7 @@ namespace Ninefold.Presentation
                 t.Position = Vector(h.Position) + Vector3.up * t.Height / 2;
                 t.TargetRing.transform.position = Vector(h.Position)+Vector3.up*.055f;
                 t.Body.transform.position = t.Position; t.Body.transform.localRotation = Quaternion.identity; t.Body.transform.localScale=t.Scale;
-                t.Caption.text = FrontiersPlaytest.UnitName(h.UnitId) + "  " + h.CurrentHealth + "/" + h.MaximumHealth;
+                t.Caption.text = (h.IsEnemyControlled ? "" : "ALLY ") + FrontiersPlaytest.UnitName(h.UnitId) + "\n" + h.CurrentHealth + " / " + h.MaximumHealth;
                 t.Fill.style.width = Length.Percent((float)h.Fraction * 100);
             }
         }
@@ -303,8 +303,8 @@ namespace Ninefold.Presentation
             {
                 var point = Project(objectivePositions[pair.Key],root)-rect.position;
                 pair.Value.style.left=Mathf.Clamp(point.x-90,0,Mathf.Max(0,rect.width-180));
-                pair.Value.style.top=Mathf.Clamp(point.y+12,0,Mathf.Max(0,rect.height-28));
-                barRects.Add(new Rect(Mathf.Clamp(point.x-90,0,Mathf.Max(0,rect.width-180)),Mathf.Clamp(point.y+12,0,Mathf.Max(0,rect.height-28)),180,28));
+                pair.Value.style.top=Mathf.Clamp(point.y+12,0,Mathf.Max(0,rect.height-48));
+                barRects.Add(new Rect(Mathf.Clamp(point.x-90,0,Mathf.Max(0,rect.width-180)),Mathf.Clamp(point.y+12,0,Mathf.Max(0,rect.height-48)),180,48));
             }
             foreach (var item in feedback.ToArray())
             {
@@ -320,10 +320,27 @@ namespace Ninefold.Presentation
             {
                 var t = pair.Value;
                 var point = Project(t.Body.transform.position + Vector3.up * (t.Height / 2 + .25f), root) - rect.position;
-                var bar = new Rect(Mathf.Clamp(point.x - 48, 0, Mathf.Max(0, rect.width - 96)), Mathf.Clamp(point.y - 34, 0, Mathf.Max(0, rect.height - 34)), 96, 32);
-                float preferred = bar.y;
-                for (int n = 1; n <= tokens.Count * 2 && barRects.Any(other => other.Overlaps(bar)); n++)
-                    bar.y = Mathf.Clamp(preferred + (n % 2 == 1 ? -1 : 1) * ((n + 1) / 2) * 34, 0, Mathf.Max(0, rect.height - 34));
+                // Match badge size and placement. Narrow landscape battle panes use smaller panel
+                // dimensions, which are scaled up by the portrait-reference PanelSettings.
+                float width = rect.width < 330 ? 112 : 148, height = rect.width < 330 ? 44 : 60;
+                t.Bar.style.width = width; t.Bar.style.height = height;
+                t.Caption.style.fontSize = rect.width < 330 ? 14 : 20;
+                t.Caption.style.height = height - 12;
+                var bar = new Rect(Mathf.Clamp(point.x - width / 2, 0, Mathf.Max(0, rect.width - width)),
+                    Mathf.Clamp(point.y - height - 2, 0, Mathf.Max(0, rect.height - height)), width, height);
+                if (barRects.Any(other => other.Overlaps(bar)))
+                {
+                    // Search both axes; vertical-only shifts can stack bars at the viewport edge.
+                    var preferred = bar.position; float bestDistance = float.MaxValue;
+                    for (float y = 0; y <= Mathf.Max(0, rect.height - height); y += height + 2)
+                        for (float x = 0; x <= Mathf.Max(0, rect.width - width); x += width + 2)
+                        {
+                            var candidate = new Rect(x, y, width, height);
+                            float distance = (candidate.position - preferred).sqrMagnitude;
+                            if (distance < bestDistance && !barRects.Any(other => other.Overlaps(candidate)))
+                            { bar = candidate; bestDistance = distance; }
+                        }
+                }
                 barRects.Add(bar); t.Bar.style.left = bar.x; t.Bar.style.top = bar.y;
             }
         }

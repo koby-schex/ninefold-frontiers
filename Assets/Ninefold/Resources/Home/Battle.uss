@@ -1,0 +1,56 @@
+/* Battle UI shares menu materials; battlefield colors retain tactical meaning. */
+.battle-mode .heading { display: none; }
+.battle-mode #safe-area { padding-left: 10px; padding-right: 10px; padding-bottom: 6px; }
+.battle-mode .battle-header { background-color: rgb(18, 18, 29); border-color: rgb(102, 87, 118); border-radius: 3px; padding: 8px 12px; margin-top: 0; }
+.battle-mode .battle-title-row > .section { font-size: 23px; color: rgb(242, 228, 209); -unity-font-definition: url("DisplaySerif.ttf"); }
+.battle-mode .battle-title-row > Button { min-height: 76px; flex-basis: 90px; font-size: 19px; background-color: rgb(37, 30, 48); border-color: rgb(105, 88, 125); }
+.battle-mode .objective-text { font-size: 19px; margin-top: 3px; margin-bottom: 3px; }
+.battle-mode .turn-strip { align-items: center; flex-wrap: wrap; }
+.battle-mode .current-turn, .battle-mode .turn-chip { font-size: 18px; border-radius: 3px; padding: 6px; }
+.battle-mode .current-turn { color: rgb(246, 226, 190); background-color: rgb(61, 47, 34); }
+.battle-mode .turn-chip { background-color: rgb(32, 42, 49); color: rgb(170, 239, 227); }
+.battle-mode .turn-chip.enemy-turn { background-color: rgb(56, 30, 37); color: rgb(255, 179, 162); }
+.battle-mode .turn-next { font-size: 14px; margin: 0 7px; color: rgb(192, 177, 208); }
+.battle-stage { flex-grow: 1; min-height: 0; }
+.battle-mode #battle-surface { flex-shrink: 1; min-width: 0; }
+.battle-mode .battle-dock { height: 350px; background-color: rgb(17, 17, 28); border-top-color: rgb(147, 122, 167); }
+.battle-mode .controls { padding: 8px; background-color: rgb(17, 17, 28); }
+.battle-mode .actor-status { font-size: 19px; color: rgb(243, 226, 198); margin: 5px 0; }
+.battle-mode .battle-message { font-size: 17px; color: rgb(213, 199, 228); white-space: normal; margin-bottom: 4px; }
+.battle-mode .hint, .battle-mode .target-guidance { font-size: 17px; white-space: normal; color: rgb(189, 203, 217); margin: 5px 0; }
+.battle-mode Button { min-height: 76px; font-size: 18px; padding: 8px; border-radius: 3px; background-color: rgb(36, 30, 48); border-color: rgb(110, 91, 129); color: rgb(239, 227, 217); }
+.battle-mode Button:hover { background-color: rgb(56, 43, 70); }
+.battle-mode Button.selected { background-color: rgb(64, 42, 79); border-color: rgb(223, 185, 255); }
+.battle-mode Button:disabled { background-color: rgb(25, 23, 34); color: rgb(160, 151, 174); border-color: rgb(66, 57, 80); }
+.battle-mode Button:focus { border-color: rgb(237, 207, 255); }
+.battle-mode Button.primary { background-color: rgb(226, 211, 180); color: rgb(30, 27, 33); border-color: rgb(248, 231, 195); }
+.battle-mode Button.primary:disabled { background-color: rgb(57, 49, 58); color: rgb(174, 159, 177); }
+.battle-mode .ability-row > Button { min-width: 0; font-size: 18px; }
+.battle-mode .intent-row { flex-direction: column; align-items: stretch; padding: 10px; border-radius: 3px; background-color: rgb(43, 34, 40); }
+.battle-mode .intent-row > .preview { font-size: 20px; flex-shrink: 0; }
+.battle-mode .intent-row > Button { flex-basis: auto; font-size: 20px; }
+.battle-mode .legend { font-size: 15px; color: rgb(178, 165, 193); }
+.battle-mode .health-overlay { width: 148px; height: 60px; background-color: rgba(13, 14, 24, 0.97); border-radius: 3px; }
+.battle-mode .health-overlay > Label { font-size: 20px; height: 48px; white-space: normal; }
+.battle-mode .health-track, .battle-mode .health-fill { height: 6px; }
+.battle-mode .turn-cue { font-size: 22px; background-color: rgba(30, 23, 41, 0.96); border-color: rgb(199, 167, 231); }
+.battle-mode .objective-marker { font-size: 14px; }
+.short-home.battle-mode .battle-stage { flex-direction: row; }
+.short-home.battle-mode .battle-dock { height: auto; width: 250px; border-top-width: 0; border-left-width: 2px; border-left-color: rgb(147, 122, 167); }
+.short-home.battle-mode .battle-title-row { display: none; }
+.short-home.battle-mode .battle-header { padding: 3px 8px; }
+.short-home.battle-mode .ability-row, .short-home.battle-mode .utility-row { flex-wrap: wrap; }
+.short-home.battle-mode .ability-row > Button, .short-home.battle-mode .utility-row > Button { flex-basis: 45%; }
+.battle-mode .battle-home { display: none; }
+.short-home.battle-mode .battle-home { display: flex; }
+.battle-mode .objective-marker { height: 48px; }
+.short-home.battle-mode .battle-dock { width: 215px; }
+.short-home.battle-mode .objective-text, .short-home.battle-mode .current-turn, .short-home.battle-mode .turn-chip { font-size: 12px; padding: 2px; }
+.short-home.battle-mode .turn-next { font-size: 10px; }
+.short-home.battle-mode .actor-status { font-size: 13px; }
+.short-home.battle-mode .battle-message, .short-home.battle-mode .hint, .short-home.battle-mode .target-guidance { font-size: 11px; }
+.short-home.battle-mode Button { min-height: 32px; padding: 5px; font-size: 12px; }
+.short-home.battle-mode .ability-row { flex-wrap: nowrap; }
+.short-home.battle-mode .ability-row > Button { flex-basis: 0; font-size: 10px; min-height: 44px; }
+.short-home.battle-mode .intent-row > .preview, .short-home.battle-mode .intent-row > Button { font-size: 13px; }
+.short-home.battle-mode .legend { font-size: 10px; }
