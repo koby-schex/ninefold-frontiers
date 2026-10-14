@@ -15,7 +15,7 @@ namespace Ninefold.Editor
         private const string ExpectedVersion = "6000.3.21f1";
         private string report = "", status = "";
         private Vector2 scroll;
-        private static readonly string[] Styles = { "Home/Home", "Home/Campaign", "Home/Units", "Home/Battle", "Home/Results" };
+        private static readonly string[] Styles = { "Home/Home", "Home/Campaign", "Home/Units", "Home/Battle", "Home/Results", PlaytestRevision.ControlsResource };
 
         [MenuItem("Ninefold/Playtest/Launcher", false, 0)]
         public static void Open() => GetWindow<PlaytestLauncher>("Ninefold Playtest");
@@ -32,6 +32,9 @@ namespace Ninefold.Editor
         {
             scroll = EditorGUILayout.BeginScrollView(scroll);
             GUILayout.Label("Ninefold: Frontiers", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Loaded source revision", PlaytestRevision.Id);
+            EditorGUILayout.LabelField(PlaytestRevision.Features, EditorStyles.wordWrappedLabel);
+            EditorGUILayout.HelpBox("This identifies your local imported source, not the latest GitHub version. After merging: stop Play, Pull origin in GitHub Desktop, then wait for Unity to finish importing.", MessageType.None);
             EditorGUILayout.HelpBox("Start or resume the abstract integration playtest. Your existing profile and progression are preserved.", MessageType.Info);
             bool version = Application.unityVersion == ExpectedVersion;
             bool pipeline = GraphicsSettings.defaultRenderPipeline != null;
@@ -85,6 +88,7 @@ namespace Ninefold.Editor
             else
             {
                 var text = new StringBuilder("NINEFOLD: FRONTIERS — EDITOR PREFLIGHT\n");
+                text.AppendLine("Playtest revision: " + PlaytestRevision.Id + " | " + PlaytestRevision.Features);
                 text.AppendLine("UTC: " + DateTime.UtcNow.ToString("O"));
                 text.AppendLine("Unity: " + Application.unityVersion + " | Expected: " + ExpectedVersion);
                 text.AppendLine("Compiling: " + EditorApplication.isCompiling + " | Importing: " + EditorApplication.isUpdating);

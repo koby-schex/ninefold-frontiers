@@ -9,6 +9,7 @@ namespace Ninefold.Presentation
     /// <summary>Presentation-only environment study. Never changes authored navigation or save data.</summary>
     internal sealed class BattlefieldScenery : IDisposable
     {
+        public int MeshCount => meshes.Count;
         private readonly Material stone, pale, distant, vegetation;
         private readonly Texture2D mineral;
         private readonly List<Mesh> meshes = new List<Mesh>();
