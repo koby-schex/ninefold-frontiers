@@ -66,6 +66,10 @@ namespace Ninefold.Editor
             if (GUILayout.Button("Open Console", GUILayout.MinHeight(28))) EditorApplication.ExecuteMenuItem("Window/General/Console");
             if (!string.IsNullOrEmpty(status)) EditorGUILayout.HelpBox(status, MessageType.Info);
 
+            GUILayout.Space(12); GUILayout.Label("Art review", EditorStyles.boldLabel);
+            if (GUILayout.Button("Great Strider visual review", GUILayout.MinHeight(36))) GreatStriderReview.Open();
+            EditorGUILayout.HelpBox("Separate model inspection scene. Stop Play mode before opening it; no profile changes.", MessageType.None);
+
             GUILayout.Space(12); GUILayout.Label("Diagnostics", EditorStyles.boldLabel);
             if (GUILayout.Button("Capture current report", GUILayout.MinHeight(32))) Run(Capture);
             report = EditorGUILayout.TextArea(report, GUILayout.MinHeight(180));

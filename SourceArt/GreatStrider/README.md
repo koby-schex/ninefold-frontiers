@@ -72,9 +72,12 @@ Import the OBJ and adjacent MTL into Blender with Y up and Z forward; confirm a
 six-meter overall envelope after import. Keep named parts separate for sculpting
 and rig preparation. Save a native Blender master after that import. No `.blend`
 master is claimed here because Blender was unavailable in the build environment.
-The mesh stays outside Unity's Assets folder and does not replace any playtest unit
-or change gameplay. Unity import/material conversion remains a later verified
-step; basic OBJ materials are not authored URP shaders.
+The source mesh stays outside Unity's Assets folder and does not replace any
+playtest unit or change gameplay. The opt-in **Ninefold > Art > Great Strider
+Review** tool now generates a separate Unity review scene with a meter-preserving
+mesh and opaque URP palette materials. See [Unity review instructions](../../Docs/Production/GreatStriderUnityReview.md).
+The importer and scene still require native Unity verification; final materials
+are not delivered by this palette conversion.
 
 Remaining work: detailed sculpt, reference-matched silhouette refinement,
 retopology, UVs, textures/materials, rig/weights, paired movement and survey
