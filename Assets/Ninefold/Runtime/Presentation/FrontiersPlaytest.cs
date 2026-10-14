@@ -45,6 +45,8 @@ namespace Ninefold.Presentation
         private Coroutine playback;
         private int pointer = -1;
         private Vector2 pointerStart;
+        private bool battleDetails;
+        private string battleRejection;
 
         private void Start()
         {
@@ -206,7 +208,7 @@ namespace Ninefold.Presentation
             var shortcuts = Row(panel); shortcuts.AddToClassList("home-shortcuts");
             HomeShortcut(shortcuts, "Quick Battle", "Mixed-faction missions", "routes", () => SelectMission("fixture-mixed"), !active);
             HomeShortcut(shortcuts, "Your Units", menuView.Units.Count(u => u.Owned) + " unlocked · Collection", "units", () => Navigate(Page.Collection), !active);
-            if (active) Text(panel, "Finish your saved battle to change progression or prepare another mission.", "home-status");
+            if (active) Text(panel, "Finish or resume your current battle. Campaigns and unit upgrades are locked until it ends.", "home-status");
             else if (message != "Your progress saves automatically.") Text(panel, message, "home-status");
             Text(panel, "PLAYTEST · Abstract missions and units", "home-fixture");
             var nav = Row(content); nav.AddToClassList("home-navigation");
@@ -595,19 +597,10 @@ namespace Ninefold.Presentation
             var b = battleView.Battle;
             var top = Card(content, "battle-header");
             var line = Row(top); line.AddToClassList("battle-title-row");
-            Text(line, MissionName(b.MissionId) + " · Round " + b.Round, "section");
-            Button(line, "Home", () => { input.Cancel(); inBattle = false; Navigate(Page.Home); }, !battleView.IsAnimating);
-            foreach (var o in b.Objectives)
-                Text(top, (o.Kind == ObjectiveKind.Stabilize ? "Stabilize objective" : "Defeat opposition") + " · " + o.Progress + "/" + o.Required, "objective-text");
-            var turns = Row(top); turns.AddToClassList("turn-strip");
             var actor = b.Units.FirstOrDefault(u => u.Id == b.Activation?.UnitId);
-            Text(turns, (actor?.IsEnemyControlled == true ? "ENEMY · " : "NOW · ") + UnitName(b.Activation?.UnitId), "current-turn");
-            Text(turns, "NEXT", "turn-next");
-            foreach (var id in b.UpcomingTurns.Take(3))
-            {
-                var chip = Text(turns, UnitName(id), "turn-chip");
-                chip.EnableInClassList("enemy-turn", b.Units.Any(u => u.Id == id && u.IsEnemyControlled));
-            }
+            Button(line, "Home", () => { input.Cancel(); inBattle = false; battleDetails = false; Navigate(Page.Home); }, !battleView.IsAnimating);
+            Text(line, string.Join(" · ", b.Objectives.Select(o => (o.Kind == ObjectiveKind.Stabilize ? "Stabilize" : "Defeat enemies") + " " + o.Progress + "/" + o.Required)), "objective-text");
+            Button(line, battleDetails ? "Close" : "Info", () => { battleDetails = !battleDetails; });
             var stage = new VisualElement(); stage.AddToClassList("battle-stage"); content.Add(stage);
             surface = new VisualElement { name = "battle-surface" }; surface.style.flexGrow = 1; surface.style.minHeight = 100;
             surface.style.overflow = Overflow.Hidden; stage.Add(surface);
@@ -620,7 +613,7 @@ namespace Ninefold.Presentation
             surface.RegisterCallback<PointerUpEvent>(e => {
                 bool tap = pointer == e.pointerId && e.button == 0 && e.isPrimary && Vector2.Distance(pointerStart, (Vector2)e.position) <= 12;
                 pointer = -1; e.StopPropagation();
-                if (tap && !dirty && playback == null && !suspended) Guard(() => Pick((Vector2)e.position));
+                if (tap && !dirty && playback == null && !suspended && !battleDetails) Guard(() => Pick((Vector2)e.position));
             });
             field.Show(battleView, input.ReadPlanning(), catalog.Missions[b.MissionId].Objectives, surface);
             if (b.Activation != null)
@@ -637,54 +630,67 @@ namespace Ninefold.Presentation
             stage.Add(footer);
             controls = new VisualElement(); controls.AddToClassList("controls"); footer.Add(controls);
             BuildControls();
+            if (battleDetails)
+            {
+                var details = new ScrollView(ScrollViewMode.Vertical); details.AddToClassList("battle-details");
+                details.RegisterCallback<PointerDownEvent>(e => e.StopPropagation());
+                details.RegisterCallback<PointerUpEvent>(e => e.StopPropagation());
+                surface.Add(details);
+                Text(details, MissionName(b.MissionId) + " · Round " + b.Round, "section");
+                Text(details, "Next: " + string.Join(" → ", b.UpcomingTurns.Take(4).Select(UnitName)), "detail");
+                var inspected = b.Units.FirstOrDefault(u => u.Id == battleView.SelectedUnitId) ?? actor;
+                if (inspected?.Health != null) Text(details, UnitName(inspected.Id) + " · HP " + inspected.Health.CurrentHealth + "/" + inspected.Health.MaximumHealth + " · Armor " + inspected.EffectiveArmor, "detail");
+                foreach (var action in b.Actions.Where(a => a.Slot != AbilitySlot.Passive))
+                {
+                    var ability = actor?.Abilities.FirstOrDefault(a => a.Slot == action.Slot);
+                    Text(details, AbilityName(action.Slot) + " · " + AbilityReadiness(action, actor) + (ability == null ? "" : " · Range " + ability.Range), "detail");
+                }
+                foreach (var objective in input.ReadPlanning().Objectives)
+                    Text(details, "Stabilize · " + ObjectiveReadiness(objective.Failure), "detail");
+                Text(details, "Tap ground to plan movement. Choose an attack, then a marked target. Tap the preview again or Confirm. Every health strip stays visible. Orders always use the current turn’s unit.", "detail");
+                Button(details, "Back to battle", () => battleDetails = false);
+            }
         }
 
         private void BuildControls()
         {
             controls.Clear();
             var b = battleView.Battle;
-            bool ready = !battleView.IsAnimating && !suspended;
+            bool ready = !battleView.IsAnimating && !suspended && !battleDetails;
             var activeUnit = b.Units.FirstOrDefault(u => u.Id == b.Activation?.UnitId);
-            Text(controls, message, "battle-message");
-            if (b.Activation != null) Text(controls, (activeUnit?.IsEnemyControlled == true ? "ENEMY · " : "YOUR TURN · ") + UnitName(b.Activation.UnitId) + " · Move " + b.Activation.MovementRemaining.ToString("0.##") + " · " + (b.Activation.PrimaryActionAvailable ? "1 action ready" : "Action spent"), "actor-status");
-            var selected = b.Units.FirstOrDefault(u => u.Id == battleView.SelectedUnitId);
-            if (selected?.Health != null) Text(controls, "Inspecting " + UnitName(selected.Id) + " · HP " + selected.Health.CurrentHealth + "/" + selected.Health.MaximumHealth + " · Armor " + selected.EffectiveArmor + (selected.Id != b.Activation?.UnitId ? " · commands still use " + UnitName(b.Activation?.UnitId) : ""), "hint");
+            Text(controls, (activeUnit?.IsEnemyControlled == true ? "ENEMY · " : "") + UnitName(b.Activation?.UnitId) + " · Move " + (b.Activation?.MovementRemaining.ToString("0.#") ?? "0") + " · " + (b.Activation?.PrimaryActionAvailable == true ? "1 action" : "Action spent"), "actor-status");
             var row = Row(controls); row.AddToClassList("ability-row");
-            foreach (var a in b.Actions.Where(a => a.Slot != AbilitySlot.Passive))
-            {
-                var slot = a.Slot;
-                var button = Button(row, AbilityName(slot) + "\n" + (AbilityReadiness(a, activeUnit)), () => Handle(input.SelectAbility(slot)), ready && a.CanSelect);
-                button.AddToClassList("ability-button");
-                button.tooltip = a.CanSelect ? "Select, then tap a target to preview." : AbilityReadiness(a, activeUnit) + (slot == AbilitySlot.Main ? " · cooldown counts this unit’s turns" : "");
-                if (battleView.SelectedAbility == slot) button.AddToClassList("selected");
-            }
-            if (battleView.SelectedAbility.HasValue)
-            {
-                var actor = b.Units.First(u => u.Id == b.Activation.UnitId);
-                var ability = actor.Abilities.First(a => a.Slot == battleView.SelectedAbility.Value);
-                Text(controls, "Range " + ability.Range + " · " + battleView.Targets.Count(t => t.IsValid) + " valid targets · gold rings\nRange outline alone does not guarantee line of sight.", "target-guidance");
-            }
             if (battleView.Pending != null)
             {
                 var p = battleView.Pending;
-                string preview = p.Kind == IntentKind.Movement ? "Move " + p.Movement.Cost.ToString("0.##") + " · " + (b.Activation.MovementRemaining-p.Movement.Cost).ToString("0.##") + " remaining" + (p.RequestedDestination.HasValue && !p.RequestedDestination.Value.Equals(p.Movement.Path.Last()) ? " · stops short of your requested point" : "") : p.Kind == IntentKind.Interaction ? "Stabilize · uses this turn's action" : TargetSummary(p.Target);
-                var confirm = Row(controls); confirm.AddToClassList("intent-row");
-                Text(confirm, preview, "preview");
-                Primary(confirm, p.Kind == IntentKind.Movement ? "Move here" : p.Kind == IntentKind.Interaction ? "Stabilize" : "Use ability", () => Handle(input.Confirm(p.Id)), ready);
+                string preview = p.Kind == IntentKind.Movement ? "Move · " + p.Movement.Cost.ToString("0.#") + (p.RequestedDestination.HasValue && !p.RequestedDestination.Value.Equals(p.Movement.Path.Last()) ? " · partial route" : "") : p.Kind == IntentKind.Interaction ? "Stabilize objective" : TargetSummary(p.Target);
+                Text(row, preview, "compact-preview");
+                Primary(row, "Confirm", () => Handle(input.Confirm(p.Id)), ready);
+                Button(row, "Cancel", () => Handle(input.Cancel()), ready);
             }
-            else Text(controls, battleView.IsAnimating ? "Resolving action…" : b.Phase != BattleSessionPhase.PlayerInput ? "Enemy turn…" : battleView.SelectedAbility.HasValue ? "Tap a marked unit to preview the effect." : "Tap the ground to preview movement.", "hint");
+            else
+            {
+                foreach (var a in b.Actions.Where(a => a.Slot != AbilitySlot.Passive))
+                {
+                    var slot = a.Slot;
+                    var button = Button(row, AbilityName(slot), () => Handle(input.SelectAbility(slot)), ready && a.CanSelect);
+                    button.tooltip = AbilityReadiness(a, activeUnit);
+                    button.EnableInClassList("selected", battleView.SelectedAbility == slot);
+                }
+            }
             row = Row(controls); row.AddToClassList("utility-row");
-            Button(row, battleView.Pending != null ? "Cancel preview" : "Move", () => Handle(input.Cancel()), ready);
-            foreach (var objective in input.ReadPlanning().Objectives.Where(o=>b.Objectives.Any(x=>x.Id==o.Id && x.Status==ObjectiveStatus.Active)))
+            Button(row, "Move", () => Handle(input.Cancel()), ready && b.Phase == BattleSessionPhase.PlayerInput)
+                .EnableInClassList("selected", !battleView.SelectedAbility.HasValue && battleView.Pending == null);
+            foreach (var objective in input.ReadPlanning().Objectives.Where(o => b.Objectives.Any(x => x.Id == o.Id && x.Status == ObjectiveStatus.Active)))
             {
                 string id = objective.Id;
-                Button(row, "Stabilize\n" + ObjectiveReadiness(objective.Failure), () => Handle(input.TapObjective(id)), ready && objective.CanInteract);
+                var button = Button(row, "Stabilize", () => Handle(input.TapObjective(id)), ready && objective.CanInteract);
+                button.tooltip = ObjectiveReadiness(objective.Failure);
             }
             long activation = b.Activation?.ActivationId ?? 0;
             Button(row, "End turn", () => Handle(input.EndTurn(activation)), ready && b.Phase == BattleSessionPhase.PlayerInput);
-            var homeButton = Button(controls, "Home · battle saved", () => { input.Cancel(); inBattle = false; Navigate(Page.Home); }, ready);
-            homeButton.AddToClassList("battle-home");
-            Text(controls, "Dots: reachable samples · Gold: active / target · White: inspected\nMovement path ends at the actual stopping point. Tap it again to confirm.", "legend");
+            string hint = battleView.IsAnimating ? "Resolving…" : b.Phase != BattleSessionPhase.PlayerInput ? "Enemy turn…" : battleView.Pending != null ? "Tap the preview again or Confirm" : battleView.SelectedAbility.HasValue ? (battleView.Targets.Any(t => t.IsValid) ? "Tap a marked target" : "No valid targets · Move to a clear position") : "Tap ground to move";
+            Text(controls, battleRejection ?? hint, "battle-message");
         }
 
         private void Pick(Vector2 panelPosition)
@@ -701,6 +707,7 @@ namespace Ninefold.Presentation
 
         private void Handle(BattleInputResult result)
         {
+            battleRejection = result.Outcome == InputOutcome.Rejected ? RejectionReason(result) : null;
             message = result.Outcome == InputOutcome.Rejected ? RejectionReason(result)
                 : result.Outcome == InputOutcome.Previewed ? "Preview ready. Tap again or confirm below." : result.Outcome == InputOutcome.Selected ? "Choose a target or destination." : result.Outcome == InputOutcome.Committed ? "Progress saved." : "Ready.";
             notice.text = message;
@@ -924,7 +931,7 @@ namespace Ninefold.Presentation
         private Button Button(VisualElement parent, string label, Action action, bool enabled = true)
         {
             var b = new Button(() => { if (!fatal && !dirty && !suspended && playback == null) Guard(() => { action(); dirty = true; }); }) { text = label };
-            b.SetEnabled(enabled); parent.Add(b); return b;
+            b.AddToClassList("game-button"); b.SetEnabled(enabled); parent.Add(b); return b;
         }
         private static VisualElement Row(VisualElement parent) { var row = new VisualElement(); row.AddToClassList("row"); parent.Add(row); return row; }
         private static Label Text(VisualElement parent, string text, string cls) { var l = new Label(text); l.AddToClassList(cls); parent.Add(l); return l; }
