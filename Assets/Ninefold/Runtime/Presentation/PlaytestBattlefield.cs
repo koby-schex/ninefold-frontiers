@@ -40,6 +40,7 @@ namespace Ninefold.Presentation
         private readonly Material friendly, enemy, active, floor, grid, gold, cover, trim, markings;
         private readonly LineRenderer path, range;
         private GameObject terrain;
+        private readonly BattlefieldScenery scenery;
         private string drawnAttempt;
         private readonly GameObject destination, selection, inspection, impact;
         private VisualElement surface;
@@ -58,7 +59,10 @@ namespace Ninefold.Presentation
             active = Make(new Color(.94f, .85f, .52f)); floor = Make(new Color(.075f, .12f, .17f));
             grid = Make(new Color(.16f, .23f, .29f)); gold = Make(new Color(.9f, .65f, .25f));
             cover = Make(new Color(.26f, .35f, .42f)); trim = Make(new Color(.42f, .52f, .57f));
-            markings = Make(new Color(.22f, .31f, .37f));
+            markings = Make(new Color(.28f, .24f, .28f));
+            trim.color = new Color(.64f,.60f,.58f);
+            grid.color = new Color(.23f,.21f,.27f);
+            scenery = new BattlefieldScenery(template, floor, cover);
             destination = Primitive("Destination preview", PrimitiveType.Cylinder, Vector3.zero, new Vector3(.7f, .025f, .7f), gold);
             selection = Primitive("Active unit marker", PrimitiveType.Cylinder, Vector3.zero, new Vector3(.95f, .015f, .95f), active);
             var white = Make(new Color(.9f,.96f,1f));
@@ -80,7 +84,7 @@ namespace Ninefold.Presentation
                 path.sharedMaterial = routeInk; range.sharedMaterial = rangeInk;
             }
             camera.orthographic = true; camera.nearClipPlane = .1f; camera.farClipPlane = 100;
-            camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = new Color(.04f, .07f, .1f);
+            camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = new Color(.12f, .10f, .17f);
             Hide();
         }
 
@@ -200,12 +204,11 @@ namespace Ninefold.Presentation
             float width=max.x-min.x, depth=max.z-min.z;
             Shape("Bounded floor",new Vector3(center.x,-.16f,center.z),new Vector3(width,.3f,depth),floor);
             Shape("Arena plinth",new Vector3(center.x,-.42f,center.z),new Vector3(width+.4f,.25f,depth+.4f),grid);
-            for (int x=(int)Math.Ceiling(min.x);x<=max.x;x++) Shape("Grid X",new Vector3(x,.002f,center.z),new Vector3(.018f,.01f,depth),grid);
-            for (int z=(int)Math.Ceiling(min.z);z<=max.z;z++) Shape("Grid Z",new Vector3(center.x,.002f,z),new Vector3(width,.01f,.018f),grid);
-            Shape("West boundary",new Vector3(min.x,.15f,center.z),new Vector3(.1f,.3f,depth),gold);
-            Shape("East boundary",new Vector3(max.x,.15f,center.z),new Vector3(.1f,.3f,depth),gold);
-            Shape("South boundary",new Vector3(center.x,.15f,min.z),new Vector3(width,.3f,.1f),gold);
-            Shape("North boundary",new Vector3(center.x,.15f,max.z),new Vector3(width,.3f,.1f),gold);
+            scenery.Build(terrain.transform, map, floor);
+            Shape("West boundary",new Vector3(min.x,.15f,center.z),new Vector3(.1f,.3f,depth),trim);
+            Shape("East boundary",new Vector3(max.x,.15f,center.z),new Vector3(.1f,.3f,depth),trim);
+            Shape("South boundary",new Vector3(center.x,.15f,min.z),new Vector3(width,.3f,.1f),trim);
+            Shape("North boundary",new Vector3(center.x,.15f,max.z),new Vector3(width,.3f,.1f),trim);
             foreach (var o in map.Obstacles)
             {
                 var a = Vector(o.Bounds.Min); var b = Vector(o.Bounds.Max); var size = b-a; var c = (a+b)/2;
@@ -451,6 +454,6 @@ namespace Ninefold.Presentation
             world.SetActive(false); camera.enabled = true; camera.rect = new Rect(0, 0, 1, 1);
         }
         public static Vector3 Vector(FieldPoint p) => new Vector3((float)p.X, (float)p.Y, (float)p.Z);
-        public void Dispose() { Object.Destroy(world); foreach (var material in materials) Object.Destroy(material); }
+        public void Dispose() { scenery.Dispose(); Object.Destroy(world); foreach (var material in materials) Object.Destroy(material); }
     }
 }
