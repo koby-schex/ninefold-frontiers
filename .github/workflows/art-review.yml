@@ -37,6 +37,7 @@ jobs:
           path: |
             SourceArt/GreatStrider/GreatStrider-Review.png
             SourceArt/GreatStrider/GreatStrider-Detail.png
+            SourceArt/GreatStrider/GreatStrider-Inspection.png
             SourceArt/GreatStrider/GreatStrider-Mobile.png
             SourceArt/GreatStrider/GreatStrider-Comparison.png
             SourceArt/GreatStrider/manifest.json
