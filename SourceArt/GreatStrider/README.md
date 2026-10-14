@@ -1,93 +1,67 @@
-# Great Strider — editable form study 02
+# Great Strider — editable form study 03
 
-This is a refined early 3D mesh, not a finished game model. It preserves the
-approved 6.0 m study envelope, four-limb stance, short neck, paired sensory sails,
-cradle, seated Avarin and Waycaster console. The render is made from this mesh.
-It is substantially simpler than the approved visual study and must not replace
-the locked master or be described as production-quality art.
+An incremental refinement of the existing six-meter study, **not a finished game
+model**. The locked Master Lore, Production Foundations 1–8 and World Five visual
+master remain controlling. Koby's approval of Reference Study 02 as a visual
+direction and six-meter study envelope does not make this mesh final canon.
 
-## Files and reproduction
+## This pass
 
-- `GreatStrider.obj`: named editable mesh parts; meters, +Y up, +Z forward.
-- `GreatStrider.mtl`: provisional flat material palette; keep beside the OBJ.
-- `manifest.json`: measured counts, intended scale and limitations.
-- [Mesh generator](../../BuildTools/Art/build_great_strider.py): run from repository
-  root with `python BuildTools/Art/build_great_strider.py`. Standard library only.
-- [Review renderer](../../BuildTools/Art/render_great_strider.py): requires NumPy
-  and Pillow. Run after the generator with `python BuildTools/Art/render_great_strider.py`.
-  Generated review JSON and PNG are local outputs, not needed to import the OBJ.
-- [Comparison renderer](../../BuildTools/Art/compare_great_strider.py): renders the
-  merged first study beside the current mesh under the same camera and lighting.
-  Run `python BuildTools/Art/compare_great_strider.py` from a full repository clone.
-  The optional `--reference PATH` adds a local approved-art comparison; it does not
-  upload or commit that image.
+- Narrower upper limb tissue; tapered grown coverings with shallow longitudinal
+  relief, replacing blunt sheet ends. Darker underlying limb tissue separates the
+  pale mineral areas, soft joints and contact pads.
+- Curved paired sensory sails with finer branching channels; no added wings,
+  horns, weapon barrels or new abilities.
+- Rounded heel contacts, fitted cradle side panels and seams, a console rim,
+  operator shoulder protection and clothing hems.
+- Distinct provisional material finishes for tissue, cloth, ceramic and frame.
+- Outward winding for closed mirrored parts. Eight inward-facing parts in study 02
+  were concealed by the software renderer's two-sided shading; the generator now
+  corrects signed orientation and the validator rejects inward/zero-volume parts.
 
-## Changes in this pass
+The cradle attachments, clothing construction, exact surface relief and finishes
+remain implementation proposals. No biological or equipment canon is added here.
+The model is still substantially simpler than the reference. The operator's face
+remains obscured from some frontal angles, and inter-part intersections, harness
+clearance and deformation still need work. Materials remain opaque approximations;
+final translucent membranes, textures and skin shading are not implemented.
 
-Limbs have more tapered profiles and surface-conforming mineral coverings, with
-soft joint gaps and visible flexor structures. Loft frames now rotate continuously
-instead of abruptly changing axis along a curve. Paired sails have curved profiles
-and ribs. The operator has one crescent mantle, six sensory ribbons, face structure,
-fitted protection and split clothing panels. Cradle attachment pads, braces,
-retracted survey cartridges and line reels develop the equipment fit.
+## Source and reproduction
 
-These are implementation studies within the approved direction, not new biological
-or equipment canon. The result remains much simpler than the approved illustration.
-It does not close the high-quality visual gate. Counts in `manifest.json` are
-measured output, not approved mobile budgets; optimization remains outstanding.
+- `GreatStrider.obj`: editable named parts; meters, +Y up, +Z forward.
+- `GreatStrider.mtl`: diffuse palette plus per-material specular/finish study.
+- `manifest.json`: measured counts and limits, not approved mobile budgets.
+- `python BuildTools/Art/build_great_strider.py`: reproduce OBJ, MTL, manifest and
+  local review data. Standard Python library only.
+- `python BuildTools/Art/validate_great_strider.py`: reproducibility, indexed finite
+  nondegenerate triangles, closed consistently outward-wound parts, six-meter
+  envelope and defining part identities.
+- `python BuildTools/Art/render_great_strider.py`: actual-mesh review sheet, low-front
+  cradle detail and 390 px portrait study; NumPy and Pillow required.
+- `python BuildTools/Art/compare_great_strider.py`: study 02 beside study 03 under
+  the same camera/light. Baseline pinned to merged PR44, not a moving branch.
+  Optional `--reference PATH` produces a local-only approved-direction comparison.
 
-## Review images
+The GitHub **Great Strider art review** workflow uploads these renders as an
+artifact retained for 30 days. They can be regenerated from tracked sources.
+They are software renders, not Unity captures or generated concept illustrations.
+The private locked reference is never committed or uploaded by this workflow.
 
-The **Great Strider art review** GitHub Actions run uploads the three-view sheet,
-operator/cradle close-up, 390 px portrait study and before/after comparison as one
-downloadable artifact. Artifacts are retained for 30 days and can be regenerated
-from tracked source. The private Project reference is not part of that artifact.
-The optional local reference comparison makes the remaining quality gap explicit.
+## Unity and next stages
 
-The portrait image uses a proposed camera, not the Unity battle camera. It reveals
-limited readability of smaller operator/equipment details. The mesh still needs
-sculpting and silhouette review; these images are evidence of work in progress,
-not a claim of reference parity. Basic review shading is opaque; final translucent
-membrane materials, shadows and lighting are not implemented.
+Use **Ninefold > Art > Great Strider Review**, or the Playtest Launcher shortcut.
+Study 03 generates a distinct `GreatStriderReview03.unity` scene so previously
+saved study 02 scenes are preserved. See [review instructions](../../Docs/Production/GreatStriderUnityReview.md).
+The importer checks updated source counts and converts MTL finish values into
+approximate URP smoothness; no pipeline settings or battle units change.
 
-## Review status and authority
+The OBJ remains the editable source, with separate named objects. The Unity review
+uses a combined inspection mesh, not a sculpt/rig master. No native Blender master,
+UV unwrap, weights, rig, animations, LODs, optimized prefab or device measurements
+are delivered. This is neither printability certification nor a final-art gate.
 
-Koby approved Reference Study 02 as visual direction on 7 October 2026, including
-the proposed 6.0 m Ilyth height. This does not revise locked canon. The controlling
-sources remain Archive v26.0 with retained v25.3, PF1–8 and the locked World Five
-showcase. See [the art brief](../../Docs/Production/FirstMissionArtBrief.md).
-
-The mesh uses smooth lofts for primary anatomy and closed membrane surfaces. It
-does not reproduce the reference's surface detail, ornament, clothing or material
-finish. The palette is an implementation study, not new color canon. The Avarin
-mantle, limb contours, sensory sails and operator access require further visual
-reconciliation. Part overlap is intentional for editable construction and has not
-been cleared for deformation. Closed parts do not establish printability or a
-single watertight assembled creature. The renderer's soft floor shadow is a studio
-presentation aid, not a physically simulated shadow or ground-contact test.
-
-## Import and continuation
-
-Import the OBJ and adjacent MTL into Blender with Y up and Z forward; confirm a
-six-meter overall envelope after import. Keep named parts separate for sculpting
-and rig preparation. Save a native Blender master after that import. No `.blend`
-master is claimed here because Blender was unavailable in the build environment.
-The source mesh stays outside Unity's Assets folder and does not replace any
-playtest unit or change gameplay. The opt-in **Ninefold > Art > Great Strider
-Review** tool now generates a separate Unity review scene with a meter-preserving
-mesh and opaque URP palette materials. See [Unity review instructions](../../Docs/Production/GreatStriderUnityReview.md).
-The importer and scene still require native Unity verification; final materials
-are not delivered by this palette conversion.
-
-Remaining work: detailed sculpt, reference-matched silhouette refinement,
-retopology, UVs, textures/materials, rig/weights, paired movement and survey
-animation, LODs, collision/selection anchors, Unity prefab integration and device
-measurement. No animation, performance or final art gate has passed.
-
-## Validation
-
-Run `python BuildTools/Art/validate_great_strider.py` to verify reproducible output,
-finite indexed triangles, nonzero triangle areas, closed consistently wound named
-parts, the six-meter envelope, four limb objects, two sensory-sail objects and
-material references. This is geometric integrity, not an anatomy or visual-quality
-certification. Actual-mesh review images were inspected for framing and overlaps.
+Sources rechecked 14 October 2026: v26.0 §26.0/26.6; retained v25.3 Great Strider
+body, sensory, surface, cradle and Waycaster entries; locked World Five showcase
+inspected as pixels. The written compact-head/short-neck and suspended-cradle
+constraints remain controlling; incidental showcase details do not authorize a
+cavalry saddle or civic building on this unit. See [the art brief](../../Docs/Production/FirstMissionArtBrief.md).

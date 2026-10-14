@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Compare actual meshes in identical framing; optional local approved art reference.
 
-Does not upload the reference. Baseline is the merged first form-study generator.
+Does not upload the reference. Baseline is the merged form-study 02 generator.
 """
 import argparse
 import importlib.util
@@ -12,7 +12,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 from render_great_strider import render, font, ROOT
 
-BASELINE='4e25ebf95e629537059d6cb280525698df83c146'
+BASELINE='04385242cf220d93b14e08aa01842022f721288c'
 
 def comparison(output,reference=None):
     with tempfile.TemporaryDirectory() as temp:
@@ -29,7 +29,7 @@ def comparison(output,reference=None):
     sheet=Image.new('RGB',(1600,1100),(238,237,229)); d=ImageDraw.Draw(sheet)
     d.text((35,25),'GREAT STRIDER / ACTUAL MESH COMPARISON',font=font(29),fill='#262c32')
     d.text((35,73),'Same camera, framing and lighting. Both are unfinished form studies.',font=font(18),fill='#596069')
-    for x,data,label in [(25,before,'FORM STUDY 01'),(815,after,'FORM STUDY 02')]:
+    for x,data,label in [(25,before,'FORM STUDY 02'),(815,after,'FORM STUDY 03')]:
         sheet.paste(render(data,(9,6.5,12),(760,880),7.2),(x,125))
         d.text((x+20,1030),label,font=font(23),fill='#262c32')
     sheet.save(output/'GreatStrider-Comparison.png')
@@ -41,7 +41,7 @@ def comparison(output,reference=None):
         sheet.paste(ref,((800-ref.width)//2,125+(870-ref.height)//2))
         sheet.paste(render(after,(9,6.5,12),(760,870),7.2),(815,125))
         d.text((25,1030),'Reference Study 02: approved visual direction',font=font(18),fill='#262c32')
-        d.text((830,1030),'Form Study 02: editable geometry, unfinished',font=font(18),fill='#262c32')
+        d.text((830,1030),'Form Study 03: editable geometry, unfinished',font=font(18),fill='#262c32')
         sheet.save(output/'GreatStrider-ReferenceComparison.png')
 
 if __name__=='__main__':

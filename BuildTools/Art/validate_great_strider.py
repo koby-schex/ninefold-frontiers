@@ -27,6 +27,8 @@ for line in (folder/'GreatStrider.obj').read_text().splitlines():
         assert dot(normal,normal)>1e-16,('Degenerate triangle',current,f)
         faces.append(f); parts[current].append(f)
 for name,triangles in parts.items():
+    volume=sum(dot(vertices[a],cross(vertices[b],vertices[c])) for a,b,c in triangles)/6
+    assert volume>0,('Inward or zero-volume part',name,volume)
     edges=collections.Counter(); directions=collections.Counter()
     for a,b,c in triangles:
         for u,v in [(a,b),(b,c),(c,a)]:
@@ -42,5 +44,5 @@ assert len([n for n in parts if n.startswith('Avarin_SensoryRibbon_')])==6
 assert len([n for n in parts if n.startswith('Cradle_Attachment_')])==4
 known={line.split()[1] for line in (folder/'GreatStrider.mtl').read_text().splitlines() if line.startswith('newmtl ')}
 assert materials<=known
-print(f'PASS: {len(parts)} parts; {len(vertices)} vertices; {len(faces)} triangles; 6.0 m; closed consistently wound parts; reproducible files.')
+print(f'PASS: {len(parts)} parts; {len(vertices)} vertices; {len(faces)} triangles; 6.0 m; closed outward-wound parts; reproducible files.')
 print('Not checked: inter-part intersections, skin deformation, Unity import, device performance, final canon/art acceptance.')

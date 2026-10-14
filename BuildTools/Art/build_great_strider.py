@@ -12,17 +12,24 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 MATERIALS = {
     'living_pearl': (.62, .65, .63),
+    'limb_tissue': (.38, .40, .42),
     'soft_charcoal': (.12, .13, .16),
     'grown_mineral': (.84, .85, .78),
     'sail_membrane': (.32, .28, .43),
     'sail_vein': (.64, .59, .76),
-    'continuance_frame': (.39, .38, .32),
+    'continuance_frame': (.36, .38, .40),
     'ceramic': (.65, .66, .60),
     'avar_skin': (.30, .25, .32),
     'cloth': (.19, .20, .24),
     'survey_light': (.47, .68, .79),
     'eye': (.055, .065, .07),
 }
+
+# Provisional finish controls, not locked material canon. Ns is shared with the MTL.
+FINISH = {name: (28, .12) for name in MATERIALS}
+FINISH.update(cloth=(8,.025), avar_skin=(18,.07), soft_charcoal=(14,.06),
+    limb_tissue=(22,.09), grown_mineral=(64,.20), ceramic=(80,.22),
+    continuance_frame=(96,.24), sail_membrane=(52,.14), survey_light=(72,.18))
 
 def add(a, b): return tuple(x+y for x, y in zip(a, b))
 def sub(a, b): return tuple(x-y for x, y in zip(a, b))
@@ -35,6 +42,10 @@ class Mesh:
     def __init__(self): self.parts = []
 
     def part(self, name, mat, vertices, faces):
+        # Mirrored parametric sheets can have consistent but inward winding.
+        # Closed source parts must face outward for Unity's backface culling.
+        volume=sum(dot(vertices[a],cross(vertices[b],vertices[c])) for a,b,c in faces)/6
+        if volume < 0: faces=[(a,c,b) for a,b,c in faces]
         self.parts.append(dict(name=name, material=mat, vertices=vertices, faces=faces))
 
     def loft(self, name, mat, rings, sides=12):
@@ -104,14 +115,14 @@ class Mesh:
             faces.extend([(a,b,b+layer),(a,b+layer,a+layer)])
         self.part(name,mat,vertices,faces)
 
-    def panel(self,name,mat,surface,rows=18,cols=10,thickness=.008):
+    def panel(self,name,mat,surface,rows=18,cols=10,thickness=.008,normal=(0,0,1)):
         """Closed two-skin curved sheet with authored parametric shape."""
         vertices=[]
         for side in [-1,1]:
             for i in range(rows):
                 for j in range(cols):
                     p=surface(i/(rows-1),j/(cols-1))
-                    vertices.append(add(p,(0,0,side*thickness)))
+                    vertices.append(add(p,mul(normal,side*thickness)))
         faces=[]; count=rows*cols
         for layer in range(2):
             for i in range(rows-1):
@@ -128,13 +139,16 @@ class Mesh:
         def surface(t,v):
             row=start+(end-start)*t
             r=min(int(row),end-1); a=row-r
-            angle=(1.5 if fore else .5)*math.pi+(v-.5)*2.2
+            taper=.14+.86*math.sin(math.pi*t)**.55
+            angle=(1.5 if fore else .5)*math.pi+(v-.5)*2.2*taper
             j=(angle/math.tau*sides)%sides; k=int(j); b=j-k
             def point(i): return add(mul(vertices[i*sides+k],1-b),mul(vertices[i*sides+(k+1)%sides],b))
             p=add(mul(point(r),1-a),mul(point(r+1),a))
             def center(i): return tuple(sum(vertices[i*sides+j][axis] for j in range(sides))/sides for axis in range(3))
             c=add(mul(center(r),1-a),mul(center(r+1),a))
-            offset=.014+.035*math.sin(math.pi*t)*math.sin(math.pi*v)
+            offset=.018+.045*math.sin(math.pi*t)*math.sin(math.pi*v)
+            # Fine longitudinal relief follows the grown surface, fading into its edges.
+            offset+=.006*math.sin(v*math.pi*8)**2*math.sin(math.pi*t)*math.sin(math.pi*v)
             return add(p,mul(unit(sub(p,c)),offset))
         self.panel(name,'grown_mineral',surface,16,9,.004)
 
@@ -165,16 +179,20 @@ def make_model():
         s='L' if side<0 else 'R'
         m.oval('Ilyth_Eye_'+s,'eye',(side*.207,5.66,1.47),(.025,.027,.04))
         def sail(t,v):
-            width=.045+.52*math.sin(math.pi*t)**.8
+            width=.035+.54*math.sin(math.pi*t)**.85
             across=(2*v-1)*width
             return (side*(.17+1.13*t+across*.53),
-                5.78+.10*math.sin(math.pi*t)-.34*t*t-.16*(2*v-1)**2*math.sin(math.pi*t),
+                5.78+.14*math.sin(math.pi*t)-.34*t*t-.18*(2*v-1)**2*math.sin(math.pi*t)+.025*math.sin(4*math.pi*t)*math.sin(math.pi*v),
                 1.16-1.15*t+across*.85)
         m.panel('Ilyth_SensorySail_'+s,'sail_membrane',sail)
         for k in range(5):
             v=k/4
             m.strand('Ilyth_SailVein_'+s+str(k),'sail_vein',
                 [add(sail(t/6,v),(0,.012,.012)) for t in range(7)],.009 if k%2 else .016)
+        for k in range(4):
+            for edge in [0,1]:
+                m.strand('Ilyth_SailChannel_'+s+str(k)+str(edge),'sail_vein',
+                    [add(sail(.18+k*.17+j*.025, .5+(edge-.5)*j/5),(0,.008,.008)) for j in range(6)],.005)
         m.strand('Ilyth_SailRoot_'+s,'grown_mineral',[(side*.17,5.75,1.16),(side*.42,5.77,.98),(side*.62,5.70,.74)],.035)
         m.loft('Ilyth_Brow_'+s,'grown_mineral',[
             ((side*.11,5.86,1.05),.03,.035),((side*.22,5.78,1.36),.05,.035),
@@ -189,8 +207,8 @@ def make_model():
             c=(side*1.11,2.66,.72 if fore else -1.18)
             d=(side*1.29,1.52,1.10 if fore else -1.27)
             e=(side*1.47,.25,1.43 if fore else -1.56)
-            m.loft('Ilyth_Limb_'+n,'living_pearl',[(a,.23,.27),
-                (add(mul(a,.5),mul(b,.5)),.29,.24),(b,.19,.21),
+            m.loft('Ilyth_Limb_'+n,'limb_tissue',[(a,.21,.24),
+                (add(mul(a,.5),mul(b,.5)),.24,.21),(b,.17,.19),
                 (add(mul(b,.6),mul(c,.4)),.16,.17),(c,.10,.12),
                 (d,.095,.105),(add(mul(d,.45),mul(e,.55)),.065,.08),(e,.085,.10)],16)
             m.strand('Ilyth_Flexor_'+n,'soft_charcoal',[
@@ -204,6 +222,7 @@ def make_model():
                 end=(e[0]+(toe-1)*.12,.05,e[2]+(.25 if fore else -.23))
                 m.loft('Ilyth_Contact_'+n+str(toe),'soft_charcoal',[(e,.07,.085),
                     (add(mul(e,.4),mul(end,.6)),.07,.065),(end,.055,.04)],8)
+            m.oval('Ilyth_ContactHeel_'+n,'soft_charcoal',(e[0],.12,e[2]),(.12,.075,.13))
             m.strand('Ilyth_GrownRidge_'+n,'grown_mineral',[
                 add(b,(side*.12,0,.04)),add(c,(side*.07,.13,.07)),add(d,(side*.06,0,.04))],.032)
     # Fitted recessed frame sits within the torso envelope; no saddle or back building.
@@ -215,6 +234,14 @@ def make_model():
         m.loft('Cradle_CeramicShell_'+s,'ceramic',[
             ((side*.42,3.87,-.23),.04,.05),((side*.46,3.99,.05),.07,.15),
             ((side*.45,4.08,.39),.065,.15),((side*.39,4.13,.67),.02,.04)],10)
+        def cradle_shell(t,v):
+            return (side*(.43+.045*math.sin(math.pi*t)+.016*math.sin(math.pi*v)),
+                3.91+.26*v+.07*math.sin(math.pi*t),-.26+.91*t)
+        m.panel('Cradle_SidePanel_'+s,'ceramic',cradle_shell,14,7,.006,(1,0,0))
+        m.strand('Cradle_PanelRim_'+s,'continuance_frame',[cradle_shell(k/10,1) for k in range(11)],.013)
+        for k in range(3):
+            m.strand('Cradle_PanelSeam_'+s+str(k),'continuance_frame',
+                [add(cradle_shell(.16+k*.28,v/5),(side*.012,0,0)) for v in range(6)],.007)
         m.strand('Cradle_Handrail_'+s,'continuance_frame',[(side*.34,4.2,-.1),(side*.40,4.31,.40),(side*.27,4.38,.76)],.025)
         m.oval('Waycaster_Archive_'+s,'ceramic',(side*.45,4.41,-.55),(.14,.20,.17))
         m.strand('Waycaster_Routing_'+s,'soft_charcoal',[(side*.42,4.46,-.51),(side*.40,4.44,.15),(side*.29,4.40,.64)],.018)
@@ -232,6 +259,7 @@ def make_model():
         m.oval('Waycaster_LineReel_'+s,'continuance_frame',(side*.45,4.05,-.4),(.08,.09,.09))
     m.loft('Cradle_Floor','continuance_frame', [((0,3.84,-.28),.33,.04),((0,3.84,.2),.38,.05),((0,3.90,.55),.28,.04)],12)
     m.oval('Waycaster_Console','ceramic',(0,4.35,.60),(.25,.09,.18))
+    m.strand('Waycaster_ConsoleRim','continuance_frame',[(-.23,4.40,.50),(-.20,4.42,.71),(0,4.43,.77),(.20,4.42,.71),(.23,4.40,.50)],.015)
     m.oval('Waycaster_Feedback','survey_light',(0,4.43,.61),(.115,.012,.07))
     # Seated Avarin. Scale is based on an unfolded 1.82 m body, not seated height.
     m.loft('Avarin_Torso','cloth', [((0,4.10,-.14),.18,.13),((0,4.33,-.18),.21,.14),((0,4.61,-.21),.23,.14),((0,4.66,-.20),.15,.12)],12)
@@ -255,12 +283,16 @@ def make_model():
         m.oval('Avarin_Hand_'+s,'avar_skin',(side*.18,4.38,.47),(.05,.04,.07))
         m.loft('Avarin_Leg_'+s,'cloth',[((side*.105,4.14,-.10),.10,.10),((side*.19,4.04,.22),.09,.085),((side*.19,3.63,.23),.052,.065)],10)
         m.oval('Avarin_Foot_'+s,'soft_charcoal',(side*.19,3.61,.29),(.06,.05,.13))
+        m.loft('Avarin_ShoulderGuard_'+s,'ceramic', [((side*.19,4.64,-.22),.045,.025),((side*.25,4.57,-.17),.105,.05),((side*.27,4.47,-.09),.04,.023)],10)
+        m.strand('Avarin_TunicSeam_'+s,'continuance_frame',[(side*.16,4.59,-.07),(side*.13,4.40,-.035),(side*.09,4.23,.015)],.007)
         m.loft('Avarin_ForearmGuard_'+s,'ceramic',[
             ((side*.28,4.34,.10),.055,.025),((side*.23,4.41,.27),.068,.035),((side*.18,4.43,.43),.028,.02)],10)
         def drape(t,v):
             return (side*(.13+.17*v+.03*math.sin(t*math.pi)),
                 4.12-.51*t,.03+.38*t+.035*math.sin(v*math.pi*4)*math.sin(t*math.pi))
         m.panel('Avarin_SplitTabard_'+s,'cloth',drape,12,8,.007)
+        for v in [.07,.93]:
+            m.strand('Avarin_TabardHem_'+s+str(v),'continuance_frame',[add(drape(k/9,v),(0,0,.012)) for k in range(10)],.007)
         for k in range(3):
             m.strand('Avarin_SensoryRibbon_'+s+str(k),'sail_vein',[(side*(.25+k*.085),4.63,-.46),(side*(.26+k*.085),4.49,-.49),(side*(.28+k*.085),4.39,-.46)],.012)
     # Grown coverings follow the limb surfaces; soft joint gaps remain visible.
@@ -268,7 +300,7 @@ def make_model():
         if p['name'].startswith('Ilyth_Limb_'):
             name=p['name'].removeprefix('Ilyth_Limb_')
             fore=name.endswith('Fore')
-            for k,(a,b) in enumerate([(0,8),(9,15),(16,21)]):
+            for k,(a,b) in enumerate([(0,9),(10,15),(16,21)]):
                 m.limb_cover('Ilyth_GrownSheath_'+name+str(k),p,a,b,fore)
     return m
 
@@ -279,7 +311,7 @@ def write(mesh, output):
     bottom=min(v[1] for p in mesh.parts for v in p['vertices'])
     factor=6/(top-bottom)
     for p in mesh.parts: p['vertices']=[mul(sub(v,(0,bottom,0)),factor) for v in p['vertices']]
-    obj=['# Great Strider form study 02; meters; Y up; Z forward', 'mtllib GreatStrider.mtl']
+    obj=['# Great Strider form study 03; meters; Y up; Z forward', 'mtllib GreatStrider.mtl']
     offset=1
     for p in mesh.parts:
         obj.extend(['o '+p['name'],'usemtl '+p['material'],'s 1'])
@@ -289,9 +321,9 @@ def write(mesh, output):
     (output/'GreatStrider.obj').write_text('\n'.join(obj)+'\n')
     mtl=[]
     for name,rgb in MATERIALS.items():
-        mtl.extend(['newmtl '+name,'Kd '+' '.join(map(str,rgb)),'Ks 0.16 0.16 0.16','Ns 38','d 1',''])
+        mtl.extend(['newmtl '+name,'Kd '+' '.join(map(str,rgb)),'Ks '+' '.join([str(FINISH[name][1])]*3),'Ns '+str(FINISH[name][0]),'d 1',''])
     (output/'GreatStrider.mtl').write_text('\n'.join(mtl))
-    report=dict(status='form study 02; not production ready',units='meters',up='Y',forward='Z',
+    report=dict(status='form study 03; not production ready',units='meters',up='Y',forward='Z',
         height=6,parts=len(mesh.parts),vertices=offset-1,
         triangles=sum(len(p['faces']) for p in mesh.parts),
         materials=list(MATERIALS),limbs=['L_Fore','R_Fore','L_Rear','R_Rear'],
@@ -301,7 +333,7 @@ def write(mesh, output):
           'Reference-study connections are proposals, not new lore'])
     (output/'manifest.json').write_text(json.dumps(report,indent=2)+'\n')
     # This same mesh feeds the review renderer. No image-generation substitution.
-    (output/'review_mesh.json').write_text(json.dumps(dict(materials=MATERIALS,parts=mesh.parts),separators=(',',':')))
+    (output/'review_mesh.json').write_text(json.dumps(dict(materials=MATERIALS,finish=FINISH,parts=mesh.parts),separators=(',',':')))
     print(json.dumps(report,indent=2))
 
 if __name__=='__main__':

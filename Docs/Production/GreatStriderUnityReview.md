@@ -1,7 +1,6 @@
-# Great Strider Unity review — PT-044
+# Great Strider Unity review — PT-045
 
-This is an opt-in inspection scene for the existing **form study 02**, not a new
-model, final art, battlefield replacement or canon revision. It follows the source
+This is an opt-in inspection scene for the refined **form study 03**, not final art, battlefield replacement or canon revision. It follows the source
 register and scale constraints in [FirstMissionArtBrief.md](FirstMissionArtBrief.md)
 and the approved six-meter study described in the source-art README. No new lore
 or appearance is approved by this tooling PR. The locked visual master still
@@ -21,8 +20,9 @@ controls refinement; the current model has not reached that quality gate.
 5. To return to battles, use the launcher's **Open / repair integration scene** or
    **START / RESUME PLAYTEST**. Existing battle/profile saves remain intact.
 
-The generated scene is `Assets/Ninefold/ArtReview/GreatStriderReview.unity`.
-Existing scenes are reopened without regeneration. Saved camera/material edits
+The generated scene is `Assets/Ninefold/ArtReview/GreatStriderReview03.unity`.
+The new versioned path preserves any existing study 02 scene. Existing study 03
+scenes are reopened without regeneration. Saved camera/material edits
 are preserved; presets change the camera and mark the scene dirty. The window
 starts Scene view at a standard inspection angle when opening the scene.
 No automatic Play, build-scene registration, package installation or pipeline
@@ -48,14 +48,15 @@ The review UI is an Editor utility, not proposed player-facing game UI.
 ## Import scope and limits
 
 The small importer accepts the generator's positive-index, triangle-only OBJ and
-its diffuse MTL palette. It preserves coordinates, topology and meter scale,
-recalculates normals, and groups geometry into 11 material submeshes. Source named
+its diffuse MTL palette and finish exponents. It preserves coordinates, topology and meter scale,
+recalculates normals, and groups geometry into 12 material submeshes. Source named
 parts remain in the OBJ; the combined review mesh is not the sculpt/rig master.
 It checks finite coordinates, index bounds, material assignment, the grounded
-0–6 m envelope and expected study counts (26,298 vertices / 52,044 triangles).
+0–6 m envelope and expected study counts (32,928 vertices / 65,148 triangles).
 A later source revision must intentionally update these checks; no silent scaling.
 
-Materials are opaque URP Lit palette approximations. No UVs, textures, translucent
+Materials are opaque URP Lit palette approximations with per-material smoothness
+derived from the MTL exponent; this is not exact MTL-to-URP shading equivalence. No UVs, textures, translucent
 membrane shading, skin weights, animation, LODs or optimized gameplay prefab are
 claimed. It is not added to the battle roster. Multiple editable source parts
 intersect; neither deformation nor inter-part clearance has passed review.

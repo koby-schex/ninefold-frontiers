@@ -37,6 +37,7 @@ def render(data, eye, size=(880,1000), extent=7.0, target=(0,3,0), fit=True):
         rel=v-target
         points=np.column_stack((w/2+rel@right*scale,h/2-rel@up*scale,(v-eye)@forward))
         rgb=np.array(data['materials'][part['material']])
+        exponent, strength = data.get('finish',{}).get(part['material'],(36,.17))
         for ids in f:
             p=points[ids]; n=normals[ids]
             xmin=max(0,int(np.floor(p[:,0].min()))); xmax=min(w-1,int(np.ceil(p[:,0].max())))
@@ -56,8 +57,8 @@ def render(data, eye, size=(880,1000), extent=7.0, target=(0,3,0), fit=True):
             facing=normal@(-forward)
             normal=np.where((facing<0)[...,None],-normal,normal)
             diffuse=np.maximum(0,normal@light)
-            spec=np.maximum(0,normal@half)**36
-            shade=(.32+.66*diffuse)[...,None]*rgb+spec[...,None]*.17
+            spec=np.maximum(0,normal@half)**exponent
+            shade=(.32+.66*diffuse)[...,None]*rgb+spec[...,None]*strength
             shade+=np.maximum(0,normal[...,1,None])*.045
             value=(np.clip(shade,0,1)**(1/1.6)*255).astype(np.uint8)
             pixels[ymin:ymax+1,xmin:xmax+1][mask]=value[mask]
@@ -73,14 +74,14 @@ if __name__=='__main__':
     args=p.parse_args(); data=json.loads((args.source/'review_mesh.json').read_text())
     sheet=Image.new('RGB',(1600,1120),(238,237,229)); draw=ImageDraw.Draw(sheet)
     draw.text((42,25),'NINEFOLD: FRONTIERS  /  GREAT STRIDER',font=font(30),fill='#262c32')
-    draw.text((43,70),'ACTUAL MESH • FORM STUDY 02 • 6.0 m • NOT FINAL GAME ART',font=font(17),fill='#596069')
+    draw.text((43,70),'ACTUAL MESH • FORM STUDY 03 • 6.0 m • NOT FINAL GAME ART',font=font(17),fill='#596069')
     views=[((9,6.5,12),(30,125),(840,885),'THREE-QUARTER'),((0,4,15),(886,125),(340,885),'FRONT'),((15,4,0),(1230,125),(340,885),'SIDE')]
     for eye,pos,size,label in views:
         sheet.paste(render(data,eye,size,7.2),pos)
         draw.text((pos[0]+15,1024),label,font=font(18),fill='#333b43')
     draw.text((42,1074),'Editable anatomy, sensory sails, recessed cradle and Avarin operator. Rig / textures / animation pending.',font=font(17),fill='#596069')
     sheet.save(args.source/'GreatStrider-Review.png')
-    detail=render(data,(0,4.4,8),(1100,900),2.35,(0,4.45,.20),False)
+    detail=render(data,(0,3.6,8),(1100,900),2.35,(0,4.45,.20),False)
     detail.save(args.source/'GreatStrider-Detail.png')
     mobile=Image.new('RGB',(390,844),(238,237,229))
     mobile.paste(render(data,(8,12,10),(390,620),9.5),(0,100))
