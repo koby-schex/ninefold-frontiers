@@ -41,6 +41,7 @@ namespace Ninefold.Presentation
         private readonly LineRenderer path, range;
         private GameObject terrain;
         private readonly BattlefieldScenery scenery;
+        public string SceneryStatus => terrain == null ? "not built (open a battle)" : "study 01 | meshes: " + scenery.MeshCount + " | visible: " + world.activeInHierarchy;
         private string drawnAttempt;
         private readonly GameObject destination, selection, inspection, impact;
         private VisualElement surface;

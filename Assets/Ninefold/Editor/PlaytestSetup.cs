@@ -51,13 +51,26 @@ namespace Ninefold.Editor
             {
                 var opened = EditorSceneManager.OpenScene(ScenePath);
                 bool changed = false;
-                foreach (var existingApp in opened.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<FrontiersPlaytest>(true)))
+                var hosts = opened.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<FrontiersPlaytest>(true)).ToArray();
+                if (hosts.Length != 1) throw new InvalidOperationException("Expected exactly one FrontiersPlaytest host in the integration scene. Found " + hosts.Length + ". No scene was regenerated.");
+                foreach (var existingApp in hosts)
                 {
+                    if (!existingApp.enabled || !existingApp.gameObject.activeInHierarchy)
+                        throw new InvalidOperationException("The integration playtest host is disabled. Enable it before launching.");
                     var doc = existingApp.GetComponent<UIDocument>();
+                    if (doc == null) throw new InvalidOperationException("The playtest host is missing its UI Document.");
+                    if (existingApp.BattlefieldCamera == null)
+                    {
+                        if (Camera.main == null) throw new InvalidOperationException("Missing battlefield camera and no active MainCamera is available.");
+                        existingApp.BattlefieldCamera = Camera.main; changed = true;
+                    }
+                    if (existingApp.FixtureMaterial == null) { existingApp.FixtureMaterial = material; changed = true; }
+                    if (existingApp.ScreenStyles == null) { existingApp.ScreenStyles = style; changed = true; }
+                    if (changed) EditorUtility.SetDirty(existingApp);
                     if (doc.panelSettings == null) { AssignPanel(doc,panel); changed = true; }
                 }
-                if (changed && !EditorSceneManager.SaveScene(opened)) throw new InvalidOperationException("Could not save the repaired panel reference.");
-                Debug.Log(changed ? "Repaired missing PlaytestPanel reference and saved the scene." : "Integration scene opened; existing references preserved.");
+                if (changed && !EditorSceneManager.SaveScene(opened)) throw new InvalidOperationException("Could not save the repaired playtest references.");
+                Debug.Log(changed ? "Repaired missing playtest references and saved the scene." : "Integration scene opened; existing references preserved.");
                 return true;
             }
             var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);

@@ -44,6 +44,10 @@ namespace Ninefold.Presentation
         {
             var report = new StringBuilder();
             report.AppendLine("NINEFOLD: FRONTIERS — PLAYTEST REPORT v1");
+            report.AppendLine("Playtest revision: " + PlaytestRevision.Id + " | " + PlaytestRevision.Features);
+            report.AppendLine("Shared controls loaded: " + sharedControlsLoaded);
+            report.AppendLine("Battlefield scenery: " + (field == null ? "host not initialized" : field.SceneryStatus));
+            report.AppendLine("Fixture shader: " + (FixtureMaterial == null || FixtureMaterial.shader == null ? "missing" : FixtureMaterial.shader.name));
             report.AppendLine("UTC: " + DateTime.UtcNow.ToString("O"));
             report.AppendLine("Content: abstract engineering fixture (not production canon)");
             report.AppendLine("Unity: " + Application.unityVersion + " | Expected: 6000.3.21f1");
@@ -96,6 +100,7 @@ namespace Ninefold.Presentation
             // Deliberately bypass gameplay guards so diagnostics remain usable after a fatal error.
             var refresh = new Button(() => { report.value = GetDiagnosticsReport(); status.text = "Snapshot refreshed."; }) { text = "Refresh report" };
             var copy = new Button(() => { GUIUtility.systemCopyBuffer = report.value; status.text = "Report copied. Paste it into the chat."; }) { text = "Copy report" };
+            refresh.AddToClassList("game-button"); copy.AddToClassList("game-button");
             refresh.style.minHeight = copy.style.minHeight = 76;
             panel.Add(refresh); panel.Add(copy);
         }

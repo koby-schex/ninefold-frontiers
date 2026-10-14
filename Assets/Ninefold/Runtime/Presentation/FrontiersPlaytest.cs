@@ -46,6 +46,7 @@ namespace Ninefold.Presentation
         private int pointer = -1;
         private Vector2 pointerStart;
         private bool battleDetails;
+        private bool sharedControlsLoaded;
         private string battleRejection;
 
         private void Start()
@@ -70,6 +71,10 @@ namespace Ninefold.Presentation
             if (battleStyles != null) root.styleSheets.Add(battleStyles);
             var resultStyles = Resources.Load<StyleSheet>("Home/Results");
             if (resultStyles != null) root.styleSheets.Add(resultStyles);
+            var sharedControls = Resources.Load<StyleSheet>(PlaytestRevision.ControlsResource);
+            sharedControlsLoaded = sharedControls != null;
+            if (sharedControlsLoaded) root.styleSheets.Add(sharedControls);
+            else Debug.LogError("Shared playtest controls are missing. Pull the complete project and check import errors.", this);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
@@ -128,8 +133,8 @@ namespace Ninefold.Presentation
                 !(menuView.Phase == MissionFlowPhase.Battle && inBattle) &&
                 (menuView.Phase == MissionFlowPhase.Battle || page == Page.Home);
             bool resultsScreen = menuView.Phase == MissionFlowPhase.Results;
-            bool campaignScreen = resultsScreen || menuView.Phase == MissionFlowPhase.Selection &&
-                (page == Page.Battles || page == Page.Missions || page == Page.Briefing || page == Page.Squad || page == Page.Collection);
+            bool campaignScreen = resultsScreen || page == Page.Settings || menuView.Phase == MissionFlowPhase.Selection &&
+                (page == Page.Battles || page == Page.Missions || page == Page.Briefing || page == Page.Squad || page == Page.Collection || page == Page.Settings);
             root.EnableInClassList("campaign-mode", campaignScreen);
             root.EnableInClassList("results-mode", resultsScreen);
             root.EnableInClassList("unit-mode", menuView.Phase == MissionFlowPhase.Selection && (page == Page.Squad || page == Page.Collection));
@@ -210,18 +215,8 @@ namespace Ninefold.Presentation
             HomeShortcut(shortcuts, "Your Units", menuView.Units.Count(u => u.Owned) + " unlocked · Collection", "units", () => Navigate(Page.Collection), !active);
             if (active) Text(panel, "Finish or resume your current battle. Campaigns and unit upgrades are locked until it ends.", "home-status");
             else if (message != "Your progress saves automatically.") Text(panel, message, "home-status");
-            Text(panel, "PLAYTEST · Abstract missions and units", "home-fixture");
-            var nav = Row(content); nav.AddToClassList("home-navigation");
-            foreach (var target in new[] { Page.Home, Page.Battles, Page.Collection, Page.Settings })
-            {
-                var destination = target;
-                string label = target == Page.Battles ? "Campaigns" : target == Page.Collection ? "Units" : target.ToString();
-                var button = Button(nav, "", () => Navigate(destination), !active || target == Page.Home || target == Page.Settings);
-                button.AddToClassList("home-nav-button"); button.EnableInClassList("selected", target == Page.Home);
-                HomeIcon(button, target == Page.Home ? "home" : target == Page.Settings ? "settings" : target == Page.Collection ? "units" : "routes");
-                Text(button, label, "home-nav-label");
-                button.tooltip = label;
-            }
+            Text(panel, PlaytestRevision.Id + " · Abstract missions and units", "home-fixture");
+            BuildNavigation(content);
         }
 
         private void HomeShortcut(VisualElement parent, string title, string subtitle, string icon, Action action, bool enabled)
@@ -794,13 +789,17 @@ namespace Ninefold.Presentation
             {
                 var destinationPage = target;
                 var label = target == Page.Battles ? "Campaigns" : target == Page.Collection ? "Units" : target.ToString();
-                var button = Button(nav, label, () => Navigate(destinationPage), !activeBattle || target == Page.Home || target == Page.Settings);
+                var button = Button(nav, "", () => Navigate(destinationPage), !activeBattle || target == Page.Home || target == Page.Settings);
+                button.AddToClassList("nav-button");
+                HomeIcon(button, target == Page.Home ? "home" : target == Page.Settings ? "settings" : target == Page.Collection ? "units" : "routes");
+                Text(button, label, "nav-label"); button.tooltip = label;
                 button.EnableInClassList("selected", page == target || target == Page.Battles && page == Page.Missions);
             }
         }
         private void BuildSettings(VisualElement parent)
         {
             Text(parent, "Settings & help", "display-title");
+            Text(parent, PlaytestRevision.Id + " · " + PlaytestRevision.Features, "detail");
             BuildDiagnostics(parent);
             var motion = Card(parent);
             Text(motion, "Battle animations", "section");
@@ -810,7 +809,7 @@ namespace Ninefold.Presentation
             });
             var help = Card(parent);
             Text(help, "How to play", "section");
-            Text(help, "1. Tap ground to preview a move.\n2. Tap the same destination again, or select Move here.\n3. Select an ability, then a marked target. Review the effect before confirming.\n4. End your turn when ready. There is no timer.", "detail");
+            Text(help, "1. Tap ground to preview a move.\n2. Tap the same destination again, or select Confirm.\n3. Select an ability, then a marked target. Review the effect before confirming.\n4. End your turn when ready. There is no timer.", "detail");
             Text(help, "Long moves stop at your remaining movement allowance. Walls, units and arena boundaries still limit valid destinations.", "detail");
             Text(help, "Cyan units are allies; red units are enemies. Gold marks objectives and valid targets. Striped ground costs extra movement.", "detail");
             Text(parent, "DEVELOPMENT BUILD", "eyebrow");

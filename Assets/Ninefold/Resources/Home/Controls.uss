@@ -1,0 +1,32 @@
+/* Loaded last. Shared visual language; screen sheets own only surrounding layouts. */
+.root #safe-area Button.game-button {
+    min-height: 76px; font-size: 20px; -unity-font-style: bold;
+    padding: 12px; margin: 4px; border-radius: 12px;
+    border-width: 1px; border-top-width: 2px; border-bottom-width: 4px;
+    border-left-color: rgb(111,103,132); border-right-color: rgb(111,103,132);
+    border-top-color: rgb(154,142,175); border-bottom-color: rgb(12,12,22);
+    background-color: rgb(43,40,59); color: rgb(243,234,220); opacity: 1;
+}
+.root #safe-area Button.game-button:hover { background-color: rgb(60,52,79); border-top-color: rgb(204,183,231); }
+.root #safe-area Button.game-button:active { background-color: rgb(25,24,39); border-top-color: rgb(12,12,22); border-bottom-color: rgb(125,110,150); }
+.root #safe-area Button.game-button.primary, .root #safe-area Button.game-button.home-primary { background-color: rgb(226,209,174); color: rgb(29,26,35); border-top-color: rgb(255,240,204); border-left-color: rgb(224,198,148); border-right-color: rgb(224,198,148); border-bottom-color: rgb(117,94,64); }
+.root #safe-area Button.game-button.primary:hover, .root #safe-area Button.game-button.home-primary:hover { background-color: rgb(248,229,190); }
+.root #safe-area Button.game-button.primary:active, .root #safe-area Button.game-button.home-primary:active { background-color: rgb(193,172,134); border-top-color: rgb(117,94,64); }
+.root #safe-area Button.game-button.selected { border-left-color: rgb(216,188,249); border-right-color: rgb(216,188,249); border-top-color: rgb(216,188,249); background-color: rgb(60,46,78); }
+.root #safe-area Button.game-button:focus { border-left-color: rgb(245,221,179); border-right-color: rgb(245,221,179); }
+/* Disabled wins over primary/selected and their hover states. */
+.root #safe-area Button.game-button:disabled, .root #safe-area Button.game-button:disabled:hover, .root #safe-area Button.game-button:disabled:active { background-color: rgb(28,28,40); color: rgb(145,141,157); border-color: rgb(56,53,68); opacity: 0.7; }
+.root #safe-area .navigation { padding: 5px 0; background-color: rgba(11,12,22,0.96); border-top-color: rgb(140,126,150); }
+.root #safe-area Button.game-button.nav-button { min-height: 84px; min-width: 0; padding: 6px 2px; margin: 3px; align-items: center; justify-content: center; }
+.root #safe-area .nav-label { font-size: 18px; color: rgb(228,219,235); -unity-text-align: middle-center; white-space: normal; }
+.root #safe-area .nav-button .home-icon { width: 28px; height: 28px; margin-bottom: 4px; }
+.root #safe-area Button.game-button.home-shortcut { min-height: 128px; }
+/* Battle layout stays compact, with the same materials and states. */
+.root.battle-mode #safe-area Button.game-button { padding: 6px; margin: 2px; font-size: 19px; }
+.root.battle-mode #safe-area .battle-title-row > Button.game-button { padding: 4px; font-size: 18px; }
+.root.short-home #safe-area Button.game-button { min-height: 36px; padding: 5px; font-size: 13px; }
+.root.short-home #safe-area Button.game-button.nav-button { min-height: 44px; }
+.root.short-home #safe-area .nav-label { font-size: 12px; }
+.root.short-home #safe-area .nav-button .home-icon { width: 18px; height: 18px; }
+.root.short-home.battle-mode #safe-area Button.game-button { min-height: 36px; padding: 3px; font-size: 12px; }
+.root.short-home.battle-mode #safe-area .battle-title-row > Button.game-button { min-height: 32px; font-size: 12px; }
