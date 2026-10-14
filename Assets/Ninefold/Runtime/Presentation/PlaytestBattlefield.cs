@@ -34,7 +34,6 @@ namespace Ninefold.Presentation
         private readonly Camera camera;
         private readonly Dictionary<string, Token> tokens = new Dictionary<string, Token>();
         private readonly List<Material> materials = new List<Material>();
-        private readonly List<GameObject> movementDots = new List<GameObject>();
         private readonly Dictionary<string, Label> objectiveLabels = new Dictionary<string, Label>();
         private readonly Dictionary<string, Vector3> objectivePositions = new Dictionary<string, Vector3>();
         private readonly List<FloatingFeedback> feedback = new List<FloatingFeedback>();
@@ -108,19 +107,11 @@ namespace Ninefold.Presentation
             var inspected = view.Units.FirstOrDefault(u=>u.Id==interaction.SelectedUnitId && u.Position.HasValue && u.IsEligible);
             inspection.SetActive(inspected != null && inspected.Id != actor?.Id);
             if (inspected != null) inspection.transform.position = Vector(inspected.Position.Value)+Vector3.up*.025f;
-            int count = interaction.SelectedAbility.HasValue ? 0 : planning.Movement.Count;
-            while (movementDots.Count < count)
-                movementDots.Add(Primitive("Reachable sample",PrimitiveType.Cube,Vector3.zero,new Vector3(.13f,.025f,.13f),friendly));
-            for (int i=0;i<movementDots.Count;i++)
-            {
-                movementDots[i].SetActive(i<count);
-                if (i<count) movementDots[i].transform.position=Vector(planning.Movement[i].Position)+Vector3.up*.06f;
-            }
             foreach (var pair in objectiveLabels)
             {
                 var state = view.Objectives.First(o=>o.Id==pair.Key);
                 var available = planning.Objectives.FirstOrDefault(o=>o.Id==pair.Key);
-                pair.Value.text = "OBJECTIVE · " + (state.Status != ObjectiveStatus.Active ? state.Status.ToString() : available == null ? "Wait for your turn" : FrontiersPlaytest.ObjectiveReadiness(available.Failure));
+                pair.Value.text = state.Status == ObjectiveStatus.Active ? "◎" : state.Status == ObjectiveStatus.Completed ? "✓" : "×";
                 pair.Value.EnableInClassList("objective-ready",available?.CanInteract == true);
                 surface.Add(pair.Value);
             }
@@ -159,7 +150,7 @@ namespace Ninefold.Presentation
                 pair.Value.TargetRing.transform.localScale = pending ? new Vector3(1.35f,.025f,1.35f) : new Vector3(.95f,.025f,.95f);
                 pair.Value.Bar.EnableInClassList("preview-health",pending);
                 if (pending && intent.Target.Effect.Health != null)
-                    pair.Value.Caption.text = FrontiersPlaytest.UnitName(pair.Key) + "\n" + intent.Target.Effect.Health.HealthBefore+" → "+intent.Target.Effect.Health.HealthAfter;
+                    pair.Value.Caption.text = intent.Target.Effect.Health.HealthBefore+" → "+intent.Target.Effect.Health.HealthAfter;
             }
             foreach (var item in feedback) item.Label.BringToFront();
         }
@@ -276,7 +267,7 @@ namespace Ninefold.Presentation
                 t.Position = Vector(h.Position) + Vector3.up * t.Height / 2;
                 t.TargetRing.transform.position = Vector(h.Position)+Vector3.up*.055f;
                 t.Body.transform.position = t.Position; t.Body.transform.localRotation = Quaternion.identity; t.Body.transform.localScale=t.Scale;
-                t.Caption.text = (h.IsEnemyControlled ? "" : "ALLY ") + FrontiersPlaytest.UnitName(h.UnitId) + "\n" + h.CurrentHealth + " / " + h.MaximumHealth;
+                t.Caption.text = h.CurrentHealth + "/" + h.MaximumHealth;
                 t.Fill.style.width = Length.Percent((float)h.Fraction * 100);
             }
         }
@@ -302,9 +293,9 @@ namespace Ninefold.Presentation
             foreach (var pair in objectiveLabels)
             {
                 var point = Project(objectivePositions[pair.Key],root)-rect.position;
-                pair.Value.style.left=Mathf.Clamp(point.x-90,0,Mathf.Max(0,rect.width-180));
-                pair.Value.style.top=Mathf.Clamp(point.y+12,0,Mathf.Max(0,rect.height-48));
-                barRects.Add(new Rect(Mathf.Clamp(point.x-90,0,Mathf.Max(0,rect.width-180)),Mathf.Clamp(point.y+12,0,Mathf.Max(0,rect.height-48)),180,48));
+                pair.Value.style.left=Mathf.Clamp(point.x-16,0,Mathf.Max(0,rect.width-32));
+                pair.Value.style.top=Mathf.Clamp(point.y+12,0,Mathf.Max(0,rect.height-32));
+                barRects.Add(new Rect(Mathf.Clamp(point.x-16,0,Mathf.Max(0,rect.width-32)),Mathf.Clamp(point.y+12,0,Mathf.Max(0,rect.height-32)),32,32));
             }
             foreach (var item in feedback.ToArray())
             {
@@ -320,11 +311,10 @@ namespace Ninefold.Presentation
             {
                 var t = pair.Value;
                 var point = Project(t.Body.transform.position + Vector3.up * (t.Height / 2 + .25f), root) - rect.position;
-                // Match badge size and placement. Narrow landscape battle panes use smaller panel
-                // dimensions, which are scaled up by the portrait-reference PanelSettings.
-                float width = rect.width < 330 ? 112 : 148, height = rect.width < 330 ? 44 : 60;
+                // Small numeric strip for every unit; full identity and armor live in Info.
+                float width = 76, height = 28;
                 t.Bar.style.width = width; t.Bar.style.height = height;
-                t.Caption.style.fontSize = rect.width < 330 ? 14 : 20;
+                t.Caption.style.fontSize = 15;
                 t.Caption.style.height = height - 12;
                 var bar = new Rect(Mathf.Clamp(point.x - width / 2, 0, Mathf.Max(0, rect.width - width)),
                     Mathf.Clamp(point.y - height - 2, 0, Mathf.Max(0, rect.height - height)), width, height);
@@ -379,7 +369,6 @@ namespace Ninefold.Presentation
         {
             path.positionCount = 0; range.positionCount = 0; destination.SetActive(false);
             inspection.SetActive(false); impact.SetActive(false);
-            foreach (var dot in movementDots) dot.SetActive(false);
             foreach (var t in tokens.Values) t.TargetRing.SetActive(false);
             // Keep before-state bars visible during playback; reconcile authoritative after-state once finished.
             float elapsed = 0;

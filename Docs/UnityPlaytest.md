@@ -7,6 +7,14 @@ motions are **engineering fixtures, not lore, production balance or final art**.
 The current Master Lore & World-Building Archive, Production Foundations 1–8 and
 locked visual masters remain authoritative and unchanged.
 
+## Latest interface pass
+
+See [Minimal battle interface](MinimalBattleUI.md) for the current HUD and checks.
+The older battle-feedback descriptions below predate this pass: movement dots and
+large identity badges are gone, turn-order/readiness details live under **Info**,
+and action previews replace the ability row. Small numeric health strips remain
+visible for every unit. Home restrictions during a saved battle are intentional.
+
 ## 1. Get the merged code
 
 Merge the integration PR after its checks pass. If you already have a local clone,
