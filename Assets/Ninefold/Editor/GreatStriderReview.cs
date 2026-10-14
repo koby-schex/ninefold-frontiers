@@ -116,9 +116,9 @@ namespace Ninefold.Editor
             model.AddComponent<MeshRenderer>().sharedMaterials = materials.ToArray();
             Primitive("Neutral studio ground", PrimitiveType.Cube, new Vector3(0, -.1f, 0), new Vector3(32, .2f, 32), ground);
             Primitive("Avarin baseline — 1.82 m measuring post, NOT anatomy", PrimitiveType.Cube,
-                new Vector3(-3.8f, .91f, 0), new Vector3(.12f, 1.82f, .12f), marker);
+                new Vector3(-2.6f, .91f, 0), new Vector3(.12f, 1.82f, .12f), marker);
             Primitive("1.82 m height crossbar", PrimitiveType.Cube,
-                new Vector3(-3.8f, 1.81f, 0), new Vector3(.6f, .02f, .12f), marker);
+                new Vector3(-2.6f, 1.81f, 0), new Vector3(.6f, .02f, .12f), marker);
             Light("Studio key", new Vector3(45, -35, 0), new Color(1, .91f, .82f), 1.5f, LightShadows.Soft);
             Light("Studio fill", new Vector3(25, 140, 0), new Color(.68f, .72f, 1), .6f, LightShadows.None);
             var camera = new GameObject("Review camera").AddComponent<Camera>();
