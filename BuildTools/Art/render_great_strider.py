@@ -74,7 +74,7 @@ if __name__=='__main__':
     args=p.parse_args(); data=json.loads((args.source/'review_mesh.json').read_text())
     sheet=Image.new('RGB',(1600,1120),(238,237,229)); draw=ImageDraw.Draw(sheet)
     draw.text((42,25),'NINEFOLD: FRONTIERS  /  GREAT STRIDER',font=font(30),fill='#262c32')
-    draw.text((43,70),'ACTUAL MESH • FORM STUDY 03 • 6.0 m • NOT FINAL GAME ART',font=font(17),fill='#596069')
+    draw.text((43,70),'ACTUAL MESH • FORM STUDY 04 • 6.0 m • NOT FINAL GAME ART',font=font(17),fill='#596069')
     views=[((9,6.5,12),(30,125),(840,885),'THREE-QUARTER'),((0,4,15),(886,125),(340,885),'FRONT'),((15,4,0),(1230,125),(340,885),'SIDE')]
     for eye,pos,size,label in views:
         sheet.paste(render(data,eye,size,7.2),pos)
@@ -91,3 +91,12 @@ if __name__=='__main__':
     md.text((15,750),'Actual mesh - no Unity/device claim',font=font(14),fill='#596069')
     mobile.save(args.source/'GreatStrider-Mobile.png')
     print(args.source/'GreatStrider-Review.png')
+
+    inspection=Image.new('RGB',(1600,1800),(238,237,229)); d=ImageDraw.Draw(inspection)
+    d.text((30,20),'GREAT STRIDER / FORM STUDY 04 / INSPECTION',font=font(27),fill='#262c32')
+    d.text((30,60),'Actual mesh. Neutral pose only; deformation and full collision clearance are unverified.',font=font(18),fill='#596069')
+    for eye,pos,label in [((0,3,15),(20,110),'FRONT'),((15,3,0),(810,110),'SIDE'),
+                          ((0,3,-15),(20,940),'BACK'),((6,-3,7),(810,940),'UNDERSIDE / OBLIQUE')]:
+        inspection.paste(render(data,eye,(770,760),9.5 if label.startswith('UNDERSIDE') else 7.5),pos)
+        d.text((pos[0]+15,pos[1]+775),label,font=font(21),fill='#262c32')
+    inspection.save(args.source/'GreatStrider-Inspection.png')

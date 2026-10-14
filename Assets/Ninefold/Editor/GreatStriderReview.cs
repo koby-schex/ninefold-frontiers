@@ -14,7 +14,7 @@ namespace Ninefold.Editor
     public sealed class GreatStriderReview : EditorWindow
     {
         private const string Folder = "Assets/Ninefold/ArtReview";
-        private const string ScenePath = Folder + "/GreatStriderReview03.unity";
+        private const string ScenePath = Folder + "/GreatStriderReview04.unity";
         private const string Source = "SourceArt/GreatStrider/";
         private float yaw = 145, pitch = 12, distance = 19;
         private string status = "";
@@ -28,7 +28,7 @@ namespace Ninefold.Editor
         private void OnGUI()
         {
             scroll = EditorGUILayout.BeginScrollView(scroll);
-            GUILayout.Label("Great Strider · Form study 03", EditorStyles.boldLabel);
+            GUILayout.Label("Great Strider · Form study 04", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox("Early model study — not final art or a canon revision. Source geometry and provisional palette; no rig, animation, textures or final membrane shading.", MessageType.Info);
             EditorGUILayout.LabelField("Scale", "Ilyth 6.0 m · Avarin reference 1.82 m");
             EditorGUILayout.HelpBox("The upright scale marker is a measuring aid, not an Avarin model. Locked lore and visual masters remain authoritative.", MessageType.None);
@@ -56,7 +56,9 @@ namespace Ninefold.Editor
                     if (GUILayout.Button("Front (+Z)")) Preset(180, 0, 19, false);
                     if (GUILayout.Button("Side")) Preset(90, 0, 19, false);
                     if (GUILayout.Button("Back")) Preset(0, 0, 19, false);
-                    if (GUILayout.Button("Cradle / operator detail")) Preset(145, 5, 6, true);
+                    if (GUILayout.Button("Cradle / operator detail")) Preset(180, 0, 6, true);
+                    if (GUILayout.Button("Cradle underside (Scene view)"))
+                        GetWindow<SceneView>().LookAt(new Vector3(0, 3.8f, 0), Quaternion.Euler(-20, 145, 0), 2.25f, false, true);
                     if (GUILayout.Button("Open Game view")) EditorApplication.ExecuteMenuItem("Window/General/Game");
                     if (GUILayout.Button("Open Scene view")) GetWindow<SceneView>().Focus();
                 }
@@ -102,7 +104,7 @@ namespace Ninefold.Editor
             var mesh = ReadMesh(new List<string>(colors.Keys));
             // Unique destination avoids overwriting partial output from a failed previous attempt.
             if (!AssetDatabase.IsValidFolder(Folder)) AssetDatabase.CreateFolder("Assets/Ninefold", "ArtReview");
-            string meshPath = AssetDatabase.GenerateUniqueAssetPath(Folder + "/GreatStriderStudy03.asset");
+            string meshPath = AssetDatabase.GenerateUniqueAssetPath(Folder + "/GreatStriderStudy04.asset");
             AssetDatabase.CreateAsset(mesh, meshPath);
             var materials = new List<Material>();
             foreach (var pair in colors) materials.Add(Material(shader, pair.Key, pair.Value, finishes[pair.Key]));
@@ -111,7 +113,7 @@ namespace Ninefold.Editor
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             RenderSettings.ambientMode = AmbientMode.Flat;
             RenderSettings.ambientLight = new Color(.30f, .29f, .34f);
-            var model = new GameObject("Great Strider — form study 03 — 6 m");
+            var model = new GameObject("Great Strider — form study 04 — 6 m");
             model.AddComponent<MeshFilter>().sharedMesh = mesh;
             model.AddComponent<MeshRenderer>().sharedMaterials = materials.ToArray();
             Primitive("Neutral studio ground", PrimitiveType.Cube, new Vector3(0, -.1f, 0), new Vector3(32, .2f, 32), ground);
@@ -170,7 +172,7 @@ namespace Ninefold.Editor
                 if (t[0] == "Kd") colors.Add(name, new Color(Number(t[1]), Number(t[2]), Number(t[3])));
                 if (t[0] == "Ns") finishes.Add(name, 1 - Mathf.Pow(2 / (Mathf.Max(0, Number(t[1])) + 2), .25f));
             }
-            if (colors.Count != 12) throw new InvalidDataException("Expected study 03's 12 materials; review the importer for a new source revision.");
+            if (colors.Count != 12) throw new InvalidDataException("Expected study 04's 12 materials; review the importer for a new source revision.");
             foreach (string key in colors.Keys)
                 if (!finishes.ContainsKey(key)) throw new InvalidDataException("Missing material finish: " + key);
             return colors;
@@ -199,11 +201,11 @@ namespace Ninefold.Editor
                     triangles++;
                 }
             }
-            if (vertices.Count != 32928 || triangles != 65148) throw new InvalidDataException("Expected study 03 mesh counts; review the importer for a new source revision.");
+            if (vertices.Count != 33188 || triangles != 65652) throw new InvalidDataException("Expected study 04 mesh counts; review the importer for a new source revision.");
             float low = float.MaxValue, high = float.MinValue;
             foreach (var v in vertices) { low = Mathf.Min(low, v.y); high = Mathf.Max(high, v.y); }
             if (Mathf.Abs(low) > .01f || Mathf.Abs(high - 6) > .01f) throw new InvalidDataException("Expected grounded six-meter study; no automatic rescaling applied.");
-            var mesh = new Mesh { name = "Great Strider form study 03", indexFormat = IndexFormat.UInt32 };
+            var mesh = new Mesh { name = "Great Strider form study 04", indexFormat = IndexFormat.UInt32 };
             mesh.SetVertices(vertices); mesh.subMeshCount = faces.Length;
             for (int i = 0; i < faces.Length; i++) mesh.SetTriangles(faces[i], i);
             mesh.RecalculateNormals(); mesh.RecalculateBounds();

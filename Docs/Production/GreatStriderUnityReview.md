@@ -1,9 +1,9 @@
-# Great Strider Unity review — PT-045
+# Great Strider Unity review — PT-046
 
-This is an opt-in inspection scene for the refined **form study 03**, not final art, battlefield replacement or canon revision. It follows the source
+This is an opt-in inspection scene for the refined **form study 04**, not final art, battlefield replacement or canon revision. It follows the source
 register and scale constraints in [FirstMissionArtBrief.md](FirstMissionArtBrief.md)
 and the approved six-meter study described in the source-art README. No new lore
-or appearance is approved by this tooling PR. The locked visual master still
+or locked appearance is approved by this refinement PR. The locked visual master still
 controls refinement; the current model has not reached that quality gate.
 
 ## Open it later
@@ -17,11 +17,13 @@ controls refinement; the current model has not reached that quality gate.
 4. Open Game view and choose **540 × 960**. No Play mode is required. Use the review
    window's orbit, elevation, distance and view presets; they update the scene
    camera and Scene view. Unity's native Scene view navigation works independently.
+   The **Cradle underside (Scene view)** preset focuses beneath the seat without
+   moving the Game camera below the studio ground.
 5. To return to battles, use the launcher's **Open / repair integration scene** or
    **START / RESUME PLAYTEST**. Existing battle/profile saves remain intact.
 
-The generated scene is `Assets/Ninefold/ArtReview/GreatStriderReview03.unity`.
-The new versioned path preserves any existing study 02 scene. Existing study 03
+The generated scene is `Assets/Ninefold/ArtReview/GreatStriderReview04.unity`.
+The new versioned path preserves any existing study 03 scene. Existing study 04
 scenes are reopened without regeneration. Saved camera/material edits
 are preserved; presets change the camera and mark the scene dirty. The window
 starts Scene view at a standard inspection angle when opening the scene.
@@ -52,7 +54,7 @@ its diffuse MTL palette and finish exponents. It preserves coordinates, topology
 recalculates normals, and groups geometry into 12 material submeshes. Source named
 parts remain in the OBJ; the combined review mesh is not the sculpt/rig master.
 It checks finite coordinates, index bounds, material assignment, the grounded
-0–6 m envelope and expected study counts (32,928 vertices / 65,148 triangles).
+0–6 m envelope and expected study counts (33,188 vertices / 65,652 triangles).
 A later source revision must intentionally update these checks; no silent scaling.
 
 Materials are opaque URP Lit palette approximations with per-material smoothness
@@ -68,6 +70,12 @@ Core rules run on Linux and Windows in CI. They do **not** compile the Editor
 assembly or render the scene. Unity is unavailable in the implementation environment.
 Native import, shader appearance, shadow behavior, camera framing and device
 performance therefore remain unverified until the next Unity review.
+
+The new inspection sheet supplies front, side, back and oblique underside views
+from actual source geometry. Focused geometry checks confirm clear forward eye
+rays against Ilyth geometry, four grounded contact groups and a seat behind the
+calf region. These do not establish full intersection-free anatomy or animation
+clearance.
 
 At that review, confirm no red Console errors, open/reopen and Cancel behavior,
 all camera presets in portrait, outward surfaces, complete silhouette, grounded

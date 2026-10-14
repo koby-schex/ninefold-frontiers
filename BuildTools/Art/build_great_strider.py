@@ -160,8 +160,8 @@ def make_model():
         ((0,5.21,-.25),.43,.14),((0,5.23,.38),.40,.15),
         ((0,5.14,.88),.29,.21),((0,5.14,1.10),.17,.17)],20)
     m.loft('Ilyth_ShortNeck','living_pearl',[
-        ((0,5.05,.77),.26,.19),((0,5.24,.99),.23,.21),
-        ((0,5.40,1.16),.20,.24),((0,5.55,1.29),.16,.19)],16)
+        ((0,5.10,.64),.17,.15),((0,5.22,.96),.22,.19),
+        ((0,5.40,1.16),.19,.20),((0,5.59,1.29),.13,.14)],16)
     m.loft('Ilyth_CompactHead','living_pearl',[
         ((0,5.60,1.05),.09,.12),((0,5.68,1.26),.25,.22),
         ((0,5.63,1.53),.22,.17),((0,5.55,1.78),.12,.09),
@@ -202,7 +202,7 @@ def make_model():
             (side*.50,4.86,-.42),(side*.49,4.90,.33),(side*.27,5.14,.81)],.095)
         for fore in [False,True]:
             n=s+('_Fore' if fore else '_Rear')
-            a=(side*.32,5.10,.67 if fore else -.65)
+            a=(side*.27,5.16,.67 if fore else -.65)
             b=(side*.89,4.20,1.03 if fore else -.98)
             c=(side*1.11,2.66,.72 if fore else -1.18)
             d=(side*1.29,1.52,1.10 if fore else -1.27)
@@ -215,8 +215,8 @@ def make_model():
                 add(b,(-side*.15,0,.17 if fore else -.17)),
                 add(c,(-side*.08,.06,.10 if fore else -.10)),
                 add(d,(-side*.07,0,.07 if fore else -.07))],.04)
-            m.oval('Ilyth_Elbow_'+n,'soft_charcoal',c,(.135,.16,.16))
-            m.oval('Ilyth_Ankle_'+n,'soft_charcoal',e,(.105,.17,.12))
+            m.oval('Ilyth_Elbow_'+n,'soft_charcoal',c,(.112,.135,.135))
+            m.oval('Ilyth_Ankle_'+n,'soft_charcoal',e,(.09,.14,.11))
             # Splayed soft contact pads with individual load-spreading digits.
             for toe in range(3):
                 end=(e[0]+(toe-1)*.12,.05,e[2]+(.25 if fore else -.23))
@@ -257,7 +257,11 @@ def make_model():
             m.loft('Waycaster_ProbeCartridge_'+s+str(k),'ceramic',[
                 ((x,4.31,-.72),.024,.026),((x,4.59,-.72),.025,.026),((x,4.64,-.72),.012,.018)],8)
         m.oval('Waycaster_LineReel_'+s,'continuance_frame',(side*.45,4.05,-.4),(.08,.09,.09))
-    m.loft('Cradle_Floor','continuance_frame', [((0,3.84,-.28),.33,.04),((0,3.84,.2),.38,.05),((0,3.90,.55),.28,.04)],12)
+    # Rear seat shelf leaves an open leg well; no floor through the calves.
+    m.loft('Cradle_Seat','continuance_frame', [((0,3.99,-.34),.20,.035),((0,3.99,-.17),.28,.045),((0,3.99,-.015),.22,.025)],12)
+    for side in [-1,1]:
+        m.loft('Cradle_Footrest_'+str(side),'continuance_frame',[((side*.19,3.55,.14),.065,.018),((side*.19,3.55,.30),.085,.02),((side*.19,3.55,.43),.065,.018)],10)
+        m.strand('Cradle_FootrestSupport_'+str(side),'continuance_frame',[(side*.39,3.90,.50),(side*.32,3.65,.46),(side*.19,3.55,.40)],.018)
     m.oval('Waycaster_Console','ceramic',(0,4.35,.60),(.25,.09,.18))
     m.strand('Waycaster_ConsoleRim','continuance_frame',[(-.23,4.40,.50),(-.20,4.42,.71),(0,4.43,.77),(.20,4.42,.71),(.23,4.40,.50)],.015)
     m.oval('Waycaster_Feedback','survey_light',(0,4.43,.61),(.115,.012,.07))
@@ -274,10 +278,10 @@ def make_model():
         return (radius*math.cos(angle),4.60+radius*.91*math.sin(angle),-.41-.065*v+.025*math.sin(angle*3))
     m.panel('Avarin_CrescentMantle','sail_membrane',mantle,24,6)
     m.strand('Avarin_MantleRim','sail_vein',[mantle(k/14,1) for k in range(15)],.013)
-    m.strand('Avarin_Mouth','soft_charcoal',[(-.03,4.83,-.065),(0,4.824,-.06),(.03,4.83,-.065)],.006)
+    m.strand('Avarin_Mouth','soft_charcoal',[(-.03,4.83,-.035),(0,4.824,-.03),(.03,4.83,-.035)],.006)
     for side in [-1,1]:
         s='L' if side<0 else 'R'
-        m.oval('Avarin_Eye_'+s,'eye',(side*.047,4.92,-.075),(.018,.015,.013))
+        m.oval('Avarin_Eye_'+s,'eye',(side*.047,4.92,-.025),(.018,.015,.013))
         m.strand('Avarin_Temple_'+s,'grown_mineral',[(side*.10,4.97,-.14),(side*.085,4.89,-.095),(side*.075,4.83,-.115)],.013)
         m.loft('Avarin_Arm_'+s,'cloth',[((side*.21,4.57,-.19),.09,.085),((side*.29,4.30,.05),.065,.06),((side*.18,4.38,.45),.048,.046)],10)
         m.oval('Avarin_Hand_'+s,'avar_skin',(side*.18,4.38,.47),(.05,.04,.07))
@@ -302,6 +306,22 @@ def make_model():
             fore=name.endswith('Fore')
             for k,(a,b) in enumerate([(0,9),(10,15),(16,21)]):
                 m.limb_cover('Ilyth_GrownSheath_'+name+str(k),p,a,b,fore)
+    # Lower the intact operator/equipment together by 22 cm in authoring space.
+    # Keep all four body attachments fixed; smoothly lengthen only the load frame.
+    for part in m.parts:
+        name=part['name']
+        if name.startswith('Avarin_') or name.startswith('Waycaster_'):
+            part['vertices']=[add(v,(0,-.22,0)) for v in part['vertices']]
+        elif name.startswith('Cradle_') and not name.startswith('Cradle_Attachment'):
+            def shift(v):
+                weight=max(0,min(1,(4.80-v[1])/.45)) if name.startswith('Cradle_LoadFrame') else 1
+                return add(v,(0,-.22*weight,0))
+            part['vertices']=[shift(v) for v in part['vertices']]
+    # Ground each three-digit contact group without collapsing its topology.
+    for limb in ['L_Fore','R_Fore','L_Rear','R_Rear']:
+        pads=[p for p in m.parts if p['name'].startswith('Ilyth_Contact_'+limb)]
+        bottom=min(v[1] for p in pads for v in p['vertices'])
+        for part in pads: part['vertices']=[add(v,(0,-bottom,0)) for v in part['vertices']]
     return m
 
 def write(mesh, output):
@@ -311,7 +331,7 @@ def write(mesh, output):
     bottom=min(v[1] for p in mesh.parts for v in p['vertices'])
     factor=6/(top-bottom)
     for p in mesh.parts: p['vertices']=[mul(sub(v,(0,bottom,0)),factor) for v in p['vertices']]
-    obj=['# Great Strider form study 03; meters; Y up; Z forward', 'mtllib GreatStrider.mtl']
+    obj=['# Great Strider form study 04; meters; Y up; Z forward', 'mtllib GreatStrider.mtl']
     offset=1
     for p in mesh.parts:
         obj.extend(['o '+p['name'],'usemtl '+p['material'],'s 1'])
@@ -323,7 +343,7 @@ def write(mesh, output):
     for name,rgb in MATERIALS.items():
         mtl.extend(['newmtl '+name,'Kd '+' '.join(map(str,rgb)),'Ks '+' '.join([str(FINISH[name][1])]*3),'Ns '+str(FINISH[name][0]),'d 1',''])
     (output/'GreatStrider.mtl').write_text('\n'.join(mtl))
-    report=dict(status='form study 03; not production ready',units='meters',up='Y',forward='Z',
+    report=dict(status='form study 04; not production ready',units='meters',up='Y',forward='Z',
         height=6,parts=len(mesh.parts),vertices=offset-1,
         triangles=sum(len(p['faces']) for p in mesh.parts),
         materials=list(MATERIALS),limbs=['L_Fore','R_Fore','L_Rear','R_Rear'],
