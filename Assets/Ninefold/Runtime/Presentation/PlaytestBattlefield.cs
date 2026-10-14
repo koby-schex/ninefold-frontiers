@@ -41,7 +41,7 @@ namespace Ninefold.Presentation
         private readonly LineRenderer path, range;
         private GameObject terrain;
         private readonly BattlefieldScenery scenery;
-        public string SceneryStatus => terrain == null ? "not built (open a battle)" : "study 01 | meshes: " + scenery.MeshCount + " | visible: " + world.activeInHierarchy;
+        public string SceneryStatus => terrain == null ? "not built (open a battle)" : "study 02 | meshes: " + scenery.MeshCount + " | visible: " + world.activeInHierarchy;
         private string drawnAttempt;
         private readonly GameObject destination, selection, inspection, impact;
         private VisualElement surface;
@@ -210,15 +210,6 @@ namespace Ninefold.Presentation
             Shape("East boundary",new Vector3(max.x,.15f,center.z),new Vector3(.1f,.3f,depth),trim);
             Shape("South boundary",new Vector3(center.x,.15f,min.z),new Vector3(width,.3f,.1f),trim);
             Shape("North boundary",new Vector3(center.x,.15f,max.z),new Vector3(width,.3f,.1f),trim);
-            foreach (var o in map.Obstacles)
-            {
-                var a = Vector(o.Bounds.Min); var b = Vector(o.Bounds.Max); var size = b-a; var c = (a+b)/2;
-                Shape("Cover / obstacle",c,size,cover);
-                Shape("Cover top",new Vector3(c.x,b.y+.012f,c.z),new Vector3(size.x,.025f,size.z),trim);
-                // Decorative seams remain inside the authored collision footprint.
-                for (float x=a.x+.3f;x<b.x;x+=.7f)
-                    Shape("Cover seam",new Vector3(x,b.y+.03f,c.z),new Vector3(.035f,.015f,size.z),grid);
-            }
             foreach (var g in map.Ground)
             {
                 var c=(Vector(g.Bounds.Min)+Vector(g.Bounds.Max))/2; var size=Vector(g.Bounds.Max)-Vector(g.Bounds.Min);
