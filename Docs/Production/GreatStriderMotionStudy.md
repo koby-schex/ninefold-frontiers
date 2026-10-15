@@ -1,4 +1,4 @@
-# Great Strider — offline motion study 01
+# Great Strider — offline motion study 02
 
 This is an editable, provisional locomotion experiment on the existing study 04
 mesh. It does not revise the Master Lore, Production Foundations 1–8, locked visual
@@ -7,7 +7,8 @@ masters or the neutral model. It is not a final species gait approval.
 The direction is deliberate terrain-crossing movement: a six-second crawl cycle,
 0.36 m forward travel, 0.16 m foot lift, and an 80% stance period. A small 0.08 m
 body settle makes room for joint articulation. The phase order keeps at least three
-feet planted. These are study parameters, not game movement speed or balance stats.
+feet planted. Study 02 adds a 3.5 cm lateral load-shift amplitude and 8 mm body
+bob, with quintic step easing and soft lift/plant boundaries. These are study parameters, not game movement speed or balance stats.
 
 ## Review without Unity or Blender
 
@@ -32,27 +33,34 @@ minutes. Use `--validate-only` to run the motion checks without producing frames
 ## What the prototype contains
 
 - Four two-bone IK chains, with explicit rejection of unreachable targets.
-- Deterministic preliminary height-based skin weights around each main leg joint.
+- Quintic blended skin weights around each main leg joint and the planted ankle.
 - Rigid contact pads with smooth swing trajectories and stationary world-space stance.
-- Body-following head, cradle and operator, plus a restrained sail response.
-- Actual mesh renders with a tracking camera; the camera removes forward root travel.
+- Small head pitch with a blended neck, inherited sail motion and a delayed sail response.
+- Shared cradle/operator pitch, fixed body attachment pads and a blended load frame.
+- Synchronized three-quarter, front and side mesh renders with a tracking camera.
+- World-fixed ground grid (0.36 m longitudinal / 0.75 m lateral spacing), repeated
+  every stride for loop playback. It is a review aid, not a battlefield design.
 - A JSON parameter file and repeatable rendered browser review.
 
-The head currently follows the body; independent head motion is deferred. The lower
-leg's additional authored bend stays fixed within one bone. Rigid feet can reveal
-ankle transition artifacts. The cradle/operator have no independent secondary
-motion yet. This is a Python rig study, not an exported FBX, Unity animation,
-production skeleton or native Blender rig. The source OBJ remains unrigged.
+The lower leg's additional authored bend stays fixed within one bone. The foot
+contacts remain rigid, and the preliminary skinning still requires refinement.
+Head pitch is limited to 0.012 radians, sail response to 0.008 radians and shared
+cradle/operator pitch to 0.003 radians. These small art-directed responses are not
+a physical suspension simulation. The operator stays seated relative to the cradle.
+This is a Python rig study, not an exported FBX, Unity animation, production
+skeleton or native Blender rig. The source OBJ remains unrigged.
 
 ## Validation and review limits
 
 The script samples 601 poses over three cycles to check bone lengths, reachable
 IK targets, minimum support count and zero world-space stance slide. It also checks
 visible contact-pad floor clearance at 17 poses, finite deformed vertices, named
-limb binding and exact root-relative loop closure. Checks fail the CI job.
+limb binding and exact root-relative loop closure. Additional boundary checks verify
+near-zero lift/plant velocity; assembly checks verify operator/seat rigidity and
+fixed body attachment pads. Checks fail the CI job.
 
-Three supporting feet do not prove stability: no center-of-mass simulation, load
-transfer, ground reaction forces, full collision testing or anatomical deformation
+Three supporting feet do not prove stability: no center-of-mass simulation, physical load
+transfer or ground reaction forces, full collision testing or anatomical deformation
 certification is included. The studio shadow is illustrative and the renderer uses
 two-sided shading. These are not Unity or device-performance captures.
 

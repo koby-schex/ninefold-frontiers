@@ -70,8 +70,9 @@ cavalry saddle or civic building on this unit. See [the art brief](../../Docs/Pr
 
 ## Offline motion experiment
 
-[Motion study 01](../../Docs/Production/GreatStriderMotionStudy.md) adds a separate
-Python IK/deformation prototype, slow crawl and offline browser/GIF review. This
+[Motion study 02](../../Docs/Production/GreatStriderMotionStudy.md) adds a separate
+Python IK/deformation prototype, slow crawl, restrained secondary motion and
+three-angle offline browser/GIF review with world-fixed ground references. This
 is provisional; the OBJ and Unity review scene remain neutral, unrigged study 04.
 Run `python BuildTools/Art/move_great_strider.py` after installing the review
 requirements. Parameters live in `motion-study.json`; generated outputs are ignored.
