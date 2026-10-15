@@ -8,7 +8,7 @@ import json
 import math
 from pathlib import Path
 import numpy as np
-from PIL import ImageDraw
+from PIL import Image, ImageDraw
 from build_great_strider import make_model, MATERIALS, FINISH
 from render_great_strider import render, font
 
@@ -31,6 +31,18 @@ def rotation(a, b):
     return np.eye(3) + k + k @ k / (1 + c)
 
 
+def smooth(v):
+    """Quintic easing with zero first/second derivatives at both ends."""
+    v = np.clip(v, 0, 1)
+    return v*v*v*(v*(v*6-15)+10)
+
+
+def pitch(points, pivot, angle):
+    c, s = math.cos(angle), math.sin(angle)
+    r = np.array([[1,0,0],[0,c,-s],[0,s,c]])
+    return (points-pivot)@r.T+pivot
+
+
 class Study:
     def __init__(self):
         self.config = json.loads(CONFIG.read_text())
@@ -51,7 +63,10 @@ class Study:
 
     def joints(self, t):
         c = self.config
-        root = np.array([0., -c['body_settle_m'], t*c['stride_m']])
+        # Art-directed load shift away from the currently lifting side.
+        root = np.array([c['body_sway_m']*math.sin(4*math.pi*(t-.025)),
+                         -c['body_settle_m']+c['body_bob_m']*math.cos(8*math.pi*t),
+                         t*c['stride_m']])
         result = {}
         for name, rest in self.bones.items():
             offset = c['phase_offsets'][name]
@@ -59,8 +74,8 @@ class Study:
             phase = (t+offset)-cycle
             swing = phase >= c['stance_fraction']
             u = (phase-c['stance_fraction'])/(1-c['stance_fraction']) if swing else 0
-            travel = u*u*(3-2*u)
-            delta = np.array([0., c['lift_m']*math.sin(math.pi*u)**2,
+            travel = float(smooth(u))
+            delta = np.array([0., c['lift_m']*math.sin(math.pi*u)**4,
                               (cycle-offset+travel)*c['stride_m']])
             hip = rest[0]+root
             foot = rest[2]+delta
@@ -89,22 +104,38 @@ class Study:
                 upper = (v-rest[0]) @ rotation(rest[1]-rest[0], new[1]-new[0]).T + new[0]
                 lower = (v-rest[1]) @ rotation(rest[2]-rest[1], new[2]-new[1]).T + new[1]
                 # Explicit deterministic preliminary weights, blended only near the knee.
-                w = np.clip((v[:,1]-rest[1,1]+.28)/.56, 0, 1)[:,None]
+                w = smooth((v[:,1]-rest[1,1]+.38)/.76)[:,None]
                 posed = w*upper+(1-w)*lower
+                # Smooth lower-leg convergence onto the rigid planted ankle/foot.
+                ankle = smooth((v[:,1]-rest[2,1]-.05)/.45)[:,None]
+                posed = ankle*posed+(1-ankle)*(v+joints[limb]['delta'])
                 if 'Contact' in name:
                     posed = v+joints[limb]['delta']
                 elif 'Ankle' in name:
                     posed = v+joints[limb]['delta']
             else:
                 posed = v+root
-                # Small rigid sail response only; head, cradle and operator follow the body.
-                if any(s in name for s in ('SensorySail', 'SailVein', 'SailChannel', 'SailRoot')):
+                sail = any(k in name for k in ('SensorySail','SailVein','SailChannel','SailRoot'))
+                head = name.startswith('Ilyth_') and any(k in name for k in ('CompactHead','CranialMineral','FeedingSeam','Eye_','Brow_'))
+                pivot = np.array([0,5.25,.85])*self.scale+root
+                angle = self.config['head_pitch_rad']*math.sin(2*math.pi*t-.4)
+                if head or sail or 'ShortNeck' in name:
+                    moved = pitch(posed,pivot,angle)
+                    weight = smooth((v[:,1]-5.15*self.scale)/(.35*self.scale))[:,None] if 'ShortNeck' in name else 1
+                    posed = posed+(moved-posed)*weight
+                if sail:
+                    # Separate small response, inherited from the head transform.
                     sign = -1 if '_L' in name else 1
-                    angle = sign*.012*math.sin(2*math.pi*t)
-                    r = np.array([[math.cos(angle),-math.sin(angle),0],
-                                  [math.sin(angle),math.cos(angle),0],[0,0,1]])
-                    pivot = np.array([sign*.26, 4.9, .55])*self.scale+root
-                    posed = (posed-pivot)@r.T+pivot
+                    sail_pivot = pitch(np.array([[sign*.17,5.75,1.16]])*self.scale+root,pivot,angle)[0]
+                    posed = pitch(posed,sail_pivot,self.config['sail_pitch_rad']*math.sin(2*math.pi*t-.8))
+                if name.startswith(('Cradle_','Avarin_','Waycaster_')):
+                    pivot = np.array([0,4.8,0])*self.scale+root
+                    moved = pitch(posed,pivot,self.config['cradle_pitch_rad']*math.sin(4*math.pi*t-.5))
+                    # Keep upper attachment pads fixed; flex the connecting load frame.
+                    weight = smooth((4.85*self.scale-v[:,1])/(.65*self.scale))[:,None] if 'LoadFrame' in name else 1
+                    if 'Attachment' in name:
+                        weight = 0
+                    posed = posed+(moved-posed)*weight
             parts.append(dict(name=name, material=part['material'], faces=part['faces'],
                               vertices=(posed-[0,0,root[2]]).tolist()))
         return dict(parts=parts, materials=MATERIALS, finish=FINISH)
@@ -134,6 +165,33 @@ class Study:
                 minimum = min(v[1] for p in pads for v in p['vertices'])
                 assert abs(minimum-j['delta'][1]) < 1e-8
             assert all(np.isfinite(p['vertices']).all() for p in posed['parts'])
+        # Check lift/plant boundaries explicitly; uniform samples can miss seams.
+        max_boundary_speed = 0.
+        eps = 1e-5
+        for offset in self.config['phase_offsets'].values():
+            for boundary in (self.config['stance_fraction']-offset, 1-offset):
+                for direction in (-1,1):
+                    _, at = self.joints(boundary)
+                    _, near = self.joints(boundary+direction*eps)
+                    key = next(k for k,v in self.config['phase_offsets'].items() if v == offset)
+                    speed = np.linalg.norm(near[key]['points'][2]-at[key]['points'][2])/eps
+                    max_boundary_speed = max(max_boundary_speed,float(speed))
+        assert max_boundary_speed < 1e-5
+        # Operator and seat share one rigid transform; attachment pads stay on the body.
+        source = {p['name']:p['vertices'] for p in self.mesh.parts}
+        assembly = [k for k in source if k.startswith(('Avarin_','Waycaster_')) or k == 'Cradle_Seat']
+        reference = np.array([source[k][0] for k in assembly])
+        distances = np.linalg.norm(reference-reference[0],axis=1)
+        max_assembly_error = 0.
+        for t in (.125,.375,.625,.875):
+            root,_ = self.joints(t)
+            posed = {p['name']:np.array(p['vertices']) for p in self.pose(t)['parts']}
+            points = np.array([posed[k][0] for k in assembly])
+            max_assembly_error = max(max_assembly_error,float(np.max(abs(np.linalg.norm(points-points[0],axis=1)-distances))))
+            for key in source:
+                if key.startswith('Cradle_Attachment'):
+                    assert np.max(abs(posed[key]-(source[key]+[root[0],root[1],0]))) < 1e-8
+        assert max_assembly_error < 1e-8
         p0, p1 = self.pose(0), self.pose(1)
         closure = max(np.max(abs(np.array(a['vertices'])-np.array(b['vertices'])))
                       for a,b in zip(p0['parts'],p1['parts']))
@@ -141,23 +199,41 @@ class Study:
         assert all(np.isfinite(p['vertices']).all() for p in p0['parts'])
         return dict(samples=601, cycles=3, max_stance_slide_m=max_slide,
                     max_bone_length_error_m=max_length, loop_error_m=float(closure),
-                    minimum_support_feet=3,
+                    minimum_support_feet=3, max_lift_plant_boundary_speed_m_per_cycle=max_boundary_speed,
+                    max_operator_seat_rigidity_error_m=max_assembly_error,
                     scope='Kinematic checks only; collisions, mass balance and final skinning unverified')
+
+
+def ground(data, t, stride):
+    """World-fixed review grid; repeats once per stride so the movie loops."""
+    parts = list(data['parts'])
+    def quad(name, vertices, material):
+        parts.append(dict(name=name, material=material, vertices=vertices, faces=[[0,2,1],[0,3,2]]))
+    quad('ReviewGround',[[-4,-.018,-4],[4,-.018,-4],[4,-.018,4],[-4,-.018,4]],'review_ground')
+    for i in range(-10,11):
+        z=i*stride-t*stride
+        quad('GridZ'+str(i),[[-4,-.012,z-.008],[4,-.012,z-.008],[4,-.012,z+.008],[-4,-.012,z+.008]],'review_grid')
+    for i in range(-4,5):
+        x=i*.75
+        quad('GridX'+str(i),[[x-.008,-.012,-4],[x+.008,-.012,-4],[x+.008,-.012,4],[x-.008,-.012,4]],'review_grid')
+    return dict(parts=parts,materials={**data['materials'],'review_ground':(.64,.66,.64),'review_grid':(.37,.40,.40)},finish=data['finish'])
 
 
 def frame(args):
     index, count = args
     study = Study()
     t = index/count
-    data = study.pose(t)
-    im = render(data, (9,6.5,12), (480,620), 7.8, fit=False)
+    data = ground(study.pose(t),t,study.config['stride_m'])
+    im = Image.new('RGB',(1080,610),(224,224,216))
     d = ImageDraw.Draw(im)
-    d.text((12,12), 'GREAT STRIDER / MOTION STUDY 01', font=font(17), fill='#252c32')
-    d.text((12,38), 'Provisional crawl - actual mesh', font=font(14), fill='#444c52')
+    d.text((16,12), 'GREAT STRIDER / MOTION STUDY 02 / ACTUAL MESH', font=font(21), fill='#252c32')
+    for j,(label,eye) in enumerate([('THREE-QUARTER',(9,6.5,12)),('FRONT',(0,5,15)),('SIDE',(15,5,0))]):
+        tile = render(data,eye,(360,500),8.2,fit=False)
+        im.paste(tile,(j*360,60))
+        d.text((j*360+12,42),label,font=font(14),fill='#252c32')
     _, joints = study.joints(t)
-    d.text((12,570), 'Swing: '+(', '.join(k for k,j in joints.items() if j['swing']) or 'none'),
-           font=font(15), fill='#252c32')
-    d.text((12,595), 'Tracking camera / no physical balance claim', font=font(12), fill='#444c52')
+    d.text((16,565), 'Swing: '+(', '.join(k for k,j in joints.items() if j['swing']) or 'none')+'  |  Frame '+str(index+1),font=font(16),fill='#252c32')
+    d.text((16,590), 'World-fixed grid / tracking camera / provisional motion / physical balance unverified',font=font(14),fill='#444c52')
     return im
 
 
@@ -187,11 +263,11 @@ def main():
         stream = io.BytesIO(); im.save(stream,format='PNG')
         encoded.append('data:image/png;base64,'+base64.b64encode(stream.getvalue()).decode())
     html = '''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width">
-<title>Great Strider motion review</title><style>body{background:#20262b;color:#eee;font:16px system-ui;max-width:650px;margin:24px auto;padding:16px}img{width:100%;max-width:480px}button,select,input{margin:10px;padding:10px}p{line-height:1.5}</style>
-<h1>Great Strider — motion study 01</h1><p>Actual study 04 mesh. Provisional slow crawl; not a locked gait or game-ready animation.</p>
+<title>Great Strider motion review</title><style>body{background:#20262b;color:#eee;font:16px system-ui;max-width:1120px;margin:24px auto;padding:16px}img{width:100%;max-width:1080px}button,select,input{margin:10px;padding:10px}p{line-height:1.5}</style>
+<h1>Great Strider — motion study 02</h1><p>Actual study 04 mesh. Provisional slow crawl; not a locked gait or game-ready animation.</p>
 <img id="view" alt="Great Strider walking study"><br><button id="play">Pause</button><label>Speed <select id="speed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option selected value="1">1×</option></select></label><br>
 <label>Frame <input id="scrub" type="range" min="0" value="0"><output id="counter"></output></label>
-<p>Camera follows forward travel. Three or four feet remain planted. Cradle and operator follow the body rigidly. Preliminary two-bone legs, fixed lower bends and rigid contacts require later deformation work. Collision clearance and physical balance are unverified.</p>
+<p>Camera follows forward travel. Three or four feet remain planted. The world-fixed grid repeats every stride; it is a review aid, not a battlefield. Body load shifts, head/sail response and shared cradle/operator pitch are art-directed. Preliminary two-bone legs, fixed lower bends and rigid contacts require later deformation work. Collision clearance and physical balance are unverified.</p>
 <script>const frames=FRAMES,seconds=SECONDS;let i=0,playing=true,last=0,elapsed=0;const view=document.getElementById('view'),scrub=document.getElementById('scrub'),counter=document.getElementById('counter'),button=document.getElementById('play');scrub.max=frames.length-1;function show(){view.src=frames[i];scrub.value=i;counter.textContent=`${i+1} / ${frames.length}`;}button.onclick=()=>{playing=!playing;button.textContent=playing?'Pause':'Play';};scrub.oninput=()=>{playing=false;button.textContent='Play';i=Number(scrub.value);elapsed=0;show();};function tick(now){if(playing&&last){elapsed+=Math.min(now-last,250)*Number(document.getElementById('speed').value);const step=seconds*1000/frames.length;while(elapsed>=step){i=(i+1)%frames.length;elapsed-=step;show();}}last=now;requestAnimationFrame(tick);}show();requestAnimationFrame(tick);</script></html>'''
     (args.output/'index.html').write_text(html.replace('FRAMES',json.dumps(encoded)).replace('SECONDS',str(study.config['cycle_seconds'])))
     print(args.output/'index.html')
