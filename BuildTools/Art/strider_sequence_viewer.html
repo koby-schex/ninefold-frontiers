@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Great Strider — Motion Study 03</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#141d26;color:#edf0f2;font:16px/1.5 system-ui,sans-serif}main{max-width:1140px;margin:32px auto;padding:0 20px}.eyebrow{color:#cfb77d;letter-spacing:.12em;font-size:12px;text-transform:uppercase}h1{font-size:30px;margin:8px 0}p{color:#b8c3cc;max-width:90ch}.panel{background:#202c37;border:1px solid #435362;border-radius:12px;padding:18px;margin:20px 0}.controls{display:flex;align-items:end;gap:14px;flex-wrap:wrap}label{display:grid;gap:5px;color:#ccd4db;font-size:14px}button,select{font:inherit;color:#f3f5f6;border:1px solid #718392;border-radius:7px;background:#344858;padding:10px 16px;min-height:44px;cursor:pointer}button:hover,select:hover{background:#425d70}button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #e6c586;outline-offset:3px}#view{display:block;width:100%;height:auto;border-radius:7px;background:#e0e0d8}#scrub{width:100%;accent-color:#cfb77d;min-height:30px}#status{font-variant-numeric:tabular-nums;color:#e6c586;min-height:24px}small{color:#b8c3cc}.note{border-left:3px solid #cfb77d;padding-left:14px}
+</style>
+<main>
+<div class="eyebrow">Ninefold: Frontiers / offline art review</div>
+<h1>Great Strider — Motion Study 03</h1>
+<p>Inspect the actual study mesh in synchronized three-quarter, front and side views. These are provisional movement studies, not final game animations.</p>
+<section class="panel" aria-label="Animation review">
+<div class="controls">
+<label>Sequence<select id="clip"><option value="idle">Idle</option><option value="start_stop">Start, walk and settle</option><option value="turn">Stepping turn</option><option value="walk">Continuous walk</option></select></label>
+<button id="play" type="button">Pause</button><button id="restart" type="button">Restart</button>
+<label>Speed<select id="speed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option></select></label>
+</div>
+<p id="status" role="status" aria-live="polite"></p>
+<img id="view" alt="Great Strider movement in three synchronized views" width="1080" height="610">
+<label for="scrub">Review frame</label><input id="scrub" type="range" min="0" value="0" step="1"><output id="counter" for="scrub"></output>
+</section>
+<p class="note">Idle and continuous walking loop. Start/stop and the 18° stepping turn play once and hold their final pose. Use Restart to replay; that reset is not an animated transition. Scrubbing pauses playback.</p>
+<p>The camera tracks forward travel but keeps a fixed viewing direction during the turn. Ground lines are world-fixed review references. This prototype does not certify physical balance, collision clearance or final skin deformation.</p>
+<small>Works offline. No Unity, Blender, account or network connection required.</small>
+</main>
+<script>
+const clips = /*CLIP_DATA*/;
+const clipSelect=document.getElementById('clip'),view=document.getElementById('view'),
+  scrub=document.getElementById('scrub'),counter=document.getElementById('counter'),
+  play=document.getElementById('play'),speed=document.getElementById('speed'),status=document.getElementById('status');
+let current=clips.idle,index=0,playing=true,last=null,elapsed=0;
+function show(){
+  view.src=current.frames[index];scrub.value=index;scrub.max=current.frames.length-1;
+  const seconds=current.seconds*index/(current.loop?current.frames.length:current.frames.length-1);
+  counter.textContent=`Frame ${index+1} / ${current.frames.length} · ${seconds.toFixed(2)} seconds`;
+  play.textContent=playing?'Pause':(!current.loop&&index===current.frames.length-1?'Replay':'Play');
+  const message=current.label+' · '+(playing?'Playing':(!current.loop&&index===current.frames.length-1?'Finished — holding pose':'Paused'));
+  if(status.textContent!==message)status.textContent=message;
+}
+function restart(){index=0;elapsed=0;last=null;playing=true;show();}
+clipSelect.onchange=()=>{current=clips[clipSelect.value];restart();};
+document.getElementById('restart').onclick=restart;
+play.onclick=()=>{if(!playing&&!current.loop&&index===current.frames.length-1){restart();return;}playing=!playing;last=null;show();};
+scrub.oninput=()=>{index=Number(scrub.value);playing=false;elapsed=0;last=null;show();};
+speed.onchange=()=>{last=null;};
+function advance(delta){
+  if(!playing)return;
+  elapsed+=delta*Number(speed.value);
+  const interval=current.seconds*1000/(current.loop?current.frames.length:current.frames.length-1);
+  while(elapsed>=interval&&playing){
+    elapsed-=interval;
+    if(index<current.frames.length-1)index++;
+    else if(current.loop)index=0;
+    if(!current.loop&&index===current.frames.length-1){playing=false;elapsed=0;}
+    show();
+  }
+}
+function tick(now){if(last!==null)advance(Math.min(now-last,250));last=now;requestAnimationFrame(tick);}
+show();requestAnimationFrame(tick);
+</script>
+</html>
