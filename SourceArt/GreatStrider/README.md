@@ -86,3 +86,10 @@ viewer in `MotionSequences/index.html`. This remains preliminary, non-Unity moti
 connects idle, two-cycle travel, stops and both stepping-turn directions in one
 world-space timeline. Run `python BuildTools/Art/route_great_strider.py` or download
 the combined `great-strider-route-…` artifact for the offline route viewer.
+
+### Deformation study 05
+
+The offline motion reviews now use joint-centered rotational blending and anchored
+hip/sail transitions. See [deformation review](../../Docs/Production/GreatStriderDeformation.md)
+for the pinned PR #50 comparison, reproducible close-ups and remaining limitations.
+The neutral model and authored route are unchanged.

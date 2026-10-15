@@ -139,3 +139,22 @@ jobs:
             SourceArt/GreatStrider/MotionRoute/index.html
             SourceArt/GreatStrider/MotionRoute/checks.json
             SourceArt/GreatStrider/MotionRoute/preview.png
+  deformation:
+    name: Deformation comparison
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r BuildTools/Art/requirements-review.txt
+      - run: python BuildTools/Art/inspect_strider_deformation.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: great-strider-deformation-${{ github.sha }}
+          retention-days: 30
+          if-no-files-found: error
+          path: SourceArt/GreatStrider/DeformationReview/

@@ -38,9 +38,37 @@ def smooth(v):
 
 
 def pitch(points, pivot, angle):
-    c, s = math.cos(angle), math.sin(angle)
-    r = np.array([[1,0,0],[0,c,-s],[0,s,c]])
-    return (points-pivot)@r.T+pivot
+    """Pitch with either one angle or a separate angle per vertex."""
+    q = points-pivot
+    c, s = np.cos(angle), np.sin(angle)
+    return np.column_stack((q[:,0], c*q[:,1]-s*q[:,2], s*q[:,1]+c*q[:,2]))+pivot
+
+
+def quaternion(r):
+    """Stable matrix conversion, including rotations near 180 degrees (xyzw)."""
+    k = np.array([
+        [r[0,0]-r[1,1]-r[2,2], r[1,0]+r[0,1], r[2,0]+r[0,2], r[2,1]-r[1,2]],
+        [r[1,0]+r[0,1], r[1,1]-r[0,0]-r[2,2], r[2,1]+r[1,2], r[0,2]-r[2,0]],
+        [r[2,0]+r[0,2], r[2,1]+r[1,2], r[2,2]-r[0,0]-r[1,1], r[1,0]-r[0,1]],
+        [r[2,1]-r[1,2], r[0,2]-r[2,0], r[1,0]-r[0,1], np.trace(r)]])
+    return np.linalg.eigh(k)[1][:,-1]
+
+
+def joint_blend(points, rest_pivot, new_pivot, first, second, weight):
+    """Normalized quaternion blend about a shared pivot; preserves joint radius.
+
+    This is not a full dual-quaternion rig or a volume-preserving tissue model.
+    Both bone transforms must map rest_pivot to new_pivot.
+    """
+    a, b = quaternion(first), quaternion(second)
+    if a@b < 0:
+        b = -b
+    w = np.asarray(weight)[:,None]
+    q = (1-w)*a+w*b
+    q /= np.linalg.norm(q,axis=1)[:,None]
+    v = points-rest_pivot
+    cross = 2*np.cross(q[:,:3],v)
+    return v+q[:,3,None]*cross+np.cross(q[:,:3],cross)+new_pivot
 
 
 class Study:
@@ -107,16 +135,19 @@ class Study:
             if limb:
                 rest = self.bones[limb]
                 new = joints[limb]['points']
-                upper = (v-rest[0]) @ (rotation(body_rotation@(rest[1]-rest[0]), new[1]-new[0])@body_rotation).T + new[0]
-                lower = (v-rest[1]) @ (rotation(body_rotation@(rest[2]-rest[1]), new[2]-new[1])@body_rotation).T + new[1]
-                # Explicit deterministic preliminary weights, blended only near the knee.
-                w = smooth((v[:,1]-rest[1,1]+.38)/.76)[:,None]
-                posed = w*upper+(1-w)*lower
-                # Smooth lower-leg convergence onto the rigid planted ankle/foot.
+                upper = rotation(body_rotation@(rest[1]-rest[0]), new[1]-new[0])@body_rotation
+                lower = rotation(body_rotation@(rest[2]-rest[1]), new[2]-new[1])@body_rotation
+                w = smooth((v[:,1]-rest[1,1]+.38)/.76)
+                posed = joint_blend(v, rest[1], new[1], lower, upper, w)
+                # Anchor the limb root to the torso before transitioning to the upper bone.
+                hip = smooth((rest[0,1]-v[:,1])/.60)
+                mask = hip < 1
+                posed[mask] = joint_blend(v[mask],rest[0],new[0],body_rotation,upper,hip[mask])
                 foot_rotation = joints[limb].get('rotation', np.eye(3))
                 contact = (v-rest[2])@foot_rotation.T+new[2]
-                ankle = smooth((v[:,1]-rest[2,1]-.05)/.45)[:,None]
-                posed = ankle*posed+(1-ankle)*contact
+                ankle = smooth((v[:,1]-rest[2,1]-.05)/.45)
+                mask = ankle < 1
+                posed[mask] = joint_blend(v[mask],rest[2],new[2],foot_rotation,lower,ankle[mask])
                 if 'Contact' in name:
                     posed = contact
                 elif 'Ankle' in name:
@@ -128,14 +159,14 @@ class Study:
                 pivot = np.array([0,5.25,.85])*self.scale
                 angle = self.config['head_pitch_rad']*math.sin(2*math.pi*t-.4)
                 if head or sail or 'ShortNeck' in name:
-                    moved = pitch(posed,pivot,angle)
-                    weight = smooth((v[:,1]-5.15*self.scale)/(.35*self.scale))[:,None] if 'ShortNeck' in name else 1
-                    posed = posed+(moved-posed)*weight
+                    weight = smooth((v[:,1]-5.15*self.scale)/(.35*self.scale)) if 'ShortNeck' in name else 1
+                    posed = pitch(posed,pivot,angle*weight)
                 if sail:
                     # Separate small response, inherited from the head transform.
                     sign = -1 if '_L' in name else 1
                     sail_pivot = pitch(np.array([[sign*.17,5.75,1.16]])*self.scale,pivot,angle)[0]
-                    posed = pitch(posed,sail_pivot,self.config['sail_pitch_rad']*math.sin(2*math.pi*t-.8))
+                    weight = smooth((np.linalg.norm(posed-sail_pivot,axis=1)-.08)/.45)
+                    posed = pitch(posed,sail_pivot,weight*self.config['sail_pitch_rad']*math.sin(2*math.pi*t-.8))
                 if name.startswith(('Cradle_','Avarin_','Waycaster_')):
                     pivot = np.array([0,4.8,0])*self.scale
                     moved = pitch(posed,pivot,self.config['cradle_pitch_rad']*math.sin(4*math.pi*t-.5))
