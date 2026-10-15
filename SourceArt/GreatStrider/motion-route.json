@@ -1,0 +1,19 @@
+{
+  "status": "study 04, provisional; not locked canon",
+  "secondary_cycle_seconds": 6,
+  "breath_m": 0.004,
+  "step_order": ["L_Rear", "R_Fore", "R_Rear", "L_Fore"],
+  "segments": [
+    {"kind": "idle", "label": "Ready", "seconds": 1.2},
+    {"kind": "walk", "label": "First travel", "cycles": 2, "step_slot": 0.8, "swing_seconds": 0.64},
+    {"kind": "idle", "label": "Settled", "seconds": 0.8},
+    {"kind": "turn", "label": "Left stepping turn", "degrees": -18, "step_slot": 0.9, "swing_seconds": 0.72},
+    {"kind": "idle", "label": "Facing new heading", "seconds": 0.8},
+    {"kind": "walk", "label": "Travel after left turn", "cycles": 2, "step_slot": 0.8, "swing_seconds": 0.64},
+    {"kind": "idle", "label": "Settled", "seconds": 0.8},
+    {"kind": "turn", "label": "Right stepping turn", "degrees": 18, "step_slot": 0.9, "swing_seconds": 0.72},
+    {"kind": "idle", "label": "Facing new heading", "seconds": 0.8},
+    {"kind": "walk", "label": "Final travel", "cycles": 2, "step_slot": 0.8, "swing_seconds": 0.64},
+    {"kind": "idle", "label": "Final idle", "seconds": 1.2}
+  ]
+}
