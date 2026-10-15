@@ -89,3 +89,53 @@ jobs:
           retention-days: 30
           if-no-files-found: error
           path: SourceArt/GreatStrider/MotionSequences/
+  route:
+    name: Route chunk (${{ matrix.chunk }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        chunk: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r BuildTools/Art/requirements-review.txt
+      - run: python BuildTools/Art/route_great_strider.py --chunk ${{ matrix.chunk }} --chunks 4 --frames 192 --workers 2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: great-strider-route-chunk-${{ matrix.chunk }}-${{ github.sha }}
+          retention-days: 30
+          if-no-files-found: error
+          path: SourceArt/GreatStrider/MotionRoute/
+  route-viewer:
+    needs: route
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m pip install -r BuildTools/Art/requirements-review.txt
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: great-strider-route-chunk-*-${{ github.sha }}
+          merge-multiple: true
+          path: SourceArt/GreatStrider/MotionRoute/
+      - run: python BuildTools/Art/route_great_strider.py --pack --chunks 4 --frames 192
+      - run: node BuildTools/Art/test_strider_route_viewer.cjs SourceArt/GreatStrider/MotionRoute/index.html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: great-strider-route-${{ github.sha }}
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            SourceArt/GreatStrider/MotionRoute/index.html
+            SourceArt/GreatStrider/MotionRoute/checks.json
+            SourceArt/GreatStrider/MotionRoute/preview.png

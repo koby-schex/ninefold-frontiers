@@ -81,3 +81,8 @@ requirements. Parameters live in `motion-study.json`; generated outputs are igno
 start/walk/settle and a foot-planted stepping turn alongside the continuous walk.
 Run `python BuildTools/Art/sequence_great_strider.py` for the combined offline
 viewer in `MotionSequences/index.html`. This remains preliminary, non-Unity motion.
+
+[Continuous route study 04](../../Docs/Production/GreatStriderContinuousRoute.md)
+connects idle, two-cycle travel, stops and both stepping-turn directions in one
+world-space timeline. Run `python BuildTools/Art/route_great_strider.py` or download
+the combined `great-strider-route-…` artifact for the offline route viewer.

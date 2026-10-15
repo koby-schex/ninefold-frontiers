@@ -1,0 +1,20 @@
+// Test the packed route viewer, including its real embedded frames and final hold.
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const html=fs.readFileSync(process.argv[2],'utf8');
+assert(html.includes('<option value="route">Complete route</option>'));
+assert(!html.includes('/*CLIP_DATA*/'));
+const elements={};const context=vm.createContext({document:{getElementById(id){return elements[id]??={value:id==='speed'?'1':id==='clip'?'route':'0'};}},requestAnimationFrame(){}});
+vm.runInContext(html.match(/<script>([\s\S]*?)<\/script>/)[1],context);
+const read=code=>vm.runInContext(code,context);
+assert.equal(read('current.frames.length'),192);
+assert.equal(read('current.loop'),false);
+assert(read('current.frames.every(frame=>frame.startsWith("data:image/png;base64,"))'));
+read('advance(current.seconds*1000+1)');
+assert.equal(read('index'),191);assert.equal(read('playing'),false);assert.equal(elements.play.textContent,'Replay');
+const last=elements.view.src;read('advance(5000)');assert.equal(elements.view.src,last);
+elements.play.onclick();assert.equal(read('index'),0);assert.equal(read('playing'),true);
+elements.scrub.value='81';elements.scrub.oninput();read('advance(5000)');assert.equal(read('index'),81);assert.equal(read('playing'),false);
+elements.restart.onclick();assert.equal(read('index'),0);assert.equal(read('elapsed'),0);
+elements.speed.value='0.5';read('advance(current.seconds*1000/191*2+0.001)');assert.equal(read('index'),1);
+elements.clip.onchange();assert.equal(read('index'),0);
+console.log('PASS: packed 192-frame route, final hold, replay, scrub, restart and speed');
