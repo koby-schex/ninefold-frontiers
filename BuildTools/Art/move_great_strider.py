@@ -93,6 +93,12 @@ class Study:
 
     def pose(self, t):
         root, joints = self.joints(t)
+        return self.deform(t, root, joints)
+
+    def deform(self, phase, root, joints, body_rotation=None, world=False):
+        """Shared skinning: world-space IK, independent planted-foot orientation."""
+        t = phase
+        body_rotation = np.eye(3) if body_rotation is None else body_rotation
         parts = []
         for part in self.mesh.parts:
             name = part['name']
@@ -101,23 +107,25 @@ class Study:
             if limb:
                 rest = self.bones[limb]
                 new = joints[limb]['points']
-                upper = (v-rest[0]) @ rotation(rest[1]-rest[0], new[1]-new[0]).T + new[0]
-                lower = (v-rest[1]) @ rotation(rest[2]-rest[1], new[2]-new[1]).T + new[1]
+                upper = (v-rest[0]) @ (rotation(body_rotation@(rest[1]-rest[0]), new[1]-new[0])@body_rotation).T + new[0]
+                lower = (v-rest[1]) @ (rotation(body_rotation@(rest[2]-rest[1]), new[2]-new[1])@body_rotation).T + new[1]
                 # Explicit deterministic preliminary weights, blended only near the knee.
                 w = smooth((v[:,1]-rest[1,1]+.38)/.76)[:,None]
                 posed = w*upper+(1-w)*lower
                 # Smooth lower-leg convergence onto the rigid planted ankle/foot.
+                foot_rotation = joints[limb].get('rotation', np.eye(3))
+                contact = (v-rest[2])@foot_rotation.T+new[2]
                 ankle = smooth((v[:,1]-rest[2,1]-.05)/.45)[:,None]
-                posed = ankle*posed+(1-ankle)*(v+joints[limb]['delta'])
+                posed = ankle*posed+(1-ankle)*contact
                 if 'Contact' in name:
-                    posed = v+joints[limb]['delta']
+                    posed = contact
                 elif 'Ankle' in name:
-                    posed = v+joints[limb]['delta']
+                    posed = contact
             else:
-                posed = v+root
+                posed = v.copy()
                 sail = any(k in name for k in ('SensorySail','SailVein','SailChannel','SailRoot'))
                 head = name.startswith('Ilyth_') and any(k in name for k in ('CompactHead','CranialMineral','FeedingSeam','Eye_','Brow_'))
-                pivot = np.array([0,5.25,.85])*self.scale+root
+                pivot = np.array([0,5.25,.85])*self.scale
                 angle = self.config['head_pitch_rad']*math.sin(2*math.pi*t-.4)
                 if head or sail or 'ShortNeck' in name:
                     moved = pitch(posed,pivot,angle)
@@ -126,18 +134,19 @@ class Study:
                 if sail:
                     # Separate small response, inherited from the head transform.
                     sign = -1 if '_L' in name else 1
-                    sail_pivot = pitch(np.array([[sign*.17,5.75,1.16]])*self.scale+root,pivot,angle)[0]
+                    sail_pivot = pitch(np.array([[sign*.17,5.75,1.16]])*self.scale,pivot,angle)[0]
                     posed = pitch(posed,sail_pivot,self.config['sail_pitch_rad']*math.sin(2*math.pi*t-.8))
                 if name.startswith(('Cradle_','Avarin_','Waycaster_')):
-                    pivot = np.array([0,4.8,0])*self.scale+root
+                    pivot = np.array([0,4.8,0])*self.scale
                     moved = pitch(posed,pivot,self.config['cradle_pitch_rad']*math.sin(4*math.pi*t-.5))
                     # Keep upper attachment pads fixed; flex the connecting load frame.
                     weight = smooth((4.85*self.scale-v[:,1])/(.65*self.scale))[:,None] if 'LoadFrame' in name else 1
                     if 'Attachment' in name:
                         weight = 0
                     posed = posed+(moved-posed)*weight
+                posed = posed@body_rotation.T+root
             parts.append(dict(name=name, material=part['material'], faces=part['faces'],
-                              vertices=(posed-[0,0,root[2]]).tolist()))
+                              vertices=(posed if world else posed-[0,0,root[2]]).tolist()))
         return dict(parts=parts, materials=MATERIALS, finish=FINISH)
 
     def validate(self):

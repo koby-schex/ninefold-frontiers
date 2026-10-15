@@ -1,0 +1,9 @@
+{
+  "status": "study 03, provisional; not locked canon",
+  "breath_m": 0.004,
+  "step_order": ["L_Rear", "R_Fore", "R_Rear", "L_Fore"],
+  "idle": {"label": "Idle", "seconds": 6, "loop": true},
+  "walk": {"label": "Continuous walk", "seconds": 6, "loop": true},
+  "start_stop": {"label": "Start, walk and settle", "seconds": 8, "loop": false, "start_seconds": 1, "step_slot_seconds": 1.4, "swing_seconds": 1.15, "distance_m": 0.36},
+  "turn": {"label": "Stepping turn", "seconds": 8, "loop": false, "start_seconds": 1, "step_slot_seconds": 1.4, "swing_seconds": 1.15, "turn_degrees": 18}
+}

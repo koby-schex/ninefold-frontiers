@@ -42,18 +42,50 @@ jobs:
             SourceArt/GreatStrider/GreatStrider-Comparison.png
             SourceArt/GreatStrider/manifest.json
   motion:
+    name: Motion (${{ matrix.clip }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        clip: [idle, start_stop, turn, walk]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - run: python -m pip install -r BuildTools/Art/requirements-review.txt
-      - run: python BuildTools/Art/move_great_strider.py --frames 32 --workers 2
+      - run: python BuildTools/Art/sequence_great_strider.py --clip ${{ matrix.clip }} --frames 32 --workers 2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: great-strider-sequence-${{ matrix.clip }}-${{ github.sha }}
+          retention-days: 30
+          if-no-files-found: error
+          path: SourceArt/GreatStrider/MotionSequences/
+  motion-viewer:
+    needs: motion
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m pip install -r BuildTools/Art/requirements-review.txt
+      - run: python BuildTools/Art/move_great_strider.py --validate-only
+      - run: node BuildTools/Art/test_strider_sequence_viewer.cjs
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: great-strider-sequence-*-${{ github.sha }}
+          merge-multiple: true
+          path: SourceArt/GreatStrider/MotionSequences/
+      - run: python BuildTools/Art/sequence_great_strider.py --pack
       - uses: actions/upload-artifact@v4
         with:
           name: great-strider-motion-${{ github.sha }}
           retention-days: 30
           if-no-files-found: error
-          path: SourceArt/GreatStrider/MotionReview/
+          path: SourceArt/GreatStrider/MotionSequences/

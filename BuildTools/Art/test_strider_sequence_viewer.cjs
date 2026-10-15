@@ -1,0 +1,21 @@
+// Exercise the actual viewer script against a minimal DOM, without browser/network dependencies.
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),path=require('node:path');
+const html=fs.readFileSync(path.join(__dirname,'strider_sequence_viewer.html'),'utf8');
+const clips={};for(const key of ['idle','start_stop','turn','walk'])clips[key]={label:key,seconds:8,loop:['idle','walk'].includes(key),frames:Array.from({length:32},(_,i)=>key+i)};
+const elements={};const context=vm.createContext({document:{getElementById(id){return elements[id]??=(id==='speed'?{value:'1'}:{value:'0'});}},requestAnimationFrame(){}});
+const script=html.match(/<script>([\s\S]*?)<\/script>/)[1].replace('/*CLIP_DATA*/',JSON.stringify(clips));
+vm.runInContext(script,context);
+const state=()=>vm.runInContext('({index,playing,label:current.label,elapsed})',context);
+const advance=ms=>vm.runInContext(`advance(${ms})`,context);
+assert.equal(elements.view.src,'idle0');
+elements.clip.value='turn';elements.clip.onchange();advance(8100);
+assert.equal(state().index,31);assert.equal(state().playing,false);assert.equal(elements.play.textContent,'Replay');
+advance(5000);assert.equal(state().index,31);
+elements.play.onclick();assert.equal(state().index,0);assert.equal(state().playing,true);
+elements.scrub.value='10';elements.scrub.oninput();advance(5000);assert.equal(state().index,10);assert.equal(state().playing,false);
+elements.restart.onclick();assert.equal(state().index,0);assert.equal(state().elapsed,0);
+elements.play.onclick();advance(2000);assert.equal(state().index,0);
+elements.clip.value='walk';elements.clip.onchange();advance(8000);assert.equal(state().index,0);assert.equal(state().playing,true);
+elements.speed.value='0.5';advance(1000);assert.equal(state().index,2);
+elements.clip.value='start_stop';elements.clip.onchange();assert.equal(state().index,0);assert.equal(state().label,'start_stop');
+console.log('PASS: clip selection, pause, restart, scrubbing, speed, looping and final-pose hold');

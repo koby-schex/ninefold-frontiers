@@ -76,3 +76,8 @@ three-angle offline browser/GIF review with world-fixed ground references. This
 is provisional; the OBJ and Unity review scene remain neutral, unrigged study 04.
 Run `python BuildTools/Art/move_great_strider.py` after installing the review
 requirements. Parameters live in `motion-study.json`; generated outputs are ignored.
+
+[Motion study 03](../../Docs/Production/GreatStriderMotionSequences.md) adds idle,
+start/walk/settle and a foot-planted stepping turn alongside the continuous walk.
+Run `python BuildTools/Art/sequence_great_strider.py` for the combined offline
+viewer in `MotionSequences/index.html`. This remains preliminary, non-Unity motion.

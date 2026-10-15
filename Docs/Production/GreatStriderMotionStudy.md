@@ -68,3 +68,10 @@ Review foot timing, silhouette, knee direction, visible joint transitions and wh
 the movement reads as a living terrain-crossing creature. After gait feedback,
 refine weight transfer and joint deformation before exporting a production rig or
 integrating into battles. No game settings, menus or battlefield units change here.
+
+## Subsequent movement library
+
+[Motion study 03](GreatStriderMotionSequences.md) adds idle, start/stop and stepping
+turn clips, retaining this continuous walk in a combined offline selector. The
+current workflow's combined `great-strider-motion-…` artifact contains that viewer.
+The command in this document still regenerates the standalone study 02 walk.
