@@ -41,3 +41,19 @@ jobs:
             SourceArt/GreatStrider/GreatStrider-Mobile.png
             SourceArt/GreatStrider/GreatStrider-Comparison.png
             SourceArt/GreatStrider/manifest.json
+  motion:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r BuildTools/Art/requirements-review.txt
+      - run: python BuildTools/Art/move_great_strider.py --frames 32 --workers 2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: great-strider-motion-${{ github.sha }}
+          retention-days: 30
+          if-no-files-found: error
+          path: SourceArt/GreatStrider/MotionReview/
