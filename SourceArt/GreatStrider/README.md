@@ -67,3 +67,11 @@ body, sensory, surface, cradle and Waycaster entries; locked World Five showcase
 inspected as pixels. The written compact-head/short-neck and suspended-cradle
 constraints remain controlling; incidental showcase details do not authorize a
 cavalry saddle or civic building on this unit. See [the art brief](../../Docs/Production/FirstMissionArtBrief.md).
+
+## Offline motion experiment
+
+[Motion study 01](../../Docs/Production/GreatStriderMotionStudy.md) adds a separate
+Python IK/deformation prototype, slow crawl and offline browser/GIF review. This
+is provisional; the OBJ and Unity review scene remain neutral, unrigged study 04.
+Run `python BuildTools/Art/move_great_strider.py` after installing the review
+requirements. Parameters live in `motion-study.json`; generated outputs are ignored.

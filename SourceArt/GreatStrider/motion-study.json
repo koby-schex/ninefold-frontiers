@@ -1,0 +1,10 @@
+{
+  "study": "01",
+  "status": "provisional, not locked canon",
+  "cycle_seconds": 6,
+  "stride_m": 0.36,
+  "lift_m": 0.16,
+  "body_settle_m": 0.08,
+  "stance_fraction": 0.8,
+  "phase_offsets": {"L_Fore": 0, "R_Rear": 0.25, "R_Fore": 0.5, "L_Rear": 0.75}
+}

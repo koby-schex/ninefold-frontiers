@@ -44,3 +44,4 @@ __pycache__/
 !Tests/Ninefold.Core.Tests/Ninefold.Core.Tests.csproj
 **/bin/
 **/obj/
+/SourceArt/GreatStrider/MotionReview/
