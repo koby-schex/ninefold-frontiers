@@ -1,12 +1,12 @@
 {
-  "status": "surface study 06; not production ready",
+  "status": "connection study 07; not production ready",
   "units": "meters",
   "up": "Y",
   "forward": "Z",
   "height": 6,
-  "parts": 181,
-  "vertices": 40236,
-  "triangles": 79748,
+  "parts": 184,
+  "vertices": 40646,
+  "triangles": 80556,
   "materials": [
     "living_pearl",
     "limb_tissue",

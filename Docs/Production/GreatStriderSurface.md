@@ -31,6 +31,8 @@ python BuildTools/Art/test_review_transparency.py
 python BuildTools/Art/review_strider_surface.py
 ```
 
+This historical surface comparison is pinned to the PR #51 and PR #52 releases,
+so later anatomy refinements do not invalidate its unchanged-centerline checks.
 The comparison requires Git history containing the PR #51 merge
 `28a1b51cdf87ad7305447f4bbe1169118b4dd573`. It generates actual mesh views under
 identical cameras, lighting and framing. The baseline has its original opaque

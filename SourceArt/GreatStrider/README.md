@@ -100,3 +100,10 @@ The current source mesh refines broad rounded surfaces and fitted mineral sheath
 with differentiated finishes and provisional membrane opacity. See
 [surface review](../../Docs/Production/GreatStriderSurface.md) for before/after
 renders, mobile-scale inspection, mesh counts and rendering limitations.
+
+### Connection and rider study 07
+
+The current source refines buried neck/hip roots, fitted mineral edges, a continuous
+Avarin head/face surface, temple bands, grouped hands and cloth relief. See
+[connection review](../../Docs/Production/GreatStriderConnections.md) for canon
+references, before/after images, containment checks and remaining quality limits.
