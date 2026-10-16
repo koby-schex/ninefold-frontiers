@@ -29,3 +29,5 @@
 # Small, optimized UI assets are ordinary Git blobs so fresh clones work without LFS setup.
 Assets/Ninefold/Resources/Home/*.jpg -filter -diff -merge -text
 Assets/Ninefold/Resources/Home/*.png -filter -diff -merge -text
+# Tiny deterministic source tiles are regular Git blobs, available without LFS.
+SourceArt/GreatStrider/Textures/*.png -filter -diff -merge -text

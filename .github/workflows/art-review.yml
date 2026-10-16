@@ -5,12 +5,14 @@ on:
       - 'BuildTools/Art/**'
       - 'SourceArt/GreatStrider/**'
       - '.github/workflows/art-review.yml'
+      - '.gitattributes'
   push:
     branches: [main]
     paths:
       - 'BuildTools/Art/**'
       - 'SourceArt/GreatStrider/**'
       - '.github/workflows/art-review.yml'
+      - '.gitattributes'
 permissions:
   contents: read
 jobs:
@@ -199,3 +201,23 @@ jobs:
           retention-days: 30
           if-no-files-found: error
           path: SourceArt/GreatStrider/ConnectionReview/
+
+  materials:
+    name: Material and texture comparison
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r BuildTools/Art/requirements-review.txt
+      - run: python BuildTools/Art/review_strider_materials.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: great-strider-materials-${{ github.sha }}
+          retention-days: 30
+          if-no-files-found: error
+          path: SourceArt/GreatStrider/MaterialReview/

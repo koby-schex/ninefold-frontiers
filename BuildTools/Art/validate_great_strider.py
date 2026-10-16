@@ -9,7 +9,7 @@ from build_great_strider import make_model, write, ROOT, cross, sub, dot
 folder=ROOT/'SourceArt/GreatStrider'
 with tempfile.TemporaryDirectory() as temp:
     write(make_model(),Path(temp))
-    for name in ['GreatStrider.obj','GreatStrider.mtl','manifest.json']:
+    for name in ['GreatStrider.obj','GreatStrider.mtl','manifest.json','materials.json']:
         assert (Path(temp)/name).read_bytes()==(folder/name).read_bytes(),f'Stale output: {name}'
 vertices=[]; faces=[]; parts={}; current=None; materials=set()
 for line in (folder/'GreatStrider.obj').read_text().splitlines():
@@ -21,7 +21,7 @@ for line in (folder/'GreatStrider.obj').read_text().splitlines():
         v=tuple(map(float,fields[1:])); assert len(v)==3 and all(map(math.isfinite,v)); vertices.append(v)
     elif fields[0]=='usemtl': materials.add(fields[1])
     elif fields[0]=='f':
-        f=tuple(int(x)-1 for x in fields[1:]); assert len(f)==3
+        f=tuple(int(x.split("/")[0])-1 for x in fields[1:]); assert len(f)==3
         assert len(set(f))==3 and all(0<=x<len(vertices) for x in f)
         normal=cross(sub(vertices[f[1]],vertices[f[0]]),sub(vertices[f[2]],vertices[f[0]]))
         assert dot(normal,normal)>1e-16,('Degenerate triangle',current,f)

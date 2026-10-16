@@ -1,0 +1,162 @@
+{
+  "status": "provisional material study 08",
+  "uv_mapping": "rest-pose dominant-axis box projection, repeating textures",
+  "materials": {
+    "living_pearl": {
+      "base_color_linear": [
+        0.62,
+        0.65,
+        0.63
+      ],
+      "albedo_texture": "Textures/living_pearl.png",
+      "albedo_color_space": "sRGB",
+      "opacity": 1,
+      "review_specular_exponent": 32,
+      "review_specular_strength": 0.1,
+      "surface_description": "soft satin organic tissue"
+    },
+    "limb_tissue": {
+      "base_color_linear": [
+        0.38,
+        0.4,
+        0.42
+      ],
+      "albedo_texture": "Textures/limb_tissue.png",
+      "albedo_color_space": "sRGB",
+      "opacity": 1,
+      "review_specular_exponent": 28,
+      "review_specular_strength": 0.07,
+      "surface_description": "matte flexible tissue"
+    },
+    "soft_charcoal": {
+      "base_color_linear": [
+        0.12,
+        0.13,
+        0.16
+      ],
+      "albedo_texture": "Textures/soft_charcoal.png",
+      "albedo_color_space": "sRGB",
+      "opacity": 1,
+      "review_specular_exponent": 16,
+      "review_specular_strength": 0.045,
+      "surface_description": "matte contact tissue"
+    },
+    "grown_mineral": {
+      "base_color_linear": [
+        0.84,
+        0.86,
+        0.85
+      ],
+      "albedo_texture": "Textures/grown_mineral.png",
+      "albedo_color_space": "sRGB",
+      "opacity": 1,
+      "review_specular_exponent": 58,
+      "review_specular_strength": 0.17,
+      "surface_description": "pale natural mineral"
+    },
+    "sail_membrane": {
+      "base_color_linear": [
+        0.32,
+        0.28,
+        0.43
+      ],
+      "albedo_texture": null,
+      "albedo_color_space": "sRGB",
+      "opacity": 0.68,
+      "review_specular_exponent": 64,
+      "review_specular_strength": 0.18,
+      "surface_description": "unchanged study material"
+    },
+    "sail_vein": {
+      "base_color_linear": [
+        0.64,
+        0.59,
+        0.76
+      ],
+      "albedo_texture": null,
+      "albedo_color_space": "sRGB",
+      "opacity": 1,
+      "review_specular_exponent": 28,
+      "review_specular_strength": 0.12,
+      "surface_description": "unchanged study material"
+    },
+    "continuance_frame": {
+      "base_color_linear": [
+        0.36,
+        0.38,
+        0.4
+      ],
+      "albedo_texture": "Textures/continuance_frame.png",
+      "albedo_color_space": "sRGB",
+      "opacity": 1,
+      "review_specular_exponent": 100,
+      "review_specular_strength": 0.13,
+      "surface_description": "restrained engineered satin"
+    },
+    "ceramic": {
+      "base_color_linear": [
+        0.65,
+        0.66,
+        0.6
+      ],
+      "albedo_texture": "Textures/ceramic.png",
+      "albedo_color_space": "sRGB",
+      "opacity": 1,
+      "review_specular_exponent": 100,
+      "review_specular_strength": 0.22,
+      "surface_description": "smooth ceramic"
+    },
+    "avar_skin": {
+      "base_color_linear": [
+        0.32,
+        0.245,
+        0.33
+      ],
+      "albedo_texture": "Textures/avar_skin.png",
+      "albedo_color_space": "sRGB",
+      "opacity": 1,
+      "review_specular_exponent": 24,
+      "review_specular_strength": 0.06,
+      "surface_description": "smoky plum organic skin"
+    },
+    "cloth": {
+      "base_color_linear": [
+        0.115,
+        0.12,
+        0.155
+      ],
+      "albedo_texture": "Textures/cloth.png",
+      "albedo_color_space": "sRGB",
+      "opacity": 1,
+      "review_specular_exponent": 8,
+      "review_specular_strength": 0.018,
+      "surface_description": "matte fine fabric"
+    },
+    "survey_light": {
+      "base_color_linear": [
+        0.47,
+        0.68,
+        0.79
+      ],
+      "albedo_texture": null,
+      "albedo_color_space": "sRGB",
+      "opacity": 1,
+      "review_specular_exponent": 72,
+      "review_specular_strength": 0.18,
+      "surface_description": "unchanged study material"
+    },
+    "eye": {
+      "base_color_linear": [
+        0.055,
+        0.065,
+        0.07
+      ],
+      "albedo_texture": null,
+      "albedo_color_space": "sRGB",
+      "opacity": 1,
+      "review_specular_exponent": 28,
+      "review_specular_strength": 0.12,
+      "surface_description": "unchanged study material"
+    }
+  }
+}
