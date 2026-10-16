@@ -93,3 +93,10 @@ The offline motion reviews now use joint-centered rotational blending and anchor
 hip/sail transitions. See [deformation review](../../Docs/Production/GreatStriderDeformation.md)
 for the pinned PR #50 comparison, reproducible close-ups and remaining limitations.
 The neutral model and authored route are unchanged.
+
+### Surface study 06
+
+The current source mesh refines broad rounded surfaces and fitted mineral sheaths,
+with differentiated finishes and provisional membrane opacity. See
+[surface review](../../Docs/Production/GreatStriderSurface.md) for before/after
+renders, mobile-scale inspection, mesh counts and rendering limitations.

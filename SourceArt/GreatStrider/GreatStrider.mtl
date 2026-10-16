@@ -1,32 +1,32 @@
 newmtl living_pearl
 Kd 0.62 0.65 0.63
-Ks 0.12 0.12 0.12
-Ns 28
+Ks 0.1 0.1 0.1
+Ns 32
 d 1
 
 newmtl limb_tissue
 Kd 0.38 0.4 0.42
-Ks 0.09 0.09 0.09
-Ns 22
+Ks 0.07 0.07 0.07
+Ns 28
 d 1
 
 newmtl soft_charcoal
 Kd 0.12 0.13 0.16
-Ks 0.06 0.06 0.06
-Ns 14
+Ks 0.045 0.045 0.045
+Ns 16
 d 1
 
 newmtl grown_mineral
 Kd 0.84 0.85 0.78
-Ks 0.2 0.2 0.2
-Ns 64
+Ks 0.23 0.23 0.23
+Ns 72
 d 1
 
 newmtl sail_membrane
 Kd 0.32 0.28 0.43
-Ks 0.14 0.14 0.14
-Ns 52
-d 1
+Ks 0.18 0.18 0.18
+Ns 64
+d 0.68
 
 newmtl sail_vein
 Kd 0.64 0.59 0.76
@@ -36,25 +36,25 @@ d 1
 
 newmtl continuance_frame
 Kd 0.36 0.38 0.4
-Ks 0.24 0.24 0.24
-Ns 96
+Ks 0.2 0.2 0.2
+Ns 120
 d 1
 
 newmtl ceramic
 Kd 0.65 0.66 0.6
-Ks 0.22 0.22 0.22
-Ns 80
+Ks 0.25 0.25 0.25
+Ns 100
 d 1
 
 newmtl avar_skin
 Kd 0.3 0.25 0.32
-Ks 0.07 0.07 0.07
-Ns 18
+Ks 0.06 0.06 0.06
+Ns 24
 d 1
 
 newmtl cloth
 Kd 0.19 0.2 0.24
-Ks 0.025 0.025 0.025
+Ks 0.018 0.018 0.018
 Ns 8
 d 1
 

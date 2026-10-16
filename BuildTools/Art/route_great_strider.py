@@ -197,7 +197,7 @@ def review_ground(data, camera):
     for i in range(-10,11):
         x=i*.5
         quad('x'+str(i),[[x-.012,-.01,-5],[x+.012,-.01,-5],[x+.012,-.01,7],[x-.012,-.01,7]],'grid')
-    return dict(parts=parts,materials={**data['materials'],'ground':(.64,.66,.64),'grid':(.37,.40,.40)},finish=data['finish'])
+    return dict(parts=parts,materials={**data['materials'],'ground':(.64,.66,.64),'grid':(.37,.40,.40)},finish=data['finish'],opacity=data.get('opacity',{}))
 
 
 def frame(args):

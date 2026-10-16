@@ -9,7 +9,7 @@ import math
 from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw
-from build_great_strider import make_model, MATERIALS, FINISH
+from build_great_strider import make_model, MATERIALS, FINISH, OPACITY
 from render_great_strider import render, font
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -178,7 +178,7 @@ class Study:
                 posed = posed@body_rotation.T+root
             parts.append(dict(name=name, material=part['material'], faces=part['faces'],
                               vertices=(posed if world else posed-[0,0,root[2]]).tolist()))
-        return dict(parts=parts, materials=MATERIALS, finish=FINISH)
+        return dict(parts=parts, materials=MATERIALS, finish=FINISH, opacity=OPACITY)
 
     def validate(self):
         max_slide = max_length = 0.
@@ -256,7 +256,7 @@ def ground(data, t, stride):
     for i in range(-4,5):
         x=i*.75
         quad('GridX'+str(i),[[x-.008,-.012,-4],[x+.008,-.012,-4],[x+.008,-.012,4],[x-.008,-.012,4]],'review_grid')
-    return dict(parts=parts,materials={**data['materials'],'review_ground':(.64,.66,.64),'review_grid':(.37,.40,.40)},finish=data['finish'])
+    return dict(parts=parts,materials={**data['materials'],'review_ground':(.64,.66,.64),'review_grid':(.37,.40,.40)},finish=data['finish'],opacity=data.get('opacity',{}))
 
 
 def frame(args):
