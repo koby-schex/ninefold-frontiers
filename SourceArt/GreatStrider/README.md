@@ -107,3 +107,10 @@ The current source refines buried neck/hip roots, fitted mineral edges, a contin
 Avarin head/face surface, temple bands, grouped hands and cloth relief. See
 [connection review](../../Docs/Production/GreatStriderConnections.md) for canon
 references, before/after images, containment checks and remaining quality limits.
+
+### Material study 08
+
+The source now includes eight deterministic albedo tiles, rest-space OBJ UVs,
+a material catalog and distance-filtered offline previews. Geometry is unchanged
+from study 07. See [material review](../../Docs/Production/GreatStriderMaterials.md)
+for before/after comparisons, canon grounding and the pending Unity import work.

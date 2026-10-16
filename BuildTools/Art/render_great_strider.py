@@ -13,6 +13,28 @@ ROOT=Path(__file__).resolve().parents[2]
 
 def normalize(v): return v/np.maximum(np.linalg.norm(v,axis=-1,keepdims=True),1e-12)
 
+def mipmaps(values):
+    levels=[np.asarray(values,dtype=float)/255]
+    while levels[-1].shape[0]>1:
+        a=levels[-1]
+        levels.append((a[::2,::2]+a[1::2,::2]+a[::2,1::2]+a[1::2,1::2])*.25)
+    return levels
+
+
+def sample_tile(levels, uv, footprint):
+    # Trilinear mip filtering keeps fine variation quiet at tactical distance.
+    lod=np.clip(np.log2(max(footprint*len(levels[0]),1)),0,len(levels)-1)
+    lo=int(lod); hi=min(lo+1,len(levels)-1)
+    def bilinear(tile):
+        size=len(tile); q=(uv%1)*size
+        ix=np.floor(q[...,0]).astype(int); iy=np.floor(q[...,1]).astype(int)
+        tx=q[...,0]-ix; ty=q[...,1]-iy
+        # PNG rows run down; OBJ V runs up.
+        iy=(-iy)%size; ny=(iy-1)%size; nx=(ix+1)%size
+        return ((tile[iy,ix]*(1-tx)+tile[iy,nx]*tx)*(1-ty)+
+                (tile[ny,ix]*(1-tx)+tile[ny,nx]*tx)*ty)
+    return bilinear(levels[lo])*(1-(lod-lo))+bilinear(levels[hi])*(lod-lo)
+
 def render(data, eye, size=(880,1000), extent=7.0, target=(0,3,0), fit=True):
     w,h=size
     target=np.array(target,dtype=float); eye=np.array(eye,dtype=float)
@@ -33,6 +55,7 @@ def render(data, eye, size=(880,1000), extent=7.0, target=(0,3,0), fit=True):
     # and refraction require a production renderer. Opaque depth stays authoritative.
     transparent=np.zeros((h,w,3),dtype=np.uint8)
     alpha=np.zeros((h,w)); transparent_depth=np.full((h,w),np.inf)
+    texture_levels={name:mipmaps(values) for name,values in data.get('textures',{}).items()}
     ordered=sorted(data['parts'],key=lambda p:data.get('opacity',{}).get(p['material'],1)<1)
     for part in ordered:
         opacity=data.get('opacity',{}).get(part['material'],1)
@@ -45,7 +68,9 @@ def render(data, eye, size=(880,1000), extent=7.0, target=(0,3,0), fit=True):
         points=np.column_stack((w/2+rel@right*scale,h/2-rel@up*scale,(v-eye)@forward))
         rgb=np.array(data['materials'][part['material']])
         exponent, strength = data.get('finish',{}).get(part['material'],(36,.17))
-        for ids in f:
+        tex=texture_levels.get(part['material']) if 'uvs' in part else None
+        uv_coords=np.asarray(part.get('uvs',[]))
+        for face_index,ids in enumerate(f):
             p=points[ids]; n=normals[ids]
             xmin=max(0,int(np.floor(p[:,0].min()))); xmax=min(w-1,int(np.ceil(p[:,0].max())))
             ymin=max(0,int(np.floor(p[:,1].min()))); ymax=min(h-1,int(np.ceil(p[:,1].max())))
@@ -68,7 +93,17 @@ def render(data, eye, size=(880,1000), extent=7.0, target=(0,3,0), fit=True):
             normal=np.where((facing<0)[...,None],-normal,normal)
             diffuse=np.maximum(0,normal@light)
             spec=np.maximum(0,normal@half)**exponent
-            shade=(.32+.66*diffuse)[...,None]*rgb+spec[...,None]*strength
+            color=rgb
+            if tex is not None:
+                triangle_uv=uv_coords[part['uv_faces'][face_index]]
+                uv=a[...,None]*triangle_uv[0]+b[...,None]*triangle_uv[1]+c[...,None]*triangle_uv[2]
+                # Derivatives of the affine UV projection, in texture repeats/pixel.
+                dax=(p[1,1]-p[2,1])/den; dbx=(p[2,1]-p[0,1])/den
+                day=(p[2,0]-p[1,0])/den; dby=(p[0,0]-p[2,0])/den
+                du=triangle_uv[0]-triangle_uv[2]; dv=triangle_uv[1]-triangle_uv[2]
+                footprint=max(np.linalg.norm(dax*du+dbx*dv),np.linalg.norm(day*du+dby*dv))
+                color=rgb*sample_tile(tex,uv,footprint)[...,None]
+            shade=(.32+.66*diffuse)[...,None]*color+spec[...,None]*strength
             shade+=np.maximum(0,normal[...,1,None])*.045
             value=(np.clip(shade,0,1)**(1/1.6)*255).astype(np.uint8)
             if opacity < 1:
@@ -90,7 +125,7 @@ if __name__=='__main__':
     args=p.parse_args(); data=json.loads((args.source/'review_mesh.json').read_text())
     sheet=Image.new('RGB',(1600,1120),(238,237,229)); draw=ImageDraw.Draw(sheet)
     draw.text((42,25),'NINEFOLD: FRONTIERS  /  GREAT STRIDER',font=font(30),fill='#262c32')
-    draw.text((43,70),'ACTUAL MESH • CONNECTION STUDY 07 • 6.0 m • NOT FINAL GAME ART',font=font(17),fill='#596069')
+    draw.text((43,70),'ACTUAL MESH • MATERIAL STUDY 08 • 6.0 m • NOT FINAL GAME ART',font=font(17),fill='#596069')
     views=[((9,6.5,12),(30,125),(840,885),'THREE-QUARTER'),((0,4,15),(886,125),(340,885),'FRONT'),((15,4,0),(1230,125),(340,885),'SIDE')]
     for eye,pos,size,label in views:
         sheet.paste(render(data,eye,size,7.2),pos)
@@ -109,7 +144,7 @@ if __name__=='__main__':
     print(args.source/'GreatStrider-Review.png')
 
     inspection=Image.new('RGB',(1600,1800),(238,237,229)); d=ImageDraw.Draw(inspection)
-    d.text((30,20),'GREAT STRIDER / CONNECTION STUDY 07 / INSPECTION',font=font(27),fill='#262c32')
+    d.text((30,20),'GREAT STRIDER / MATERIAL STUDY 08 / INSPECTION',font=font(27),fill='#262c32')
     d.text((30,60),'Actual mesh. Neutral pose only; deformation and full collision clearance are unverified.',font=font(18),fill='#596069')
     for eye,pos,label in [((0,3,15),(20,110),'FRONT'),((15,3,0),(810,110),'SIDE'),
                           ((0,3,-15),(20,940),'BACK'),((6,-3,7),(810,940),'UNDERSIDE / OBLIQUE')]:

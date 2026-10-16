@@ -1,5 +1,5 @@
 {
-  "status": "connection study 07; not production ready",
+  "status": "material study 08; not production ready",
   "units": "meters",
   "up": "Y",
   "forward": "Z",
@@ -28,7 +28,7 @@
     "R_Rear"
   ],
   "limitations": [
-    "No UV unwrap, skin weights, rig, animation or LODs",
+    "Provisional box UVs; no production unwrap, skin weights, rig or LODs",
     "Procedural surfaces require sculpt and topology refinement",
     "No Unity import or device performance verification",
     "Reference-study connections are proposals, not new lore"

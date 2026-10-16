@@ -7,6 +7,7 @@ Coordinates: X right, Y up, Z forward; meters. Each part remains a named OBJ obj
 import argparse
 import json
 import math
+from strider_materials import attach_uvs, tiles, png_albedo, SURFACES
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -14,13 +15,13 @@ MATERIALS = {
     'living_pearl': (.62, .65, .63),
     'limb_tissue': (.38, .40, .42),
     'soft_charcoal': (.12, .13, .16),
-    'grown_mineral': (.84, .85, .78),
+    'grown_mineral': (.84, .86, .85),
     'sail_membrane': (.32, .28, .43),
     'sail_vein': (.64, .59, .76),
     'continuance_frame': (.36, .38, .40),
     'ceramic': (.65, .66, .60),
-    'avar_skin': (.30, .25, .32),
-    'cloth': (.19, .20, .24),
+    'avar_skin': (.32, .245, .33),
+    'cloth': (.115, .12, .155),
     'survey_light': (.47, .68, .79),
     'eye': (.055, .065, .07),
 }
@@ -28,8 +29,8 @@ MATERIALS = {
 # Provisional finish controls, not locked material canon. Ns is shared with the MTL.
 FINISH = {name: (28, .12) for name in MATERIALS}
 FINISH.update(living_pearl=(32,.10), cloth=(8,.018), avar_skin=(24,.06), soft_charcoal=(16,.045),
-    limb_tissue=(28,.07), grown_mineral=(72,.23), ceramic=(100,.25),
-    continuance_frame=(120,.20), sail_membrane=(64,.18), survey_light=(72,.18))
+    limb_tissue=(28,.07), grown_mineral=(58,.17), ceramic=(100,.22),
+    continuance_frame=(100,.13), sail_membrane=(64,.18), survey_light=(72,.18))
 # Exported opacity; software review uses the nearest membrane surface only.
 OPACITY = {'sail_membrane': .68}
 
@@ -384,29 +385,42 @@ def write(mesh, output):
     bottom=min(v[1] for p in mesh.parts for v in p['vertices'])
     factor=6/(top-bottom)
     for p in mesh.parts: p['vertices']=[mul(sub(v,(0,bottom,0)),factor) for v in p['vertices']]
-    obj=['# Great Strider connection study 07; meters; Y up; Z forward', 'mtllib GreatStrider.mtl']
-    offset=1
+    attach_uvs(mesh.parts)
+    obj=['# Great Strider material study 08; meters; Y up; Z forward', 'mtllib GreatStrider.mtl']
+    offset=1; uv_offset=1
     for p in mesh.parts:
         obj.extend(['o '+p['name'],'usemtl '+p['material'],'s 1'])
         obj.extend('v '+' '.join(f'{x:.5f}' for x in v) for v in p['vertices'])
-        obj.extend('f '+' '.join(str(i+offset) for i in f) for f in p['faces'])
+        obj.extend('vt '+' '.join(f'{x:.7f}' for x in uv) for uv in p.get('uvs',[]))
+        for fi,f in enumerate(p['faces']):
+            obj.append('f '+' '.join(str(i+offset)+(('/'+str(p['uv_faces'][fi][j]+uv_offset)) if 'uvs' in p else '') for j,i in enumerate(f)))
+        uv_offset+=len(p.get('uvs',[]))
         offset+=len(p['vertices'])
     (output/'GreatStrider.obj').write_text('\n'.join(obj)+'\n')
+    texture_dir=output/'Textures'; texture_dir.mkdir(exist_ok=True)
+    for name,values in tiles().items(): png_albedo(texture_dir/(name+'.png'),values,MATERIALS[name])
+    catalog={name:dict(base_color_linear=rgb,albedo_texture=('Textures/'+name+'.png') if name in SURFACES else None,
+        albedo_color_space='sRGB',opacity=OPACITY.get(name,1),review_specular_exponent=FINISH[name][0],
+        review_specular_strength=FINISH[name][1],surface_description=SURFACES[name][2] if name in SURFACES else 'unchanged study material')
+        for name,rgb in MATERIALS.items()}
+    (output/'materials.json').write_text(json.dumps(dict(status='provisional material study 08',
+        uv_mapping='rest-pose dominant-axis box projection, repeating textures',materials=catalog),indent=2)+'\n')
     mtl=[]
     for name,rgb in MATERIALS.items():
-        mtl.extend(['newmtl '+name,'Kd '+' '.join(map(str,rgb)),'Ks '+' '.join([str(FINISH[name][1])]*3),'Ns '+str(FINISH[name][0]),'d '+str(OPACITY.get(name,1)),''])
+        mtl.extend(['newmtl '+name,'Kd '+' '.join(map(str,(1,1,1) if name in SURFACES else rgb)),'Ks '+' '.join([str(FINISH[name][1])]*3),'Ns '+str(FINISH[name][0]),'d '+str(OPACITY.get(name,1)),''])
+        if name in SURFACES: mtl.extend(['map_Kd Textures/'+name+'.png',''])
     (output/'GreatStrider.mtl').write_text('\n'.join(mtl))
-    report=dict(status='connection study 07; not production ready',units='meters',up='Y',forward='Z',
+    report=dict(status='material study 08; not production ready',units='meters',up='Y',forward='Z',
         height=6,parts=len(mesh.parts),vertices=offset-1,
         triangles=sum(len(p['faces']) for p in mesh.parts),
         materials=list(MATERIALS),limbs=['L_Fore','R_Fore','L_Rear','R_Rear'],
-        limitations=['No UV unwrap, skin weights, rig, animation or LODs',
+        limitations=['Provisional box UVs; no production unwrap, skin weights, rig or LODs',
           'Procedural surfaces require sculpt and topology refinement',
           'No Unity import or device performance verification',
           'Reference-study connections are proposals, not new lore'])
     (output/'manifest.json').write_text(json.dumps(report,indent=2)+'\n')
     # This same mesh feeds the review renderer. No image-generation substitution.
-    (output/'review_mesh.json').write_text(json.dumps(dict(materials=MATERIALS,finish=FINISH,opacity=OPACITY,parts=mesh.parts),separators=(',',':')))
+    (output/'review_mesh.json').write_text(json.dumps(dict(materials=MATERIALS,finish=FINISH,opacity=OPACITY,textures=tiles(),parts=mesh.parts),separators=(',',':')))
     print(json.dumps(report,indent=2))
 
 if __name__=='__main__':

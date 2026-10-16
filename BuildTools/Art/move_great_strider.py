@@ -11,6 +11,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 from build_great_strider import make_model, MATERIALS, FINISH, OPACITY
 from render_great_strider import render, font
+from strider_materials import attach_uvs, tiles
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / 'SourceArt/GreatStrider/motion-study.json'
@@ -79,6 +80,7 @@ class Study:
         self.scale = 6 / (max(v[1] for p in self.mesh.parts for v in p['vertices']) - low)
         for p in self.mesh.parts:
             p['vertices'] = (np.array(p['vertices']) - [0, low, 0]) * self.scale
+        attach_uvs(self.mesh.parts)
         self.bones = {}
         names = {p['name'] for p in self.mesh.parts}
         assert all('Ilyth_Limb_'+key in names for key in self.config['phase_offsets'])
@@ -176,9 +178,9 @@ class Study:
                         weight = 0
                     posed = posed+(moved-posed)*weight
                 posed = posed@body_rotation.T+root
-            parts.append(dict(name=name, material=part['material'], faces=part['faces'],
+            parts.append(dict(**{k:part[k] for k in ('uvs','uv_faces') if k in part},name=name, material=part['material'], faces=part['faces'],
                               vertices=(posed if world else posed-[0,0,root[2]]).tolist()))
-        return dict(parts=parts, materials=MATERIALS, finish=FINISH, opacity=OPACITY)
+        return dict(parts=parts, materials=MATERIALS, finish=FINISH, opacity=OPACITY, textures=tiles())
 
     def validate(self):
         max_slide = max_length = 0.
@@ -256,7 +258,7 @@ def ground(data, t, stride):
     for i in range(-4,5):
         x=i*.75
         quad('GridX'+str(i),[[x-.008,-.012,-4],[x+.008,-.012,-4],[x+.008,-.012,4],[x-.008,-.012,4]],'review_grid')
-    return dict(parts=parts,materials={**data['materials'],'review_ground':(.64,.66,.64),'review_grid':(.37,.40,.40)},finish=data['finish'],opacity=data.get('opacity',{}))
+    return dict(textures=data.get('textures',{}),parts=parts,materials={**data['materials'],'review_ground':(.64,.66,.64),'review_grid':(.37,.40,.40)},finish=data['finish'],opacity=data.get('opacity',{}))
 
 
 def frame(args):
