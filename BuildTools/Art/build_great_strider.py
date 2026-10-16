@@ -27,9 +27,11 @@ MATERIALS = {
 
 # Provisional finish controls, not locked material canon. Ns is shared with the MTL.
 FINISH = {name: (28, .12) for name in MATERIALS}
-FINISH.update(cloth=(8,.025), avar_skin=(18,.07), soft_charcoal=(14,.06),
-    limb_tissue=(22,.09), grown_mineral=(64,.20), ceramic=(80,.22),
-    continuance_frame=(96,.24), sail_membrane=(52,.14), survey_light=(72,.18))
+FINISH.update(living_pearl=(32,.10), cloth=(8,.018), avar_skin=(24,.06), soft_charcoal=(16,.045),
+    limb_tissue=(28,.07), grown_mineral=(72,.23), ceramic=(100,.25),
+    continuance_frame=(120,.20), sail_membrane=(64,.18), survey_light=(72,.18))
+# Exported opacity; software review uses the nearest membrane surface only.
+OPACITY = {'sail_membrane': .68}
 
 def add(a, b): return tuple(x+y for x, y in zip(a, b))
 def sub(a, b): return tuple(x-y for x, y in zip(a, b))
@@ -50,6 +52,15 @@ class Mesh:
 
     def loft(self, name, mat, rings, sides=12):
         """rings: (center, side radius, forward radius); smooth joined contour."""
+        # Add radial resolution to broad visible forms, not every fine strand.
+        # Existing profiles, centerlines and control radii stay unchanged.
+        if name.startswith(('Ilyth_Limb_', 'Ilyth_Torso', 'Ilyth_ShortNeck', 'Ilyth_CompactHead')):
+            sides = max(sides, 32)
+        elif name.startswith(('Ilyth_ThoracicArc_', 'Cradle_LoadFrame_', 'Cradle_CeramicShell_',
+                              'Cradle_Seat', 'Avarin_Torso', 'Avarin_Arm_', 'Avarin_Leg_',
+                              'Avarin_Neck', 'Avarin_Face', 'Avarin_ShoulderGuard_',
+                              'Avarin_ForearmGuard_', 'Avarin_ChestProtection')):
+            sides = max(sides, 20)
         # Smooth profile interpolation keeps knees and soft tissue continuous.
         controls=[tuple(p)+(w,h) for p,w,h in rings]
         smooth=[]
@@ -82,6 +93,7 @@ class Mesh:
                 a=ring*sides+j; b=ring*sides+(j+1)%sides
                 faces.append((center,b,a) if reverse else (center,a,b))
         self.part(name,mat,vertices,faces)
+        self.parts[-1]['loft_sides'] = sides
 
     def strand(self,name,mat,points,radius=.025):
         self.loft(name,mat,[(p,radius,radius) for p in points],8)
@@ -135,7 +147,7 @@ class Mesh:
 
     def limb_cover(self,name,source,start,end,fore):
         """Follow the real limb surface instead of offsetting a separate blade."""
-        vertices=source['vertices']; sides=16
+        vertices=source['vertices']; sides=source['loft_sides']
         def surface(t,v):
             row=start+(end-start)*t
             r=min(int(row),end-1); a=row-r
@@ -150,7 +162,7 @@ class Mesh:
             # Fine longitudinal relief follows the grown surface, fading into its edges.
             offset+=.006*math.sin(v*math.pi*8)**2*math.sin(math.pi*t)*math.sin(math.pi*v)
             return add(p,mul(unit(sub(p,c)),offset))
-        self.panel(name,'grown_mineral',surface,16,9,.004)
+        self.panel(name,'grown_mineral',surface,22,13,.004)
 
 def make_model():
     m=Mesh()
@@ -331,7 +343,7 @@ def write(mesh, output):
     bottom=min(v[1] for p in mesh.parts for v in p['vertices'])
     factor=6/(top-bottom)
     for p in mesh.parts: p['vertices']=[mul(sub(v,(0,bottom,0)),factor) for v in p['vertices']]
-    obj=['# Great Strider form study 04; meters; Y up; Z forward', 'mtllib GreatStrider.mtl']
+    obj=['# Great Strider surface study 06; meters; Y up; Z forward', 'mtllib GreatStrider.mtl']
     offset=1
     for p in mesh.parts:
         obj.extend(['o '+p['name'],'usemtl '+p['material'],'s 1'])
@@ -341,9 +353,9 @@ def write(mesh, output):
     (output/'GreatStrider.obj').write_text('\n'.join(obj)+'\n')
     mtl=[]
     for name,rgb in MATERIALS.items():
-        mtl.extend(['newmtl '+name,'Kd '+' '.join(map(str,rgb)),'Ks '+' '.join([str(FINISH[name][1])]*3),'Ns '+str(FINISH[name][0]),'d 1',''])
+        mtl.extend(['newmtl '+name,'Kd '+' '.join(map(str,rgb)),'Ks '+' '.join([str(FINISH[name][1])]*3),'Ns '+str(FINISH[name][0]),'d '+str(OPACITY.get(name,1)),''])
     (output/'GreatStrider.mtl').write_text('\n'.join(mtl))
-    report=dict(status='form study 04; not production ready',units='meters',up='Y',forward='Z',
+    report=dict(status='surface study 06; not production ready',units='meters',up='Y',forward='Z',
         height=6,parts=len(mesh.parts),vertices=offset-1,
         triangles=sum(len(p['faces']) for p in mesh.parts),
         materials=list(MATERIALS),limbs=['L_Fore','R_Fore','L_Rear','R_Rear'],
@@ -353,7 +365,7 @@ def write(mesh, output):
           'Reference-study connections are proposals, not new lore'])
     (output/'manifest.json').write_text(json.dumps(report,indent=2)+'\n')
     # This same mesh feeds the review renderer. No image-generation substitution.
-    (output/'review_mesh.json').write_text(json.dumps(dict(materials=MATERIALS,finish=FINISH,parts=mesh.parts),separators=(',',':')))
+    (output/'review_mesh.json').write_text(json.dumps(dict(materials=MATERIALS,finish=FINISH,opacity=OPACITY,parts=mesh.parts),separators=(',',':')))
     print(json.dumps(report,indent=2))
 
 if __name__=='__main__':
