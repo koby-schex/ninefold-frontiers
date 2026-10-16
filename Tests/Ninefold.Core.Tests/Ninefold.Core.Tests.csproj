@@ -6,6 +6,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../Assets/Ninefold/Editor/GreatStriderSource.cs" Link="GreatStriderSource.cs" />
     <ProjectReference Include="../../BuildTools/Core/Ninefold.Core.csproj" />
   </ItemGroup>
 </Project>

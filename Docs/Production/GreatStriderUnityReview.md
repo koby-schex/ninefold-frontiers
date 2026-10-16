@@ -1,84 +1,102 @@
-# Great Strider Unity review — PT-046
+# Great Strider Unity review 09 — textured source study 08
 
-This is an opt-in inspection scene for the refined **form study 04**, not final art, battlefield replacement or canon revision. It follows the source
-register and scale constraints in [FirstMissionArtBrief.md](FirstMissionArtBrief.md)
-and the approved six-meter study described in the source-art README. No new lore
-or locked appearance is approved by this refinement PR. The locked visual master still
-controls refinement; the current model has not reached that quality gate.
+This opt-in Unity inspection imports the material study from PR #54. It creates
+a reusable **static review prefab**, a neutral review scene and eight imported
+textures. It does not add the Great Strider to a battle roster, rig it or claim
+final art quality. Master Lore, Production Foundations 1–8 and the locked World
+Five visual master remain authoritative; no source geometry or canon is revised.
 
 ## Open it later
 
-1. Stop Play, pull the merged changes and wait for Unity 6000.3.21f1 to import.
-2. Open **Ninefold > Playtest > Launcher**, then **Great Strider visual review**.
-   **Ninefold > Art > Great Strider Review** opens the same window.
-3. Click **Open / create review scene**. If the foundation is not configured,
-   configure it through the existing launcher first. The normal save-scene prompt
-   protects unsaved work; Cancel aborts opening.
-4. Open Game view and choose **540 × 960**. No Play mode is required. Use the review
-   window's orbit, elevation, distance and view presets; they update the scene
-   camera and Scene view. Unity's native Scene view navigation works independently.
-   The **Cradle underside (Scene view)** preset focuses beneath the seat without
-   moving the Game camera below the studio ground.
-5. To return to battles, use the launcher's **Open / repair integration scene** or
-   **START / RESUME PLAYTEST**. Existing battle/profile saves remain intact.
+1. Pull the merged PR, open Unity **6000.3.21f1**, stop Play and wait for importing.
+2. Open **Ninefold > Art > Great Strider Review**, or use **Great Strider visual
+   review** in **Ninefold > Playtest > Launcher**.
+3. Click **Open / create latest review scene**. Configure the existing foundation
+   through the launcher if prompted. Canceling the normal save-scene prompt
+   aborts the operation.
+4. Open Game view at **540 × 960**. No Play mode is needed. Use **Tactical camera ·
+   portrait**, **Full silhouette**, front/side/back or **Cradle / operator detail**.
+   The underside preset adjusts only Scene view, avoiding an underground Game camera.
+5. Read the **Source revision**, **Source fingerprint**, and **Imported scene**
+   fields in the review window. Click **Refresh version status** after changing
+   scenes. **Validate imported review assets** checks the actual Unity mesh,
+   textures and membrane settings; it also runs automatically after creation.
+6. Return through the launcher's existing integration-scene/playtest controls.
+   Battle/profile saves are not accessed by this utility.
 
-The generated scene is `Assets/Ninefold/ArtReview/GreatStriderReview04.unity`.
-The new versioned path preserves any existing study 03 scene. Existing study 04
-scenes are reopened without regeneration. Saved camera/material edits
-are preserved; presets change the camera and mark the scene dirty. The window
-starts Scene view at a standard inspection angle when opening the scene.
-No automatic Play, build-scene registration, package installation or pipeline
-setting changes occur. Generated mesh/material assets live alongside the scene;
-source and reproducible setup code are in GitHub. These local generated assets
-may be committed after a successful Unity review, including their metadata.
+## Output and preservation
 
-## What to inspect
+Output lives under `Assets/Ninefold/ArtReview/GreatStrider09_<fingerprint>/`:
 
-- Full six-meter silhouette, all four feet, paired sensory sails and central cradle.
-- Seated operator, sensory mantle and Waycaster survey-equipment readability.
-- Front, side, back and close-up views against the locked master, especially hidden
-  anatomy and proposed attachments that still need reconciliation.
-- The **1.82 m measuring post**, clearly a scale aid rather than an Avarin model.
-- Material separation and ground contact under a neutral studio key and fill.
-  The key requests soft shadows; actual shadow quality depends on the configured
-  URP/quality settings. Scene lighting must be enabled in Scene view.
+- `GreatStriderStudy08.prefab`: static model with material render sections.
+- `GreatStriderReview09.unity`: neutral ground, studio lights, scale marker and camera.
+- Mesh assets, 12 URP Lit materials, eight PNG textures and `source-version.txt`.
 
-The gray studio floor, lights and marker are presentation tools, not World Five
-locations or canon props. No automatic rotation or animation suggests a rig exists.
-The review UI is an Editor utility, not proposed player-facing game UI.
+The SHA-256 fingerprint covers the OBJ, MTL, source manifest, material catalog,
+texture bytes and both importer source files. Different source or importer code
+creates a new folder. Opening an existing matching scene preserves saved edits.
+**Build fresh review copy** creates a unique additional folder without overwriting
+prior assets. Old review 03/04 scenes are never silently reopened or replaced.
 
-## Import scope and limits
+The prefab is generated locally by the checked-in importer. Generated Unity
+assets are not prebuilt or committed by this PR. After native review they can be
+committed with their metadata. Camera changes are normal local scene edits.
+The window's camera controls apply only to the scene opened by this tool.
 
-The small importer accepts the generator's positive-index, triangle-only OBJ and
-its diffuse MTL palette and finish exponents. It preserves coordinates, topology and meter scale,
-recalculates normals, and groups geometry into 12 material submeshes. Source named
-parts remain in the OBJ; the combined review mesh is not the sculpt/rig master.
-It checks finite coordinates, index bounds, material assignment, the grounded
-0–6 m envelope and expected study counts (33,188 vertices / 65,652 triangles).
-A later source revision must intentionally update these checks; no silent scaling.
+## Import behavior
 
-Materials are opaque URP Lit palette approximations with per-material smoothness
-derived from the MTL exponent; this is not exact MTL-to-URP shading equivalence. No UVs, textures, translucent
-membrane shading, skin weights, animation, LODs or optimized gameplay prefab are
-claimed. It is not added to the battle roster. Multiple editable source parts
-intersect; neither deformation nor inter-part clearance has passed review.
+The shared C# parser accepts this generator's named, triangle-only OBJ, positive
+vertex indices and optional independent texture-coordinate indices. It rejects
+missing materials/UVs, nonfinite coordinates, degenerate triangles, unsupported
+syntax, invalid indices and texture paths outside the expected local tile folder.
 
-## Validation
+Manifest counts and six-meter Y-up/Z-forward bounds are checked before generating
+assets. There is no scaling or anatomy change. Area-weighted normals are computed
+on original vertex indices **before** UV seams duplicate vertices, preserving
+smooth shading across seams. Opaque geometry combines by material; each closed
+translucent shell gets a separate renderer so Unity can sort it independently.
+This is not a final draw-call/LOD optimization.
 
-Repository metadata and reproducible source-geometry checks run locally and in CI.
-Core rules run on Linux and Windows in CI. They do **not** compile the Editor
-assembly or render the scene. Unity is unavailable in the implementation environment.
-Native import, shader appearance, shadow behavior, camera framing and device
-performance therefore remain unverified until the next Unity review.
+Textures import as sRGB albedo with repeat wrapping, mipmaps, trilinear filtering
+and no extra CPU-readable copy. The MTL's white tint is retained for textured
+materials because their tint is already baked into the PNG. Untextured linear
+source colors are converted for Unity color-property authoring. Smoothness is
+an approximation of the MTL exponent, with metallic zero; no physical material
+calibration is claimed.
 
-The new inspection sheet supplies front, side, back and oblique underside views
-from actual source geometry. Focused geometry checks confirm clear forward eye
-rays against Ilyth geometry, four grounded contact groups and a seat behind the
-calf region. These do not establish full intersection-free anatomy or animation
-clearance.
+Smoky membranes retain opacity 0.68. URP Lit alpha blending, transparent queue,
+transparent keyword and disabled depth writes/shadow casting are explicitly set.
+Back-face culling is retained because these are closed shells, avoiding both
+walls being blended over one another. Transparency intersections and lighting
+still require native visual review; this is not an order-independent shader.
 
-At that review, confirm no red Console errors, open/reopen and Cancel behavior,
-all camera presets in portrait, outward surfaces, complete silhouette, grounded
-feet, material assignments and the measuring post. Return to the integration scene
-and confirm the existing battle resumes. Capture front/side/back and cradle detail
-for the next model refinement pass; this is not a final-art acceptance checklist.
+The scene is not registered in build settings. No package install, pipeline
+change, automatic Play, account access or game save mutation occurs. Temporary
+prefab assembly uses a private preview scene. Failure during asset creation
+cleans up only the newly allocated output folder.
+
+## Validation and next native check
+
+Repository checks run the **actual C# parser** on Linux and Windows using the
+existing executable test project. Tests import all 184 parts / 40,646 source
+vertices / 80,556 triangles and eight maps, verify UV splitting preserves normals,
+and reject malformed geometry and unsafe paths. Repository metadata and the
+existing source-geometry checks also run.
+
+These checks do **not** compile or execute Unity Editor APIs. Unity is unavailable
+in the implementation environment. The first native review must verify:
+
+- No Console compilation/import errors; create, reopen, fresh copy and Cancel work.
+- Fingerprints match and the imported-asset validation succeeds.
+- All four feet and paired sails remain visible; no reversed/missing faces.
+- UV seams do not introduce shading breaks; maps are neither white nor double-tinted.
+- Membranes remain smoky/translucent from front, side, back and tactical views.
+- The portrait presets frame the model and operator adequately.
+- Returning to the integration scene preserves the existing battle.
+
+Device performance, animation/rigging, final texture unwrap and battlefield
+integration remain separate work. This prefab is a source-review milestone.
+
+API references used for implementation:
+- https://docs.unity3d.com/6000.0/Documentation/ScriptReference/TextureImporter.html
+- https://docs.unity3d.com/6000.0/Documentation/Manual/urp/lit-shader.html
