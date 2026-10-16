@@ -14,14 +14,25 @@ BASELINE='28a1b51cdf87ad7305447f4bbe1169118b4dd573'
 OUTPUT=ROOT/'SourceArt/GreatStrider/SurfaceReview'
 
 
-def load_meshes():
+SURFACE_RELEASE='b58714df3995b63455434ebf51fa01e93f27d0db'
+
+
+def load_meshes(before_ref=BASELINE, after_ref=SURFACE_RELEASE):
+    """Historical surface review stays pinned; pass None for the current mesh."""
+    data=[]
     with tempfile.TemporaryDirectory() as directory:
-        temp=Path(directory); script=temp/'BuildTools/Art/baseline.py'; script.parent.mkdir(parents=True)
-        script.write_bytes(subprocess.check_output(['git','show',BASELINE+':BuildTools/Art/build_great_strider.py'],cwd=ROOT))
-        spec=importlib.util.spec_from_file_location('surface_baseline',script)
-        module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
-        module.write(module.make_model(),temp/'before'); write(make_model(),temp/'after')
-        return [json.loads((temp/name/'review_mesh.json').read_text()) for name in ('before','after')]
+        temp=Path(directory)
+        for label,ref in (('before',before_ref),('after',after_ref)):
+            if ref is None:
+                write(make_model(),temp/label)
+            else:
+                script=temp/'BuildTools'/'Art'/(label+'.py');script.parent.mkdir(parents=True,exist_ok=True)
+                script.write_bytes(subprocess.check_output(['git','show',ref+':BuildTools/Art/build_great_strider.py'],cwd=ROOT))
+                spec=importlib.util.spec_from_file_location('strider_'+label,script)
+                module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+                module.write(module.make_model(),temp/label)
+            data.append(json.loads((temp/label/'review_mesh.json').read_text()))
+    return data
 
 
 def checks(before,after):
@@ -52,7 +63,7 @@ def checks(before,after):
             assert np.allclose(a[-2:],b[-2:],atol=1e-12)
             refined+=1
     assert center_error<1e-12 and frame_centroid_error<.0001 and refined>0
-    return dict(baseline=BASELINE,parts=len(after['parts']),refined_lofts=refined,
+    return dict(baseline=BASELINE,after_revision=SURFACE_RELEASE,parts=len(after['parts']),refined_lofts=refined,
                 max_envelope_change_m=error,max_loft_center_change_m=center_error,max_frame_sample_centroid_change_m=frame_centroid_error,
                 triangles_before=sum(len(p['faces']) for p in before['parts']),
                 triangles_after=sum(len(p['faces']) for p in after['parts']),

@@ -40,6 +40,18 @@ def dot(a, b): return sum(x*y for x, y in zip(a, b))
 def cross(a, b): return (a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0])
 def unit(a): return mul(a, 1/max(math.sqrt(dot(a,a)), 1e-12))
 
+def avar_face_relief(x, y, forward):
+    """Small organic cheek/nose relief, fading continuously into the cranium."""
+    cheek=.022*math.exp(-(x/.083)**4-((y-4.885)/.105)**4)
+    nose=.012*math.exp(-(x/.022)**2-((y-4.887)/.042)**2)
+    return (cheek+nose)*max(0,forward/.11)**2
+
+
+def avar_face_surface(x,y):
+    forward=.11*math.sqrt(max(0,1-(x/.11)**2-((y-4.89)/.16)**2))
+    return -.17+forward+avar_face_relief(x,y,forward)
+
+
 class Mesh:
     def __init__(self): self.parts = []
 
@@ -54,11 +66,11 @@ class Mesh:
         """rings: (center, side radius, forward radius); smooth joined contour."""
         # Add radial resolution to broad visible forms, not every fine strand.
         # Existing profiles, centerlines and control radii stay unchanged.
-        if name.startswith(('Ilyth_Limb_', 'Ilyth_Torso', 'Ilyth_ShortNeck', 'Ilyth_CompactHead')):
+        if name.startswith(('Ilyth_Limb_', 'Ilyth_Torso', 'Ilyth_ShortNeck', 'Ilyth_CompactHead', 'Avarin_Head')):
             sides = max(sides, 32)
         elif name.startswith(('Ilyth_ThoracicArc_', 'Cradle_LoadFrame_', 'Cradle_CeramicShell_',
                               'Cradle_Seat', 'Avarin_Torso', 'Avarin_Arm_', 'Avarin_Leg_',
-                              'Avarin_Neck', 'Avarin_Face', 'Avarin_ShoulderGuard_',
+                              'Avarin_Neck', 'Avarin_Face', 'Avarin_Hand_', 'Avarin_Nose', 'Avarin_ShoulderGuard_',
                               'Avarin_ForearmGuard_', 'Avarin_ChestProtection')):
             sides = max(sides, 20)
         # Smooth profile interpolation keeps knees and soft tissue continuous.
@@ -158,11 +170,11 @@ class Mesh:
             p=add(mul(point(r),1-a),mul(point(r+1),a))
             def center(i): return tuple(sum(vertices[i*sides+j][axis] for j in range(sides))/sides for axis in range(3))
             c=add(mul(center(r),1-a),mul(center(r+1),a))
-            offset=.018+.045*math.sin(math.pi*t)*math.sin(math.pi*v)
+            offset=.004+.052*math.sin(math.pi*t)*math.sin(math.pi*v)
             # Fine longitudinal relief follows the grown surface, fading into its edges.
             offset+=.006*math.sin(v*math.pi*8)**2*math.sin(math.pi*t)*math.sin(math.pi*v)
             return add(p,mul(unit(sub(p,c)),offset))
-        self.panel(name,'grown_mineral',surface,22,13,.004)
+        self.panel(name,'grown_mineral',surface,22,13,.002)
 
 def make_model():
     m=Mesh()
@@ -172,8 +184,8 @@ def make_model():
         ((0,5.21,-.25),.43,.14),((0,5.23,.38),.40,.15),
         ((0,5.14,.88),.29,.21),((0,5.14,1.10),.17,.17)],20)
     m.loft('Ilyth_ShortNeck','living_pearl',[
-        ((0,5.10,.64),.17,.15),((0,5.22,.96),.22,.19),
-        ((0,5.40,1.16),.19,.20),((0,5.59,1.29),.13,.14)],16)
+        ((0,5.20,.48),.055,.055),((0,5.23,.88),.19,.15),
+        ((0,5.40,1.16),.19,.20),((0,5.62,1.29),.095,.10)],16)
     m.loft('Ilyth_CompactHead','living_pearl',[
         ((0,5.60,1.05),.09,.12),((0,5.68,1.26),.25,.22),
         ((0,5.63,1.53),.22,.17),((0,5.55,1.78),.12,.09),
@@ -219,7 +231,7 @@ def make_model():
             c=(side*1.11,2.66,.72 if fore else -1.18)
             d=(side*1.29,1.52,1.10 if fore else -1.27)
             e=(side*1.47,.25,1.43 if fore else -1.56)
-            m.loft('Ilyth_Limb_'+n,'limb_tissue',[(a,.21,.24),
+            m.loft('Ilyth_Limb_'+n,'limb_tissue',[(a,.06,.075),
                 (add(mul(a,.5),mul(b,.5)),.24,.21),(b,.17,.19),
                 (add(mul(b,.6),mul(c,.4)),.16,.17),(c,.10,.12),
                 (d,.095,.105),(add(mul(d,.45),mul(e,.55)),.065,.08),(e,.085,.10)],16)
@@ -281,8 +293,10 @@ def make_model():
     m.loft('Avarin_Torso','cloth', [((0,4.10,-.14),.18,.13),((0,4.33,-.18),.21,.14),((0,4.61,-.21),.23,.14),((0,4.66,-.20),.15,.12)],12)
     m.loft('Avarin_Neck','avar_skin',[((0,4.65,-.18),.072,.065),((0,4.78,-.18),.065,.064)],10)
     m.oval('Avarin_Head','avar_skin',(0,4.89,-.17),(.11,.16,.11))
-    m.loft('Avarin_Face','avar_skin',[((0,4.79,-.09),.035,.025),((0,4.86,-.065),.07,.032),((0,4.96,-.075),.075,.025)],12)
-    m.strand('Avarin_ForeheadSeam','sail_vein',[(0,4.98,-.074),(0,5.026,-.095)],.004)
+    # Sculpt the face into the head's existing front surface; no overlapping mask.
+    head=m.parts[-1]
+    head['vertices']=[(x,y,z+avar_face_relief(x,y,z+.17)) for x,y,z in head['vertices']]
+    m.strand('Avarin_ForeheadSeam','sail_vein',[(0,4.98,avar_face_surface(0,4.98)+.002),(0,5.026,avar_face_surface(0,5.026)+.002)],.004)
     m.loft('Avarin_ChestProtection','ceramic', [((0,4.23,-.015),.085,.025),((0,4.44,-.025),.15,.038),((0,4.58,-.065),.17,.03)],12)
     def mantle(t,v):
         angle=.05+(math.pi-.10)*t
@@ -290,13 +304,28 @@ def make_model():
         return (radius*math.cos(angle),4.60+radius*.91*math.sin(angle),-.41-.065*v+.025*math.sin(angle*3))
     m.panel('Avarin_CrescentMantle','sail_membrane',mantle,24,6)
     m.strand('Avarin_MantleRim','sail_vein',[mantle(k/14,1) for k in range(15)],.013)
-    m.strand('Avarin_Mouth','soft_charcoal',[(-.03,4.83,-.035),(0,4.824,-.03),(.03,4.83,-.035)],.006)
+    m.strand('Avarin_Mouth','soft_charcoal',[(-.027,4.838,avar_face_surface(-.027,4.838)+.002),(0,4.836,avar_face_surface(0,4.836)+.002),(.027,4.838,avar_face_surface(.027,4.838)+.002)],.0035)
     for side in [-1,1]:
         s='L' if side<0 else 'R'
-        m.oval('Avarin_Eye_'+s,'eye',(side*.047,4.92,-.025),(.018,.015,.013))
-        m.strand('Avarin_Temple_'+s,'grown_mineral',[(side*.10,4.97,-.14),(side*.085,4.89,-.095),(side*.075,4.83,-.115)],.013)
+        m.oval('Avarin_Eye_'+s,'eye',(side*.047,4.92,avar_face_surface(side*.047,4.92)+.001),(.020,.012,.009))
+        m.loft('Avarin_Temple_'+s,'grown_mineral',[
+            ((side*x,y,avar_face_surface(side*x,y)+.003),w,h)
+            for x,y,w,h in [(.080,4.97,.007,.003),(.094,4.925,.010,.004),
+                            (.075,4.879,.012,.004),(.059,4.827,.008,.003),
+                            (.035,4.794,.003,.002)]],12)
+        m.strand('Avarin_UpperLid_'+s,'avar_skin',[
+            (side*x,y,avar_face_surface(side*x,y)+.004)
+            for x,y in [(.027,4.920),(.047,4.932),(.067,4.920)]],.005)
+        m.strand('Avarin_LowerLid_'+s,'avar_skin',[
+            (side*x,y,avar_face_surface(side*x,y)+.004)
+            for x,y in [(.027,4.920),(.047,4.910),(.067,4.920)]],.004)
         m.loft('Avarin_Arm_'+s,'cloth',[((side*.21,4.57,-.19),.09,.085),((side*.29,4.30,.05),.065,.06),((side*.18,4.38,.45),.048,.046)],10)
-        m.oval('Avarin_Hand_'+s,'avar_skin',(side*.18,4.38,.47),(.05,.04,.07))
+        # Grouped relaxed hand contour follows the console rim. Individual digit
+        # segmentation is deferred; this does not establish a species digit count.
+        m.loft('Avarin_Hand_'+s,'avar_skin',[
+            ((side*.18,4.38,.425),.034,.027),((side*.18,4.38,.48),.045,.022),
+            ((side*.18,4.365,.528),.035,.018),((side*.18,4.347,.54),.020,.011),
+            ((side*.18,4.337,.526),.008,.006)],20)
         m.loft('Avarin_Leg_'+s,'cloth',[((side*.105,4.14,-.10),.10,.10),((side*.19,4.04,.22),.09,.085),((side*.19,3.63,.23),.052,.065)],10)
         m.oval('Avarin_Foot_'+s,'soft_charcoal',(side*.19,3.61,.29),(.06,.05,.13))
         m.loft('Avarin_ShoulderGuard_'+s,'ceramic', [((side*.19,4.64,-.22),.045,.025),((side*.25,4.57,-.17),.105,.05),((side*.27,4.47,-.09),.04,.023)],10)
@@ -311,6 +340,18 @@ def make_model():
             m.strand('Avarin_TabardHem_'+s+str(v),'continuance_frame',[add(drape(k/9,v),(0,0,.012)) for k in range(10)],.007)
         for k in range(3):
             m.strand('Avarin_SensoryRibbon_'+s+str(k),'sail_vein',[(side*(.25+k*.085),4.63,-.46),(side*(.26+k*.085),4.49,-.49),(side*(.28+k*.085),4.39,-.46)],.012)
+    # Cloth relief tapers to zero at each loft end, preserving wrist/hip/calf fits.
+    for part in m.parts:
+        if part['name'].startswith(('Avarin_Arm_', 'Avarin_Leg_', 'Avarin_Torso')):
+            sides=part['loft_sides']; count=(len(part['vertices'])-2)//sides
+            verts=list(part['vertices'])
+            for row in range(count):
+                t=row/(count-1)
+                center=tuple(sum(verts[row*sides+j][axis] for j in range(sides))/sides for axis in range(3))
+                for j in range(sides):
+                    index=row*sides+j; v=verts[index]; angle=j*math.tau/sides
+                    relief=.0035*math.sin(math.pi*t)**2*math.sin(10*math.pi*t+2*angle)
+                    part['vertices'][index]=add(v,mul(unit(sub(v,center)),relief))
     # Grown coverings follow the limb surfaces; soft joint gaps remain visible.
     for p in list(m.parts):
         if p['name'].startswith('Ilyth_Limb_'):
@@ -343,7 +384,7 @@ def write(mesh, output):
     bottom=min(v[1] for p in mesh.parts for v in p['vertices'])
     factor=6/(top-bottom)
     for p in mesh.parts: p['vertices']=[mul(sub(v,(0,bottom,0)),factor) for v in p['vertices']]
-    obj=['# Great Strider surface study 06; meters; Y up; Z forward', 'mtllib GreatStrider.mtl']
+    obj=['# Great Strider connection study 07; meters; Y up; Z forward', 'mtllib GreatStrider.mtl']
     offset=1
     for p in mesh.parts:
         obj.extend(['o '+p['name'],'usemtl '+p['material'],'s 1'])
@@ -355,7 +396,7 @@ def write(mesh, output):
     for name,rgb in MATERIALS.items():
         mtl.extend(['newmtl '+name,'Kd '+' '.join(map(str,rgb)),'Ks '+' '.join([str(FINISH[name][1])]*3),'Ns '+str(FINISH[name][0]),'d '+str(OPACITY.get(name,1)),''])
     (output/'GreatStrider.mtl').write_text('\n'.join(mtl))
-    report=dict(status='surface study 06; not production ready',units='meters',up='Y',forward='Z',
+    report=dict(status='connection study 07; not production ready',units='meters',up='Y',forward='Z',
         height=6,parts=len(mesh.parts),vertices=offset-1,
         triangles=sum(len(p['faces']) for p in mesh.parts),
         materials=list(MATERIALS),limbs=['L_Fore','R_Fore','L_Rear','R_Rear'],
