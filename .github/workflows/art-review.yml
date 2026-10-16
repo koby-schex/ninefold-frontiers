@@ -5,12 +5,14 @@ on:
       - 'BuildTools/Art/**'
       - 'SourceArt/GreatStrider/**'
       - '.github/workflows/art-review.yml'
+      - '.gitattributes'
   push:
     branches: [main]
     paths:
       - 'BuildTools/Art/**'
       - 'SourceArt/GreatStrider/**'
       - '.github/workflows/art-review.yml'
+      - '.gitattributes'
 permissions:
   contents: read
 jobs:
