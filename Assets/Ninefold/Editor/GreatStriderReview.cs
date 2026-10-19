@@ -17,13 +17,14 @@ namespace Ninefold.Editor
     {
         private const string Folder = "Assets/Ninefold/ArtReview";
         private static string ScenePath = "";
-        private const string Revision = "Material study 08 / Unity review 09";
+        private const string Revision = "Material study 08 / Unity review 10";
         private string sourceVersion = "", importedVersion = "";
         private const string Source = "SourceArt/GreatStrider/";
         private float yaw = 145, pitch = 12, distance = 19;
         private string status = "";
         private Vector2 scroll;
         private bool detail;
+        private bool showMaterials;
         private static bool Busy => EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating;
 
         [MenuItem("Ninefold/Art/Great Strider Review")]
@@ -42,7 +43,7 @@ namespace Ninefold.Editor
         {
             scroll = EditorGUILayout.BeginScrollView(scroll);
             GUILayout.Label("Great Strider · Material study 08", EditorStyles.boldLabel);
-            EditorGUILayout.HelpBox("Textured source study — not final art or a canon revision. Unity review 09 imports the current mesh, eight textures and translucent membranes. Static review prefab; no production rig or battlefield replacement.", MessageType.Info);
+            EditorGUILayout.HelpBox("Textured source study — not final art or a canon revision. Unity review 10 uses neutral lighting and material inspection for the current mesh, eight textures and translucent membranes. Static review prefab; no production rig or battlefield replacement.", MessageType.Info);
             EditorGUILayout.LabelField("Source revision", Revision);
             EditorGUILayout.LabelField("Source fingerprint", sourceVersion);
             EditorGUILayout.HelpBox("Imported scene: " + importedVersion, MessageType.None);
@@ -55,7 +56,7 @@ namespace Ninefold.Editor
                 {
                     try { if (OpenScene())
                         {
-                            var view = GetWindow<SceneView>(); view.sceneLighting = true;
+                            var view = PrepareSceneView();
                             view.LookAt(new Vector3(0, 3, 0), Quaternion.Euler(12, 145, 0), 6, false, true);
                             RefreshVersion(); status = "Review scene ready. No Play mode needed.";
                         } }
@@ -86,15 +87,61 @@ namespace Ninefold.Editor
                     if (GUILayout.Button("Back")) Preset(0, 0, 19, false);
                     if (GUILayout.Button("Cradle / operator detail")) Preset(180, 0, 6, true);
                     if (GUILayout.Button("Cradle underside (Scene view)"))
-                        GetWindow<SceneView>().LookAt(new Vector3(0, 3.8f, 0), Quaternion.Euler(-20, 145, 0), 2.25f, false, true);
+                        PrepareSceneView().LookAt(new Vector3(0, 3.8f, 0), Quaternion.Euler(-20, 145, 0), 2.25f, false, true);
                     if (GUILayout.Button("Open Game view")) EditorApplication.ExecuteMenuItem("Window/General/Game");
-                    if (GUILayout.Button("Open Scene view")) GetWindow<SceneView>().Focus();
+                    if (GUILayout.Button("Open Scene view")) PrepareSceneView().Focus();
+                    DrawMaterialInspection();
                 }
             }
-            EditorGUILayout.HelpBox("Use the Game view at 540 × 960 for portrait framing. Scene view also supports Unity's normal orbit, pan and zoom. Presets update both views. Scene lighting must be enabled to inspect the studio lights. Camera edits are local scene changes; reopening preserves saved edits.", MessageType.None);
+            EditorGUILayout.HelpBox("Use the Game view at 540 × 960 for portrait framing. Scene view also supports Unity's normal orbit, pan and zoom. Presets update both views. Presets enable scene lighting and hide the grid, gizmos and skybox for inspection. These Scene view display preferences remain adjustable in Unity. Game view is the reference for background and framing. Camera edits are local scene changes; reopening preserves saved edits.", MessageType.None);
             EditorGUILayout.HelpBox("Review silhouette, foot contacts, cradle clearance, operator readability and material separation. This scene does not establish mobile performance or battlefield clearance.", MessageType.None);
             if (status.Length > 0) EditorGUILayout.HelpBox(status, MessageType.Info);
             EditorGUILayout.EndScrollView();
+        }
+
+        private static SceneView PrepareSceneView()
+        {
+            var view = GetWindow<SceneView>();
+            view.sceneLighting = true;
+            view.showGrid = false;
+            view.drawGizmos = false;
+            view.sceneViewState.showSkybox = false;
+            return view;
+        }
+
+        private void DrawMaterialInspection()
+        {
+            GUILayout.Space(8);
+            showMaterials = EditorGUILayout.Foldout(showMaterials, "Inspect model materials", true);
+            if (!showMaterials) return;
+            EditorGUILayout.HelpBox("Read-only swatches and imported albedo maps. White tint is expected on textured surfaces: their color is in the texture. Select a material to inspect its full settings. This is an art study, not final canon approval.", MessageType.None);
+            var root = SceneManager.GetActiveScene().GetRootGameObjects()
+                .FirstOrDefault(go => go.name.StartsWith("Great Strider — ", StringComparison.Ordinal));
+            if (root == null) { EditorGUILayout.HelpBox("Review model not found.", MessageType.Warning); return; }
+            var materials = root.GetComponentsInChildren<MeshRenderer>()
+                .SelectMany(renderer => renderer.sharedMaterials).Where(material => material != null)
+                .Distinct().OrderBy(material => material.name, StringComparer.Ordinal);
+            foreach (var material in materials)
+            {
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                EditorGUILayout.LabelField(material.name, EditorStyles.boldLabel);
+                var tint = material.GetColor("_BaseColor");
+                var texture = material.GetTexture("_BaseMap");
+                using (new EditorGUI.DisabledScope(true))
+                {
+                    EditorGUILayout.ColorField("Base tint", tint);
+                    EditorGUILayout.ObjectField("Albedo map", texture, typeof(Texture), false);
+                }
+                if (texture != null)
+                {
+                    var rect = GUILayoutUtility.GetRect(64, 64, GUILayout.ExpandWidth(false));
+                    EditorGUI.DrawPreviewTexture(rect, texture);
+                }
+                EditorGUILayout.LabelField("Opacity / smoothness", tint.a.ToString("0.00") + " / " + material.GetFloat("_Smoothness").ToString("0.00"));
+                if (GUILayout.Button("Select material in Inspector"))
+                { Selection.activeObject = material; EditorGUIUtility.PingObject(material); }
+                EditorGUILayout.EndVertical();
+            }
         }
 
         private void Preset(float y, float p, float d, bool close)
@@ -112,8 +159,7 @@ namespace Ninefold.Editor
                 camera.transform.SetPositionAndRotation(target - rotation * Vector3.forward * distance, rotation);
                 EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
             }
-            var view = GetWindow<SceneView>();
-            view.sceneLighting = true;
+            var view = PrepareSceneView();
             view.LookAt(target, rotation, distance * .32f, false, true);
             SceneView.RepaintAll();
         }
@@ -127,8 +173,8 @@ namespace Ninefold.Editor
             var shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null) throw new InvalidOperationException("URP Lit shader unavailable. Finish package import first.");
             string fingerprint = Fingerprint();
-            string destination = Folder + "/GreatStrider09_" + fingerprint.Substring(0, 12);
-            string expectedScene = destination + "/GreatStriderReview09.unity";
+            string destination = Folder + "/GreatStrider10_" + fingerprint.Substring(0, 12);
+            string expectedScene = destination + "/GreatStriderReview10.unity";
             if (!fresh && File.Exists(expectedScene))
             { ScenePath = expectedScene; EditorSceneManager.OpenScene(ScenePath); return true; }
             // Validate the entire source before creating assets or changing the scene.
@@ -155,7 +201,7 @@ namespace Ninefold.Editor
                 var materials = new System.Collections.Generic.Dictionary<string, Material>();
                 foreach (var surface in surfaces)
                     materials.Add(surface.Name, ImportMaterial(shader, surface, destination));
-                ground = Material(shader, "Studio ground", new Color(.20f, .19f, .23f), destination);
+                ground = Material(shader, "Studio ground", new Color(.20f, .20f, .20f), destination);
                 marker = Material(shader, "Scale marker", new Color(.72f, .62f, .39f), destination);
                 var root = new GameObject("Great Strider — " + Revision + " — " + fingerprint.Substring(0,12));
                 SceneManager.MoveGameObjectToScene(root, preview);
@@ -185,22 +231,25 @@ namespace Ninefold.Editor
             finally { EditorSceneManager.ClosePreviewScene(preview); }
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             RenderSettings.ambientMode = AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(.30f, .29f, .34f);
+            RenderSettings.ambientLight = new Color(.30f, .30f, .30f);
+            RenderSettings.skybox = null;
+            RenderSettings.fog = false;
+            RenderSettings.reflectionIntensity = 0;
             var model = (GameObject)PrefabUtility.InstantiatePrefab(prefab, scene);
             Primitive("Neutral studio ground", PrimitiveType.Cube, new Vector3(0, -.1f, 0), new Vector3(32, .2f, 32), ground);
             Primitive("Avarin baseline — 1.82 m measuring post, NOT anatomy", PrimitiveType.Cube,
                 new Vector3(-2.6f, .91f, 0), new Vector3(.12f, 1.82f, .12f), marker);
             Primitive("1.82 m height crossbar", PrimitiveType.Cube,
                 new Vector3(-2.6f, 1.81f, 0), new Vector3(.6f, .02f, .12f), marker);
-            Light("Studio key", new Vector3(45, -35, 0), new Color(1, .91f, .82f), 1.5f, LightShadows.Soft);
-            Light("Studio fill", new Vector3(25, 140, 0), new Color(.68f, .72f, 1), .6f, LightShadows.None);
+            Light("Studio key", new Vector3(45, -35, 0), Color.white, 1.2f, LightShadows.Soft);
+            Light("Studio fill", new Vector3(25, 140, 0), Color.white, .6f, LightShadows.None);
             var camera = new GameObject("Review camera").AddComponent<Camera>();
             camera.tag = "MainCamera"; camera.fieldOfView = 40; camera.nearClipPlane = .1f; camera.farClipPlane = 100;
-            camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = new Color(.09f, .085f, .12f);
+            camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = new Color(.12f, .12f, .12f);
             var rotation = Quaternion.Euler(12, 145, 0);
             camera.transform.SetPositionAndRotation(new Vector3(0, 3, 0) - rotation * Vector3.forward * 19, rotation);
             AssetDatabase.SaveAssets();
-            ScenePath = destination + "/GreatStriderReview09.unity";
+            ScenePath = destination + "/GreatStriderReview10.unity";
             if (!EditorSceneManager.SaveScene(scene, ScenePath)) throw new IOException("Could not save review scene.");
             Selection.activeGameObject = model;
             Debug.Log(ValidateImported());
