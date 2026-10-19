@@ -68,12 +68,12 @@ checks and previews inspect current output.
 
 ## Integration and quality limits
 
-The existing Unity study importer targets the older study 04 geometry and does
-not import these texture coordinates/maps. This PR does not update it or the
-battlefield prefab. Do not expect a Unity playtest to display this pass yet.
-The next integration must support independent OBJ vertex/UV indices, preserve
-smooth normals across UV seams, create materials with correct texture color
-space and transparent-surface settings, and replace the old count guard.
+Material study 08 originally shipped as an offline asset pass. Unity review 09
+now supplies the separate importer update for independent OBJ vertex/UV indices,
+smooth normals across seams, texture color space and transparent-surface settings.
+See [the Unity review guide](GreatStriderUnityReview.md). The generated static
+review prefab is not a battlefield replacement, and native Unity appearance and
+device performance remain unverified until the next review.
 
 These are low-cost source tiles, not a production unwrap, baked normal maps,
 sculpted microdetail or an optimized texture atlas. Box-projection seams can

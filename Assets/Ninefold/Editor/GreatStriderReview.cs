@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -14,7 +16,9 @@ namespace Ninefold.Editor
     public sealed class GreatStriderReview : EditorWindow
     {
         private const string Folder = "Assets/Ninefold/ArtReview";
-        private const string ScenePath = Folder + "/GreatStriderReview04.unity";
+        private static string ScenePath = "";
+        private const string Revision = "Material study 08 / Unity review 09";
+        private string sourceVersion = "", importedVersion = "";
         private const string Source = "SourceArt/GreatStrider/";
         private float yaw = 145, pitch = 12, distance = 19;
         private string status = "";
@@ -25,33 +29,57 @@ namespace Ninefold.Editor
         [MenuItem("Ninefold/Art/Great Strider Review")]
         public static void Open() => GetWindow<GreatStriderReview>("Great Strider Review");
 
+        private void OnEnable() => RefreshVersion();
+        private void RefreshVersion()
+        {
+            try { sourceVersion = Fingerprint().Substring(0, 12); }
+            catch (Exception e) { sourceVersion = "Unavailable: " + e.Message; }
+            string report = Path.Combine(Path.GetDirectoryName(SceneManager.GetActiveScene().path) ?? "", "source-version.txt");
+            importedVersion = File.Exists(report) ? File.ReadAllText(report) : "No current review scene open";
+        }
+
         private void OnGUI()
         {
             scroll = EditorGUILayout.BeginScrollView(scroll);
-            GUILayout.Label("Great Strider · Form study 04", EditorStyles.boldLabel);
-            EditorGUILayout.HelpBox("Early model study — not final art or a canon revision. Source geometry and provisional palette; no rig, animation, textures or final membrane shading.", MessageType.Info);
+            GUILayout.Label("Great Strider · Material study 08", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox("Textured source study — not final art or a canon revision. Unity review 09 imports the current mesh, eight textures and translucent membranes. Static review prefab; no production rig or battlefield replacement.", MessageType.Info);
+            EditorGUILayout.LabelField("Source revision", Revision);
+            EditorGUILayout.LabelField("Source fingerprint", sourceVersion);
+            EditorGUILayout.HelpBox("Imported scene: " + importedVersion, MessageType.None);
+            if (GUILayout.Button("Refresh version status")) RefreshVersion();
             EditorGUILayout.LabelField("Scale", "Ilyth 6.0 m · Avarin reference 1.82 m");
             EditorGUILayout.HelpBox("The upright scale marker is a measuring aid, not an Avarin model. Locked lore and visual masters remain authoritative.", MessageType.None);
             using (new EditorGUI.DisabledScope(Busy))
             {
-                if (GUILayout.Button("Open / create review scene", GUILayout.Height(36)))
+                if (GUILayout.Button("Open / create latest review scene", GUILayout.Height(36)))
                 {
                     try { if (OpenScene())
                         {
                             var view = GetWindow<SceneView>(); view.sceneLighting = true;
                             view.LookAt(new Vector3(0, 3, 0), Quaternion.Euler(12, 145, 0), 6, false, true);
-                            status = "Review scene ready. No Play mode needed.";
+                            RefreshVersion(); status = "Review scene ready. No Play mode needed.";
                         } }
+                    catch (Exception e) { status = e.Message; Debug.LogException(e); }
+                }
+                if (GUILayout.Button("Build fresh review copy (preserve existing edits)"))
+                {
+                    try { if (OpenScene(true)) { RefreshVersion(); status = "Fresh review copy created."; } }
                     catch (Exception e) { status = e.Message; Debug.LogException(e); }
                 }
                 using (new EditorGUI.DisabledScope(SceneManager.GetActiveScene().path != ScenePath))
                 {
+                    if (GUILayout.Button("Validate imported review assets"))
+                    {
+                        try { status = ValidateImported(); }
+                        catch (Exception e) { status = e.Message; Debug.LogException(e); }
+                    }
                     GUILayout.Space(8);
                     EditorGUI.BeginChangeCheck();
                     yaw = EditorGUILayout.Slider("Orbit", yaw, -180, 180);
                     pitch = EditorGUILayout.Slider("Elevation", pitch, -10, 70);
                     distance = EditorGUILayout.Slider("Camera distance", distance, 3, 35);
                     if (EditorGUI.EndChangeCheck()) ApplyView();
+                    if (GUILayout.Button("Tactical camera · portrait")) Preset(140, 45, 21, false);
                     if (GUILayout.Button("Full silhouette · portrait")) Preset(145, 12, 19, false);
                     if (GUILayout.Button("Front (+Z)")) Preset(180, 0, 19, false);
                     if (GUILayout.Button("Side")) Preset(90, 0, 19, false);
@@ -90,32 +118,75 @@ namespace Ninefold.Editor
             SceneView.RepaintAll();
         }
 
-        private static bool OpenScene()
+        private static bool OpenScene(bool fresh = false)
         {
             if (Busy) throw new InvalidOperationException("Stop Play mode and wait for import/compilation first.");
             if (Application.unityVersion != "6000.3.21f1") throw new InvalidOperationException("Use Unity 6000.3.21f1.");
             if (GraphicsSettings.defaultRenderPipeline == null) throw new InvalidOperationException("Configure foundation in the Playtest Launcher first.");
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return false;
-            if (File.Exists(ScenePath)) { EditorSceneManager.OpenScene(ScenePath); return true; }
             var shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null) throw new InvalidOperationException("URP Lit shader unavailable. Finish package import first.");
-            // Parse and validate before changing the open scene or creating assets.
-            var colors = ReadPalette(out var finishes);
-            var mesh = ReadMesh(new List<string>(colors.Keys));
-            // Unique destination avoids overwriting partial output from a failed previous attempt.
+            string fingerprint = Fingerprint();
+            string destination = Folder + "/GreatStrider09_" + fingerprint.Substring(0, 12);
+            string expectedScene = destination + "/GreatStriderReview09.unity";
+            if (!fresh && File.Exists(expectedScene))
+            { ScenePath = expectedScene; EditorSceneManager.OpenScene(ScenePath); return true; }
+            // Validate the entire source before creating assets or changing the scene.
+            var surfaces = GreatStriderSource.ReadMaterials(File.ReadLines(Source + "GreatStrider.mtl"), Source);
+            var data = GreatStriderSource.ReadMesh(File.ReadLines(Source + "GreatStrider.obj"), surfaces);
+            var manifest = JsonUtility.FromJson<SourceManifest>(File.ReadAllText(Source + "manifest.json"));
+            if (manifest == null || manifest.status != "material study 08; not production ready" ||
+                manifest.vertices != data.SourceVertices || manifest.triangles != data.Triangles || manifest.parts != data.Parts ||
+                manifest.height != 6 || manifest.up != "Y" || manifest.forward != "Z" || manifest.units != "meters" ||
+                surfaces.Count != 12 || surfaces.Count(m => m.Texture != null) != 8)
+                throw new InvalidDataException("Unexpected source revision/counts. Update and review the importer before proceeding.");
+            var positions = data.Sections.SelectMany(x => x.Vertices).ToArray();
+            if (Math.Abs(positions.Min(v => v[1])) > .0001 || Math.Abs(positions.Max(v => v[1])-6) > .0001)
+                throw new InvalidDataException("Expected grounded six-meter study; no automatic rescaling.");
             if (!AssetDatabase.IsValidFolder(Folder)) AssetDatabase.CreateFolder("Assets/Ninefold", "ArtReview");
-            string meshPath = AssetDatabase.GenerateUniqueAssetPath(Folder + "/GreatStriderStudy04.asset");
-            AssetDatabase.CreateAsset(mesh, meshPath);
-            var materials = new List<Material>();
-            foreach (var pair in colors) materials.Add(Material(shader, pair.Key, pair.Value, finishes[pair.Key]));
-            var ground = Material(shader, "Studio ground", new Color(.20f, .19f, .23f));
-            var marker = Material(shader, "Scale marker", new Color(.72f, .62f, .39f));
+            destination = AssetDatabase.GenerateUniqueAssetPath(destination);
+            AssetDatabase.CreateFolder(Folder, Path.GetFileName(destination));
+            // A private preview scene keeps temporary prefab objects out of the user's scene.
+            var preview = EditorSceneManager.NewPreviewScene();
+            GameObject prefab;
+            Material ground, marker;
+            try
+            {
+                var materials = new System.Collections.Generic.Dictionary<string, Material>();
+                foreach (var surface in surfaces)
+                    materials.Add(surface.Name, ImportMaterial(shader, surface, destination));
+                ground = Material(shader, "Studio ground", new Color(.20f, .19f, .23f), destination);
+                marker = Material(shader, "Scale marker", new Color(.72f, .62f, .39f), destination);
+                var root = new GameObject("Great Strider — " + Revision + " — " + fingerprint.Substring(0,12));
+                SceneManager.MoveGameObjectToScene(root, preview);
+                foreach (var section in data.Sections)
+                {
+                    var mesh = new Mesh { name = section.Name, indexFormat = IndexFormat.UInt32 };
+                    mesh.SetVertices(section.Vertices.Select(v => new Vector3(v[0], v[1], v[2])).ToList());
+                    mesh.SetNormals(section.Normals.Select(v => new Vector3(v[0], v[1], v[2])).ToList());
+                    mesh.SetUVs(0, section.UVs.Select(v => new Vector2(v[0], v[1])).ToList());
+                    mesh.SetTriangles(section.Indices, 0); mesh.RecalculateBounds(); mesh.RecalculateTangents();
+                    AssetDatabase.CreateAsset(mesh, destination + "/" + section.Name.Replace('/', '_') + ".asset");
+                    var part = new GameObject(section.Name); part.transform.SetParent(root.transform, false);
+                    part.AddComponent<MeshFilter>().sharedMesh = mesh;
+                    var renderer = part.AddComponent<MeshRenderer>(); renderer.sharedMaterial = materials[section.Material];
+                    if (surfaces.Find(m => m.Name == section.Material).Opacity < 1)
+                        renderer.shadowCastingMode = ShadowCastingMode.Off;
+                }
+                prefab = PrefabUtility.SaveAsPrefabAsset(root, destination + "/GreatStriderStudy08.prefab");
+                if (prefab == null) throw new IOException("Could not create Great Strider prefab.");
+                File.WriteAllText(destination + "/source-version.txt", Revision + "\nSHA-256 " + fingerprint +
+                    "\n" + data.SourceVertices + " source vertices / " + data.Triangles + " triangles / " +
+                    data.Sections.Count + " render sections / 8 textures\nStatic review asset; Unity visual acceptance pending.\n");
+                AssetDatabase.ImportAsset(destination + "/source-version.txt");
+                AssetDatabase.SaveAssets();
+            }
+            catch { AssetDatabase.DeleteAsset(destination); throw; }
+            finally { EditorSceneManager.ClosePreviewScene(preview); }
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             RenderSettings.ambientMode = AmbientMode.Flat;
             RenderSettings.ambientLight = new Color(.30f, .29f, .34f);
-            var model = new GameObject("Great Strider — form study 04 — 6 m");
-            model.AddComponent<MeshFilter>().sharedMesh = mesh;
-            model.AddComponent<MeshRenderer>().sharedMaterials = materials.ToArray();
+            var model = (GameObject)PrefabUtility.InstantiatePrefab(prefab, scene);
             Primitive("Neutral studio ground", PrimitiveType.Cube, new Vector3(0, -.1f, 0), new Vector3(32, .2f, 32), ground);
             Primitive("Avarin baseline — 1.82 m measuring post, NOT anatomy", PrimitiveType.Cube,
                 new Vector3(-2.6f, .91f, 0), new Vector3(.12f, 1.82f, .12f), marker);
@@ -129,16 +200,18 @@ namespace Ninefold.Editor
             var rotation = Quaternion.Euler(12, 145, 0);
             camera.transform.SetPositionAndRotation(new Vector3(0, 3, 0) - rotation * Vector3.forward * 19, rotation);
             AssetDatabase.SaveAssets();
+            ScenePath = destination + "/GreatStriderReview09.unity";
             if (!EditorSceneManager.SaveScene(scene, ScenePath)) throw new IOException("Could not save review scene.");
             Selection.activeGameObject = model;
+            Debug.Log(ValidateImported());
             return true;
         }
 
-        private static Material Material(Shader shader, string name, Color color, float smoothness = .28f)
+        private static Material Material(Shader shader, string name, Color color, string destination, float smoothness = .28f)
         {
             var material = new Material(shader) { name = name };
             material.SetColor("_BaseColor", color); material.SetFloat("_Smoothness", smoothness);
-            AssetDatabase.CreateAsset(material, AssetDatabase.GenerateUniqueAssetPath(Folder + "/" + name + ".mat"));
+            AssetDatabase.CreateAsset(material, AssetDatabase.GenerateUniqueAssetPath(destination + "/" + name + ".mat"));
             return material;
         }
         private static void Primitive(string name, PrimitiveType type, Vector3 position, Vector3 scale, Material material)
@@ -154,62 +227,120 @@ namespace Ninefold.Editor
             light.type = LightType.Directional; light.color = color; light.intensity = intensity; light.shadows = shadows;
             light.transform.rotation = Quaternion.Euler(rotation);
         }
-        private static string[] Tokens(string line) => line.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
-        private static float Number(string value)
+        private static string ValidateImported()
         {
-            float result = float.Parse(value, CultureInfo.InvariantCulture);
-            if (float.IsNaN(result) || float.IsInfinity(result)) throw new InvalidDataException("Non-finite source coordinate.");
-            return result;
-        }
-        private static Dictionary<string, Color> ReadPalette(out Dictionary<string, float> finishes)
-        {
-            var colors = new Dictionary<string, Color>(); string name = null;
-            finishes = new Dictionary<string, float>();
-            foreach (string line in File.ReadLines(Source + "GreatStrider.mtl"))
+            var model = SceneManager.GetActiveScene().GetRootGameObjects()
+                .SingleOrDefault(go => go.name.StartsWith("Great Strider — ", StringComparison.Ordinal));
+            if (model == null) throw new InvalidDataException("Open a generated Great Strider review scene first.");
+            int triangles = 0; var textures = new HashSet<Texture>(); int transparent = 0;
+            foreach (var filter in model.GetComponentsInChildren<MeshFilter>())
             {
-                var t = Tokens(line); if (t.Length == 0) continue;
-                if (t[0] == "newmtl") name = t[1];
-                if (t[0] == "Kd") colors.Add(name, new Color(Number(t[1]), Number(t[2]), Number(t[3])));
-                if (t[0] == "Ns") finishes.Add(name, 1 - Mathf.Pow(2 / (Mathf.Max(0, Number(t[1])) + 2), .25f));
-            }
-            if (colors.Count != 12) throw new InvalidDataException("Expected study 04's 12 materials; review the importer for a new source revision.");
-            foreach (string key in colors.Keys)
-                if (!finishes.ContainsKey(key)) throw new InvalidDataException("Missing material finish: " + key);
-            return colors;
-        }
-        // Narrow importer for the repository's validated triangle-only OBJ, not arbitrary OBJ files.
-        // Keep coordinates/scale and outward triangle order; no Unity model-import axis conversion.
-        private static Mesh ReadMesh(List<string> materials)
-        {
-            var vertices = new List<Vector3>(); var faces = new List<int>[materials.Count];
-            for (int i = 0; i < faces.Length; i++) faces[i] = new List<int>();
-            int current = -1, triangles = 0;
-            foreach (string line in File.ReadLines(Source + "GreatStrider.obj"))
-            {
-                var t = Tokens(line); if (t.Length == 0) continue;
-                if (t[0] == "v") vertices.Add(new Vector3(Number(t[1]), Number(t[2]), Number(t[3])));
-                else if (t[0] == "usemtl") current = materials.IndexOf(t[1]);
-                else if (t[0] == "f")
+                var mesh = filter.sharedMesh; var renderer = filter.GetComponent<MeshRenderer>();
+                if (mesh == null || renderer == null || mesh.normals.Length != mesh.vertexCount || mesh.uv.Length != mesh.vertexCount)
+                    throw new InvalidDataException("Missing mesh/renderer/normal/UV data: " + filter.name);
+                triangles += mesh.triangles.Length / 3;
+                var material = renderer.sharedMaterial;
+                if (material == null || material.shader.name != "Universal Render Pipeline/Lit")
+                    throw new InvalidDataException("Missing URP Lit material: " + filter.name);
+                if (material.HasProperty("_BaseMap") && material.GetTexture("_BaseMap") != null)
                 {
-                    if (t.Length != 4 || current < 0) throw new InvalidDataException("Expected triangles with a known material.");
-                    for (int i = 1; i <= 3; i++)
+                    var texture = material.GetTexture("_BaseMap");
+                    // Non-textured Lit materials can expose a built-in white texture.
+                    string path = AssetDatabase.GetAssetPath(texture);
+                    if (!string.IsNullOrEmpty(path) && path.StartsWith(Folder + "/", StringComparison.Ordinal))
                     {
-                        int index = int.Parse(t[i], CultureInfo.InvariantCulture) - 1;
-                        if (index < 0 || index >= vertices.Count) throw new InvalidDataException("Invalid OBJ index.");
-                        faces[current].Add(index);
+                        var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+                        if (importer == null || !importer.sRGBTexture || !importer.mipmapEnabled ||
+                            importer.wrapMode != TextureWrapMode.Repeat || importer.filterMode != FilterMode.Trilinear)
+                            throw new InvalidDataException("Unexpected texture import settings: " + path);
+                        textures.Add(texture);
                     }
-                    triangles++;
+                }
+                if (material.GetFloat("_Surface") > .5f)
+                {
+                    transparent++;
+                    if (!material.IsKeywordEnabled("_SURFACE_TYPE_TRANSPARENT") || material.GetFloat("_ZWrite") != 0 ||
+                        material.renderQueue != (int)RenderQueue.Transparent || Mathf.Abs(material.GetColor("_BaseColor").a - .68f) > .0001f)
+                        throw new InvalidDataException("Incorrect membrane configuration: " + filter.name);
                 }
             }
-            if (vertices.Count != 33188 || triangles != 65652) throw new InvalidDataException("Expected study 04 mesh counts; review the importer for a new source revision.");
-            float low = float.MaxValue, high = float.MinValue;
-            foreach (var v in vertices) { low = Mathf.Min(low, v.y); high = Mathf.Max(high, v.y); }
-            if (Mathf.Abs(low) > .01f || Mathf.Abs(high - 6) > .01f) throw new InvalidDataException("Expected grounded six-meter study; no automatic rescaling applied.");
-            var mesh = new Mesh { name = "Great Strider form study 04", indexFormat = IndexFormat.UInt32 };
-            mesh.SetVertices(vertices); mesh.subMeshCount = faces.Length;
-            for (int i = 0; i < faces.Length; i++) mesh.SetTriangles(faces[i], i);
-            mesh.RecalculateNormals(); mesh.RecalculateBounds();
-            return mesh;
+            if (triangles != 80556 || textures.Count != 8 || transparent < 3)
+                throw new InvalidDataException("Unexpected imported geometry/texture/membrane count.");
+            return "Imported assets verified: 80,556 triangles, 8 textures, " + transparent +
+                " separate transparent shells. Visual review and device testing remain required.";
+        }
+
+        [Serializable]
+        private sealed class SourceManifest
+        {
+            public string status = "", units = "", up = "", forward = "";
+            public int vertices = 0, triangles = 0, parts = 0;
+            public float height = 0;
+        }
+        private static string Fingerprint()
+        {
+            var files = new[] { "GreatStrider.obj", "GreatStrider.mtl", "manifest.json", "materials.json" }
+                .Select(f => Source + f).Concat(Directory.GetFiles(Source + "Textures", "*.png"))
+                .Concat(new[] { "Assets/Ninefold/Editor/GreatStriderReview.cs", "Assets/Ninefold/Editor/GreatStriderSource.cs" })
+                .OrderBy(f => f, StringComparer.Ordinal);
+            using (var hash = SHA256.Create())
+            {
+                foreach (string file in files)
+                {
+                    byte[] name = Encoding.UTF8.GetBytes(file.Replace('\\', '/') + "\n");
+                    byte[] bytes = File.ReadAllBytes(file);
+                    hash.TransformBlock(name, 0, name.Length, name, 0);
+                    hash.TransformBlock(bytes, 0, bytes.Length, bytes, 0);
+                }
+                hash.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                return BitConverter.ToString(hash.Hash).Replace("-", "").ToLowerInvariant();
+            }
+        }
+        private static Material ImportMaterial(Shader shader, GreatStriderSource.Surface surface, string destination)
+        {
+            // MTL Kd is linear; Unity's serialized color property is authored in sRGB.
+            var color = new Color(surface.Color[0], surface.Color[1], surface.Color[2]).gamma;
+            color.a = surface.Opacity;
+            float smoothness = 1 - Mathf.Pow(2 / (surface.Exponent + 2), .25f);
+            var material = Material(shader, surface.Name, color, destination, smoothness);
+            material.SetFloat("_Metallic", 0); // Review approximation, not locked physical parameters.
+            if (surface.Texture != null)
+            {
+                string target = destination + "/" + Path.GetFileName(surface.Texture);
+                File.Copy(GreatStriderSource.TexturePath(Source, surface.Texture), target);
+                AssetDatabase.ImportAsset(target, ImportAssetOptions.ForceSynchronousImport);
+                var importer = AssetImporter.GetAtPath(target) as TextureImporter;
+                if (importer == null) throw new IOException("Could not import texture: " + target);
+                importer.textureType = TextureImporterType.Default;
+                importer.sRGBTexture = true; importer.mipmapEnabled = true;
+                importer.wrapMode = TextureWrapMode.Repeat; importer.filterMode = FilterMode.Trilinear;
+                importer.textureCompression = TextureImporterCompression.Uncompressed;
+                importer.alphaSource = TextureImporterAlphaSource.None; importer.isReadable = false;
+                importer.SaveAndReimport();
+                material.SetTexture("_BaseMap", AssetDatabase.LoadAssetAtPath<Texture2D>(target));
+                // The map contains the full baked tint; Kd is white for textured surfaces.
+            }
+            bool transparent = surface.Opacity < 1;
+            material.SetFloat("_Surface", transparent ? 1 : 0);
+            material.SetFloat("_Blend", 0); material.SetFloat("_AlphaClip", 0);
+            material.SetFloat("_BlendModePreserveSpecular", 0);
+            material.SetFloat("_SrcBlend", (float)(transparent ? BlendMode.SrcAlpha : BlendMode.One));
+            material.SetFloat("_DstBlend", (float)(transparent ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
+            material.SetFloat("_SrcBlendAlpha", (float)BlendMode.One);
+            material.SetFloat("_DstBlendAlpha", (float)(transparent ? BlendMode.OneMinusSrcAlpha : BlendMode.Zero));
+            material.SetFloat("_ZWrite", transparent ? 0 : 1);
+            // These are closed shells: back-face culling avoids compositing both walls.
+            material.SetFloat("_Cull", (float)CullMode.Back);
+            material.SetOverrideTag("RenderType", transparent ? "Transparent" : "Opaque");
+            material.renderQueue = (int)(transparent ? RenderQueue.Transparent : RenderQueue.Geometry);
+            if (transparent) material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            else material.DisableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            material.DisableKeyword("_ALPHAPREMULTIPLY_ON"); material.DisableKeyword("_ALPHATEST_ON");
+            material.DisableKeyword("_ALPHAMODULATE_ON");
+            material.SetShaderPassEnabled("ShadowCaster", !transparent);
+            material.SetShaderPassEnabled("DepthOnly", !transparent);
+            EditorUtility.SetDirty(material);
+            return material;
         }
     }
 }
