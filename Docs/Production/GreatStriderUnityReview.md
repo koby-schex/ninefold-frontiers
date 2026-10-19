@@ -1,4 +1,4 @@
-# Great Strider Unity review 09 — textured source study 08
+# Great Strider Unity review 10 — textured source study 08
 
 This opt-in Unity inspection imports the material study from PR #54. It creates
 a reusable **static review prefab**, a neutral review scene and eight imported
@@ -26,22 +26,45 @@ Five visual master remain authoritative; no source geometry or canon is revised.
 
 ## Output and preservation
 
-Output lives under `Assets/Ninefold/ArtReview/GreatStrider09_<fingerprint>/`:
+Output lives under `Assets/Ninefold/ArtReview/GreatStrider10_<fingerprint>/`:
 
 - `GreatStriderStudy08.prefab`: static model with material render sections.
-- `GreatStriderReview09.unity`: neutral ground, studio lights, scale marker and camera.
+- `GreatStriderReview10.unity`: neutral ground, studio lights, scale marker and camera.
 - Mesh assets, 12 URP Lit materials, eight PNG textures and `source-version.txt`.
 
 The SHA-256 fingerprint covers the OBJ, MTL, source manifest, material catalog,
 texture bytes and both importer source files. Different source or importer code
 creates a new folder. Opening an existing matching scene preserves saved edits.
 **Build fresh review copy** creates a unique additional folder without overwriting
-prior assets. Old review 03/04 scenes are never silently reopened or replaced.
+prior assets. Old review 03/04/09 scenes are never silently reopened or replaced.
 
 The prefab is generated locally by the checked-in importer. Generated Unity
 assets are not prebuilt or committed by this PR. After native review they can be
 committed with their metadata. Camera changes are normal local scene edits.
 The window's camera controls apply only to the scene opened by this tool.
+
+## Neutral lighting and material inspection
+
+Review 10 keeps source study 08 unchanged. It replaces the review scene's warm
+key / blue fill and purple-tinted ambient with white directional lights, gray
+ambient, gray ground and a gray camera background. Skybox, fog and environment
+reflections are disabled in this scene. This makes hue comparisons easier; it
+is not a calibrated color booth or final battlefield lighting.
+
+Opening the scene and using camera presets enables Scene lighting and hides
+Scene view grid, gizmos and skybox. These editor display preferences can be
+restored with Unity's normal Scene view controls. Game view remains the framing
+and background reference; no project-wide rendering asset is modified.
+
+Expand **Inspect model materials** to see each model material's base tint,
+albedo tile preview, opacity and smoothness. These fields are read-only; the
+**Select material in Inspector** button locates the actual imported material.
+White tint on a textured surface is intentional because its color is already
+in the PNG. Inspector edits are local review experiments, not source changes.
+
+The Input Manager deprecation warning is unrelated to this static art review.
+The review uses editor controls and needs no Play mode. Input-system migration
+belongs to a separate gameplay input change with touch/mouse regression checks.
 
 ## Import behavior
 
@@ -92,6 +115,9 @@ in the implementation environment. The first native review must verify:
 - UV seams do not introduce shading breaks; maps are neither white nor double-tinted.
 - Membranes remain smoky/translucent from front, side, back and tactical views.
 - The portrait presets frame the model and operator adequately.
+- White studio lights and gray ground/background remove the previous lighting tint.
+- Material inspection lists 12 materials, with eight texture previews; selecting a material opens the correct asset.
+- Review 09 still opens unchanged; review 10 creates a separate output folder.
 - Returning to the integration scene preserves the existing battle.
 
 Device performance, animation/rigging, final texture unwrap and battlefield
