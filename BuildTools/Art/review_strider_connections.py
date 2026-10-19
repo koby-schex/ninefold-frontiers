@@ -69,7 +69,7 @@ def checks(before,after):
 
 
 def main():
-    before,after=load_meshes(SURFACE_RELEASE,None); report=checks(before,after)
+    before,after=load_meshes(SURFACE_RELEASE,'906f8a15572466d7ec4560da77ff8bf09aed67ce'); report=checks(before,after)
     OUTPUT.mkdir(parents=True,exist_ok=True);(OUTPUT/'checks.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report,indent=2),flush=True)
     rows=[('Neck and hip joins',(6,7,10),(0,5.35,.85),1.9,'all'),
           ('Mineral / upper forelimb',(6,4,8),(-.8,4.1,1),1.9,'limb'),

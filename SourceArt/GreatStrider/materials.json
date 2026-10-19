@@ -1,5 +1,5 @@
 {
-  "status": "provisional material study 08",
+  "status": "provisional detail study 11",
   "uv_mapping": "rest-pose dominant-axis box projection, repeating textures",
   "materials": {
     "living_pearl": {
@@ -11,8 +11,8 @@
       "albedo_texture": "Textures/living_pearl.png",
       "albedo_color_space": "sRGB",
       "opacity": 1,
-      "review_specular_exponent": 32,
-      "review_specular_strength": 0.1,
+      "review_specular_exponent": 22,
+      "review_specular_strength": 0.08,
       "surface_description": "soft satin organic tissue"
     },
     "limb_tissue": {
@@ -24,8 +24,8 @@
       "albedo_texture": "Textures/limb_tissue.png",
       "albedo_color_space": "sRGB",
       "opacity": 1,
-      "review_specular_exponent": 28,
-      "review_specular_strength": 0.07,
+      "review_specular_exponent": 18,
+      "review_specular_strength": 0.055,
       "surface_description": "matte flexible tissue"
     },
     "soft_charcoal": {
@@ -50,7 +50,7 @@
       "albedo_texture": "Textures/grown_mineral.png",
       "albedo_color_space": "sRGB",
       "opacity": 1,
-      "review_specular_exponent": 58,
+      "review_specular_exponent": 82,
       "review_specular_strength": 0.17,
       "surface_description": "pale natural mineral"
     },
@@ -128,8 +128,8 @@
       "albedo_texture": "Textures/cloth.png",
       "albedo_color_space": "sRGB",
       "opacity": 1,
-      "review_specular_exponent": 8,
-      "review_specular_strength": 0.018,
+      "review_specular_exponent": 4,
+      "review_specular_strength": 0.012,
       "surface_description": "matte fine fabric"
     },
     "survey_light": {
