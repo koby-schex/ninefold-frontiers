@@ -509,13 +509,14 @@ namespace Ninefold.Presentation
                 var heading = Row(card); heading.AddToClassList("mission-heading");
                 // A navigational route marker replaces the oversized text-only
                 // mission number; pin state is derived from authoritative progress.
+                number++;
                 var pin = new VisualElement { pickingMode = PickingMode.Ignore };
                 pin.AddToClassList("vmp-route-pin");
                 pin.EnableInClassList("vmp-route-cleared", mission.IsReplay);
                 pin.EnableInClassList("vmp-route-locked", !mission.Available);
                 pin.EnableInClassList("vmp-route-current", highlighted);
                 heading.Add(pin);
-                Text(pin, mission.IsReplay ? "✓" : (++number).ToString("00"), "vmp-route-number");
+                Text(pin, mission.IsReplay ? "✓" : number.ToString("00"), "vmp-route-number");
                 var identity = new VisualElement(); identity.AddToClassList("mission-identity"); heading.Add(identity);
                 Text(identity, !mission.Available ? "LOCKED" : mission.IsReplay ? "CLEARED · REPLAY"
                     : highlighted ? "UP NEXT" : "AVAILABLE", "campaign-status").AddToClassList("mission-path-status");
