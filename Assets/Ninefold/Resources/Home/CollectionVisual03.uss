@@ -146,9 +146,6 @@
 .root.collection-clarity-mode .vif-model-fit {
     -unity-image-size: scale-to-fit;
 }
-.root.campaign-overview-mode .vif-art-crop {
-    -unity-image-size: scale-and-crop;
-}
 .root.compact-home.collection-clarity-mode .vif-roster-portrait {
     width: 66px;
     height: 80px;
