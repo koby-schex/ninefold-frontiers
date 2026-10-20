@@ -1,0 +1,198 @@
+/*
+ * Ninefold: Frontiers — Interface Foundation 01.
+ * Opt-in components only. Do not restyle existing approved Home, battle, or menu
+ * screens until the relevant presentation review explicitly adopts these classes.
+ *
+ * Palette:
+ *   deep ink       #111611  (official website background)
+ *   raised ink     #1C241E
+ *   stone border   #374437
+ *   warm ivory     #F6EFDD  (official website neutral)
+ *   secondary      #ABA891  (website secondary)
+ *   soft gold      #D4B47B  (website gold)
+ *   World Five     #B1A6C7  (provisional UI accent; approved sanctuary imagery governs)
+ *
+ * Typography: existing locally licensed DisplaySerif for headings, default UI
+ * sans for control labels. No external fonts, artwork or new canon introduced.
+ */
+
+/* Canvas and atmosphere */
+.nf-shell {
+    background-color: rgb(17, 22, 17);
+    color: rgb(246, 239, 221);
+}
+
+.nf-panel {
+    background-color: rgba(28, 36, 30, 0.96);
+    border-width: 1px;
+    border-color: rgb(55, 68, 55);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+}
+
+.nf-panel--quiet {
+    background-color: rgba(17, 22, 17, 0.88);
+    border-color: rgba(171, 168, 145, 0.30);
+}
+
+.nf-rule {
+    height: 1px;
+    background-color: rgba(212, 180, 123, 0.40);
+    margin-top: 12px;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+}
+
+/* Text: two levels of emphasis, not a wall of competing headings. */
+.nf-display {
+    -unity-font-definition: url("DisplaySerif.ttf");
+    -unity-font-style: normal;
+    font-size: 34px;
+    color: rgb(246, 239, 221);
+    white-space: normal;
+    margin-bottom: 8px;
+}
+
+.nf-title {
+    -unity-font-definition: url("DisplaySerif.ttf");
+    -unity-font-style: normal;
+    font-size: 26px;
+    color: rgb(246, 239, 221);
+    white-space: normal;
+    margin-bottom: 6px;
+}
+
+.nf-overline {
+    font-size: 12px;
+    -unity-font-style: bold;
+    letter-spacing: 2px;
+    color: rgb(212, 180, 123);
+    white-space: normal;
+    margin-bottom: 8px;
+}
+
+.nf-body {
+    font-size: 16px;
+    color: rgb(246, 239, 221);
+    white-space: normal;
+}
+
+.nf-secondary {
+    font-size: 14px;
+    color: rgb(187, 186, 165);
+    white-space: normal;
+}
+
+.nf-status {
+    font-size: 13px;
+    color: rgb(212, 180, 123);
+    white-space: normal;
+}
+
+/* Shared button roles. A screen gets one visually primary action.
+ * Minimum tap height is 50 panel units in this opt-in system. */
+Button.nf-control {
+    min-height: 50px;
+    padding: 10px 14px;
+    margin: 4px 0;
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: rgb(106, 112, 92);
+    background-color: rgb(37, 47, 39);
+    color: rgb(246, 239, 221);
+    font-size: 16px;
+    -unity-font-style: bold;
+    white-space: normal;
+    flex-shrink: 0;
+}
+
+Button.nf-control:hover {
+    background-color: rgb(51, 63, 52);
+    border-color: rgb(212, 180, 123);
+}
+
+Button.nf-control:active {
+    background-color: rgb(29, 39, 31);
+    border-color: rgb(246, 239, 221);
+}
+
+Button.nf-control:focus {
+    border-width: 2px;
+    border-color: rgb(246, 239, 221);
+}
+
+Button.nf-control--primary {
+    min-height: 56px;
+    background-color: rgb(212, 180, 123);
+    color: rgb(17, 22, 17);
+    border-color: rgb(231, 209, 165);
+}
+
+Button.nf-control--primary:hover {
+    background-color: rgb(236, 213, 167);
+    border-color: rgb(246, 239, 221);
+}
+
+Button.nf-control--primary:active {
+    background-color: rgb(191, 155, 100);
+}
+
+Button.nf-control:disabled,
+Button.nf-control:disabled:hover,
+Button.nf-control:disabled:active {
+    background-color: rgb(30, 35, 30);
+    border-color: rgb(74, 79, 70);
+    color: rgb(147, 148, 133);
+    opacity: 0.75;
+}
+
+/* Navigation remains quiet until selected; no pulsing or gradient effects. */
+.nf-nav {
+    flex-direction: row;
+    background-color: rgba(17, 22, 17, 0.97);
+    border-top-width: 1px;
+    border-top-color: rgb(55, 68, 55);
+    padding-top: 5px;
+}
+
+.nf-nav > Button.nf-nav-item {
+    flex-grow: 1;
+    flex-basis: 0;
+    min-width: 0;
+    min-height: 54px;
+    padding: 8px 3px;
+    margin: 0;
+    border-width: 0;
+    border-bottom-width: 3px;
+    border-bottom-color: transparent;
+    border-radius: 0;
+    background-color: transparent;
+    color: rgb(187, 186, 165);
+    font-size: 14px;
+    -unity-text-align: middle-center;
+    white-space: normal;
+}
+
+.nf-nav > Button.nf-nav-item.selected {
+    color: rgb(246, 239, 221);
+    border-bottom-color: rgb(212, 180, 123);
+}
+
+.nf-nav > Button.nf-nav-item:hover {
+    background-color: rgba(212, 180, 123, 0.10);
+}
+
+.nf-nav > Button.nf-nav-item:focus {
+    border-top-width: 2px;
+    border-top-color: rgb(246, 239, 221);
+}
+
+/* World-specific accents are applied only after canon/art review.
+ * World Five uses the existing sanctuary's silver-violet visual language.
+ * Do not apply this accent globally or invent palettes for other worlds. */
+.nf-world-five-accent {
+    border-left-width: 3px;
+    border-left-color: rgb(177, 166, 199);
+}

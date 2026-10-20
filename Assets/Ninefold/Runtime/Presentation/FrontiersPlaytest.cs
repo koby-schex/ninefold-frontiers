@@ -60,6 +60,11 @@ namespace Ninefold.Presentation
             }
             root = document.rootVisualElement;
             if (ScreenStyles != null) root.styleSheets.Add(ScreenStyles);
+            // Opt-in brand primitives load before approved per-screen styles. No screen
+            // acquires nf- classes in this pass, so existing presentation is unchanged.
+            var foundationStyles = Resources.Load<StyleSheet>(PlaytestRevision.FoundationResource);
+            if (foundationStyles != null) root.styleSheets.Add(foundationStyles);
+            else Debug.LogWarning("Ninefold interface foundation styles are missing. Check project import.", this);
             root.AddToClassList("root");
             var homeStyles = Resources.Load<StyleSheet>("Home/Home");
             if (homeStyles != null) root.styleSheets.Add(homeStyles);
