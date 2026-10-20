@@ -171,11 +171,17 @@ internal static partial class Program
         var mixed=catalog.Missions["fixture-mixed"];
         var points=new[] { P(-2,-2), P(-1,-2), P(0,-2), P(1,-2),
             P(2,-2), P(3,-2), P(4,-2), P(5,-2) };
+        Throws<ArgumentException>(() => new MissionContent(mixed.Id,null,false,6,mixed.Map,
+            points,mixed.Actors,mixed.Objectives[0])); // no silent larger standard battle
+        Throws<ArgumentException>(() => new MissionContent(mixed.Id,null,false,5,mixed.Map,
+            points,mixed.Actors,mixed.Objectives[0],encounter:EncounterKind.WorldCollision));
         var demonstration=new MissionContent(mixed.Id,null,false,6,mixed.Map,
-            points,mixed.Actors,mixed.Objectives[0]);
+            points,mixed.Actors,mixed.Objectives[0],encounter:EncounterKind.WorldCollision);
         var extended=Repackage(catalog,missions:catalog.Missions.Values
             .Where(x=>x.Id!=mixed.Id).Concat(new[]{demonstration}));
         Equal(8,extended.Missions[mixed.Id].MaximumSquad);
+        Equal(EncounterKind.WorldCollision,extended.Missions[mixed.Id].Encounter);
+        Equal(EncounterKind.Standard,extended.Missions["fixture-opening"].Encounter);
         Equal(3,extended.Missions["fixture-opening"].MaximumSquad);
         var profile=new ProgressFiles();
         var saves=new FakeSaveFiles();
