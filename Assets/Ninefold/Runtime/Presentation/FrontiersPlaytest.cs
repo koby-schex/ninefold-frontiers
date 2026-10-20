@@ -394,7 +394,9 @@ namespace Ninefold.Presentation
             // into a collection of competing, oversized calls to action.
             Text(parent, "CHOOSE YOUR PATH", "eyebrow").AddToClassList("campaign-overview-overline");
             Text(parent, "Campaigns", "display-title").AddToClassList("campaign-overview-title");
-            Text(parent, "Each campaign requires three standard units from its faction.", "detail")
+            // A single compact gate reminder; the actual eligibility explanation
+            // stays on each locked campaign card.
+            Text(parent, "UNLOCK: 3 STANDARD UNITS / FACTION", "detail")
                 .AddToClassList("campaign-overview-intro");
             bool readOnly = menuView.Phase == MissionFlowPhase.Battle;
             if (readOnly)
@@ -426,7 +428,7 @@ namespace Ninefold.Presentation
                     : c.CompletedMissions > 0 ? "IN PROGRESS" : "READY TO BEGIN";
                 Text(card, status, "campaign-status").AddToClassList("campaign-choice-status");
                 Text(card, CampaignName(id), "campaign-name").AddToClassList("campaign-choice-name");
-                Text(card, c.CompletedMissions + " / " + c.TotalMissions + " missions", "detail")
+                Text(card, c.CompletedMissions + " / " + c.TotalMissions + " CLEARED", "detail")
                     .AddToClassList("campaign-choice-progress");
                 Meter(card, c.CompletedMissions, c.TotalMissions);
 
@@ -486,7 +488,7 @@ namespace Ninefold.Presentation
             if (readOnly)
                 Text(parent, "BATTLE SAVED · Mission launches are paused until this encounter ends.", "detail")
                     .AddToClassList("game-saved-ribbon");
-            Text(parent, progress.CompletedMissions + " of " + progress.TotalMissions + " complete", "detail")
+            Text(parent, progress.CompletedMissions + " / " + progress.TotalMissions + " CLEARED", "detail")
                 .AddToClassList("mission-path-progress");
             Meter(parent, progress.CompletedMissions, progress.TotalMissions);
 
@@ -505,9 +507,17 @@ namespace Ninefold.Presentation
                 card.EnableInClassList("mission-path-current", highlighted);
                 card.EnableInClassList("mission-path-locked", !mission.Available);
                 var heading = Row(card); heading.AddToClassList("mission-heading");
-                Text(heading, (++number).ToString("00"), "mission-number").AddToClassList("mission-path-number");
+                // A navigational route marker replaces the oversized text-only
+                // mission number; pin state is derived from authoritative progress.
+                var pin = new VisualElement { pickingMode = PickingMode.Ignore };
+                pin.AddToClassList("vmp-route-pin");
+                pin.EnableInClassList("vmp-route-cleared", mission.IsReplay);
+                pin.EnableInClassList("vmp-route-locked", !mission.Available);
+                pin.EnableInClassList("vmp-route-current", highlighted);
+                heading.Add(pin);
+                Text(pin, mission.IsReplay ? "✓" : (++number).ToString("00"), "vmp-route-number");
                 var identity = new VisualElement(); identity.AddToClassList("mission-identity"); heading.Add(identity);
-                Text(identity, !mission.Available ? "LOCKED" : mission.IsReplay ? "COMPLETED · REPLAY"
+                Text(identity, !mission.Available ? "LOCKED" : mission.IsReplay ? "CLEARED · REPLAY"
                     : highlighted ? "UP NEXT" : "AVAILABLE", "campaign-status").AddToClassList("mission-path-status");
                 Text(identity, MissionName(missionId), "section").AddToClassList("mission-path-name");
                 if (!mission.Available)
@@ -522,7 +532,17 @@ namespace Ninefold.Presentation
                     continue;
                 }
 
-                Text(card, Description(missionId), "detail").AddToClassList("mission-path-objective");
+                if (highlighted)
+                {
+                    // Show the real authored battlefield layout only on the next
+                    // mission, avoiding heavyweight mini-maps for 100+ entries.
+                    var scout = new VisualElement { pickingMode = PickingMode.Ignore };
+                    scout.AddToClassList("vmp-next-scout");
+                    card.Add(scout);
+                    Text(scout, "FIELD SCOUT", "eyebrow").AddToClassList("vmp-scout-label");
+                    BuildMapPreview(scout, catalog.Missions[missionId], true);
+                    Text(scout, Description(missionId), "detail").AddToClassList("vmp-scout-objective");
+                }
                 var choose = Button(card, mission.IsReplay ? "Review replay  ›" : "View briefing  ›",
                     () => SelectMission(missionId), !readOnly);
                 choose.AddToClassList("mission-path-action");
@@ -573,16 +593,18 @@ namespace Ninefold.Presentation
                 Text(line, ResourceName(grant.ResourceId), "reward-name");
                 Text(line, "+" + grant.Amount, "reward-amount");
             }
-            Text(rewards, "Collect after victory · Separate campaign rewards may also apply.", "hint")
+            Text(rewards, "Awarded after victory", "hint")
                 .AddToClassList("mission-brief-reward-note");
 
             // Continue remains fixed outside the scroll area. No mission starts,
             // rewards transfer, or squad draft changes on mere briefing view.
             var dock = Card(content, "deploy-dock");
             dock.AddToClassList("mission-brief-dock");
-            Text(dock, definition.MinimumSquad + "–" + definition.MaximumSquad + " units · "
-                + (definition.IsCampaign ? "Faction squad" : "Mixed factions") + " · Untimed turns", "hint")
-                .AddToClassList("mission-brief-squad-summary");
+            var deploymentStats = Row(dock);
+            deploymentStats.AddToClassList("vmp-deploy-facts");
+            FrontiersVisualPrimitives.HudChip(deploymentStats, definition.MinimumSquad + "–" + definition.MaximumSquad, "UNITS");
+            FrontiersVisualPrimitives.HudChip(deploymentStats, definition.IsCampaign ? "FACTION" : "MIXED", "SQUAD");
+            FrontiersVisualPrimitives.HudChip(deploymentStats, "∞", "TURNS");
             var chooseSquad = Primary(dock, "CHOOSE SQUAD  ›", () => Navigate(Page.Squad));
             chooseSquad.AddToClassList("mission-brief-next");
         }
@@ -1276,10 +1298,12 @@ namespace Ninefold.Presentation
             var card = new VisualElement(); card.AddToClassList("card");
             if (extra != null) card.AddToClassList(extra); parent.Add(card); return card;
         }
-        private static void BuildMapPreview(VisualElement parent, MissionContent mission)
+        private static void BuildMapPreview(VisualElement parent, MissionContent mission, bool compact = false)
         {
-            Text(parent, "BATTLEFIELD OVERVIEW", "eyebrow");
-            var map = new VisualElement { pickingMode = PickingMode.Ignore }; map.AddToClassList("map-preview"); parent.Add(map);
+            if (!compact) Text(parent, "BATTLEFIELD OVERVIEW", "eyebrow");
+            var map = new VisualElement { pickingMode = PickingMode.Ignore }; map.AddToClassList("map-preview");
+            if (compact) map.AddToClassList("vmp-scout-map");
+            parent.Add(map);
             var bounds = mission.Map.Bounds;
             float width = (float)(bounds.Max.X-bounds.Min.X), depth = (float)(bounds.Max.Z-bounds.Min.Z);
             void Mark(float x, float z, float w, float d, string cls)
@@ -1298,7 +1322,22 @@ namespace Ninefold.Presentation
                 Mark((float)objective.Interaction.Point.X-.5f,(float)objective.Interaction.Point.Z-.5f,1,1,"map-objective");
             foreach (var point in mission.Deployment)
                 Mark((float)point.X-.2f,(float)point.Z-.2f,.4f,.4f,"map-deploy");
-            Text(parent, "Cyan: deployment · Gray: cover · Amber: slow ground · Gold: objective", "hint");
+            if (!compact)
+            {
+                var legend = Row(parent); legend.AddToClassList("vmp-map-legend");
+                MapLegendEntry(legend, "DEPLOY", "vmp-key-deploy");
+                MapLegendEntry(legend, "COVER", "vmp-key-cover");
+                MapLegendEntry(legend, "SLOW", "vmp-key-slow");
+                MapLegendEntry(legend, "OBJECTIVE", "vmp-key-objective");
+            }
+        }
+        private static void MapLegendEntry(VisualElement parent, string title, string swatchClass)
+        {
+            var entry = new VisualElement { pickingMode = PickingMode.Ignore };
+            entry.AddToClassList("vmp-legend-entry"); parent.Add(entry);
+            var mark = new VisualElement { pickingMode = PickingMode.Ignore };
+            mark.AddToClassList("vmp-legend-swatch"); mark.AddToClassList(swatchClass); entry.Add(mark);
+            Text(entry, title, "vmp-legend-text").pickingMode = PickingMode.Ignore;
         }
         private Button Primary(VisualElement parent, string label, Action action, bool enabled = true)
         { var button = Button(parent, label, action, enabled); button.AddToClassList("primary"); return button; }
