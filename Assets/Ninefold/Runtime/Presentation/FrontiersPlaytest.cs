@@ -1012,7 +1012,8 @@ namespace Ninefold.Presentation
                 pointer = -1; e.StopPropagation();
                 if (tap && !dirty && playback == null && !suspended && !battleDetails) Guard(() => Pick((Vector2)e.position));
             });
-            field.Show(battleView, input.ReadPlanning(), catalog.Missions[b.MissionId].Objectives, surface);
+            field.Show(battleView, input.ReadPlanning(), catalog.Missions[b.MissionId].Objectives, surface,
+                catalog.Missions[b.MissionId].EnvironmentKey);
             if (b.Activation != null)
             {
                 if (announcedAttempt != b.AttemptId || announcedActivation != b.Activation.ActivationId)
