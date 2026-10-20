@@ -145,7 +145,7 @@ namespace Ninefold.Core.Content
                 if (menu.Read().Phase != MissionFlowPhase.Selection)
                     return new PlaytestProfile(catalog,menu,false);
             }
-            if (hasV2)
+            if (!hasNew && hasV2)
             {
                 var v2 = PlaytestContentPackage.CreateLayoutV2();
                 var v2Menu = new MissionPresentation(v2,current,progress,ProfileId);
@@ -153,7 +153,7 @@ namespace Ninefold.Core.Content
                 if (v2Menu.Read().Phase != MissionFlowPhase.Selection)
                     return new PlaytestProfile(v2,v2Menu,true);
             }
-            if (hasLegacy)
+            if (!hasNew && !hasV2 && hasLegacy)
             {
                 var previous = AbstractContentPackage.Create();
                 var oldMenu = new MissionPresentation(previous,legacy,progress,ProfileId);
