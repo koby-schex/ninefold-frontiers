@@ -1,0 +1,339 @@
+/*
+ * Visual Interface Foundation 02
+ * Native-feeling, visual-first structure for Ninefold: Frontiers.
+ *
+ * No world-specific imagery is invented. All optional campaign/unit art
+ * comes from IFrontiersPreviewSource, owned by its eventual producer.
+ * The approved World Five sanctuary and 3D model work remain untouched.
+ */
+
+/* Shared visual vocabulary — a picture surface with an unobtrusive caption. */
+.vif-campaign-art,
+.vif-unit-preview {
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+    border-width: 1px;
+    border-color: rgba(212, 180, 123, 0.48);
+    background-color: rgb(26, 38, 31);
+}
+.vif-preview-image {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    -unity-image-size: scale-and-crop;
+}
+.vif-preview-locked {
+    border-color: rgba(143, 144, 130, 0.43);
+}
+.vif-preview-placeholder {
+    position: absolute;
+    left: 13px;
+    bottom: 39px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: rgb(227, 219, 199);
+    background-color: rgba(17, 23, 19, 0.70);
+    padding: 5px 7px;
+}
+.vif-campaign-art {
+    height: 112px;
+    border-radius: 6px;
+    margin-bottom: 11px;
+    background-color: rgb(28, 40, 34);
+}
+.vif-atlas-pattern {
+    position: absolute;
+    width: 170px;
+    height: 170px;
+    right: -22px;
+    top: -30px;
+    border-width: 1px;
+    border-color: rgba(212, 180, 123, 0.26);
+    border-radius: 85px;
+    background-color: rgba(59, 68, 57, 0.34);
+}
+.vif-atlas-center {
+    width: 104px;
+    height: 104px;
+    margin: 31px;
+    border-radius: 52px;
+    border-width: 1px;
+    border-color: rgba(212, 180, 123, 0.27);
+    background-color: rgba(19, 29, 24, 0.23);
+}
+.vif-campaign-ribbon {
+    position: absolute;
+    left: 9px;
+    top: 8px;
+    right: 9px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+.vif-campaign-type,
+.vif-campaign-count {
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: rgb(249, 240, 217);
+    background-color: rgba(14, 22, 17, 0.89);
+    padding: 5px 8px;
+}
+.root.campaign-overview-mode .campaign-choice {
+    padding: 10px 11px;
+    margin-bottom: 10px;
+}
+.root.campaign-overview-mode .campaign-choice-status {
+    font-size: 10px;
+    margin: 0 0 3px 0;
+}
+.root.campaign-overview-mode .campaign-choice-name {
+    font-size: 25px;
+    margin: 0 0 3px 0;
+}
+.root.campaign-overview-mode .campaign-choice-progress {
+    font-size: 12px;
+    margin: 2px 0 5px 0;
+}
+.root.campaign-overview-mode .campaign-choice-next {
+    font-size: 12px;
+    margin: 3px 0 6px 0;
+}
+.root.campaign-overview-mode .campaign-overview-intro {
+    font-size: 13px;
+    margin-bottom: 10px;
+}
+/* No imagery must ever be mistaken for a locked world/faction master. */
+.root.campaign-overview-mode .campaign-choice-locked .vif-campaign-art {
+    background-color: rgb(23, 29, 25);
+}
+
+/* Reserved high-quality model/RenderTexture viewport. A neutral abstract
+ * fallback is used until the independent 3D production pipeline registers
+ * its image source. It is NOT a model silhouette or final faction emblem. */
+.vif-unit-preview {
+    height: 228px;
+    margin-bottom: 13px;
+    border-radius: 7px;
+    background-color: rgb(27, 37, 32);
+}
+.vif-unit-placeholder {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(32, 43, 36, 0.20);
+}
+.vif-preview-orbit {
+    position: absolute;
+    width: 142px;
+    height: 142px;
+    border-radius: 71px;
+    border-width: 1px;
+    border-color: rgba(177, 166, 199, 0.45);
+    background-color: rgba(95, 87, 113, 0.13);
+}
+.vif-preview-id {
+    font-size: 40px;
+    color: rgb(237, 226, 202);
+}
+.vif-preview-caption {
+    position: absolute;
+    left: 9px;
+    right: 9px;
+    top: 9px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+.vif-preview-kind,
+.vif-preview-state {
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: rgb(246, 237, 216);
+    background-color: rgba(13, 20, 17, 0.88);
+    padding: 6px 8px;
+}
+.root.collection-clarity-mode .collection-detail-card {
+    padding: 10px 11px;
+}
+.root.collection-clarity-mode .collection-detail-identity {
+    margin-bottom: 7px;
+}
+.root.collection-clarity-mode .collection-detail-identity .unit-badge {
+    width: 46px;
+    height: 46px;
+    margin-right: 9px;
+}
+.root.collection-clarity-mode .collection-detail-title {
+    font-size: 27px;
+}
+.root.collection-clarity-mode .collection-detail-reason,
+.root.collection-clarity-mode .collection-fragments {
+    font-size: 12px;
+    margin: 3px 0 6px 0;
+}
+
+/* Reusable visual data chips. They are semantic text alternatives
+ * to large paragraphs, not additional permanent explanations. */
+.vif-unit-glance,
+.vif-actor-strip {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    margin: 7px 0;
+}
+.vif-hud-chip {
+    flex-grow: 1;
+    flex-basis: 0;
+    min-width: 0;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 4px;
+    margin: 0 3px;
+    border-width: 1px;
+    border-color: rgba(135, 141, 118, 0.44);
+    border-radius: 4px;
+    background-color: rgba(20, 30, 24, 0.96);
+}
+.vif-hud-value {
+    font-size: 17px;
+    -unity-font-style: bold;
+    color: rgb(248, 240, 223);
+    -unity-text-align: middle-center;
+    white-space: nowrap;
+}
+.vif-hud-label {
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: rgb(186, 187, 170);
+    -unity-text-align: middle-center;
+    white-space: nowrap;
+}
+
+/* Battlefield viewport is the star. Reduce the permanent HUD footprint
+ * but KEEP original preview/confirm/cancel/ability gameplay commands. */
+.root.visual-hud-mode .battle-header {
+    padding: 3px 6px;
+    background-color: rgba(16, 22, 20, 0.97);
+    border-bottom-color: rgba(212, 180, 123, 0.44);
+}
+.root.visual-hud-mode .battle-title-row > Button.game-button {
+    flex-basis: 58px;
+    min-height: 52px;
+    padding: 5px;
+    margin: 0;
+    font-size: 14px;
+    border-width: 1px;
+    border-color: rgb(92, 111, 97);
+    border-radius: 5px;
+    background-color: rgb(35, 49, 39);
+}
+.root.visual-hud-mode .objective-text {
+    font-size: 16px;
+    margin: 0 7px;
+    -unity-font-style: bold;
+    color: rgb(232, 209, 163);
+}
+.root.visual-hud-mode .battle-dock {
+    height: 190px;
+    background-color: rgba(16, 22, 20, 0.99);
+    border-top-color: rgb(112, 114, 97);
+}
+.root.visual-hud-mode .controls {
+    padding: 5px 6px;
+    background-color: rgba(16, 22, 20, 0.99);
+}
+.root.visual-hud-mode .vif-actor-strip {
+    margin: 0 0 4px 0;
+}
+.root.visual-hud-mode .vif-hud-chip {
+    padding: 3px;
+    border-width: 0;
+    border-left-width: 1px;
+    border-left-color: rgba(212, 180, 123, 0.45);
+    border-radius: 0;
+    margin: 0 2px;
+}
+.root.visual-hud-mode .vif-hud-value {
+    font-size: 13px;
+}
+.root.visual-hud-mode .vif-hud-label {
+    font-size: 9px;
+}
+.root.visual-hud-mode .ability-row,
+.root.visual-hud-mode .utility-row {
+    flex-wrap: nowrap;
+}
+.root.visual-hud-mode .ability-row > Button.game-button,
+.root.visual-hud-mode .utility-row > Button.game-button {
+    flex-grow: 1;
+    flex-basis: 0;
+    min-width: 0;
+    min-height: 49px;
+    padding: 6px 4px;
+    margin: 2px;
+    border-radius: 5px;
+    border-width: 1px;
+    font-size: 14px;
+    background-color: rgb(39, 51, 42);
+    border-color: rgb(109, 120, 100);
+}
+.root.visual-hud-mode .ability-row > Button.game-button.primary {
+    background-color: rgb(212, 180, 123);
+    color: rgb(17, 22, 17);
+    border-color: rgb(233, 212, 176);
+}
+.root.visual-hud-mode .ability-row > Button.game-button.selected,
+.root.visual-hud-mode .utility-row > Button.game-button.selected {
+    border-color: rgb(212, 180, 123);
+    background-color: rgb(72, 69, 51);
+}
+.root.visual-hud-mode .compact-preview {
+    flex-basis: 42%;
+    flex-grow: 1;
+    min-width: 0;
+    font-size: 13px;
+    -unity-font-style: bold;
+    color: rgb(239, 213, 161);
+    padding-right: 5px;
+}
+.root.visual-hud-mode .battle-message {
+    font-size: 12px;
+    margin: 3px 4px;
+    color: rgb(200, 199, 185);
+    white-space: normal;
+}
+.root.visual-hud-mode .health-overlay {
+    width: 68px;
+    height: 26px;
+}
+.root.visual-hud-mode .health-overlay > Label {
+    font-size: 13px;
+}
+.root.visual-hud-mode .turn-cue {
+    font-size: 14px;
+    background-color: rgba(19, 27, 22, 0.93);
+}
+
+/* 320x568: keep 44+ UI-unit touch targets with scrollable dock if needed.
+ * Short landscape is not the primary game layout. */
+.root.compact-home.collection-clarity-mode .vif-unit-preview { height: 166px; }
+.root.compact-home.campaign-overview-mode .vif-campaign-art { height: 86px; }
+.root.compact-home.visual-hud-mode .battle-dock { height: 185px; }
+.root.compact-home.visual-hud-mode .objective-text { font-size: 14px; }
+.root.short-home.visual-hud-mode .battle-stage { flex-direction: row; }
+.root.short-home.visual-hud-mode .battle-dock { height: auto; width: 196px; }
+.root.short-home.visual-hud-mode .battle-title-row > Button.game-button { min-height: 44px; flex-basis: 50px; }
+.root.short-home.visual-hud-mode .ability-row,
+.root.short-home.visual-hud-mode .utility-row { flex-wrap: wrap; }
+.root.short-home.visual-hud-mode .ability-row > Button.game-button,
+.root.short-home.visual-hud-mode .utility-row > Button.game-button { min-height: 44px; }
+.root.short-home.visual-hud-mode .compact-preview { flex-basis: 100%; }
