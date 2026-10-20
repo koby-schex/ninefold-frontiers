@@ -219,7 +219,10 @@ namespace Ninefold.Presentation
             root.EnableInClassList("briefing-mode", campaignScreen && page == Page.Briefing);
             root.EnableInClassList("home-mode", home);
             heading.style.display = home || (menuView.Phase == MissionFlowPhase.Battle && inBattle) ? DisplayStyle.None : DisplayStyle.Flex;
-            homeBackdrop.style.display = home || campaignScreen ? DisplayStyle.Flex : DisplayStyle.None;
+            // Never project the sanctuary/backdrop behind other menu pages.
+            // Campaign, Collection, Squad and Settings are distinct full-screen apps.
+            homeBackdrop.style.display = home ? DisplayStyle.Flex : DisplayStyle.None;
+            root.EnableInClassList("native-screen-mode", !home && !(menuView.Phase == MissionFlowPhase.Battle && inBattle));
             root.EnableInClassList("battle-mode", menuView.Phase == MissionFlowPhase.Battle && inBattle);
             root.EnableInClassList("visual-hud-mode", menuView.Phase == MissionFlowPhase.Battle && inBattle);
             if (menuView.Phase == MissionFlowPhase.Battle && inBattle)
@@ -230,7 +233,9 @@ namespace Ninefold.Presentation
             }
             else
             {
-                content.style.backgroundColor = new Color(.035f, .063f, .094f);
+                content.style.backgroundColor = page == Page.Collection ? new Color(.063f, .094f, .078f)
+                    : page == Page.Settings ? new Color(.068f, .077f, .077f)
+                    : new Color(.045f, .075f, .071f);
                 input = null; battleView = null; field.Hide();
                 if (home)
                 {
@@ -238,9 +243,11 @@ namespace Ninefold.Presentation
                     BuildHomeScreen();
                     return;
                 }
-                if (campaignScreen) content.style.backgroundColor = Color.clear;
                 var scroll = new ScrollView(ScrollViewMode.Vertical); scroll.AddToClassList("page-scroll");
-                scroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden; content.Add(scroll);
+                scroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+                scroll.verticalScrollerVisibility = ScrollerVisibility.Hidden;
+                content.Add(scroll);
+                BuildMobilePageHeader(scroll);
                 if (menuView.Phase == MissionFlowPhase.Results) BuildResults(scroll);
                 else if (page == Page.Settings) BuildSettings(scroll);
                 else if (page == Page.Collection) BuildCollection(scroll);
@@ -250,7 +257,9 @@ namespace Ninefold.Presentation
                 else BuildSelection(scroll);
                 menuScroll = scroll; renderedPage = page; renderedUnit = inspectedUnit; renderedOffer = offerOpen;
                 scroll.schedule.Execute(() => scroll.scrollOffset = scrollOffset);
-                if (menuView.Phase != MissionFlowPhase.Results && page != Page.Briefing && page != Page.Squad) BuildNavigation(content);
+                // Even nested briefing / squad screens retain a reliable way Home
+                // or to another main tab; the fixed deploy dock remains functional.
+                if (menuView.Phase != MissionFlowPhase.Results) BuildNavigation(content);
             }
         }
 
@@ -281,6 +290,7 @@ namespace Ninefold.Presentation
             scroll.AddToClassList("home-scroll");
             scroll.AddToClassList("game-lobby-scroll");
             scroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            scroll.verticalScrollerVisibility = ScrollerVisibility.Hidden;
             content.Add(scroll);
             scroll.contentContainer.style.flexGrow = 1;
             scroll.contentViewport.RegisterCallback<GeometryChangedEvent>(evt =>
@@ -574,10 +584,6 @@ namespace Ninefold.Presentation
         private void BuildBriefing(VisualElement parent)
         {
             var definition = catalog.Missions[menuView.SelectedMissionId];
-            var back = Button(parent, definition.IsCampaign ? "‹ Missions" : "‹ Home",
-                () => Navigate(definition.IsCampaign ? Page.Missions : Page.Home));
-            back.AddToClassList("back-link"); back.AddToClassList("mission-brief-back");
-
             // Present what the player is about to do before any secondary detail.
             PreparationHeader(parent, false);
             if (definition.Encounter == EncounterKind.WorldCollision)
@@ -627,7 +633,6 @@ namespace Ninefold.Presentation
         private void BuildSquad(VisualElement parent)
         {
             var definition = catalog.Missions[menuView.SelectedMissionId];
-            Button(parent, "‹ Mission briefing", () => Navigate(Page.Briefing)).AddToClassList("back-link");
             PreparationHeader(parent, true);
             Text(parent, "Choose your squad", "display-title");
             Text(parent, "Select " + definition.MinimumSquad + "–" + definition.MaximumSquad + " units • maximum one Apex", "detail");
@@ -693,13 +698,6 @@ namespace Ninefold.Presentation
                     .AddToClassList("collection-footnote");
                 return;
             }
-
-            var back = Button(parent, "‹ All units", () => {
-                menu.Collection.Cancel();
-                inspectedUnit = null;
-                collectionDetailsExpanded = false;
-            });
-            back.AddToClassList("back-link"); back.AddToClassList("collection-back");
 
             // Confirmation is intentionally separate from inspection. No resources
             // are consumed until the player explicitly confirms the pending offer.
@@ -1043,12 +1041,15 @@ namespace Ninefold.Presentation
             // Fixed footer height prevents previews changing the camera viewport under a second tap.
             var footer = new ScrollView(ScrollViewMode.Vertical); footer.AddToClassList("battle-dock");
             footer.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            footer.verticalScrollerVisibility = ScrollerVisibility.Hidden;
             stage.Add(footer);
             controls = new VisualElement(); controls.AddToClassList("controls"); footer.Add(controls);
             BuildControls();
             if (battleDetails)
             {
                 var details = new ScrollView(ScrollViewMode.Vertical); details.AddToClassList("battle-details");
+                details.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+                details.verticalScrollerVisibility = ScrollerVisibility.Hidden;
                 details.RegisterCallback<PointerDownEvent>(e => e.StopPropagation());
                 details.RegisterCallback<PointerUpEvent>(e => e.StopPropagation());
                 surface.Add(details);
@@ -1211,6 +1212,44 @@ namespace Ninefold.Presentation
             battleExitPrompt = false;
             message = "Your progress saves automatically.";
         }
+        private void BuildMobilePageHeader(VisualElement parent)
+        {
+            if (menuView.Phase == MissionFlowPhase.Results) return;
+            var header = Row(parent);
+            header.AddToClassList("native-page-bar");
+            bool unitDetail = page == Page.Collection && inspectedUnit != null;
+            bool canBack = unitDetail || page == Page.Missions || page == Page.Briefing || page == Page.Squad;
+            if (canBack)
+            {
+                var back = Button(header, "‹", () => {
+                    if (unitDetail)
+                    {
+                        menu.Collection.Cancel();
+                        inspectedUnit = null;
+                        collectionDetailsExpanded = false;
+                    }
+                    else if (page == Page.Squad) Navigate(Page.Briefing);
+                    else if (page == Page.Briefing)
+                        Navigate(catalog.Missions[menuView.SelectedMissionId].IsCampaign ? Page.Missions : Page.Home);
+                    else Navigate(Page.Battles);
+                });
+                back.AddToClassList("native-top-back");
+                back.tooltip = unitDetail ? "Back to units" : "Back";
+            }
+            else
+            {
+                var brand = Text(header, "N", "native-top-emblem");
+                brand.pickingMode = PickingMode.Ignore;
+            }
+            string label = page == Page.Collection ? "UNITS" : page == Page.Settings ? "SETTINGS"
+                : page == Page.Squad ? "SQUAD" : page == Page.Briefing ? "MISSION"
+                : page == Page.Missions ? "CAMPAIGN PATH" : "CAMPAIGNS";
+            Text(header, label, "native-top-title").pickingMode = PickingMode.Ignore;
+            var home = Button(header, "⌂", () => Navigate(Page.Home));
+            home.AddToClassList("native-top-home");
+            home.tooltip = "Home";
+        }
+
         private void BuildNavigation(VisualElement parent)
         {
             var nav = Row(parent); nav.AddToClassList("navigation");
