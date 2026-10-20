@@ -118,6 +118,11 @@ namespace Ninefold.Presentation
             var visualFoundation = Resources.Load<StyleSheet>("Home/VisualFoundation02");
             if (visualFoundation != null) root.styleSheets.Add(visualFoundation);
             else Debug.LogWarning("Visual foundation 02 styles are missing. Check project import.", this);
+            // Roster thumbnails belong to Collection only and are safely
+            // optional until production preview textures are registered.
+            var collectionVisual = Resources.Load<StyleSheet>("Home/CollectionVisual03");
+            if (collectionVisual != null) root.styleSheets.Add(collectionVisual);
+            else Debug.LogWarning("Collection visual styles are missing. Check project import.", this);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
