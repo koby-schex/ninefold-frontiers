@@ -97,6 +97,11 @@ namespace Ninefold.Presentation
             var missionClarity = Resources.Load<StyleSheet>("Home/MissionClarity");
             if (missionClarity != null) root.styleSheets.Add(missionClarity);
             else Debug.LogWarning("Mission clarity styles are missing. Check project import.", this);
+            // Collection-specific density and disclosure rules load last.
+            // They never affect squad cards, battle or other menu views.
+            var collectionClarity = Resources.Load<StyleSheet>("Home/CollectionClarity");
+            if (collectionClarity != null) root.styleSheets.Add(collectionClarity);
+            else Debug.LogWarning("Collection clarity styles are missing. Check project import.", this);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
