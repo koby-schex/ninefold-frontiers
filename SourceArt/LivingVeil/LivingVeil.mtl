@@ -1,0 +1,69 @@
+newmtl avar_skin
+Kd 0.32 0.245 0.33
+Ns 24
+d 1
+
+newmtl ceramic
+Kd 0.65 0.66 0.6
+Ns 100
+d 1
+
+newmtl cloth
+Kd 0.115 0.12 0.155
+Ns 4
+d 1
+
+newmtl continuance_frame
+Kd 0.36 0.38 0.4
+Ns 100
+d 1
+
+newmtl eye
+Kd 0.055 0.065 0.07
+Ns 28
+d 1
+
+newmtl grown_mineral
+Kd 0.84 0.86 0.85
+Ns 82
+d 1
+
+newmtl olyra_core
+Kd 0.16 0.125 0.18
+Ns 32
+d 1
+
+newmtl olyra_edge
+Kd 0.57 0.58 0.59
+Ns 32
+d 0.34
+
+newmtl olyra_membrane
+Kd 0.53 0.54 0.55
+Ns 32
+d 0.55
+
+newmtl olyra_tip
+Kd 0.59 0.6 0.61
+Ns 32
+d 0.2
+
+newmtl sail_membrane
+Kd 0.32 0.28 0.43
+Ns 64
+d 0.68
+
+newmtl sail_vein
+Kd 0.64 0.59 0.76
+Ns 28
+d 1
+
+newmtl soft_charcoal
+Kd 0.12 0.13 0.16
+Ns 16
+d 1
+
+newmtl survey_light
+Kd 0.47 0.68 0.79
+Ns 72
+d 1
