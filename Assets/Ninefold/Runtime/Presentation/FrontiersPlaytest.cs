@@ -605,7 +605,7 @@ namespace Ninefold.Presentation
             deploymentStats.AddToClassList("vmp-deploy-facts");
             FrontiersVisualPrimitives.HudChip(deploymentStats, definition.MinimumSquad + "–" + definition.MaximumSquad, "UNITS");
             FrontiersVisualPrimitives.HudChip(deploymentStats, definition.IsCampaign ? "FACTION" : "MIXED", "SQUAD");
-            FrontiersVisualPrimitives.HudChip(deploymentStats, "∞", "TURNS");
+            FrontiersVisualPrimitives.HudChip(deploymentStats, "NONE", "TIMER");
             var chooseSquad = Primary(dock, "CHOOSE SQUAD  ›", () => Navigate(Page.Squad));
             chooseSquad.AddToClassList("mission-brief-next");
         }
