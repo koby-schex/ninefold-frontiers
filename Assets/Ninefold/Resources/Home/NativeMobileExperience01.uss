@@ -84,6 +84,7 @@
     border-width: 2px;
     border-color: rgb(253, 242, 213);
 }
+.root.native-screen-mode #safe-area Button.game-button.native-top-home { font-size: 11px; }
 .root.native-screen-mode .native-top-emblem {
     width: 49px;
     min-width: 49px;
