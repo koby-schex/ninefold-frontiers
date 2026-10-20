@@ -37,7 +37,7 @@ namespace Ninefold.Presentation
                     C(.37f,.34f,.37f),C(.54f,.50f,.52f),C(.38f,.31f,.36f),
                     C(.68f,.62f,.63f),C(.31f,.27f,.38f),C(.24f,.22f,.31f),
                     C(.34f,.40f,.34f),C(.16f,.13f,.21f),C(.81f,.74f,.89f),7,15,.8f);
-            if (id == "fixture-finale")
+            if (key == "study-w5-fracture" || key == "fixture-finale")
                 return new BattlefieldSceneDirection("W5 study · deep mineral fracture",
                     C(.28f,.26f,.33f),C(.46f,.43f,.51f),C(.29f,.25f,.38f),
                     C(.58f,.53f,.62f),C(.23f,.19f,.34f),C(.16f,.14f,.25f),
