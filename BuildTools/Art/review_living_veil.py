@@ -2,21 +2,27 @@
 """Reproducibility, topology and silhouette review of the actual Olyra study."""
 import argparse, collections, json, math, tempfile
 from pathlib import Path
-from build_living_veil import make_model,write,ROOT,ALPHA
+from build_living_veil import make_model,write,ROOT,ALPHA,POSES,membrane_alpha,texture_bytes
 from build_great_strider import dot,cross,sub
 
-def validate():
-    m=make_model();parts={p['name']:p for p in m.parts}
-    assert len(parts)==len(m.parts)==77
-    assert sum(len(p['faces']) for p in m.parts)==54488
-    assert sum(len(p['vertices']) for p in m.parts)==27398
+def validate(pose):
+    m=make_model(pose);parts={p['name']:p for p in m.parts}
+    assert len(parts)==len(m.parts)==97
+    assert sum(len(p['faces']) for p in m.parts)==66948
+    assert sum(len(p['vertices']) for p in m.parts)==33668
     for i in range(5):
-        assert all(f'Olyra_Lobe_{i}_Band_{j}' in parts for j in range(3))
-    assert sum(n.startswith('Olyra_Lobe_') for n in parts)==15
+        p=parts[f'Olyra_Lobe_{i}']
+        assert len(p['uvs'])==len(p['vertices'])
+        assert all(0<=u<=1 and 0<=v<=1 for u,v in p['uvs'])
+        assert all(tuple(f)==tuple(uv) for f,uv in zip(p['faces'],p['uv_faces']))
+        assert len(p['vertex_opacity'])==len(p['vertices'])
+    assert sum(n.startswith('Olyra_Lobe_') for n in parts)==5
     assert sum(n.startswith('Avarin_Arm_') for n in parts)==2
     assert sum(n.startswith('Avarin_Leg_') for n in parts)==2
     assert sum(n.startswith('Avarin_SensoryRibbon_') for n in parts)==6
-    assert ALPHA['olyra_tip']<ALPHA['olyra_edge']<ALPHA['olyra_membrane']<1
+    assert membrane_alpha(1,.5)<membrane_alpha(.5,.5)<membrane_alpha(0,.5)<1
+    assert membrane_alpha(.5,0)<membrane_alpha(.5,.5)
+    assert max(abs(membrane_alpha(k/255,.5)-membrane_alpha((k+1)/255,.5)) for k in range(255))<.002
     for name,p in parts.items():
         v=p['vertices'];edges=collections.Counter();directions=collections.Counter();volume=0
         assert all(math.isfinite(x) for row in v for x in row),name
@@ -34,30 +40,45 @@ def validate():
     assert 1.80<max(v[1] for v in av)<1.85
     # The standing partner stays clear of the resting organism's bounding box.
     creature=[v for p in m.parts if p['name'].startswith('Olyra_') for v in p['vertices']]
-    assert min(v[0] for v in av)>max(v[0] for v in creature)
+    if pose=='resting':
+        assert min(v[0] for v in av)>max(v[0] for v in creature)
+    else:
+        assert 4<max(v[0] for v in creature)-min(v[0] for v in creature)<6
+        # Conservative triangle/AABB exclusion around the entire partner/harness.
+        partner=[v for p in m.parts if p['name'].startswith(('Avarin_','VeilHarness_')) for v in p['vertices']]
+        lo=[min(v[k] for v in partner)-.03 for k in range(3)]
+        hi=[max(v[k] for v in partner)+.03 for k in range(3)]
+        for p in m.parts:
+            if not p['name'].startswith('Olyra_'):continue
+            for f in p['faces']:
+                triangle=[p['vertices'][i] for i in f]
+                assert any(max(v[k] for v in triangle)<lo[k] or min(v[k] for v in triangle)>hi[k] for k in range(3)),('partner clearance',p['name'])
     folder=ROOT/'SourceArt/LivingVeil'
     with tempfile.TemporaryDirectory() as d:
-        write(make_model(),Path(d))
-        for n in ('LivingVeil.obj','LivingVeil.mtl','manifest.json'):
+        write(make_model(pose),Path(d),pose)
+        names=('LivingVeil.obj','manifest.json') if pose=='resting' else ('LivingVeilProtective.obj','protective-manifest.json')
+        for n in (*names,'LivingVeil.mtl','Textures/OlyraMembrane.png'):
             assert (Path(d)/n).read_bytes()==(folder/n).read_bytes(),('stale',n)
-    return dict(parts=77,vertices=27398,triangles=54488,lobes=5,closed_parts=True,
-        reproducible_export=True,grounded_partner=True,resting_partner_clearance=True,
-        limitations='Not a self-intersection, rigging, mobile performance or native transparency certificate')
+    return dict(pose=pose,parts=97,vertices=33668,triangles=66948,lobes=5,closed_parts=True,
+        reproducible_export=True,grounded_partner=True,partner_clearance=True,
+        limitations='Not a lobe self-intersection, rigging, mobile performance or native transparency certificate')
 
 def main(render_images=False):
-    report=validate();print(json.dumps(report,indent=2));out=ROOT/'SourceArt/LivingVeil/Review';out.mkdir(parents=True,exist_ok=True)
+    report=[validate(pose) for pose in POSES];print(json.dumps(report,indent=2));out=ROOT/'SourceArt/LivingVeil/Review';out.mkdir(parents=True,exist_ok=True)
     (out/'checks.json').write_text(json.dumps(report,indent=2)+'\n')
     if not render_images:return
     from render_great_strider import render,font
     from PIL import Image,ImageDraw
     from build_living_veil import COLORS,ALPHA,FINISH
-    m=make_model();data=dict(parts=m.parts,materials=COLORS,opacity=ALPHA,finish=FINISH)
-    sheet=Image.new('RGB',(1400,900),'#eeede5');draw=ImageDraw.Draw(sheet)
-    draw.text((20,16),'LIVING VEIL / OLYRA — RESTING FORM STUDY 01',font=font(26),fill='#262c32')
-    draw.text((20,52),'Actual source mesh • folded pose • provisional materials • not final art',font=font(18),fill='#596069')
-    for i,(label,eye,target,extent) in enumerate((('Front / partner',(0,2.5,10),(.57,1.5,0),4.5),('Three-quarter',(7,4,10),(.57,1.5,0),4.8),('Tactical silhouette',(6,9,9),(.57,1.5,0),5.2))):
-        sheet.paste(render(data,eye,(460,750),extent,target,True),(i*466,115))
-        draw.text((i*466+15,88),label,font=font(18),fill='#262c32')
+    sheet=Image.new('RGB',(1400,1200),'#eeede5');draw=ImageDraw.Draw(sheet)
+    draw.text((20,16),'LIVING VEIL / OLYRA — CANOPY STUDY 02',font=font(26),fill='#262c32')
+    draw.text((20,52),'Actual source geometry • two static poses • provisional surfaces',font=font(18),fill='#596069')
+    for row,pose in enumerate(POSES):
+        m=make_model(pose);data=dict(parts=m.parts,materials=COLORS,opacity=ALPHA,finish=FINISH)
+        for i,(label,eye) in enumerate((('Front',(0,3,10)),('Three-quarter',(7,4,10)),('Tactical',(6,9,9)))):
+            # Shared framing across poses makes scale comparisons meaningful.
+            sheet.paste(render(data,eye,(460,490),7.1,(.3,1.7,0),False),(i*466,125+row*540))
+            draw.text((i*466+15,95+row*540),pose.title()+' / '+label,font=font(18),fill='#262c32')
     sheet.save(out/'LivingVeil-Review.png')
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--render',action='store_true');main(p.parse_args().render)

@@ -18,3 +18,12 @@ assert np.array_equal(draw([solid,plane('hidden',-1,'glass')],.5),a), 'Membrane 
 assert np.array_equal(result,draw([solid,plane('back shell',.9,'glass'),glass],.5)), 'Thin closed shell double-counted'
 assert np.array_equal(draw([solid,glass],0),a), 'Zero opacity blocks background'
 print('PASS: alpha blend, opaque occlusion, order independence, nearest-shell and zero-opacity checks')
+
+# Interpolated membrane alpha is opt-in; retain the old constant-opacity path.
+gradient=plane('gradient',1,'glass');gradient['vertex_opacity']=[0,1,1,0]
+result=draw([solid,gradient],.5)
+for x in (20,30,42):
+    expected_alpha=((x+.5-32)/(64/3)+1)/2
+    expected=a[30,x]*(1-expected_alpha)+b[30,x]*expected_alpha
+    assert np.max(abs(result[30,x].astype(float)-expected))<=1, 'Vertex alpha interpolation failed'
+print('PASS: continuous vertex alpha interpolation')

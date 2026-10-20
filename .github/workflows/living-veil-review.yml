@@ -4,12 +4,16 @@ on:
     paths:
       - 'BuildTools/Art/**'
       - 'SourceArt/LivingVeil/**'
+      - 'Assets/Ninefold/Editor/LivingVeilReview.cs'
+      - 'Tests/Ninefold.Core.Tests/LivingVeilImportTests.cs'
       - '.github/workflows/living-veil-review.yml'
   push:
     branches: [main]
     paths:
       - 'BuildTools/Art/**'
       - 'SourceArt/LivingVeil/**'
+      - 'Assets/Ninefold/Editor/LivingVeilReview.cs'
+      - 'Tests/Ninefold.Core.Tests/LivingVeilImportTests.cs'
       - '.github/workflows/living-veil-review.yml'
 permissions:
   contents: read

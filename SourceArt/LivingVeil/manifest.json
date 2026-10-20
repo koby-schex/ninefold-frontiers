@@ -1,22 +1,22 @@
 {
-  "status": "resting form study 01; not production ready",
+  "status": "canopy study 02; not production ready",
   "units": "meters",
   "up": "Y",
   "forward": "Z",
-  "parts": 77,
-  "vertices": 27398,
-  "triangles": 54488,
+  "parts": 97,
+  "vertices": 33668,
+  "triangles": 66948,
   "height": 3.009909379719954,
   "bounds": [
     [
-      -1.2879215940173936,
+      -1.286930053738836,
       0.0,
-      -1.2841954805903646
+      -1.2835073693492918
     ],
     [
       2.4322846241911975,
       3.009909379719954,
-      1.2829349760473003
+      1.2816838692436459
     ]
   ],
   "lobes": 5,
@@ -28,19 +28,19 @@
     "eye",
     "grown_mineral",
     "olyra_core",
-    "olyra_edge",
     "olyra_membrane",
-    "olyra_tip",
     "sail_membrane",
     "sail_vein",
     "soft_charcoal",
     "survey_light"
   ],
-  "pose": "resting folded lobes; Avarin standing alongside",
+  "pose": "resting",
+  "model_id": "world05.living-veil.olyra",
+  "membrane_alpha": "RGBA texture; MTL d is transparency classification, importer uses alpha multiplier 1",
   "limitations": [
-    "Provisional anatomy/surface study, not locked visual acceptance",
-    "No deployed/protective poses, rig, animation, UV unwrap or LODs",
-    "Separate closed membrane bands approximate edge clarity; transparency sorting needs native review",
-    "Harness line housings and three tiny visual organs are implementation proposals, not new locked canon"
+    "Provisional static pose and surfaces; not locked visual acceptance",
+    "No gliding pose, production rig, animation or LODs",
+    "Layered transparency sorting needs native review",
+    "Exact curvature, harness detail and three tiny visual organs are implementation proposals"
   ]
 }

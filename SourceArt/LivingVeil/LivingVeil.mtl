@@ -33,20 +33,11 @@ Kd 0.16 0.125 0.18
 Ns 32
 d 1
 
-newmtl olyra_edge
-Kd 0.57 0.58 0.59
-Ns 32
-d 0.34
-
 newmtl olyra_membrane
-Kd 0.53 0.54 0.55
+Kd 1 1 1
 Ns 32
 d 0.55
-
-newmtl olyra_tip
-Kd 0.59 0.6 0.61
-Ns 32
-d 0.2
+map_Kd Textures/OlyraMembrane.png
 
 newmtl sail_membrane
 Kd 0.32 0.28 0.43
