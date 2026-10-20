@@ -15,7 +15,7 @@ namespace Ninefold.Editor
         private const string ExpectedVersion = "6000.3.21f1";
         private string report = "", status = "";
         private Vector2 scroll;
-        private static readonly string[] Styles = { "Home/Home", "Home/Campaign", "Home/Units", "Home/Battle", "Home/Results", "Home/CampaignClarity", PlaytestRevision.FoundationResource, "Home/HomePolish", PlaytestRevision.ControlsResource };
+        private static readonly string[] Styles = { "Home/Home", "Home/Campaign", "Home/Units", "Home/Battle", "Home/Results", "Home/CampaignClarity", "Home/MissionClarity", PlaytestRevision.FoundationResource, "Home/HomePolish", PlaytestRevision.ControlsResource };
 
         [MenuItem("Ninefold/Playtest/Launcher", false, 0)]
         public static void Open() => GetWindow<PlaytestLauncher>("Ninefold Playtest");
