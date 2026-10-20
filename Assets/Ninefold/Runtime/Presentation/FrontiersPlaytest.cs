@@ -85,6 +85,11 @@ namespace Ninefold.Presentation
             var homePolish = Resources.Load<StyleSheet>("Home/HomePolish");
             if (homePolish != null) root.styleSheets.Add(homePolish);
             else Debug.LogWarning("Home polish styles are missing. Check project import.", this);
+            // Scoped to the campaign selection overview. Load last so its compact
+            // cards and nav intentionally override the older full-screen prototype.
+            var campaignClarity = Resources.Load<StyleSheet>("Home/CampaignClarity");
+            if (campaignClarity != null) root.styleSheets.Add(campaignClarity);
+            else Debug.LogWarning("Campaign clarity styles are missing. Check project import.", this);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
