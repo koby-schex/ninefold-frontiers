@@ -41,6 +41,7 @@ namespace Ninefold.Presentation
         private enum CollectionFilter { All, Owned, Locked }
         private CollectionFilter collectionFilter = CollectionFilter.All;
         private bool collectionDetailsExpanded;
+        private bool battleExitPrompt;
         private enum Page { Home, Battles, Missions, Briefing, Squad, Collection, Settings }
         private Page page;
         private string selectedCampaign, squadInspection;
@@ -161,26 +162,30 @@ namespace Ninefold.Presentation
             menuScroll = null;
             content.Clear(); surface = null; controls = null; pointer = -1;
             notice.text = menuView.Phase == MissionFlowPhase.Results ? menuView.Results.Claimed ? "Result and rewards saved." : "Battle finished. Review and save your result." : message;
-            bool home = menuView.Phase != MissionFlowPhase.Results && page != Page.Settings &&
-                !(menuView.Phase == MissionFlowPhase.Battle && inBattle) &&
-                (menuView.Phase == MissionFlowPhase.Battle || page == Page.Home);
+            // Saved encounters may be inspected from other menus. The battlefield
+            // renders only while deliberately resumed; browsing never replaces it.
+            bool home = menuView.Phase != MissionFlowPhase.Results && page == Page.Home &&
+                !(menuView.Phase == MissionFlowPhase.Battle && inBattle);
             bool resultsScreen = menuView.Phase == MissionFlowPhase.Results;
-            bool campaignScreen = resultsScreen || page == Page.Settings || menuView.Phase == MissionFlowPhase.Selection &&
-                (page == Page.Battles || page == Page.Missions || page == Page.Briefing || page == Page.Squad || page == Page.Collection || page == Page.Settings);
+            bool browsing = menuView.Phase == MissionFlowPhase.Selection ||
+                (menuView.Phase == MissionFlowPhase.Battle && !inBattle);
+            bool campaignScreen = resultsScreen || page == Page.Settings ||
+                (browsing && (page == Page.Battles || page == Page.Missions ||
+                    page == Page.Briefing || page == Page.Squad || page == Page.Collection));
             root.EnableInClassList("campaign-mode", campaignScreen);
             // Campaign overview has its own restrained hierarchy; mission briefing
             // and squad pages keep their existing presentation.
             root.EnableInClassList("campaign-overview-mode",
-                menuView.Phase == MissionFlowPhase.Selection && page == Page.Battles);
+                browsing && page == Page.Battles);
             root.EnableInClassList("mission-path-mode",
-                menuView.Phase == MissionFlowPhase.Selection && page == Page.Missions);
+                browsing && page == Page.Missions);
             root.EnableInClassList("mission-briefing-clarity-mode",
                 menuView.Phase == MissionFlowPhase.Selection && page == Page.Briefing);
             root.EnableInClassList("results-mode", resultsScreen);
-            root.EnableInClassList("unit-mode", menuView.Phase == MissionFlowPhase.Selection && (page == Page.Squad || page == Page.Collection));
+            root.EnableInClassList("unit-mode", browsing && (page == Page.Squad || page == Page.Collection));
             // Collection UI refinement is separate from Squad and the battle HUD.
             root.EnableInClassList("collection-clarity-mode",
-                menuView.Phase == MissionFlowPhase.Selection && page == Page.Collection);
+                browsing && page == Page.Collection);
             // The remaining prototype-heavy menu screens use one consistent
             // compact portrait shell; combat and polished screens are excluded.
             root.EnableInClassList("support-menu-mode",
@@ -1053,6 +1058,7 @@ namespace Ninefold.Presentation
         private void Navigate(Page destinationPage)
         {
             menu.Collection.Cancel(); page = destinationPage; menuScroll = null;
+            battleExitPrompt = false;
             message = "Your progress saves automatically.";
         }
         private void BuildNavigation(VisualElement parent)
@@ -1061,12 +1067,13 @@ namespace Ninefold.Presentation
             nav.AddToClassList("unified-navigation");
             bool homeNavigation = root.ClassListContains("home-mode");
             if (homeNavigation) nav.AddToClassList("nf-nav");
-            bool activeBattle = menuView.Phase == MissionFlowPhase.Battle;
             foreach (var target in new[] { Page.Home, Page.Battles, Page.Collection, Page.Settings })
             {
                 var destinationPage = target;
                 var label = target == Page.Battles ? "Campaigns" : target == Page.Collection ? "Units" : target.ToString();
-                var button = Button(nav, "", () => Navigate(destinationPage), !activeBattle || target == Page.Home || target == Page.Settings);
+                // Browsing is permitted during a saved battle; progression and
+                // new deployments remain guarded until it has been resolved.
+                var button = Button(nav, "", () => Navigate(destinationPage));
                 button.AddToClassList("nav-button");
                 button.AddToClassList("unified-nav-button");
                 if (homeNavigation) button.AddToClassList("nf-nav-item");
