@@ -113,6 +113,11 @@ namespace Ninefold.Presentation
             var gameApp = Resources.Load<StyleSheet>("Home/GameApp");
             if (gameApp != null) root.styleSheets.Add(gameApp);
             else Debug.LogWarning("Game app styles are missing. Check project import.", this);
+            // Scoped visual-first primitives. The separate 3D-model pipeline
+            // may provide textures through FrontiersPreviewRegistry later.
+            var visualFoundation = Resources.Load<StyleSheet>("Home/VisualFoundation02");
+            if (visualFoundation != null) root.styleSheets.Add(visualFoundation);
+            else Debug.LogWarning("Visual foundation 02 styles are missing. Check project import.", this);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
