@@ -45,7 +45,7 @@ namespace Ninefold.Presentation
 
             // Other abstract fixtures deliberately avoid claiming a specific
             // world's canon before that world's campaign and art are approved.
-            if (id == "fixture-next")
+            if (key == "study-neutral-other" || key == "fixture-next")
                 return new BattlefieldSceneDirection("Neutral faction-B fixture",
                     C(.33f,.34f,.34f),C(.50f,.51f,.50f),C(.32f,.35f,.36f),
                     C(.61f,.63f,.62f),C(.25f,.33f,.37f),C(.20f,.26f,.29f),
