@@ -11,6 +11,7 @@ namespace Ninefold.Presentation
     {
         public int MeshCount => meshes.Count;
         private readonly Material stone, pale, distant, vegetation, farHaze;
+        private readonly Material floorSurface, coverSurface;
         private readonly Material[] paving = new Material[3];
         private readonly Texture2D mineral;
         private readonly List<Mesh> meshes = new List<Mesh>();
@@ -18,6 +19,7 @@ namespace Ninefold.Presentation
 
         public BattlefieldScenery(Material template, Material floor, Material cover)
         {
+            floorSurface = floor; coverSurface = cover;
             Material Make(string name, Color color)
             {
                 var m = new Material(template) { name = name, color = color };
@@ -55,9 +57,20 @@ namespace Ninefold.Presentation
             unchecked { uint n=(uint)(x*374761393+y*668265263); n=(n^(n>>13))*1274126177; return (n&65535)/65535f; }
         }
 
-        public void Build(Transform parent, BattlefieldMap map, Material floor)
+        public void Build(Transform parent, BattlefieldMap map, Material floor, BattlefieldSceneDirection direction)
         {
             ClearMeshes();
+            // These are the renderer-owned fixture materials, not shared model
+            // assets. Presentation variations never change tactical geometry.
+            floorSurface.color = direction.Floor;
+            coverSurface.color = direction.Cover;
+            stone.color = direction.Stone;
+            pale.color = direction.Ceramic;
+            distant.color = direction.Distant;
+            farHaze.color = direction.Haze;
+            vegetation.color = direction.Plants;
+            for (int i=0; i<paving.Length; i++)
+                paving[i].color = Color.Lerp(direction.Floor, direction.Ceramic, .10f + i*.10f);
             float x0=(float)map.Bounds.Min.X, x1=(float)map.Bounds.Max.X;
             float z0=(float)map.Bounds.Min.Z, z1=(float)map.Bounds.Max.Z;
             floor.mainTextureScale = new Vector2((x1-x0)/3,(z1-z0)/3);
@@ -72,8 +85,10 @@ namespace Ninefold.Presentation
             Emit(parent,"Weathered cover faces",coverFaces,stone);
             Emit(parent,"Ash ceramic cover crowns",coverCaps,pale);
             // A second low-contrast horizon layer adds depth, not extra playable space.
-            for(int i=0;i<6;i++)
-                far.Rock(new Vector3(Mathf.Lerp(x0-7,x1+7,i/5f),-1.8f,z1+8),new Vector3(5.5f,3.8f+Noise(i,43)*2,3.2f),i+190);
+            int distantCount = Mathf.Max(3,direction.HorizonDetail-2);
+            for(int i=0;i<distantCount;i++)
+                far.Rock(new Vector3(Mathf.Lerp(x0-7,x1+7,i/(float)(distantCount-1)),-1.8f,z1+8),
+                    new Vector3(5.5f,(3.8f+Noise(i,43)*2)*direction.SilhouetteHeight,3.2f),i+190);
             Emit(parent,"Far atmospheric shelves",far,farHaze);
             var layers=new Batch(); var highlights=new Batch(); var horizon=new Batch(); var plants=new Batch();
             // Edge layers remain below walking height and outside the legal rectangle.
@@ -97,16 +112,18 @@ namespace Ninefold.Presentation
                 layers.Rock(new Vector3(x,-1.35f,z0-.25f),new Vector3(1.8f,1.2f,1.3f),i+130);
             }
             // Distant backdrop stays behind the far boundary; no props in playable lanes.
-            for(int i=0;i<9;i++)
+            for(int i=0;i<direction.HorizonDetail;i++)
             {
-                float x=Mathf.Lerp(x0-4,x1+4,i/8f), h=1.4f+Noise(i,9)*2.7f;
+                float x=Mathf.Lerp(x0-4,x1+4,i/(float)(direction.HorizonDetail-1)),
+                    h=(1.4f+Noise(i,9)*2.7f)*direction.SilhouetteHeight;
                 horizon.Rock(new Vector3(x,-.7f,z1+4+Noise(i,7)*2),new Vector3(2.3f,h,2.8f),i+50);
                 highlights.Rock(new Vector3(x,-.9f,z1+2),new Vector3(1.5f,.8f,1.3f),i+90);
             }
             // Restrained low silhouette vegetation, exclusively beyond the far edge.
-            for(int i=0;i<18;i++)
+            for(int i=0;i<direction.PlantDetail;i++)
             {
-                float x=Mathf.Lerp(x0-1,x1+1,i/17f), z=z1+1.3f+Noise(i,3)*.4f;
+                float x=Mathf.Lerp(x0-1,x1+1,i/(float)(direction.PlantDetail-1)),
+                    z=z1+1.3f+Noise(i,3)*.4f;
                 for(int j=0;j<3;j++) plants.Rock(new Vector3(x+j*.10f,-.25f,z),new Vector3(.12f,.3f+Noise(i,j)*.35f,.12f),i*3+j);
             }
             Emit(parent,"Layered boundary geology",layers,stone);
@@ -116,7 +133,7 @@ namespace Ninefold.Presentation
             var lightObject=new GameObject("Dusk fill — environment study"); lightObject.transform.SetParent(parent,false);
             lightObject.transform.localPosition=new Vector3((x0+x1)/2,7,z1+1);
             var fill=lightObject.AddComponent<Light>(); fill.type=LightType.Point;
-            fill.color=new Color(.78f,.70f,.88f); fill.intensity=1.4f; fill.range=Mathf.Max(x1-x0,z1-z0)*2;
+            fill.color=direction.Fill; fill.intensity=1.4f; fill.range=Mathf.Max(x1-x0,z1-z0)*2;
             fill.shadows=LightShadows.None;
         }
 
