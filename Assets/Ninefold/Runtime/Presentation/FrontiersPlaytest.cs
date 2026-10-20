@@ -195,45 +195,66 @@ namespace Ninefold.Presentation
 
         private void BuildHomeScreen()
         {
+            // One journey, one primary action. The scenery and surrounding world
+            // stay visible; duplicate Units controls do not compete with bottom nav.
             var masthead = new VisualElement(); masthead.AddToClassList("home-masthead"); content.Add(masthead);
             Text(masthead, "NINEFOLD", "home-wordmark");
-            Text(masthead, "F R O N T I E R S", "home-submark");
+            Text(masthead, "FRONTIERS", "home-submark");
+
             var scroll = new ScrollView(ScrollViewMode.Vertical); scroll.AddToClassList("home-scroll");
             scroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             content.Add(scroll);
-            // Fill tall portraits with scenery; short/landscape windows scroll without hiding actions.
+            // Preserve the portrait hero on tall devices. Short screens can scroll
+            // instead of reducing interactive targets below their useful sizes.
             scroll.contentContainer.style.flexGrow = 1;
             scroll.contentViewport.RegisterCallback<GeometryChangedEvent>(evt =>
                 scroll.contentContainer.style.minHeight = Mathf.Max(0, evt.newRect.height));
-            var vista = new VisualElement { pickingMode = PickingMode.Ignore }; vista.AddToClassList("home-vista"); scroll.Add(vista);
-            var panel = new VisualElement(); panel.AddToClassList("home-actions"); panel.AddToClassList("nf-panel--quiet"); scroll.Add(panel);
+            var vista = new VisualElement { pickingMode = PickingMode.Ignore }; vista.AddToClassList("home-vista");
+            scroll.Add(vista);
+
+            var panel = new VisualElement(); panel.AddToClassList("home-actions"); scroll.Add(panel);
             bool active = menuView.Phase == MissionFlowPhase.Battle;
             var next = menuView.NextCampaignMission;
             string claim = menuView.ClaimableCampaignId;
-            Text(panel, "WORLD 5 · THE CONTINUANCE", "home-kicker").AddToClassList("nf-overline");
-            // Keep test content honest: the artwork is approved, the fixture campaign is not the story campaign.
-            Text(panel, active ? "Return to the field" : claim != null ? "Campaign complete" : next != null ? CampaignName(next.CampaignId) : "Explore the frontiers", "home-title").AddToClassList("nf-display");
-            Text(panel, active ? MissionName(menuView.Resume.MissionId) + " · Battle saved" : claim != null ? CampaignName(claim) + " · One-time rewards ready" : next != null ? MissionName(next.Definition.Id) + " · Your next mission" : "Replay missions or discover campaign requirements.", "home-summary").AddToClassList("nf-secondary");
+
+            // Fixture campaign names are deliberately contextual, not presented as
+            // final story branding. The approved World Five artwork remains unchanged.
+            string context = active ? "BATTLE IN PROGRESS"
+                : claim != null ? "REWARD READY"
+                : next != null ? "YOUR NEXT MISSION"
+                : "THE FRONTIERS";
+            string headline = active ? "Return to the field"
+                : claim != null ? "Campaign complete"
+                : next != null ? "Your journey continues"
+                : "Choose your campaign";
+            string detail = active ? MissionName(menuView.Resume.MissionId) + " · Saved battle"
+                : claim != null ? CampaignName(claim) + " · Completion rewards"
+                : next != null ? CampaignName(next.CampaignId) + " · " + MissionName(next.Definition.Id)
+                : "Explore available missions and continue your progress.";
+
+            Text(panel, context, "home-kicker");
+            Text(panel, headline, "home-title");
+            Text(panel, detail, "home-summary");
+
             Button main;
             if (active) main = Button(panel, "RESUME BATTLE  ›", () => { inBattle = true; message = "Battle resumed."; });
             else if (claim != null) main = Button(panel, "COLLECT REWARDS  ›", () => ClaimCampaign(claim));
-            else if (next != null) main = Button(panel, "CONTINUE CAMPAIGN  ›", () => SelectMission(next.Definition.Id));
-            else main = Button(panel, "BROWSE CAMPAIGNS  ›", () => Navigate(Page.Battles));
-            main.AddToClassList("home-primary"); main.AddToClassList("nf-control"); main.AddToClassList("nf-control--primary");
-            var shortcuts = Row(panel); shortcuts.AddToClassList("home-shortcuts");
-            HomeShortcut(shortcuts, "Quick Battle", "Mixed-faction missions", "routes", () => SelectMission("fixture-mixed"), !active);
-            HomeShortcut(shortcuts, "Your Units", menuView.Units.Count(u => u.Owned) + " unlocked · Collection", "units", () => Navigate(Page.Collection), !active);
-            if (active) Text(panel, "Other activities are unavailable until this saved battle ends.", "home-status");
-            else if (message != "Your progress saves automatically.") Text(panel, message, "home-status");
-            Text(panel, PlaytestRevision.Id + " · Abstract missions and units", "home-fixture");
-            BuildNavigation(content);
-        }
+            else if (next != null) main = Button(panel, "VIEW MISSION  ›", () => SelectMission(next.Definition.Id));
+            else main = Button(panel, "EXPLORE CAMPAIGNS  ›", () => Navigate(Page.Battles));
+            main.AddToClassList("home-primary");
 
-        private void HomeShortcut(VisualElement parent, string title, string subtitle, string icon, Action action, bool enabled)
-        {
-            var button = Button(parent, "", action, enabled); button.AddToClassList("home-shortcut"); button.AddToClassList("nf-control");
-            HomeIcon(button, icon); Text(button, title, "home-shortcut-title"); Text(button, subtitle, "home-shortcut-detail");
-            button.tooltip = title;
+            if (!active)
+            {
+                // Units already has a permanent nav destination. Quick Battle is
+                // the only additional route and has deliberately secondary weight.
+                var quick = Button(panel, "Quick Battle  ›", () => SelectMission("fixture-mixed"));
+                quick.AddToClassList("home-quick-link");
+            }
+            else
+            {
+                Text(panel, "Other activities unlock when this battle ends.", "home-status");
+            }
+            BuildNavigation(content);
         }
 
         private static void HomeIcon(VisualElement parent, string icon)
