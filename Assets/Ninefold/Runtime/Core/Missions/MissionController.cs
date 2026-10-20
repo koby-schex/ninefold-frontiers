@@ -86,6 +86,21 @@ namespace Ninefold.Core.Missions
             LastResolvedRound = round;
             return ResolveOutcome();
         }
+        /// <summary>
+        /// Voluntary exit from an active attempt. This is a terminal defeat with no
+        /// resource rewards, not a deletion of the checkpoint or player profile.
+        /// The UI must explicitly confirm this irreversible battle-only choice.
+        /// </summary>
+        public BattleResult Forfeit()
+        {
+            if (Result != null || turns.IsBattleEnded)
+                throw new InvalidOperationException("This battle has already ended.");
+            Result = new BattleResult(Definition, MissionOutcome.Defeat, turns.RoundNumber,
+                "PlayerRetreated", states.Select(state => state.View()).ToArray());
+            turns.EndBattle();
+            return Result;
+        }
+
         private bool Alive(string id) => turns.IsUnitEligible(id) && !turns.Health.GetState(id).IsDefeated;
         private void Refresh(bool roundEnd)
         {
