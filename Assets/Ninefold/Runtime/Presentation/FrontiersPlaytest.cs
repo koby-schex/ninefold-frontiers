@@ -90,6 +90,10 @@ namespace Ninefold.Presentation
             var campaignClarity = Resources.Load<StyleSheet>("Home/CampaignClarity");
             if (campaignClarity != null) root.styleSheets.Add(campaignClarity);
             else Debug.LogWarning("Campaign clarity styles are missing. Check project import.", this);
+            // Mission list and briefing get a strictly scoped layer of their own.
+            var missionClarity = Resources.Load<StyleSheet>("Home/MissionClarity");
+            if (missionClarity != null) root.styleSheets.Add(missionClarity);
+            else Debug.LogWarning("Mission clarity styles are missing. Check project import.", this);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
