@@ -1144,7 +1144,8 @@ namespace Ninefold.Presentation
         private void OpenProfile()
         {
             var profile = PlaytestProfile.Open(new DirectoryBattleSaveFiles(savePath),
-                new DirectoryBattleSaveFiles(Path.Combine(savePath,"Layouts-v2")),new DirectoryProgressSaveFiles(savePath));
+                new DirectoryBattleSaveFiles(Path.Combine(savePath,"Layouts-v2")),new DirectoryProgressSaveFiles(savePath),
+                new DirectoryBattleSaveFiles(Path.Combine(savePath,"Layouts-v3")));
             catalog = profile.Catalog; menu = profile.Menu; legacyProfile = profile.IsLegacy;
             if (legacyProfile) message = "Your saved battle is preserved. Finish it to use the new battlefield layouts.";
         }
