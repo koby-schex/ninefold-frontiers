@@ -10,6 +10,7 @@ namespace Ninefold.Presentation
     /// </summary>
     internal static class WorldFiveSceneryKit
     {
+        internal const string AssetRevision = "W5-ENV-01";
         internal readonly struct Style
         {
             internal readonly int FacetCount;
