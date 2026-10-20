@@ -526,6 +526,8 @@ namespace Ninefold.Presentation
                 Text(identity, !mission.Available ? "LOCKED" : mission.IsReplay ? "CLEARED · REPLAY"
                     : highlighted ? "UP NEXT" : "AVAILABLE", "campaign-status").AddToClassList("mission-path-status");
                 Text(identity, MissionName(missionId), "section").AddToClassList("mission-path-name");
+                if (mission.Definition.Encounter == EncounterKind.WorldCollision)
+                    Text(identity, "WORLD COLLISION", "eyebrow").AddToClassList("vmp-world-collision");
                 if (!mission.Available)
                 {
                     string reason = mission.FactionRosterLocked
@@ -573,6 +575,8 @@ namespace Ninefold.Presentation
 
             // Present what the player is about to do before any secondary detail.
             PreparationHeader(parent, false);
+            if (definition.Encounter == EncounterKind.WorldCollision)
+                Text(parent, "WORLD COLLISION", "eyebrow").AddToClassList("vmp-world-collision");
             var mission = menuView.Missions.Single(m => m.Definition.Id == definition.Id);
             if (mission.IsReplay)
                 Text(parent, "REPLAY · COMPLETED MISSION", "eyebrow")
@@ -1012,7 +1016,8 @@ namespace Ninefold.Presentation
                 pointer = -1; e.StopPropagation();
                 if (tap && !dirty && playback == null && !suspended && !battleDetails) Guard(() => Pick((Vector2)e.position));
             });
-            field.Show(battleView, input.ReadPlanning(), catalog.Missions[b.MissionId].Objectives, surface);
+            field.Show(battleView, input.ReadPlanning(), catalog.Missions[b.MissionId].Objectives, surface,
+                catalog.Missions[b.MissionId].EnvironmentKey);
             if (b.Activation != null)
             {
                 if (announcedAttempt != b.AttemptId || announcedActivation != b.Activation.ActivationId)
@@ -1144,7 +1149,8 @@ namespace Ninefold.Presentation
         private void OpenProfile()
         {
             var profile = PlaytestProfile.Open(new DirectoryBattleSaveFiles(savePath),
-                new DirectoryBattleSaveFiles(Path.Combine(savePath,"Layouts-v2")),new DirectoryProgressSaveFiles(savePath));
+                new DirectoryBattleSaveFiles(Path.Combine(savePath,"Layouts-v2")),new DirectoryProgressSaveFiles(savePath),
+                new DirectoryBattleSaveFiles(Path.Combine(savePath,"Layouts-v3")));
             catalog = profile.Catalog; menu = profile.Menu; legacyProfile = profile.IsLegacy;
             if (legacyProfile) message = "Your saved battle is preserved. Finish it to use the new battlefield layouts.";
         }
