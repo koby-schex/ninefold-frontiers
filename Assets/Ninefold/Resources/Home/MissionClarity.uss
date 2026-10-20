@@ -1,0 +1,340 @@
+/*
+ * Mission & Briefing Clarity 01
+ * Scoped to .mission-path-mode and .mission-briefing-clarity-mode.
+ * No changes to other screens, mission rules, canon or battle UI.
+ */
+
+/* One shared, readable shell. The existing sanctuary is only a subdued
+ * background texture here, never presented as every mission's geography. */
+.root.mission-path-mode #safe-area,
+.root.mission-briefing-clarity-mode #safe-area {
+    padding-left: 14px;
+    padding-right: 14px;
+    padding-bottom: 6px;
+}
+.root.mission-path-mode .heading,
+.root.mission-briefing-clarity-mode .heading {
+    background-color: rgba(17, 22, 17, 0.97);
+    border-bottom-color: rgba(212, 180, 123, 0.27);
+    padding-top: 6px;
+    padding-bottom: 4px;
+}
+.root.mission-path-mode .heading .brand,
+.root.mission-briefing-clarity-mode .heading .brand {
+    font-size: 23px;
+    letter-spacing: 4px;
+    color: rgb(246, 239, 221);
+}
+.root.mission-path-mode .heading .notice,
+.root.mission-briefing-clarity-mode .heading .notice {
+    min-height: 0;
+    margin-top: 2px;
+    font-size: 12px;
+    color: rgb(189, 185, 171);
+}
+.root.mission-path-mode .page-scroll,
+.root.mission-briefing-clarity-mode .page-scroll {
+    background-color: rgba(17, 22, 17, 0.91);
+    padding: 8px 2px 0 2px;
+}
+.root.mission-path-mode .page-scroll > .unity-scroll-view__content-viewport > .unity-scroll-view__content-container,
+.root.mission-briefing-clarity-mode .page-scroll > .unity-scroll-view__content-viewport > .unity-scroll-view__content-container {
+    padding-right: 4px;
+    padding-bottom: 16px;
+}
+.root.mission-path-mode #safe-area Button.game-button.mission-path-back,
+.root.mission-briefing-clarity-mode #safe-area Button.game-button.mission-brief-back {
+    min-height: 44px;
+    padding: 7px 3px;
+    margin: 0 0 4px 0;
+    border-width: 0;
+    border-radius: 0;
+    background-color: transparent;
+    color: rgb(213, 195, 162);
+    font-size: 14px;
+    -unity-font-style: normal;
+    -unity-text-align: middle-left;
+}
+.root.mission-path-mode #safe-area Button.game-button.mission-path-back:hover,
+.root.mission-briefing-clarity-mode #safe-area Button.game-button.mission-brief-back:hover {
+    background-color: rgba(212, 180, 123, 0.10);
+}
+.root.mission-path-mode #safe-area Button.game-button.mission-path-back:focus,
+.root.mission-briefing-clarity-mode #safe-area Button.game-button.mission-brief-back:focus {
+    border-width: 1px;
+    border-color: rgb(246, 239, 221);
+}
+
+/* Mission path: a chronological series, no towering cards or competing
+ * primary buttons. Locked missions explain why, with no deceptive button. */
+.root.mission-path-mode .mission-path-overline {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: rgb(212, 180, 123);
+    margin-bottom: 3px;
+}
+.root.mission-path-mode .mission-path-title {
+    font-size: 34px;
+    margin-top: 0;
+    margin-bottom: 4px;
+    color: rgb(246, 239, 221);
+}
+.root.mission-path-mode .mission-path-progress {
+    font-size: 14px;
+    color: rgb(202, 200, 182);
+    margin: 2px 0 4px 0;
+}
+.root.mission-path-mode .progress-track {
+    height: 5px;
+    margin-top: 4px;
+    margin-bottom: 14px;
+    background-color: rgb(12, 18, 14);
+}
+.root.mission-path-mode .progress-fill {
+    height: 5px;
+    background-color: rgb(212, 180, 123);
+}
+.root.mission-path-mode .mission-path-card {
+    border-width: 1px;
+    border-color: rgba(124, 134, 116, 0.45);
+    border-radius: 7px;
+    background-color: rgba(28, 36, 30, 0.97);
+    padding: 12px 13px;
+    margin: 0 0 9px 0;
+}
+.root.mission-path-mode .mission-path-current {
+    border-left-width: 3px;
+    border-left-color: rgb(212, 180, 123);
+}
+.root.mission-path-mode .mission-path-locked {
+    background-color: rgba(20, 26, 22, 0.95);
+    border-color: rgba(95, 106, 94, 0.38);
+}
+.root.mission-path-mode .mission-heading { align-items: center; }
+.root.mission-path-mode .mission-path-number {
+    font-size: 28px;
+    color: rgb(169, 170, 149);
+    min-width: 40px;
+    margin-right: 9px;
+}
+.root.mission-path-mode .mission-path-status {
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: rgb(212, 180, 123);
+    margin: 0 0 3px 0;
+}
+.root.mission-path-mode .mission-path-locked .mission-path-status {
+    color: rgb(165, 166, 151);
+}
+.root.mission-path-mode .mission-path-name {
+    font-size: 21px;
+    color: rgb(246, 239, 221);
+    margin: 0;
+}
+.root.mission-path-mode .mission-path-objective {
+    font-size: 14px;
+    color: rgb(211, 208, 194);
+    margin: 8px 0 6px 0;
+}
+.root.mission-path-mode .mission-path-lock {
+    font-size: 13px;
+    color: rgb(199, 196, 178);
+    margin: 7px 0 2px 0;
+    padding: 0;
+    background-color: transparent;
+    border-width: 0;
+}
+.root.mission-path-mode #safe-area Button.game-button.mission-path-action {
+    min-height: 49px;
+    margin: 6px 0 0 0;
+    padding: 9px 12px;
+    border-width: 1px;
+    border-radius: 5px;
+    border-color: rgb(109, 117, 102);
+    background-color: rgb(47, 59, 48);
+    color: rgb(246, 239, 221);
+    font-size: 15px;
+}
+.root.mission-path-mode #safe-area Button.game-button.mission-path-action.primary {
+    background-color: rgb(212, 180, 123);
+    color: rgb(17, 22, 17);
+    border-color: rgb(233, 211, 166);
+}
+.root.mission-path-mode #safe-area Button.game-button.mission-path-action:hover {
+    border-color: rgb(212, 180, 123);
+    background-color: rgb(62, 73, 61);
+}
+.root.mission-path-mode #safe-area Button.game-button.mission-path-action.primary:hover {
+    background-color: rgb(234, 209, 161);
+}
+.root.mission-path-mode #safe-area Button.game-button.mission-path-action:focus {
+    border-width: 2px;
+    border-color: rgb(246, 239, 221);
+}
+.root.mission-path-mode .mission-path-footnote {
+    font-size: 11px;
+    color: rgb(172, 168, 154);
+    margin-bottom: 12px;
+}
+
+/* Keep navigation identical to the restrained Campaign overview. */
+.root.mission-path-mode #safe-area .navigation {
+    padding: 3px 0 0 0;
+    background-color: rgba(17, 22, 17, 0.98);
+    border-top-color: rgba(212, 180, 123, 0.3);
+}
+.root.mission-path-mode #safe-area Button.game-button.nav-button {
+    min-height: 62px;
+    padding: 5px 2px;
+    margin: 1px;
+    border-width: 0;
+    border-bottom-width: 2px;
+    border-bottom-color: transparent;
+    border-radius: 0;
+    background-color: transparent;
+}
+.root.mission-path-mode #safe-area Button.game-button.nav-button.selected {
+    border-bottom-color: rgb(212, 180, 123);
+    background-color: rgba(212, 180, 123, 0.08);
+}
+.root.mission-path-mode #safe-area Button.game-button.nav-button:hover {
+    background-color: rgba(212, 180, 123, 0.11);
+}
+.root.mission-path-mode #safe-area .nav-label {
+    font-size: 14px;
+    color: rgb(222, 215, 201);
+}
+.root.mission-path-mode #safe-area .nav-button .home-icon {
+    width: 23px;
+    height: 23px;
+    margin-bottom: 3px;
+}
+
+/* Briefing: objective immediately after title, field diagram, then rewards.
+ * The diagram remains a functional abstract map, not 3D production art. */
+.root.mission-briefing-clarity-mode .step-label {
+    font-size: 12px;
+    margin: 7px 0 3px 0;
+    letter-spacing: 1px;
+    color: rgb(212, 180, 123);
+}
+.root.mission-briefing-clarity-mode .display-title {
+    font-size: 32px;
+    margin: 3px 0 2px 0;
+    color: rgb(246, 239, 221);
+}
+.root.mission-briefing-clarity-mode .mission-brief-context {
+    font-size: 11px;
+    margin: 3px 0 9px 0;
+    color: rgb(184, 177, 157);
+}
+.root.mission-briefing-clarity-mode .briefing-objective.mission-brief-objective,
+.root.mission-briefing-clarity-mode .briefing-terrain.mission-brief-terrain,
+.root.mission-briefing-clarity-mode .mission-brief-rewards {
+    padding: 12px 13px;
+    margin: 0 0 10px 0;
+    border-width: 1px;
+    border-radius: 7px;
+    border-color: rgba(113, 123, 107, 0.50);
+    background-color: rgba(28, 36, 30, 0.95);
+}
+.root.mission-briefing-clarity-mode .briefing-objective.mission-brief-objective {
+    border-left-width: 3px;
+    border-left-color: rgb(212, 180, 123);
+}
+.root.mission-briefing-clarity-mode .mission-brief-overline {
+    font-size: 11px;
+    letter-spacing: 1px;
+    margin: 0 0 5px 0;
+    color: rgb(212, 180, 123);
+}
+.root.mission-briefing-clarity-mode .mission-brief-description {
+    font-size: 16px;
+    margin: 0;
+    color: rgb(246, 239, 221);
+}
+.root.mission-briefing-clarity-mode .mission-brief-terrain > .eyebrow {
+    font-size: 11px;
+    letter-spacing: 1px;
+    margin: 1px 0 6px 0;
+    color: rgb(212, 180, 123);
+}
+.root.mission-briefing-clarity-mode .mission-brief-terrain .map-preview {
+    height: 195px;
+    margin: 0 0 6px 0;
+    border-width: 1px;
+    border-color: rgb(100, 112, 101);
+    background-color: rgb(13, 20, 17);
+}
+.root.mission-briefing-clarity-mode .mission-brief-terrain > .hint {
+    font-size: 12px;
+    color: rgb(202, 199, 185);
+    margin: 2px 0 0 0;
+}
+.root.mission-briefing-clarity-mode .mission-brief-reward-title {
+    font-size: 19px;
+    margin: 0 0 6px 0;
+    color: rgb(246, 239, 221);
+}
+.root.mission-briefing-clarity-mode .briefing-reward {
+    padding: 6px 0;
+    border-bottom-color: rgb(66, 75, 63);
+}
+.root.mission-briefing-clarity-mode .reward-name {
+    font-size: 15px;
+    color: rgb(224, 218, 200);
+}
+.root.mission-briefing-clarity-mode .reward-amount {
+    font-size: 18px;
+    margin-left: 8px;
+    color: rgb(212, 180, 123);
+}
+.root.mission-briefing-clarity-mode .mission-brief-reward-note {
+    font-size: 12px;
+    margin-top: 6px;
+    color: rgb(188, 186, 169);
+}
+/* The action dock does not scroll away; permit the content above to scroll. */
+.root.mission-briefing-clarity-mode #safe-area .mission-brief-dock {
+    padding: 9px 13px;
+    margin: 0;
+    border-width: 1px;
+    border-color: rgba(212, 180, 123, 0.45);
+    border-radius: 5px;
+    background-color: rgba(17, 22, 17, 0.98);
+}
+.root.mission-briefing-clarity-mode .mission-brief-squad-summary {
+    font-size: 13px;
+    margin: 0 0 3px 0;
+    color: rgb(208, 203, 186);
+}
+.root.mission-briefing-clarity-mode #safe-area Button.game-button.mission-brief-next {
+    min-height: 54px;
+    margin: 4px 0 0 0;
+    padding: 9px 12px;
+    border-width: 1px;
+    border-color: rgb(233, 211, 166);
+    border-radius: 5px;
+    background-color: rgb(212, 180, 123);
+    color: rgb(17, 22, 17);
+    font-size: 16px;
+}
+.root.mission-briefing-clarity-mode #safe-area Button.game-button.mission-brief-next:hover {
+    background-color: rgb(234, 209, 161);
+}
+.root.mission-briefing-clarity-mode #safe-area Button.game-button.mission-brief-next:focus {
+    border-width: 2px;
+    border-color: rgb(246, 239, 221);
+}
+.root.compact-home.mission-path-mode .mission-path-title { font-size: 29px; }
+.root.compact-home.mission-path-mode .mission-path-card { padding: 10px 11px; }
+.root.compact-home.mission-path-mode #safe-area Button.game-button.nav-button { min-height: 56px; }
+.root.compact-home.mission-briefing-clarity-mode .mission-brief-terrain .map-preview { height: 145px; }
+.root.compact-home.mission-briefing-clarity-mode .display-title { font-size: 28px; }
+.root.short-home.mission-path-mode .heading,
+.root.short-home.mission-briefing-clarity-mode .heading { display: none; }
+.root.short-home.mission-path-mode #safe-area Button.game-button.nav-button { min-height: 44px; }
+.root.short-home.mission-path-mode #safe-area .nav-label { font-size: 12px; }
+.root.short-home.mission-path-mode #safe-area .nav-button .home-icon { width: 18px; height: 18px; }
+.root.short-home.mission-briefing-clarity-mode .mission-brief-terrain .map-preview { height: 110px; }
+.root.short-home.mission-briefing-clarity-mode #safe-area Button.game-button.mission-brief-next { min-height: 44px; }
