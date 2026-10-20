@@ -133,6 +133,9 @@ namespace Ninefold.Presentation
             var battleGuidance = Resources.Load<StyleSheet>("Home/BattleObjectiveGuidance01");
             if (battleGuidance != null) root.styleSheets.Add(battleGuidance);
             else Debug.LogWarning("Battle objective guidance styles are missing. Check project import.", this);
+            var nativeMobile = Resources.Load<StyleSheet>("Home/NativeMobileExperience01");
+            if (nativeMobile != null) root.styleSheets.Add(nativeMobile);
+            else Debug.LogWarning("Native mobile experience styles are missing. Check project import.", this);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
@@ -218,8 +221,13 @@ namespace Ninefold.Presentation
                 (menuView.Phase == MissionFlowPhase.Selection && page == Page.Squad));
             root.EnableInClassList("briefing-mode", campaignScreen && page == Page.Briefing);
             root.EnableInClassList("home-mode", home);
-            heading.style.display = home || (menuView.Phase == MissionFlowPhase.Battle && inBattle) ? DisplayStyle.None : DisplayStyle.Flex;
-            homeBackdrop.style.display = home || campaignScreen ? DisplayStyle.Flex : DisplayStyle.None;
+            // All playable menus use an actual native-width toolbar, not
+            // the old website masthead above a floating content card.
+            heading.style.display = DisplayStyle.None;
+            // Never project the sanctuary/backdrop behind other menu pages.
+            // Campaign, Collection, Squad and Settings are distinct full-screen apps.
+            homeBackdrop.style.display = home ? DisplayStyle.Flex : DisplayStyle.None;
+            root.EnableInClassList("native-screen-mode", !home && !(menuView.Phase == MissionFlowPhase.Battle && inBattle));
             root.EnableInClassList("battle-mode", menuView.Phase == MissionFlowPhase.Battle && inBattle);
             root.EnableInClassList("visual-hud-mode", menuView.Phase == MissionFlowPhase.Battle && inBattle);
             if (menuView.Phase == MissionFlowPhase.Battle && inBattle)
@@ -230,7 +238,9 @@ namespace Ninefold.Presentation
             }
             else
             {
-                content.style.backgroundColor = new Color(.035f, .063f, .094f);
+                content.style.backgroundColor = page == Page.Collection ? new Color(.063f, .094f, .078f)
+                    : page == Page.Settings ? new Color(.068f, .077f, .077f)
+                    : new Color(.045f, .075f, .071f);
                 input = null; battleView = null; field.Hide();
                 if (home)
                 {
@@ -238,9 +248,11 @@ namespace Ninefold.Presentation
                     BuildHomeScreen();
                     return;
                 }
-                if (campaignScreen) content.style.backgroundColor = Color.clear;
+                BuildMobilePageHeader(content);
                 var scroll = new ScrollView(ScrollViewMode.Vertical); scroll.AddToClassList("page-scroll");
-                scroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden; content.Add(scroll);
+                scroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+                scroll.verticalScrollerVisibility = ScrollerVisibility.Hidden;
+                content.Add(scroll);
                 if (menuView.Phase == MissionFlowPhase.Results) BuildResults(scroll);
                 else if (page == Page.Settings) BuildSettings(scroll);
                 else if (page == Page.Collection) BuildCollection(scroll);
@@ -250,7 +262,9 @@ namespace Ninefold.Presentation
                 else BuildSelection(scroll);
                 menuScroll = scroll; renderedPage = page; renderedUnit = inspectedUnit; renderedOffer = offerOpen;
                 scroll.schedule.Execute(() => scroll.scrollOffset = scrollOffset);
-                if (menuView.Phase != MissionFlowPhase.Results && page != Page.Briefing && page != Page.Squad) BuildNavigation(content);
+                // Even nested briefing / squad screens retain a reliable way Home
+                // or to another main tab; the fixed deploy dock remains functional.
+                if (menuView.Phase != MissionFlowPhase.Results) BuildNavigation(content);
             }
         }
 
@@ -281,6 +295,7 @@ namespace Ninefold.Presentation
             scroll.AddToClassList("home-scroll");
             scroll.AddToClassList("game-lobby-scroll");
             scroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            scroll.verticalScrollerVisibility = ScrollerVisibility.Hidden;
             content.Add(scroll);
             scroll.contentContainer.style.flexGrow = 1;
             scroll.contentViewport.RegisterCallback<GeometryChangedEvent>(evt =>
@@ -574,10 +589,6 @@ namespace Ninefold.Presentation
         private void BuildBriefing(VisualElement parent)
         {
             var definition = catalog.Missions[menuView.SelectedMissionId];
-            var back = Button(parent, definition.IsCampaign ? "‹ Missions" : "‹ Home",
-                () => Navigate(definition.IsCampaign ? Page.Missions : Page.Home));
-            back.AddToClassList("back-link"); back.AddToClassList("mission-brief-back");
-
             // Present what the player is about to do before any secondary detail.
             PreparationHeader(parent, false);
             if (definition.Encounter == EncounterKind.WorldCollision)
@@ -627,7 +638,6 @@ namespace Ninefold.Presentation
         private void BuildSquad(VisualElement parent)
         {
             var definition = catalog.Missions[menuView.SelectedMissionId];
-            Button(parent, "‹ Mission briefing", () => Navigate(Page.Briefing)).AddToClassList("back-link");
             PreparationHeader(parent, true);
             Text(parent, "Choose your squad", "display-title");
             Text(parent, "Select " + definition.MinimumSquad + "–" + definition.MaximumSquad + " units • maximum one Apex", "detail");
@@ -693,13 +703,6 @@ namespace Ninefold.Presentation
                     .AddToClassList("collection-footnote");
                 return;
             }
-
-            var back = Button(parent, "‹ All units", () => {
-                menu.Collection.Cancel();
-                inspectedUnit = null;
-                collectionDetailsExpanded = false;
-            });
-            back.AddToClassList("back-link"); back.AddToClassList("collection-back");
 
             // Confirmation is intentionally separate from inspection. No resources
             // are consumed until the player explicitly confirms the pending offer.
@@ -1004,11 +1007,16 @@ namespace Ninefold.Presentation
             var top = Card(content, "battle-header");
             var line = Row(top); line.AddToClassList("battle-title-row");
             var actor = b.Units.FirstOrDefault(u => u.Id == b.Activation?.UnitId);
-            Button(line, "Home", () => { input.Cancel(); inBattle = false; battleDetails = false; Navigate(Page.Home); }, !battleView.IsAnimating);
+            var exit = Button(line, "‹", () => { input.Cancel(); inBattle = false; battleDetails = false; Navigate(Page.Home); }, !battleView.IsAnimating);
+            exit.AddToClassList("mobile-battle-back"); exit.tooltip = "Return Home · battle saved";
             // The primary objective always reflects the real objective kind;
             // bonus goals remain a small secondary progress counter.
             BattleObjectiveGuidance.Header(line, b.Objectives);
-            Button(line, battleDetails ? "Close" : "Info", () => { battleDetails = !battleDetails; });
+            long turnId = b.Activation?.ActivationId ?? 0;
+            var end = Button(line, "END", () => Handle(input.EndTurn(turnId)),
+                !battleView.IsAnimating && b.Phase == BattleSessionPhase.PlayerInput &&
+                battleView.Pending == null);
+            end.AddToClassList("mobile-battle-end"); end.tooltip = "End this unit's turn";
             var stage = new VisualElement(); stage.AddToClassList("battle-stage"); content.Add(stage);
             surface = new VisualElement { name = "battle-surface" }; surface.style.flexGrow = 1; surface.style.minHeight = 100;
             surface.style.overflow = Overflow.Hidden; stage.Add(surface);
@@ -1043,12 +1051,15 @@ namespace Ninefold.Presentation
             // Fixed footer height prevents previews changing the camera viewport under a second tap.
             var footer = new ScrollView(ScrollViewMode.Vertical); footer.AddToClassList("battle-dock");
             footer.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            footer.verticalScrollerVisibility = ScrollerVisibility.Hidden;
             stage.Add(footer);
             controls = new VisualElement(); controls.AddToClassList("controls"); footer.Add(controls);
             BuildControls();
             if (battleDetails)
             {
                 var details = new ScrollView(ScrollViewMode.Vertical); details.AddToClassList("battle-details");
+                details.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+                details.verticalScrollerVisibility = ScrollerVisibility.Hidden;
                 details.RegisterCallback<PointerDownEvent>(e => e.StopPropagation());
                 details.RegisterCallback<PointerUpEvent>(e => e.StopPropagation());
                 surface.Add(details);
@@ -1063,7 +1074,7 @@ namespace Ninefold.Presentation
                 }
                 foreach (var objective in input.ReadPlanning().Objectives)
                     Text(details, "Stabilize · " + ObjectiveReadiness(objective.Failure), "detail");
-                Text(details, "Tap ground to plan movement. Choose an attack, then a marked target. Tap the preview again or Confirm. Every health strip stays visible. Orders always use the current turn’s unit.", "detail");
+                Text(details, "Tap ground to move. Tap an enemy to select a normal attack, then tap again to confirm. Choose an ability to target it. Tap an objective marker when in reach. Only your current unit acts.", "detail");
                 Button(details, "Back to battle", () => battleDetails = false);
             }
         }
@@ -1072,67 +1083,111 @@ namespace Ninefold.Presentation
         {
             controls.Clear();
             var b = battleView.Battle;
-            bool ready = !battleView.IsAnimating && !suspended && !battleDetails;
-            var activeUnit = b.Units.FirstOrDefault(u => u.Id == b.Activation?.UnitId);
-            var actorStrip = Row(controls); actorStrip.AddToClassList("vif-actor-strip");
-            FrontiersVisualPrimitives.HudChip(actorStrip,
-                (activeUnit?.IsEnemyControlled == true ? "ENEMY " : "") + UnitName(b.Activation?.UnitId), "ACTIVE");
-            FrontiersVisualPrimitives.HudChip(actorStrip,
-                b.Activation?.MovementRemaining.ToString("0.#") ?? "0", "MOVE");
-            FrontiersVisualPrimitives.HudChip(actorStrip,
-                b.Activation?.PrimaryActionAvailable == true ? "READY" : "SPENT", "ACTION");
-            var row = Row(controls); row.AddToClassList("ability-row");
+            bool ready = !battleView.IsAnimating && !suspended && !battleDetails &&
+                b.Phase == BattleSessionPhase.PlayerInput;
+            var active = b.Units.FirstOrDefault(u => u.Id == b.Activation?.UnitId);
+            var strip = Row(controls); strip.AddToClassList("mobile-active-unit");
+            Text(strip, (active?.IsEnemyControlled == true ? "ENEMY · " : "") +
+                UnitName(b.Activation?.UnitId), "mobile-actor-name");
+            Text(strip, (b.Activation?.MovementRemaining.ToString("0.#") ?? "0") + " MOVE",
+                "mobile-actor-move");
+            Text(strip, b.Activation?.PrimaryActionAvailable == true ? "ACTION READY" : "ACTION USED",
+                "mobile-actor-action");
+
+            // Ground taps move and objective taps interact. Do not keep
+            // redundant Move/Stabilize/End Turn button rows on the screen.
+            var row = Row(controls); row.AddToClassList("mobile-ability-strip");
             if (battleView.Pending != null)
             {
-                var p = battleView.Pending;
-                string preview = p.Kind == IntentKind.Movement ? "Move · " + p.Movement.Cost.ToString("0.#") + (p.RequestedDestination.HasValue && !p.RequestedDestination.Value.Equals(p.Movement.Path.Last()) ? " · partial route" : "") : p.Kind == IntentKind.Interaction ? "Stabilize objective" : TargetSummary(p.Target);
-                Text(row, preview, "compact-preview");
-                Primary(row, "Confirm", () => Handle(input.Confirm(p.Id)), ready);
-                Button(row, "Cancel", () => Handle(input.Cancel()), ready);
+                var pending = battleView.Pending;
+                var preview = pending.Kind == IntentKind.Movement
+                    ? "MOVE " + pending.Movement.Cost.ToString("0.#")
+                    : pending.Kind == IntentKind.Interaction ? "INTERACT"
+                    : TargetSummary(pending.Target);
+                Text(row, preview, "mobile-action-preview");
+                var confirm = Primary(row, "CONFIRM", () => Handle(input.Confirm(pending.Id)), ready);
+                confirm.AddToClassList("mobile-confirm");
+                var cancel = Button(row, "CANCEL", () => Handle(input.Cancel()), ready);
+                cancel.AddToClassList("mobile-cancel");
             }
             else
             {
-                foreach (var a in b.Actions.Where(a => a.Slot != AbilitySlot.Passive))
+                foreach (var a in b.Actions.Where(a => a.Slot == AbilitySlot.NormalAttack ||
+                    a.Slot == AbilitySlot.Main || a.Slot == AbilitySlot.Ultimate))
                 {
                     var slot = a.Slot;
-                    var shortName = slot == AbilitySlot.Main ? "Main" : AbilityName(slot);
-                    var button = Button(row, shortName, () => Handle(input.SelectAbility(slot)), ready && a.CanSelect);
-                    button.tooltip = AbilityName(slot) + " · " + AbilityReadiness(a, activeUnit);
+                    var title = slot == AbilitySlot.NormalAttack ? "ATTACK" :
+                        slot == AbilitySlot.Main ? "ABILITY" : "ULT";
+                    var button = Button(row, title, () => Handle(input.SelectAbility(slot)),
+                        ready && a.CanSelect);
+                    button.AddToClassList("mobile-ability-button");
+                    button.tooltip = AbilityName(slot) + " · " + AbilityReadiness(a,active);
                     button.EnableInClassList("selected", battleView.SelectedAbility == slot);
                 }
+                var passive = Button(row, "PASSIVE", () => battleDetails = !battleDetails);
+                passive.AddToClassList("mobile-passive-button");
+                passive.tooltip = AbilityName(AbilitySlot.Passive) + " · Unit details";
             }
-            row = Row(controls); row.AddToClassList("utility-row");
-            Button(row, "Move", () => Handle(input.Cancel()), ready && b.Phase == BattleSessionPhase.PlayerInput)
-                .EnableInClassList("selected", !battleView.SelectedAbility.HasValue && battleView.Pending == null);
-            foreach (var objective in input.ReadPlanning().Objectives.Where(o => b.Objectives.Any(x => x.Id == o.Id && x.Status == ObjectiveStatus.Active)))
-            {
-                string id = objective.Id;
-                var button = Button(row, "Stabilize", () => Handle(input.TapObjective(id)), ready && objective.CanInteract);
-                button.tooltip = ObjectiveReadiness(objective.Failure);
-            }
-            long activation = b.Activation?.ActivationId ?? 0;
-            Button(row, "End turn", () => Handle(input.EndTurn(activation)), ready && b.Phase == BattleSessionPhase.PlayerInput);
-            string hint = battleView.IsAnimating ? "Resolving…" : b.Phase != BattleSessionPhase.PlayerInput ? "Enemy turn…" : battleView.Pending != null ? "Confirm or tap target again" : battleView.SelectedAbility.HasValue ? (battleView.Targets.Any(t => t.IsValid) ? "Tap marked target" : "Move for line of sight") : "Tap field to move";
-            Text(controls, battleRejection ?? hint, "battle-message");
+            if (battleRejection != null)
+                Text(controls, battleRejection, "mobile-battle-feedback");
+            else if (battleView.Pending != null)
+                Text(controls, "Tap target again to confirm", "mobile-battle-feedback");
         }
 
         private void Pick(Vector2 panelPosition)
         {
-            string id = field.PickUnit(panelPosition, root);
-            if (id != null) { Handle(input.TapUnit(id)); return; }
-            if (!field.PickGround(panelPosition, root, out var destination)) return;
-            // Tolerate finger drift only inside the visible destination marker; preserve core preview tokens.
-            var pending = battleView.Pending;
-            if (pending?.Kind == IntentKind.Movement && Vector2.Distance(field.Project(PlaytestBattlefield.Vector(pending.Movement.Path.Last()), root), panelPosition) < 22)
-                Handle(input.Confirm(pending.Id));
-            else Handle(input.TapDestination(destination));
+            string id = field.PickUnit(panelPosition,root);
+            if (id != null)
+            {
+                var unit = battleView.Battle.Units.FirstOrDefault(u => u.Id == id);
+                if (unit?.IsEnemyControlled == true &&
+                    !battleView.SelectedAbility.HasValue && battleView.Pending == null &&
+                    battleView.Battle.Actions.Any(a => a.Slot == AbilitySlot.NormalAttack && a.CanSelect))
+                {
+                    // Enemy taps choose the default normal attack. The second
+                    // tap on the same target commits the safe preview token.
+                    var selected = input.SelectAbility(AbilitySlot.NormalAttack);
+                    if (selected.Outcome == InputOutcome.Selected)
+                    {
+                        Handle(input.TapUnit(id));
+                        return;
+                    }
+                }
+                Handle(input.TapUnit(id));
+                return;
+            }
+            // A ready objective can be interacted with by tapping its on-field
+            // marker. No additional permanent Stabilize button is required.
+            var mission = catalog.Missions[battleView.Battle.MissionId];
+            var objective = input.ReadPlanning().Objectives.FirstOrDefault(o => o.CanInteract &&
+                mission.Objectives.Any(x => x.Id == o.Id && x.Interaction != null &&
+                    Vector2.Distance(field.Project(PlaytestBattlefield.Vector(x.Interaction.Point),root),
+                        panelPosition) < 28));
+            if (objective != null)
+            {
+                var result = input.TapObjective(objective.Id);
+                if (result.Outcome == InputOutcome.Previewed)
+                    result = input.Confirm(input.Read().Pending.Id);
+                Handle(result);
+                return;
+            }
+            if (!field.PickGround(panelPosition,root,out var destination)) return;
+            // Intentional touch-to-move: use the SAME preview legality and
+            // versioned commit/save path as the old Confirm button, including
+            // automatically clipped partial movement.
+            var move = input.TapDestination(destination);
+            if (move.Outcome == InputOutcome.Previewed)
+                move = input.Confirm(input.Read().Pending.Id);
+            Handle(move);
         }
 
         private void Handle(BattleInputResult result)
         {
             battleRejection = result.Outcome == InputOutcome.Rejected ? RejectionReason(result) : null;
             message = result.Outcome == InputOutcome.Rejected ? RejectionReason(result)
-                : result.Outcome == InputOutcome.Previewed ? "Preview ready. Tap again or confirm below." : result.Outcome == InputOutcome.Selected ? "Choose a target or destination." : result.Outcome == InputOutcome.Committed ? "Progress saved." : "Ready.";
+                : result.Outcome == InputOutcome.Previewed ? "Tap target again to confirm."
+                : result.Outcome == InputOutcome.Selected ? "Tap a target."
+                : result.Outcome == InputOutcome.Committed ? "Saved." : "Ready.";
             notice.text = message;
             if (result.AnimationId != null)
             {
@@ -1211,6 +1266,44 @@ namespace Ninefold.Presentation
             battleExitPrompt = false;
             message = "Your progress saves automatically.";
         }
+        private void BuildMobilePageHeader(VisualElement parent)
+        {
+            if (menuView.Phase == MissionFlowPhase.Results) return;
+            var header = Row(parent);
+            header.AddToClassList("native-page-bar");
+            bool unitDetail = page == Page.Collection && inspectedUnit != null;
+            bool canBack = unitDetail || page == Page.Missions || page == Page.Briefing || page == Page.Squad;
+            if (canBack)
+            {
+                var back = Button(header, "‹", () => {
+                    if (unitDetail)
+                    {
+                        menu.Collection.Cancel();
+                        inspectedUnit = null;
+                        collectionDetailsExpanded = false;
+                    }
+                    else if (page == Page.Squad) Navigate(Page.Briefing);
+                    else if (page == Page.Briefing)
+                        Navigate(catalog.Missions[menuView.SelectedMissionId].IsCampaign ? Page.Missions : Page.Home);
+                    else Navigate(Page.Battles);
+                });
+                back.AddToClassList("native-top-back");
+                back.tooltip = unitDetail ? "Back to units" : "Back";
+            }
+            else
+            {
+                var brand = Text(header, "N", "native-top-emblem");
+                brand.pickingMode = PickingMode.Ignore;
+            }
+            string label = page == Page.Collection ? "UNITS" : page == Page.Settings ? "SETTINGS"
+                : page == Page.Squad ? "SQUAD" : page == Page.Briefing ? "MISSION"
+                : page == Page.Missions ? "CAMPAIGN PATH" : "CAMPAIGNS";
+            Text(header, label, "native-top-title").pickingMode = PickingMode.Ignore;
+            var home = Button(header, "HOME", () => Navigate(Page.Home));
+            home.AddToClassList("native-top-home");
+            home.tooltip = "Home";
+        }
+
         private void BuildNavigation(VisualElement parent)
         {
             var nav = Row(parent); nav.AddToClassList("navigation");
@@ -1223,7 +1316,14 @@ namespace Ninefold.Presentation
                 var label = target == Page.Battles ? "Campaigns" : target == Page.Collection ? "Units" : target.ToString();
                 // Browsing is permitted during a saved battle; progression and
                 // new deployments remain guarded until it has been resolved.
-                var button = Button(nav, "", () => Navigate(destinationPage));
+                var button = Button(nav, "", () => {
+                    if (destinationPage == Page.Collection)
+                    {
+                        inspectedUnit = null;
+                        collectionDetailsExpanded = false;
+                    }
+                    Navigate(destinationPage);
+                });
                 button.AddToClassList("nav-button");
                 button.AddToClassList("unified-nav-button");
                 if (homeNavigation) button.AddToClassList("nf-nav-item");
@@ -1247,7 +1347,7 @@ namespace Ninefold.Presentation
             });
             var help = Card(parent);
             Text(help, "How to play", "section");
-            Text(help, "1. Tap ground to preview a move.\n2. Tap the same destination again, or select Confirm.\n3. Select an ability, then a marked target. Review the effect before confirming.\n4. End your turn when ready. There is no timer.", "detail");
+            Text(help, "Tap the field to move. Tap an enemy to aim a normal attack, then tap again to confirm. Choose Ability or Ult to target a special action. Tap gold objective markers to interact when in reach. Use END at the top when finished.", "detail");
             Text(help, "Long moves stop at your remaining movement allowance. Walls, units and arena boundaries still limit valid destinations.", "detail");
             Text(help, "Cyan units are allies; red units are enemies. Gold marks objectives and valid targets. Striped ground costs extra movement.", "detail");
             Text(parent, "DEVELOPMENT BUILD", "eyebrow");
