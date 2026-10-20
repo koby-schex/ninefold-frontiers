@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Frontiers — Campaign Clarity 01 (browser approximation)</title>
+<style>
+*{box-sizing:border-box}
+:root{--ink:#111611;--raised:#1c241e;--ivory:#f6efdd;--gold:#d4b47b;--muted:#aba891}
+body{margin:0;background:#141914;color:var(--ivory);font-family:Arial,Helvetica,sans-serif;padding:16px}
+.note{max-width:420px;font-size:12px;line-height:1.5;color:#c3c0b0;margin:0 auto 12px}
+.phone{width:min(390px,100%);height:min(844px,calc(100dvh - 112px));min-height:430px;display:flex;flex-direction:column;margin:auto;background:var(--ink);border:1px solid #495545;border-radius:16px;overflow:hidden;box-shadow:0 22px 60px #000a}
+.header{padding:6px 14px 5px;border-bottom:1px solid #d4b47b3d;background:#111611f5}
+.wordmark{font:400 22px Georgia,serif;letter-spacing:4px}
+.notice{font-size:12px;color:#c1bcaf;margin-top:2px}
+.scroll{flex:1;min-height:0;overflow:auto;padding:12px 14px 14px;background:linear-gradient(180deg,#111611e8,#111611)}
+.overline{font-size:11px;letter-spacing:2px;color:var(--gold);margin:2px 0 4px;font-weight:700}
+h1{font:400 35px/1.03 Georgia,serif;margin:0 0 6px}
+.intro{font-size:15px;color:#c9c6b5;line-height:1.3;margin:0 0 12px}
+.card{border:1px solid #7d86708c;border-radius:7px;background:#1c241ef5;padding:14px;margin:0 0 11px}
+.card.featured{border-top:2px solid var(--gold)}
+.card.locked{background:#151b17f5;border-color:#6a6e6666}
+.status{font-size:11px;letter-spacing:1px;color:var(--gold);margin:0 0 4px}
+.card.locked .status{color:#acaa9a}
+.name{font:400 29px/1.1 Georgia,serif;margin:0 0 3px}
+.progress{font-size:13px;color:#bfbeac;margin:2px 0 5px}
+.track{height:5px;margin:4px 0 9px;background:#0f140f;border-radius:3px;overflow:hidden}
+.fill{height:100%;background:var(--gold);width:0}
+.card.locked .fill{background:#7d8473}
+.next,.lock{font-size:13px;color:#e1d8c1;margin:3px 0 8px;line-height:1.4}
+.lock{font-size:14px;color:#c9c5b5}
+button{cursor:pointer;font-family:inherit}
+.cta{width:100%;min-height:52px;margin:4px 0 0;padding:9px 13px;border-radius:5px;border:1px solid #707564;background:#303a2f;color:var(--ivory);font-size:16px;font-weight:700}
+.cta.primary{background:var(--gold);color:var(--ink);border-color:#e9d3a6}
+.link{width:100%;min-height:44px;margin:1px 0 0;padding:9px 4px;border:0;background:transparent;color:#dacfb5;font-size:14px;text-align:left}
+.cta:hover{filter:brightness(1.1)}
+.link:hover{background:#d4b47b18}
+.footer{display:flex;flex-shrink:0;border-top:1px solid #d4b47b4d;background:var(--ink);padding-top:3px}
+.footer button{flex:1;min-height:62px;border:0;border-bottom:2px solid transparent;background:transparent;color:#ded7c9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:14px}
+.footer button.current{border-bottom-color:var(--gold);background:#d4b47b14}
+.footer img{width:23px;height:23px}
+.fixture{color:#aaa696;font-size:11px}
+@media(max-height:820px){h1{font-size:30px}.name{font-size:25px}.card{padding:11px 12px;margin-bottom:8px}.footer button{min-height:56px}}
+@media(max-height:520px){.header{display:none}.footer button{min-height:44px;font-size:12px}}
+</style>
+</head>
+<body>
+<p class="note"><strong>Review sketch, not Unity rendering.</strong> State-specific sample fixture campaigns demonstrate visual hierarchy only. Set <code>?state=claim</code> or <code>?state=complete</code> in the URL to review different CTA treatments.</p>
+<main class="phone" aria-label="Campaign selection">
+<header class="header"><div class="wordmark">NINEFOLD</div><div class="notice">Your progress saves automatically.</div></header>
+<section class="scroll">
+<div class="overline">CHOOSE YOUR PATH</div>
+<h1>Campaigns</h1>
+<p class="intro">Each campaign requires three standard units from its faction.</p>
+<article class="card featured" id="first">
+<div class="status" id="first-status">READY TO BEGIN</div>
+<h2 class="name">Test campaign A</h2>
+<p class="progress" id="first-progress">0 of 2 missions completed</p>
+<div class="track"><div class="fill" id="first-fill"></div></div>
+<p class="next" id="first-next">NEXT · Stabilization</p>
+<button class="cta primary" id="first-action">Continue campaign ›</button>
+<button class="link" id="first-link">View all missions ›</button>
+</article>
+<article class="card locked">
+<div class="status">LOCKED</div>
+<h2 class="name">Test campaign B</h2>
+<p class="progress">0 of 2 missions completed</p>
+<div class="track"><div class="fill"></div></div>
+<p class="lock">0 / 3 standard units · Unlock more in Units.</p>
+<button class="link">Preview missions ›</button>
+</article>
+<p class="fixture">PLAYTEST · Campaign names and mission counts are temporary.</p>
+</section>
+<nav class="footer" aria-label="Main navigation">
+<button><img alt="" src="../../../Assets/Ninefold/Resources/Home/home.png">Home</button>
+<button class="current"><img alt="" src="../../../Assets/Ninefold/Resources/Home/routes.png">Campaigns</button>
+<button><img alt="" src="../../../Assets/Ninefold/Resources/Home/units.png">Units</button>
+<button><img alt="" src="../../../Assets/Ninefold/Resources/Home/settings.png">Settings</button>
+</nav>
+</main>
+<script>
+const state=new URLSearchParams(location.search).get('state')||'next';
+const updates={
+ next:['READY TO BEGIN','0 of 2 missions completed','NEXT · Stabilization','Continue campaign ›','View all missions ›','0%'],
+ claim:['REWARDS READY','2 of 2 missions completed','', 'Collect rewards ›','View all missions ›','100%'],
+ complete:['COMPLETED','2 of 2 missions completed','All missions cleared · Replays available','', 'Replay missions ›','100%']
+};
+const [status,progress,next,action,link,fill]=updates[state]||updates.next;
+document.querySelector('#first-status').textContent=status;
+document.querySelector('#first-progress').textContent=progress;
+document.querySelector('#first-next').textContent=next;
+document.querySelector('#first-action').textContent=action;
+document.querySelector('#first-action').hidden=!action;
+document.querySelector('#first-link').textContent=link;
+document.querySelector('#first-fill').style.width=fill;
+document.querySelector('#first').classList.toggle('featured',state!=='complete');
+</script>
+</body></html>

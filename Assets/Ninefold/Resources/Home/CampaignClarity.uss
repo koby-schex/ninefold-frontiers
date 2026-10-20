@@ -1,0 +1,244 @@
+/*
+ * Campaign Clarity 01 — applied only to the Campaigns overview.
+ * Multi-world interface: quiet ink, warm ivory, understated gold.
+ * Do not apply World Five sanctuary-violet as the global campaign color.
+ * Loaded after Controls.uss and HomePolish.uss.
+ */
+
+/* Give content room in narrow portrait without reducing tap targets. */
+.root.campaign-overview-mode #safe-area {
+    padding-left: 14px;
+    padding-right: 14px;
+    padding-bottom: 6px;
+}
+.root.campaign-overview-mode .heading {
+    padding-top: 5px;
+    padding-bottom: 3px;
+    background-color: rgba(17, 22, 17, 0.96);
+    border-bottom-color: rgba(212, 180, 123, 0.24);
+}
+.root.campaign-overview-mode .heading .brand {
+    font-size: 22px;
+    letter-spacing: 4px;
+    color: rgb(246, 239, 221);
+}
+.root.campaign-overview-mode .heading .notice {
+    min-height: 0;
+    margin-top: 2px;
+    font-size: 12px;
+    color: rgb(193, 188, 175);
+}
+.root.campaign-overview-mode .page-scroll {
+    padding: 10px 2px 0 2px;
+    background-color: rgba(17, 22, 17, 0.89);
+}
+.root.campaign-overview-mode .page-scroll > .unity-scroll-view__content-viewport > .unity-scroll-view__content-container {
+    padding-right: 4px;
+    padding-bottom: 16px;
+}
+
+/* One short introduction, not a full tutorial above every campaign. */
+.root.campaign-overview-mode .campaign-overview-overline {
+    font-size: 11px;
+    color: rgb(212, 180, 123);
+    letter-spacing: 2px;
+    margin-top: 2px;
+    margin-bottom: 3px;
+}
+.root.campaign-overview-mode .campaign-overview-title {
+    font-size: 35px;
+    color: rgb(246, 239, 221);
+    margin-top: 0;
+    margin-bottom: 6px;
+}
+.root.campaign-overview-mode .campaign-overview-intro {
+    font-size: 15px;
+    color: rgb(201, 198, 181);
+    margin: 0 0 12px 0;
+    white-space: normal;
+}
+
+/* Each card communicates the exact player state without decorative
+ * fraction badges, duplicate progress paragraphs or giant lock callouts. */
+.root.campaign-overview-mode .campaign-choice {
+    background-color: rgba(28, 36, 30, 0.96);
+    border-width: 1px;
+    border-top-width: 1px;
+    border-color: rgba(125, 134, 112, 0.55);
+    border-top-color: rgba(125, 134, 112, 0.55);
+    border-radius: 7px;
+    padding: 14px;
+    margin: 0 0 11px 0;
+}
+.root.campaign-overview-mode .campaign-choice-featured {
+    border-top-width: 2px;
+    border-top-color: rgb(212, 180, 123);
+}
+.root.campaign-overview-mode .campaign-choice-locked {
+    background-color: rgba(21, 27, 23, 0.96);
+    border-color: rgba(106, 110, 96, 0.40);
+}
+.root.campaign-overview-mode .campaign-choice-status {
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: rgb(212, 180, 123);
+    margin-top: 1px;
+    margin-bottom: 4px;
+}
+.root.campaign-overview-mode .campaign-choice-locked .campaign-choice-status {
+    color: rgb(172, 170, 154);
+}
+.root.campaign-overview-mode .campaign-choice-name {
+    font-size: 29px;
+    color: rgb(246, 239, 221);
+    margin-top: 0;
+    margin-bottom: 3px;
+}
+.root.campaign-overview-mode .campaign-choice-progress {
+    font-size: 13px;
+    color: rgb(191, 190, 172);
+    margin-top: 2px;
+    margin-bottom: 5px;
+}
+.root.campaign-overview-mode .campaign-choice .progress-track {
+    height: 5px;
+    margin-top: 4px;
+    margin-bottom: 8px;
+    background-color: rgb(15, 20, 16);
+}
+.root.campaign-overview-mode .campaign-choice .progress-fill {
+    height: 5px;
+    background-color: rgb(212, 180, 123);
+}
+.root.campaign-overview-mode .campaign-choice-locked .progress-fill {
+    background-color: rgb(125, 132, 115);
+}
+.root.campaign-overview-mode .campaign-choice-next {
+    margin: 3px 0 8px 0;
+    padding: 0;
+    font-size: 13px;
+    letter-spacing: 0;
+    color: rgb(225, 216, 193);
+    white-space: normal;
+}
+.root.campaign-overview-mode .campaign-choice-lock {
+    margin: 6px 0 9px 0;
+    padding: 0;
+    background-color: transparent;
+    border-width: 0;
+    border-left-width: 0;
+    font-size: 14px;
+    color: rgb(201, 197, 181);
+}
+
+/* A *single recommended campaign* receives a filled primary action.
+ * Every other route reads as a quieter button or text-link. */
+.root.campaign-overview-mode #safe-area Button.game-button.campaign-choice-action {
+    min-height: 52px;
+    margin: 4px 0 0 0;
+    padding: 9px 13px;
+    border-radius: 5px;
+    border-width: 1px;
+    border-color: rgb(112, 117, 100);
+    background-color: rgb(48, 58, 47);
+    color: rgb(246, 239, 221);
+    font-size: 16px;
+    -unity-font-style: bold;
+}
+.root.campaign-overview-mode #safe-area Button.game-button.campaign-choice-action:hover {
+    background-color: rgb(65, 75, 61);
+    border-color: rgb(212, 180, 123);
+}
+.root.campaign-overview-mode #safe-area Button.game-button.campaign-choice-action.primary {
+    background-color: rgb(212, 180, 123);
+    color: rgb(17, 22, 17);
+    border-color: rgb(233, 211, 166);
+}
+.root.campaign-overview-mode #safe-area Button.game-button.campaign-choice-action.primary:hover {
+    background-color: rgb(237, 213, 167);
+}
+.root.campaign-overview-mode #safe-area Button.game-button.campaign-choice-action:active {
+    background-color: rgb(32, 42, 34);
+}
+.root.campaign-overview-mode #safe-area Button.game-button.campaign-choice-action.primary:active {
+    background-color: rgb(182, 150, 103);
+}
+.root.campaign-overview-mode #safe-area Button.game-button.campaign-choice-action:focus {
+    border-width: 2px;
+    border-color: rgb(246, 239, 221);
+}
+.root.campaign-overview-mode #safe-area Button.game-button.campaign-choice-secondary {
+    min-height: 44px;
+    margin: 1px 0 0 0;
+    padding: 9px 4px;
+    border-width: 0;
+    border-radius: 0;
+    background-color: transparent;
+    color: rgb(218, 207, 181);
+    font-size: 14px;
+    -unity-font-style: normal;
+    -unity-text-align: middle-left;
+}
+.root.campaign-overview-mode #safe-area Button.game-button.campaign-choice-secondary:hover {
+    background-color: rgba(212, 180, 123, 0.09);
+    color: rgb(246, 239, 221);
+}
+.root.campaign-overview-mode #safe-area Button.game-button.campaign-choice-secondary:active {
+    background-color: rgba(212, 180, 123, 0.16);
+}
+.root.campaign-overview-mode #safe-area Button.game-button.campaign-choice-secondary:focus {
+    border-width: 1px;
+    border-color: rgb(246, 239, 221);
+}
+.root.campaign-overview-mode .campaign-overview-footnote {
+    font-size: 11px;
+    color: rgb(166, 166, 150);
+    margin: 5px 0 10px 0;
+}
+
+/* Match the Home navigation density. These controls belong to Campaigns
+ * overview only; mission lists, briefing, squad, Units and battle are not
+ * restyled by this pass. */
+.root.campaign-overview-mode #safe-area .navigation {
+    padding: 3px 0 0 0;
+    background-color: rgba(17, 22, 17, 0.98);
+    border-top-color: rgba(212, 180, 123, 0.30);
+}
+.root.campaign-overview-mode #safe-area Button.game-button.nav-button {
+    min-height: 62px;
+    padding: 5px 2px;
+    margin: 1px;
+    border-width: 0;
+    border-bottom-width: 2px;
+    border-bottom-color: transparent;
+    border-radius: 0;
+    background-color: transparent;
+}
+.root.campaign-overview-mode #safe-area Button.game-button.nav-button.selected {
+    border-bottom-color: rgb(212, 180, 123);
+    background-color: rgba(212, 180, 123, 0.08);
+}
+.root.campaign-overview-mode #safe-area Button.game-button.nav-button:hover {
+    background-color: rgba(212, 180, 123, 0.11);
+}
+.root.campaign-overview-mode #safe-area Button.game-button.nav-button:focus {
+    border-top-width: 2px;
+    border-top-color: rgb(246, 239, 221);
+}
+.root.campaign-overview-mode #safe-area .nav-label {
+    font-size: 14px;
+    color: rgb(222, 215, 201);
+}
+.root.campaign-overview-mode #safe-area .nav-button .home-icon {
+    width: 23px;
+    height: 23px;
+    margin-bottom: 3px;
+}
+.root.compact-home.campaign-overview-mode .campaign-overview-title { font-size: 30px; }
+.root.compact-home.campaign-overview-mode .campaign-choice-name { font-size: 25px; }
+.root.compact-home.campaign-overview-mode .campaign-choice { padding: 11px 12px; margin-bottom: 8px; }
+.root.compact-home.campaign-overview-mode #safe-area Button.game-button.nav-button { min-height: 56px; }
+.root.short-home.campaign-overview-mode .heading { display: none; }
+.root.short-home.campaign-overview-mode #safe-area Button.game-button.nav-button { min-height: 44px; }
+.root.short-home.campaign-overview-mode #safe-area .nav-label { font-size: 12px; }
+.root.short-home.campaign-overview-mode #safe-area .nav-button .home-icon { width: 18px; height: 18px; }
