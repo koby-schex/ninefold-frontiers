@@ -330,6 +330,10 @@ namespace Ninefold.Presentation
             Text(parent, "Campaigns", "display-title").AddToClassList("campaign-overview-title");
             Text(parent, "Each campaign requires three standard units from its faction.", "detail")
                 .AddToClassList("campaign-overview-intro");
+            bool readOnly = menuView.Phase == MissionFlowPhase.Battle;
+            if (readOnly)
+                Text(parent, "BATTLE SAVED · Browse freely. Finish or end your battle to launch missions or claim rewards.", "detail")
+                    .AddToClassList("game-saved-ribbon");
 
             string recommendedId = menuView.ClaimableCampaignId
                 ?? menuView.NextCampaignMission?.CampaignId
@@ -341,7 +345,7 @@ namespace Ninefold.Presentation
                 var missions = catalog.Campaigns.Single(x => x.Id == id).Missions
                     .Select(node => menuView.Missions.Single(m => m.Definition.Id == node.MissionId)).ToArray();
                 var next = missions.FirstOrDefault(m => m.Available && !m.IsReplay);
-                bool featured = c.CanEnter && id == recommendedId;
+                bool featured = !readOnly && c.CanEnter && id == recommendedId;
                 int ownedStandards = missions.Length > 0 ? Math.Min(3, missions[0].OwnedFactionStandards) : 0;
 
                 var card = Card(parent, "campaign-panel");
@@ -372,7 +376,7 @@ namespace Ninefold.Presentation
 
                 if (c.IsComplete && !c.RewardsClaimed)
                 {
-                    var claim = Button(card, "Collect rewards  ›", () => ClaimCampaign(id));
+                    var claim = Button(card, "Collect rewards  ›", () => ClaimCampaign(id), !readOnly);
                     claim.AddToClassList("campaign-choice-action");
                     if (featured) claim.AddToClassList("primary");
                 }
@@ -381,7 +385,7 @@ namespace Ninefold.Presentation
                     Text(card, "NEXT · " + MissionName(next.Definition.Id), "next-mission-label")
                         .AddToClassList("campaign-choice-next");
                     string nextId = next.Definition.Id;
-                    var proceed = Button(card, "Continue campaign  ›", () => SelectMission(nextId));
+                    var proceed = Button(card, "Continue campaign  ›", () => SelectMission(nextId), !readOnly);
                     proceed.AddToClassList("campaign-choice-action");
                     if (featured) proceed.AddToClassList("primary");
                 }
@@ -411,6 +415,10 @@ namespace Ninefold.Presentation
             Text(parent, "CAMPAIGN PATH", "eyebrow").AddToClassList("mission-path-overline");
             Text(parent, CampaignName(selectedCampaign), "display-title").AddToClassList("mission-path-title");
             var progress = menuView.Campaigns.Single(c => c.CampaignId == selectedCampaign);
+            bool readOnly = menuView.Phase == MissionFlowPhase.Battle;
+            if (readOnly)
+                Text(parent, "BATTLE SAVED · Mission launches are paused until this encounter ends.", "detail")
+                    .AddToClassList("game-saved-ribbon");
             Text(parent, progress.CompletedMissions + " of " + progress.TotalMissions + " complete", "detail")
                 .AddToClassList("mission-path-progress");
             Meter(parent, progress.CompletedMissions, progress.TotalMissions);
@@ -449,7 +457,7 @@ namespace Ninefold.Presentation
 
                 Text(card, Description(missionId), "detail").AddToClassList("mission-path-objective");
                 var choose = Button(card, mission.IsReplay ? "Review replay  ›" : "View briefing  ›",
-                    () => SelectMission(missionId));
+                    () => SelectMission(missionId), !readOnly);
                 choose.AddToClassList("mission-path-action");
                 if (highlighted) choose.AddToClassList("primary");
             }
@@ -557,7 +565,11 @@ namespace Ninefold.Presentation
         {
             var view = menu.Collection.Read();
             var units = view.Factions.SelectMany(f => f.Units).ToArray();
+            bool readOnly = menuView.Phase == MissionFlowPhase.Battle;
             var selected = units.FirstOrDefault(u => u.Unit.Definition.Id == inspectedUnit);
+            if (readOnly)
+                Text(parent, "BATTLE SAVED · Unit inspection is available. Unlocks and upgrades resume after this battle.", "detail")
+                    .AddToClassList("game-saved-ribbon");
 
             if (selected == null)
             {
@@ -667,7 +679,7 @@ namespace Ninefold.Presentation
                 var adjust = Button(detail, selected.Unit.CustomizationId == null
                     ? "Adjust health / armor" : "Reset stat adjustment",
                     () => menu.Collection.Preview(CollectionOperation.Customize, inspectedUnit,
-                        selected.Unit.CustomizationId == null ? "fixture-health" : null));
+                        selected.Unit.CustomizationId == null ? "fixture-health" : null), !readOnly);
                 adjust.AddToClassList("collection-secondary");
             }
 
