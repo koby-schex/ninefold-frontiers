@@ -1,0 +1,288 @@
+/*
+ * Ninefold: Frontiers — Campaign & Mission Visual 03
+ * Visual wayfinding powered only by current campaign and mission data.
+ *
+ * World artwork is supplied through the existing optional campaign preview
+ * provider. The mission scout renders real playtest map bounds/cover/deploy/
+ * objective geometry; no new canon regions, models or battle rules.
+ */
+
+/* Campaign destination is the artwork and progress, not paragraphs. */
+.root.campaign-overview-mode .campaign-overview-overline {
+    font-size: 10px;
+    letter-spacing: 2px;
+    margin-bottom: 2px;
+}
+.root.campaign-overview-mode .campaign-overview-title {
+    font-size: 32px;
+    margin-bottom: 5px;
+}
+.root.campaign-overview-mode .campaign-overview-intro {
+    font-size: 11px;
+    letter-spacing: 1px;
+    -unity-font-style: bold;
+    color: rgb(189, 186, 167);
+    margin: 1px 0 10px 0;
+}
+.root.campaign-overview-mode .campaign-choice {
+    padding: 9px;
+    margin-bottom: 10px;
+}
+.root.campaign-overview-mode .vif-campaign-art {
+    height: 150px;
+    border-radius: 5px;
+    margin-bottom: 8px;
+}
+.root.campaign-overview-mode .vif-campaign-ribbon {
+    padding: 2px 4px;
+}
+.root.campaign-overview-mode .campaign-choice-name {
+    font-size: 27px;
+    margin-bottom: 2px;
+}
+.root.campaign-overview-mode .campaign-choice-progress {
+    font-size: 11px;
+    letter-spacing: 1px;
+    -unity-font-style: bold;
+    color: rgb(199, 194, 174);
+    margin: 2px 0 3px 0;
+}
+.root.campaign-overview-mode .campaign-choice .progress-track {
+    height: 5px;
+    margin: 3px 0 8px 0;
+}
+.root.campaign-overview-mode .campaign-choice-status {
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: rgb(212, 180, 123);
+}
+.root.campaign-overview-mode .campaign-choice .campaign-choice-lock {
+    font-size: 13px;
+    padding: 0;
+    margin: 4px 0 6px 0;
+}
+.root.campaign-overview-mode .campaign-choice .campaign-choice-next {
+    font-size: 12px;
+    margin: 3px 0 5px 0;
+}
+.root.campaign-overview-mode #safe-area Button.game-button.campaign-choice-secondary {
+    min-height: 45px;
+}
+.root.campaign-overview-mode #safe-area Button.game-button.campaign-choice-action {
+    min-height: 54px;
+}
+
+/* Mission Path = a compact visual route. The marker is an ordered sequence,
+ * not an invented geographical map of the nine worlds. */
+.root.mission-path-mode .mission-path-title {
+    font-size: 31px;
+    margin: 0 0 3px 0;
+}
+.root.mission-path-mode .mission-path-progress {
+    font-size: 11px;
+    letter-spacing: 1px;
+    -unity-font-style: bold;
+    margin: 2px 0 4px 0;
+}
+.root.mission-path-mode .mission-path-card {
+    padding: 11px;
+    margin-bottom: 9px;
+    border-left-width: 2px;
+    border-left-color: rgba(127, 138, 123, 0.50);
+    background-color: rgba(23, 33, 27, 0.98);
+}
+.root.mission-path-mode .mission-path-card.mission-path-current {
+    border-left-width: 3px;
+    border-left-color: rgb(212, 180, 123);
+}
+.root.mission-path-mode .mission-heading {
+    align-items: center;
+    flex-wrap: nowrap;
+}
+.root.mission-path-mode .vmp-route-pin {
+    width: 49px;
+    min-width: 49px;
+    height: 49px;
+    flex-shrink: 0;
+    border-radius: 25px;
+    border-width: 2px;
+    border-color: rgb(136, 150, 134);
+    background-color: rgb(34, 44, 37);
+    align-items: center;
+    justify-content: center;
+    margin-right: 11px;
+}
+.root.mission-path-mode .vmp-route-pin.vmp-route-current {
+    border-color: rgb(235, 208, 160);
+    background-color: rgb(104, 82, 48);
+}
+.root.mission-path-mode .vmp-route-pin.vmp-route-cleared {
+    border-color: rgb(128, 191, 163);
+    background-color: rgb(35, 72, 60);
+}
+.root.mission-path-mode .vmp-route-pin.vmp-route-locked {
+    border-color: rgb(82, 90, 83);
+    background-color: rgb(26, 31, 28);
+}
+.root.mission-path-mode .vmp-route-number {
+    font-size: 20px;
+    -unity-font-style: bold;
+    color: rgb(246, 239, 221);
+}
+.root.mission-path-mode .mission-path-locked .vmp-route-number {
+    color: rgb(152, 154, 142);
+}
+.root.mission-path-mode .mission-identity {
+    min-width: 0;
+    flex-grow: 1;
+}
+.root.mission-path-mode .mission-path-name {
+    font-size: 21px;
+    margin: 0;
+}
+.root.mission-path-mode .mission-path-status {
+    font-size: 10px;
+    letter-spacing: 1px;
+    margin: 0 0 3px 0;
+}
+.root.mission-path-mode .mission-path-lock {
+    font-size: 12px;
+    margin: 6px 0 4px 0;
+}
+.root.mission-path-mode .vmp-next-scout {
+    padding: 9px 9px 7px 9px;
+    margin: 10px 0 4px 0;
+    border-width: 1px;
+    border-color: rgba(155, 160, 136, 0.35);
+    border-radius: 5px;
+    background-color: rgb(14, 24, 19);
+}
+.root.mission-path-mode .vmp-scout-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: rgb(222, 194, 149);
+    margin: 0 0 3px 0;
+}
+.root.mission-path-mode .vmp-scout-map {
+    height: 134px;
+    min-height: 134px;
+    margin: 3px 0 5px 0;
+    border-width: 1px;
+    border-color: rgba(162, 164, 145, 0.62);
+    background-color: rgb(13, 25, 19);
+}
+.root.mission-path-mode .vmp-scout-objective {
+    font-size: 13px;
+    margin: 7px 0 2px 0;
+    color: rgb(215, 208, 191);
+    white-space: normal;
+}
+.root.mission-path-mode #safe-area Button.game-button.mission-path-action {
+    min-height: 50px;
+}
+
+/* Briefing: make the real authored field diagram the information focal point,
+ * while preserving a readable objective and the full reward list. */
+.root.mission-briefing-clarity-mode .briefing-objective.mission-brief-objective {
+    margin-bottom: 7px;
+    padding: 9px 11px;
+}
+.root.mission-briefing-clarity-mode .mission-brief-description {
+    font-size: 14px;
+    color: rgb(235, 229, 212);
+}
+.root.mission-briefing-clarity-mode .mission-brief-overline {
+    font-size: 10px;
+    margin-bottom: 4px;
+}
+.root.mission-briefing-clarity-mode .briefing-terrain.mission-brief-terrain {
+    padding: 9px;
+    border-top-width: 2px;
+    border-top-color: rgba(212, 180, 123, 0.58);
+}
+.root.mission-briefing-clarity-mode .mission-brief-terrain .map-preview {
+    height: 228px;
+    min-height: 228px;
+    margin: 4px 0 7px 0;
+    border-width: 1px;
+    border-color: rgb(120, 139, 126);
+    background-color: rgb(12, 24, 19);
+}
+.root.mission-briefing-clarity-mode .vmp-map-legend {
+    justify-content: space-between;
+    flex-wrap: wrap;
+    margin: 1px 0 3px 0;
+}
+.root.mission-briefing-clarity-mode .vmp-legend-entry {
+    flex-direction: row;
+    align-items: center;
+    margin: 2px 4px 2px 0;
+    min-height: 20px;
+}
+.root.mission-briefing-clarity-mode .vmp-legend-swatch {
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+    margin-right: 5px;
+    border-radius: 2px;
+}
+.root.mission-briefing-clarity-mode .vmp-key-deploy { background-color: rgb(96, 236, 221); }
+.root.mission-briefing-clarity-mode .vmp-key-cover { background-color: rgb(98, 124, 141); }
+.root.mission-briefing-clarity-mode .vmp-key-slow { background-color: rgb(118, 89, 43); }
+.root.mission-briefing-clarity-mode .vmp-key-objective { background-color: rgb(242, 194, 89); }
+.root.mission-briefing-clarity-mode .vmp-legend-text {
+    font-size: 10px;
+    color: rgb(211, 205, 187);
+    letter-spacing: 0;
+}
+.root.mission-briefing-clarity-mode .mission-brief-rewards {
+    padding: 10px;
+}
+.root.mission-briefing-clarity-mode .mission-brief-reward-title {
+    font-size: 17px;
+}
+.root.mission-briefing-clarity-mode .mission-brief-reward-note {
+    font-size: 11px;
+    margin: 5px 0 0 0;
+}
+.root.mission-briefing-clarity-mode .vmp-deploy-facts {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    margin: 0 0 5px 0;
+}
+.root.mission-briefing-clarity-mode .vmp-deploy-facts .vif-hud-chip {
+    padding: 4px;
+    margin: 0 3px;
+    border-color: rgba(212, 180, 123, 0.32);
+}
+.root.mission-briefing-clarity-mode .vmp-deploy-facts .vif-hud-value {
+    font-size: 13px;
+    color: rgb(243, 234, 213);
+}
+.root.mission-briefing-clarity-mode .vmp-deploy-facts .vif-hud-label {
+    font-size: 9px;
+}
+
+/* Portrait fallback protects art and touch targets without dense prose. */
+.root.compact-home.campaign-overview-mode .vif-campaign-art {
+    height: 111px;
+}
+.root.compact-home.mission-path-mode .vmp-scout-map {
+    height: 104px;
+    min-height: 104px;
+}
+.root.compact-home.mission-path-mode .vmp-route-pin {
+    width: 43px;
+    min-width: 43px;
+    height: 43px;
+    margin-right: 8px;
+}
+.root.compact-home.mission-briefing-clarity-mode .mission-brief-terrain .map-preview {
+    height: 160px;
+    min-height: 160px;
+}
+.root.short-home.mission-briefing-clarity-mode .mission-brief-terrain .map-preview {
+    height: 118px;
+    min-height: 118px;
+}
