@@ -11,9 +11,10 @@ namespace Ninefold.Presentation
     {
         public int MeshCount => meshes.Count;
         private readonly Material stone, pale, distant, vegetation, farHaze;
+        private readonly Material fractureBase, fractureEdge, fractureSeam;
         private readonly Material floorSurface, coverSurface;
         private readonly Material[] paving = new Material[3];
-        private readonly Texture2D mineral;
+        private readonly Texture2D mineral, worldFiveMineral;
         private readonly List<Mesh> meshes = new List<Mesh>();
         private readonly List<Material> materials = new List<Material>();
 
@@ -31,6 +32,10 @@ namespace Ninefold.Presentation
             distant = Make("Dusk escarpment", new Color(.25f,.22f,.32f));
             farHaze = Make("Far dusk shelf", new Color(.20f,.18f,.25f));
             vegetation = Make("Dusty sage", new Color(.32f,.37f,.31f));
+            fractureBase = Make("World Five geological facets", new Color(.38f,.33f,.45f));
+            fractureEdge = Make("World Five quartz edges", new Color(.66f,.57f,.71f));
+            fractureSeam = Make("World Five fracture seams", new Color(.63f,.54f,.83f));
+            worldFiveMineral = WorldFiveSceneryKit.CreateMineralSurface();
             mineral = new Texture2D(128,128,TextureFormat.RGBA32,true) { name = "Procedural mineral grain", wrapMode = TextureWrapMode.Repeat, filterMode = FilterMode.Trilinear };
             var pixels = new Color[128*128];
             for (int y=0;y<128;y++) for (int x=0;x<128;x++)
@@ -69,6 +74,18 @@ namespace Ninefold.Presentation
             distant.color = direction.Distant;
             farHaze.color = direction.Haze;
             vegetation.color = direction.Plants;
+            bool isWorldFive = WorldFiveSceneryKit.TryGet(direction,out var style);
+            var texture = isWorldFive ? worldFiveMineral : mineral;
+            floorSurface.mainTexture = texture;
+            coverSurface.mainTexture = texture;
+            stone.mainTexture = pale.mainTexture = texture;
+            foreach (var material in paving) material.mainTexture = texture;
+            if (isWorldFive)
+            {
+                fractureBase.color = style.RiftStone;
+                fractureEdge.color = style.MineralHighlights;
+                fractureSeam.color = style.SeamAccent;
+            }
             for (int i=0; i<paving.Length; i++)
                 paving[i].color = Color.Lerp(direction.Floor, direction.Ceramic, .10f + i*.10f);
             float x0=(float)map.Bounds.Min.X, x1=(float)map.Bounds.Max.X;
@@ -130,11 +147,54 @@ namespace Ninefold.Presentation
             Emit(parent,"Weathered outer shelves",highlights,pale);
             Emit(parent,"Distant fractured escarpment",horizon,distant);
             Emit(parent,"Dusty vegetation silhouettes",plants,vegetation);
+            if (isWorldFive)
+                BuildWorldFiveOuterStrata(parent,x0,x1,z0,z1,style);
             var lightObject=new GameObject("Dusk fill — environment study"); lightObject.transform.SetParent(parent,false);
             lightObject.transform.localPosition=new Vector3((x0+x1)/2,7,z1+1);
             var fill=lightObject.AddComponent<Light>(); fill.type=LightType.Point;
             fill.color=direction.Fill; fill.intensity=1.4f; fill.range=Mathf.Max(x1-x0,z1-z0)*2;
             fill.shadows=LightShadows.None;
+        }
+
+        private void BuildWorldFiveOuterStrata(Transform parent,float x0,float x1,float z0,float z1,
+            WorldFiveSceneryKit.Style style)
+        {
+            var mass=new Batch(); var facets=new Batch(); var seams=new Batch();
+            // All new strata are beyond the far/side *authoritative* boundaries.
+            // No collider or fake walkable geometry can enter a player lane.
+            for(int i=0;i<style.FacetCount;i++)
+            {
+                float fraction=(i+.5f)/style.FacetCount;
+                float x=Mathf.Lerp(x0-.8f,x1+.8f,fraction);
+                float z=z1+2f+Noise(i,23)*1.35f;
+                float height=1.4f+Noise(i,41)*1.5f;
+                mass.Rock(new Vector3(x,-.8f,z),
+                    new Vector3(.9f+Noise(i,5)*.9f,height,1.2f+Noise(i,17)*.9f),
+                    i+501);
+                facets.Rock(new Vector3(x+.25f,-.35f,z+.5f),
+                    new Vector3(.35f+Noise(i,2)*.33f,height*.67f,.46f),
+                    i+909);
+
+                // Thin mineral accents lie on the decorative shelf only.
+                float a=Mathf.Lerp(x0+.6f,x1-.6f,fraction);
+                float seamZ=z1+1.3f+Noise(i,18)*.15f;
+                seams.Face(new Vector3(a,-.055f,seamZ),
+                    new Vector3(a+.12f,-.052f,seamZ+.85f),
+                    new Vector3(a+.30f,-.055f,seamZ+.4f));
+            }
+            for(int i=0;i<4;i++)
+            {
+                float t=(i+.5f)/4f;
+                float z=Mathf.Lerp(z0,z1,t);
+                float height=1.2f+Noise(i,78)*1.3f;
+                mass.Rock(new Vector3(x0-2.5f,-.65f,z),
+                    new Vector3(1.1f,height,.9f),i+1211);
+                mass.Rock(new Vector3(x1+2.5f,-.65f,z),
+                    new Vector3(1.1f,height,.9f),i+1411);
+            }
+            Emit(parent,"W5 fractured outer mineral masses",mass,fractureBase);
+            Emit(parent,"W5 faceted mineral rims",facets,fractureEdge);
+            Emit(parent,"W5 noninteractive seam reflections",seams,fractureSeam);
         }
 
         private void BuildSurface(Transform parent,float x0,float x1,float z0,float z1)
@@ -209,7 +269,13 @@ namespace Ninefold.Presentation
             // No colliders, click targets, animations, or gameplay components.
         }
         private void ClearMeshes() { foreach(var mesh in meshes) Object.Destroy(mesh); meshes.Clear(); }
-        public void Dispose() { ClearMeshes(); foreach(var material in materials) Object.Destroy(material); Object.Destroy(mineral); }
+        public void Dispose()
+        {
+            ClearMeshes();
+            foreach(var material in materials) Object.Destroy(material);
+            Object.Destroy(mineral);
+            Object.Destroy(worldFiveMineral);
+        }
 
         private sealed class Batch
         {
