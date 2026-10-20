@@ -59,7 +59,7 @@ namespace Ninefold.Core.Content
                     case "fixture-mixed":
                         return new BattlefieldMap(Box(-4,-4,10,7),new[] {
                             new FieldObstacle(Box(1,2,3,4,2),true,true),
-                            new FieldObstacle(Box(6,-1,7,1,2),true,true) });
+                            new FieldObstacle(Box(8,-1,9,1,2),true,true) });
                     default:
                         return new BattlefieldMap(Box(-5,-5,9,8),new[] {
                             new FieldObstacle(Box(-3,1,-1,4,2),true,true),
