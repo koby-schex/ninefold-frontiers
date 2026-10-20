@@ -49,7 +49,12 @@ The launcher opens/creates the integration scene through the existing setup comm
 repairs a missing panel reference where needed, opens Game view and enters Play mode.
 Cancelling Unity's unsaved-scene prompt cancels launch. Existing progress resumes;
 there is no reset or erase button. Select **540 × 960** in Game view once for portrait
-review; the launcher does not modify Game view presets.
+review; the launcher does not modify Game view presets. If the Game tab shows only
+part of the phone frame, use its **Scale** control to zoom out or maximize the
+Game tab. This editor viewport scale does **not** change the game's UI layout.
+If the interface itself is oversized at a fitted Game view, record the selected
+resolution, visible clipping and a screenshot so actual safe-area/UI layout
+can be distinguished from editor preview zoom.
 
 Use **Capture current report → Copy displayed report** in the launcher to report a
 problem. During play, **Settings → Playtest diagnostics** also offers Refresh/Copy.

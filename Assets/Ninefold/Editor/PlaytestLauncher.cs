@@ -62,7 +62,7 @@ namespace Ninefold.Editor
             }
             using (new EditorGUI.DisabledScope(!EditorApplication.isPlaying))
                 if (GUILayout.Button("Stop playtest", GUILayout.MinHeight(32))) EditorApplication.isPlaying = false;
-            EditorGUILayout.HelpBox("For portrait testing, select 540 × 960 in the Game view's resolution dropdown. The launcher does not change Game view presets or reset saves.", MessageType.None);
+            EditorGUILayout.HelpBox("Portrait preview: choose a fixed 540 × 960 resolution in the Game tab. If the screen looks cropped or oversized, reduce Game-view Scale (or maximize the Game tab) until the whole frame fits. Game-view Scale is Editor preview zoom, not a change to the game UI. The launcher never changes these settings or resets saves.", MessageType.None);
             if (GUILayout.Button("Open Console", GUILayout.MinHeight(28))) EditorApplication.ExecuteMenuItem("Window/General/Console");
             if (!string.IsNullOrEmpty(status)) EditorGUILayout.HelpBox(status, MessageType.Info);
 

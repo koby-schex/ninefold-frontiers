@@ -1,165 +1,174 @@
 /*
- * Home Screen Polish 01 — website-informed, approved-sanctuary-preserving pass.
- * Loaded after Controls.uss; intentionally restricted to .home-mode.
- * No input logic, battle HUD, non-Home menu, or art changes.
+ * Home clarity pass 02 — focused, uncluttered presentation.
+ * Scoped entirely to Home. Approved sanctuary artwork stays untouched.
+ * This is not a replacement for production-resolution art and 3D units.
  */
 
-/* Keep the World Five sanctuary visible; frame its content in the official
- * Ninefold ink/ivory/gold language instead of a second, busy decoration layer. */
+/* Site-aligned ink/ivory/gold stays quiet so World Five's approved
+ * atmosphere and silver-violet light remain the dominant imagery. */
+.root.home-mode #safe-area {
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-bottom: 6px;
+}
 .root.home-mode .home-masthead {
-    padding-top: 18px;
-    padding-bottom: 10px;
-    background-color: rgba(17, 22, 17, 0.24);
+    padding-top: 19px;
+    padding-bottom: 12px;
+    background-color: rgba(17, 22, 17, 0.22);
 }
 .root.home-mode .home-wordmark {
-    font-size: 43px;
-    letter-spacing: 6px;
+    font-size: 38px;
+    letter-spacing: 5px;
     color: rgb(246, 239, 221);
 }
 .root.home-mode .home-submark {
-    font-size: 14px;
-    color: rgb(246, 239, 221);
+    font-size: 13px;
+    letter-spacing: 4px;
+    margin-top: 3px;
+    color: rgb(225, 218, 207);
 }
+.root.home-mode .home-vista {
+    min-height: 160px;
+}
+
+/* The approved World Five sanctuary is the hero. Information occupies only
+ * a compact, readable lower dock rather than a stack of oversized cards. */
 .root.home-mode .home-actions {
-    padding: 16px;
+    padding: 17px 18px 15px 18px;
     background-color: rgba(17, 22, 17, 0.94);
-    border-top-color: rgba(212, 180, 123, 0.50);
+    border-top-width: 1px;
+    border-top-color: rgba(212, 180, 123, 0.55);
 }
 .root.home-mode .home-kicker {
-    font-size: 12px;
-    letter-spacing: 1px;
-    color: rgb(212, 180, 123);
     margin-bottom: 6px;
+    font-size: 11px;
+    -unity-font-style: bold;
+    letter-spacing: 2px;
+    color: rgb(212, 180, 123);
 }
 .root.home-mode .home-title {
-    font-size: 39px;
+    margin: 0;
+    font-size: 38px;
+    white-space: normal;
     color: rgb(246, 239, 221);
 }
 .root.home-mode .home-summary {
-    font-size: 16px;
-    color: rgb(217, 210, 197);
     margin-top: 7px;
-    margin-bottom: 9px;
+    margin-bottom: 12px;
+    font-size: 15px;
+    white-space: normal;
+    color: rgb(214, 208, 193);
 }
 
-/* One unmistakable action; a flatter, crafted control instead of a beveled
- * stack. Specificity beats the shared game-button rules loaded earlier. */
+/* Primary action: visually unmistakable, but never a giant glossy tile. */
 .root.home-mode #safe-area Button.game-button.home-primary {
-    min-height: 64px;
-    margin-top: 7px;
-    margin-bottom: 10px;
-    padding: 11px 14px;
+    min-height: 59px;
+    margin: 4px 0 5px 0;
+    padding: 11px;
     border-width: 1px;
     border-bottom-width: 2px;
     border-color: rgb(231, 209, 165);
-    border-bottom-color: rgb(117, 94, 64);
-    border-radius: 6px;
+    border-bottom-color: rgb(114, 90, 58);
+    border-radius: 5px;
     background-color: rgb(212, 180, 123);
     color: rgb(17, 22, 17);
-    font-size: 18px;
+    font-size: 17px;
     letter-spacing: 1px;
+    -unity-font-style: bold;
 }
 .root.home-mode #safe-area Button.game-button.home-primary:hover {
-    background-color: rgb(236, 213, 167);
+    background-color: rgb(238, 218, 174);
     border-color: rgb(246, 239, 221);
 }
 .root.home-mode #safe-area Button.game-button.home-primary:active {
-    background-color: rgb(191, 155, 100);
-    border-color: rgb(171, 135, 82);
+    background-color: rgb(183, 149, 101);
+    border-bottom-color: rgb(183, 149, 101);
 }
 .root.home-mode #safe-area Button.game-button.home-primary:focus {
-    border-color: rgb(246, 239, 221);
     border-width: 2px;
+    border-color: rgb(246, 239, 221);
 }
 
-/* Two quiet, equal-weight shortcuts. Unlike the prototype's 170px minimum,
- * flexible buttons can coexist at narrow phone widths without stacking. */
-.root.home-mode .home-shortcuts {
-    flex-wrap: nowrap;
-}
-.root.home-mode #safe-area Button.game-button.home-shortcut {
-    min-width: 0;
-    flex-basis: 0;
-    flex-grow: 1;
-    min-height: 90px;
-    margin: 3px;
-    padding: 8px 5px;
+/* Quick Battle is one calm alternative. Unit browsing is already a tab. */
+.root.home-mode #safe-area Button.game-button.home-quick-link {
+    min-height: 50px;
+    margin: 2px 0 0 0;
+    padding: 7px 12px;
     border-width: 1px;
-    border-color: rgba(171, 168, 145, 0.45);
-    border-radius: 6px;
-    background-color: rgba(37, 47, 39, 0.76);
+    border-color: rgba(171, 168, 145, 0.44);
+    border-radius: 5px;
+    background-color: rgba(34, 45, 36, 0.86);
+    color: rgb(230, 224, 211);
+    font-size: 15px;
+    -unity-font-style: normal;
 }
-.root.home-mode #safe-area Button.game-button.home-shortcut:hover {
-    background-color: rgba(50, 63, 52, 0.95);
+.root.home-mode #safe-area Button.game-button.home-quick-link:hover {
+    background-color: rgb(48, 60, 50);
     border-color: rgb(212, 180, 123);
 }
-.root.home-mode #safe-area Button.game-button.home-shortcut:active {
-    background-color: rgb(30, 40, 32);
+.root.home-mode #safe-area Button.game-button.home-quick-link:active {
+    background-color: rgb(27, 39, 30);
 }
-.root.home-mode #safe-area Button.game-button.home-shortcut:focus {
-    border-color: rgb(246, 239, 221);
+.root.home-mode #safe-area Button.game-button.home-quick-link:focus {
     border-width: 2px;
-}
-.root.home-mode .home-shortcut .home-icon {
-    width: 26px;
-    height: 26px;
-    margin-bottom: 3px;
-    -unity-image-tint-color: rgb(246, 239, 221);
-}
-.root.home-mode .home-shortcut-title {
-    font-size: 17px;
-    color: rgb(246, 239, 221);
-}
-.root.home-mode .home-shortcut-detail {
-    font-size: 12px;
-    color: rgb(187, 186, 165);
-    margin-top: 3px;
+    border-color: rgb(246, 239, 221);
 }
 .root.home-mode .home-status {
+    margin-top: 7px;
     font-size: 13px;
     color: rgb(212, 180, 123);
-    margin-top: 8px;
-}
-.root.home-mode .home-fixture {
-    font-size: 10px;
-    color: rgb(174, 171, 158);
-    margin-top: 7px;
+    white-space: normal;
 }
 
-/* Bottom nav must be familiar and quiet; silver-violet selection acknowledges
- * the already-approved World Five sanctuary without universalizing its palette. */
+/* Quiet fixed navigation provides reliable orientation without repeating
+ * shortcut cards. Individual worlds may change accents after canon review. */
 .root.home-mode #safe-area .navigation {
-    padding-top: 4px;
-    background-color: rgba(17, 22, 17, 0.97);
-    border-top-color: rgba(212, 180, 123, 0.34);
+    padding: 3px 0 0 0;
+    background-color: rgba(17, 22, 17, 0.98);
+    border-top-width: 1px;
+    border-top-color: rgba(212, 180, 123, 0.35);
 }
 .root.home-mode #safe-area Button.game-button.nav-button {
-    min-height: 66px;
+    min-width: 0;
+    min-height: 62px;
+    margin: 0 1px;
     padding: 5px 2px;
-    margin: 1px;
     border-width: 0;
     border-bottom-width: 2px;
     border-bottom-color: transparent;
     border-radius: 0;
     background-color: transparent;
+    color: rgb(219, 211, 197);
+    opacity: 1;
 }
 .root.home-mode #safe-area Button.game-button.nav-button.selected {
     background-color: rgba(177, 166, 199, 0.10);
     border-bottom-color: rgb(177, 166, 199);
 }
 .root.home-mode #safe-area Button.game-button.nav-button:hover {
-    background-color: rgba(177, 166, 199, 0.16);
+    background-color: rgba(177, 166, 199, 0.13);
 }
 .root.home-mode #safe-area Button.game-button.nav-button:focus {
     border-top-width: 2px;
     border-top-color: rgb(246, 239, 221);
 }
+.root.home-mode #safe-area Button.game-button.nav-button:disabled {
+    background-color: transparent;
+    border-bottom-color: transparent;
+    color: rgb(126, 130, 119);
+    opacity: 0.62;
+}
 .root.home-mode #safe-area .nav-label {
     font-size: 14px;
-    color: rgb(217, 210, 197);
+    color: rgb(220, 212, 198);
+    white-space: normal;
+    -unity-text-align: middle-center;
 }
 .root.home-mode #safe-area .nav-button.selected .nav-label {
     color: rgb(246, 239, 221);
+}
+.root.home-mode #safe-area .nav-button:disabled .nav-label {
+    color: rgb(138, 137, 128);
 }
 .root.home-mode #safe-area .nav-button .home-icon {
     width: 23px;
@@ -167,34 +176,62 @@
     margin-bottom: 3px;
 }
 
-/* Compact phone sizes: preserve the atmosphere by removing *text density*,
- * never by shrinking controls below useful finger-target sizes. */
+/* In compact portraits, shorten decoration before shrinking touch controls. */
 .root.compact-home.home-mode .home-masthead {
-    padding-top: 9px;
-    padding-bottom: 7px;
+    padding-top: 10px;
+    padding-bottom: 8px;
 }
-.root.compact-home.home-mode .home-wordmark { font-size: 36px; }
-.root.compact-home.home-mode .home-title { font-size: 32px; }
-.root.compact-home.home-mode .home-actions { padding: 12px; }
-.root.compact-home.home-mode .home-shortcut-detail { display: none; }
-.root.compact-home.home-mode #safe-area Button.game-button.home-shortcut { min-height: 68px; }
-.root.compact-home.home-mode #safe-area Button.game-button.nav-button { min-height: 58px; }
-.root.compact-home.home-mode .home-vista { min-height: 30px; }
+.root.compact-home.home-mode .home-wordmark {
+    font-size: 33px;
+    letter-spacing: 4px;
+}
+.root.compact-home.home-mode .home-title {
+    font-size: 31px;
+}
+.root.compact-home.home-mode .home-actions {
+    padding: 13px 15px;
+}
+.root.compact-home.home-mode .home-vista {
+    min-height: 35px;
+}
+.root.compact-home.home-mode #safe-area Button.game-button.home-primary {
+    min-height: 56px;
+}
+.root.compact-home.home-mode #safe-area Button.game-button.nav-button {
+    min-height: 58px;
+}
 
-/* Short landscape/window must remain scrollable with the header hidden; the
- * short-mode rule wins over the regular Home declarations above. */
-.root.short-home.home-mode .home-masthead { display: none; }
-.root.short-home.home-mode .home-vista { min-height: 0; }
-.root.short-home.home-mode .home-title { font-size: 28px; }
+/* Short landscape is for editor reachability, not a production portrait
+ * arrangement. Scroll the dock; preserve the navigation and action labels. */
+.root.short-home.home-mode .home-masthead {
+    display: none;
+}
+.root.short-home.home-mode .home-vista {
+    min-height: 0;
+}
+.root.short-home.home-mode .home-title {
+    font-size: 27px;
+}
+.root.short-home.home-mode .home-actions {
+    padding: 10px 12px;
+}
 .root.short-home.home-mode #safe-area Button.game-button.home-primary {
     min-height: 44px;
+    padding: 6px 9px;
     font-size: 14px;
-    padding: 7px 10px;
 }
-.root.short-home.home-mode #safe-area Button.game-button.home-shortcut { min-height: 46px; }
-.root.short-home.home-mode #safe-area Button.game-button.nav-button { min-height: 44px; }
-.root.short-home.home-mode .home-shortcut-detail { display: none; }
-.root.short-home.home-mode .home-shortcut .home-icon { width: 18px; height: 18px; }
-.root.short-home.home-mode .home-shortcut-title { font-size: 13px; }
-.root.short-home.home-mode #safe-area .nav-label { font-size: 12px; }
-.root.short-home.home-mode #safe-area .nav-button .home-icon { width: 18px; height: 18px; }
+.root.short-home.home-mode #safe-area Button.game-button.home-quick-link {
+    min-height: 44px;
+    padding: 6px 9px;
+    font-size: 13px;
+}
+.root.short-home.home-mode #safe-area Button.game-button.nav-button {
+    min-height: 44px;
+}
+.root.short-home.home-mode #safe-area .nav-label {
+    font-size: 12px;
+}
+.root.short-home.home-mode #safe-area .nav-button .home-icon {
+    width: 18px;
+    height: 18px;
+}
