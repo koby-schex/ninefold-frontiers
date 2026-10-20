@@ -32,8 +32,7 @@
     padding: 10px 2px 0 2px;
     background-color: rgba(17, 22, 17, 0.89);
 }
-.root.campaign-overview-mode .page-scroll > .unity-scroll-view__content-viewport >
-.unity-scroll-view__content-container {
+.root.campaign-overview-mode .page-scroll > .unity-scroll-view__content-viewport > .unity-scroll-view__content-container {
     padding-right: 4px;
     padding-bottom: 16px;
 }
@@ -55,7 +54,6 @@
 .root.campaign-overview-mode .campaign-overview-intro {
     font-size: 15px;
     color: rgb(201, 198, 181);
-    line-height: 1.3;
     margin: 0 0 12px 0;
     white-space: normal;
 }
@@ -92,7 +90,6 @@
 }
 .root.campaign-overview-mode .campaign-choice-name {
     font-size: 29px;
-    line-height: 1.1;
     color: rgb(246, 239, 221);
     margin-top: 0;
     margin-bottom: 3px;
@@ -131,7 +128,6 @@
     border-width: 0;
     border-left-width: 0;
     font-size: 14px;
-    line-height: 1.25;
     color: rgb(201, 197, 181);
 }
 
