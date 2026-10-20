@@ -19,6 +19,9 @@ internal static partial class Program
         ("Repeated distant tap confirms one affordable saved movement", ReachableInput),
         ("Ability selection exposes target verdicts without save mutation", SelectedTargets),
         ("Playtest maps have distinct geometry and all deployable missions validate", DistinctPlaytestMaps),
+        ("Varied campaign maps have distinct internal footprints and distant readable objectives", VariedCampaignLayouts),
+        ("V2 saved encounter finishes on its original map before upgrading to V3", PreserveV2Battle),
+        ("Future special encounters support six units without exposing size selection", SpecialEncounterCapacity),
         ("Playtest layout upgrade preserves ongoing battle and earned progression", PreservePlaytestProfile),
         ("Playtest layout upgrade fails closed for missing or corrupt profiles", RejectBrokenPlaytestProfile),
         ("Planning samples are affordable legal destinations and do not save", PlanningSamples),
@@ -92,6 +95,104 @@ internal static partial class Program
         Equal(4,c.Missions.Values.Select(m=>Signature(m.Map)).Distinct().Count());
         Equal(false,c.Manifest.SaveRevision==AbstractContentPackage.Create().Manifest.SaveRevision);
     }
+    private static void VariedCampaignLayouts()
+    {
+        var current = PlaytestContentPackage.Create();
+        var previous = PlaytestContentPackage.CreateLayoutV2();
+        Equal("fixture-layouts-v3", current.Manifest.ContentRevision);
+        Equal("fixture-layouts-v2", previous.Manifest.ContentRevision);
+        Equal(false, current.Manifest.SaveRevision == previous.Manifest.SaveRevision);
+        var opening = current.Missions["fixture-opening"];
+        var finale = current.Missions["fixture-finale"];
+        decimal Area(MissionContent m) => (m.Map.Bounds.Max.X - m.Map.Bounds.Min.X)
+            * (m.Map.Bounds.Max.Z - m.Map.Bounds.Min.Z);
+        Equal(true, Area(opening) < Area(finale));
+        Equal(true, opening.Map.Obstacles.Count != finale.Map.Obstacles.Count);
+        foreach (var m in new[] { opening, finale, current.Missions["fixture-next"] })
+        {
+            var objective = m.Objectives[0].Interaction;
+            Equal(true, objective != null);
+            Equal(true, m.Map.Bounds.Contains(objective.Point));
+            Equal(false, m.Deployment.Any(p => p.Equals(objective.Point)));
+            Equal(true, m.Deployment.All(p => !m.Map.Obstacles.Any(o =>
+                o.BlocksMovement && o.Bounds.Contains(p))));
+        }
+
+        var menu = new MissionPresentation(current,new FakeSaveFiles(),new ProgressFiles(),"varied-profile");
+        menu.CreateProfile();
+        menu.SelectMission("fixture-opening");
+        menu.SetSquad(new[] { "fixture-a-1" });
+        var interaction = menu.Start(menu.Read().PlanId);
+        Equal(InteractionFailure.OutOfReach, interaction.ReadPlanning().Objectives.Single().Failure);
+        Equal(true, interaction.ReadPlanning().Movement.Count > 0);
+    }
+
+    private static void PreserveV2Battle()
+    {
+        var old = new FakeSaveFiles();
+        var v2 = new FakeSaveFiles();
+        var v3 = new FakeSaveFiles();
+        var progress = new ProgressFiles();
+        var previous = new MissionPresentation(PlaytestContentPackage.CreateLayoutV2(),v2,progress,PlaytestProfile.ProfileId);
+        previous.CreateProfile();
+        previous.SelectMission("fixture-opening"); previous.SetSquad(new[] { "fixture-a-1" });
+        var started = previous.Start(previous.Read().PlanId);
+        var original = started.Read().Battle;
+        var resumed = PlaytestProfile.Open(old,v2,progress,v3);
+        Equal(true, resumed.IsLegacy);
+        Equal(PlaytestContentPackage.CreateLayoutV2().Manifest.SaveRevision,resumed.Catalog.Manifest.SaveRevision);
+        Equal(original.AttemptId,resumed.Menu.Read().Resume.AttemptId);
+        var input = resumed.Menu.ResumeBattle();
+        input.TapObjective("primary"); var win = input.TapObjective("primary");
+        Equal(InputOutcome.Committed,win.Outcome); input.CompleteAnimation(win.AnimationId);
+        var attempt = resumed.Menu.Read().Results.Result.AttemptId;
+        resumed.Menu.ClaimRewards(attempt);
+        var migrated = PlaytestProfile.Open(old,v2,progress,v3);
+        Equal(false,migrated.IsLegacy);
+        Equal("fixture-layouts-v3",migrated.Catalog.Manifest.ContentRevision);
+        Equal(10L,migrated.Menu.Read().Progress.Balance("fixture-resource"));
+        Equal(true,v2.Read(0) != null || v2.Read(1) != null);
+        Equal(true,v3.Read(0) == null && v3.Read(1) == null);
+        migrated.Menu.SelectMission("fixture-mixed");
+        migrated.Menu.SetSquad(new[] { "fixture-a-1" });
+        migrated.Menu.Start(migrated.Menu.Read().PlanId);
+        Equal(true,v3.Read(0) != null || v3.Read(1) != null);
+        var restarted=PlaytestProfile.Open(old,v2,progress,v3);
+        Equal(false,restarted.IsLegacy);
+        Equal(MissionFlowPhase.Battle,restarted.Menu.Read().Phase);
+    }
+
+    private static void SpecialEncounterCapacity()
+    {
+        // World Collision is a future reserved encounter category. The engine
+        // must support 6-8 deployed units, but ordinary fixture campaigns
+        // retain their current 3-slot limit and offer no map-size UI setting.
+        var catalog=PlaytestContentPackage.Create();
+        var mixed=catalog.Missions["fixture-mixed"];
+        var points=new[] { P(-2,-2), P(-1,-2), P(0,-2), P(1,-2),
+            P(2,-2), P(3,-2), P(4,-2), P(5,-2) };
+        var demonstration=new MissionContent(mixed.Id,null,false,6,mixed.Map,
+            points,mixed.Actors,mixed.Objectives[0]);
+        var extended=Repackage(catalog,missions:catalog.Missions.Values
+            .Where(x=>x.Id!=mixed.Id).Concat(new[]{demonstration}));
+        Equal(8,extended.Missions[mixed.Id].MaximumSquad);
+        Equal(3,extended.Missions["fixture-opening"].MaximumSquad);
+        var profile=new ProgressFiles();
+        var saves=new FakeSaveFiles();
+        new LocalProgressStore(profile,"special-encounter-test").Create(
+            catalog.Units.Values.Where(u=>u.Roster!=null).Select(u=>u.Id));
+        var flow=extended.CreateFlow(saves,profile,"special-encounter-test");
+        flow.Open();
+        var squad=new[]{ "fixture-a-1","fixture-a-2","fixture-a-3",
+            "fixture-a-4","fixture-b-1","fixture-b-2" };
+        Equal(SquadFailure.None,flow.ValidateSquad(mixed.Id,squad));
+        Equal(SquadFailure.MultipleApex,flow.ValidateSquad(mixed.Id,new[]{
+            "fixture-a-1","fixture-a-2","fixture-a-3","fixture-a-4",
+            "fixture-a-5","fixture-b-5" }));
+        flow.Start(mixed.Id,squad);
+        Equal(6,flow.ReadBattle().Mission.Definition.Squad.Count);
+    }
+
     private static void PreservePlaytestProfile()
     {
         var oldFiles=new FakeSaveFiles(); var newFiles=new FakeSaveFiles(); var progress=new ProgressFiles();
