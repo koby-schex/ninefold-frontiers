@@ -1299,7 +1299,7 @@ namespace Ninefold.Presentation
                 : page == Page.Squad ? "SQUAD" : page == Page.Briefing ? "MISSION"
                 : page == Page.Missions ? "CAMPAIGN PATH" : "CAMPAIGNS";
             Text(header, label, "native-top-title").pickingMode = PickingMode.Ignore;
-            var home = Button(header, "⌂", () => Navigate(Page.Home));
+            var home = Button(header, "HOME", () => Navigate(Page.Home));
             home.AddToClassList("native-top-home");
             home.tooltip = "Home";
         }
