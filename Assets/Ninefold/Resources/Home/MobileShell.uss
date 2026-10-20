@@ -39,6 +39,12 @@
     background-color: rgba(212, 180, 123, 0.08);
     color: rgb(246, 239, 221);
 }
+/* Home retains the approved World Five silver-violet selected state, while
+ * other menu tabs use the neutral shared gold accent. */
+.root.home-mode #safe-area .navigation.unified-navigation > Button.game-button.unified-nav-button.selected {
+    border-bottom-color: rgb(177, 166, 199);
+    background-color: rgba(177, 166, 199, 0.10);
+}
 .root #safe-area .navigation.unified-navigation > Button.game-button.unified-nav-button:hover {
     background-color: rgba(212, 180, 123, 0.11);
 }
