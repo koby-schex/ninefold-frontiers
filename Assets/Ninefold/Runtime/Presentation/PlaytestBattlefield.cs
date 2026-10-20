@@ -101,7 +101,8 @@ namespace Ninefold.Presentation
             Object.Destroy(g.GetComponent<Collider>()); return g;
         }
 
-        public void Show(InteractionView interaction, BattlePlanningView planning, IReadOnlyList<ObjectiveDefinition> objectives, VisualElement target)
+        public void Show(InteractionView interaction, BattlePlanningView planning, IReadOnlyList<ObjectiveDefinition> objectives, VisualElement target,
+            string environmentKey = null)
         {
             var view = interaction.Battle; var intent = interaction.Pending;
             surface = target; world.SetActive(true); camera.enabled = true;
