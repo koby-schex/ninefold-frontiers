@@ -254,6 +254,10 @@ namespace Ninefold.Presentation
             {
                 Text(panel, "Other activities unlock when this battle ends.", "home-status");
             }
+            // Preserve actionable nonfatal messages that used to be visible on
+            // Home, without showing the redundant default save notice.
+            if (!active && message != "Your progress saves automatically.")
+                Text(panel, message, "home-status");
             BuildNavigation(content);
         }
 
