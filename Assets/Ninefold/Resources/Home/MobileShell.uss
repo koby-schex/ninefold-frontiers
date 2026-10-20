@@ -1,0 +1,359 @@
+/*
+ * Mobile Shell Consistency 01 — Ninefold: Frontiers
+ *
+ * Navigation applies ONLY to BuildNavigation() tabs, never to battlefield controls.
+ * Support menu styles cover Settings, Squad and Results (the screens not covered by
+ * the earlier focused Home/Campaign/Mission/Collection clarity passes).
+ * All other approved visuals and gameplay remain untouched.
+ */
+
+/* A single four-tab navigation vocabulary across every page showing the footer.
+ * Its size follows the same reliable portrait touch-target minimum everywhere. */
+.root #safe-area .navigation.unified-navigation {
+    flex-shrink: 0;
+    flex-direction: row;
+    padding: 3px 0 0 0;
+    margin: 0;
+    border-top-width: 1px;
+    border-top-color: rgba(212, 180, 123, 0.35);
+    background-color: rgba(17, 22, 17, 0.98);
+}
+.root #safe-area .navigation.unified-navigation > Button.game-button.unified-nav-button {
+    flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 0;
+    min-width: 0;
+    min-height: 60px;
+    padding: 5px 2px;
+    margin: 0 1px;
+    border-width: 0;
+    border-bottom-width: 2px;
+    border-bottom-color: transparent;
+    border-radius: 0;
+    background-color: transparent;
+    color: rgb(221, 214, 200);
+    opacity: 1;
+}
+.root #safe-area .navigation.unified-navigation > Button.game-button.unified-nav-button.selected {
+    border-bottom-color: rgb(212, 180, 123);
+    background-color: rgba(212, 180, 123, 0.08);
+    color: rgb(246, 239, 221);
+}
+.root #safe-area .navigation.unified-navigation > Button.game-button.unified-nav-button:hover {
+    background-color: rgba(212, 180, 123, 0.11);
+}
+.root #safe-area .navigation.unified-navigation > Button.game-button.unified-nav-button.selected:hover {
+    background-color: rgba(212, 180, 123, 0.14);
+}
+.root #safe-area .navigation.unified-navigation > Button.game-button.unified-nav-button:active {
+    background-color: rgba(212, 180, 123, 0.18);
+}
+.root #safe-area .navigation.unified-navigation > Button.game-button.unified-nav-button:focus {
+    border-top-width: 2px;
+    border-top-color: rgb(246, 239, 221);
+}
+.root #safe-area .navigation.unified-navigation > Button.game-button.unified-nav-button:disabled,
+.root #safe-area .navigation.unified-navigation > Button.game-button.unified-nav-button:disabled:hover {
+    background-color: transparent;
+    border-bottom-color: transparent;
+    color: rgb(144, 143, 131);
+    opacity: 0.55;
+}
+.root #safe-area .navigation.unified-navigation .nav-label {
+    font-size: 13px;
+    color: rgb(221, 214, 200);
+    white-space: normal;
+    -unity-text-align: middle-center;
+}
+.root #safe-area .navigation.unified-navigation .unified-nav-button.selected .nav-label {
+    color: rgb(246, 239, 221);
+}
+.root #safe-area .navigation.unified-navigation .unified-nav-button:disabled .nav-label {
+    color: rgb(144, 143, 131);
+}
+.root #safe-area .navigation.unified-navigation .unified-nav-button .home-icon {
+    width: 22px;
+    height: 22px;
+    margin-bottom: 3px;
+    -unity-image-tint-color: rgb(232, 221, 204);
+}
+.root #safe-area .navigation.unified-navigation .unified-nav-button:disabled .home-icon {
+    -unity-image-tint-color: rgb(148, 149, 137);
+}
+
+/* Reduce remaining large prototype typography and controls in the secondary
+ * non-battle screens. Never affect combat UI or polished campaign/home views. */
+.root.support-menu-mode #safe-area {
+    padding-left: 14px;
+    padding-right: 14px;
+    padding-bottom: 6px;
+}
+.root.support-menu-mode .heading {
+    padding-top: 6px;
+    padding-bottom: 4px;
+    background-color: rgba(17, 22, 17, 0.96);
+    border-bottom-color: rgba(212, 180, 123, 0.28);
+}
+.root.support-menu-mode .heading .brand {
+    font-size: 23px;
+    letter-spacing: 4px;
+    color: rgb(246, 239, 221);
+}
+.root.support-menu-mode .heading .notice {
+    min-height: 0;
+    margin-top: 2px;
+    font-size: 12px;
+    color: rgb(192, 186, 172);
+}
+.root.support-menu-mode .page-scroll {
+    padding: 8px 3px 0 3px;
+    background-color: rgba(17, 22, 17, 0.92);
+}
+.root.support-menu-mode .page-scroll > .unity-scroll-view__content-viewport > .unity-scroll-view__content-container {
+    padding-right: 4px;
+    padding-bottom: 14px;
+}
+.root.support-menu-mode .display-title {
+    font-size: 32px;
+    color: rgb(246, 239, 221);
+    margin-top: 3px;
+    margin-bottom: 7px;
+}
+.root.support-menu-mode .section {
+    font-size: 19px;
+    color: rgb(246, 239, 221);
+}
+.root.support-menu-mode .eyebrow,
+.root.support-menu-mode .step-label {
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: rgb(212, 180, 123);
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+.root.support-menu-mode .detail {
+    font-size: 15px;
+    color: rgb(217, 212, 194);
+}
+.root.support-menu-mode .hint,
+.root.support-menu-mode .fixture-note {
+    font-size: 12px;
+    color: rgb(183, 185, 165);
+}
+.root.support-menu-mode .card {
+    background-color: rgba(28, 36, 30, 0.96);
+    border-width: 1px;
+    border-color: rgba(124, 136, 114, 0.52);
+    border-radius: 7px;
+    padding: 12px;
+    margin: 0 0 10px 0;
+}
+.root.support-menu-mode #safe-area Button.game-button {
+    min-height: 50px;
+    padding: 9px 11px;
+    margin: 4px 0;
+    border-width: 1px;
+    border-radius: 5px;
+    border-color: rgb(106, 116, 100);
+    background-color: rgb(39, 52, 41);
+    color: rgb(246, 239, 221);
+    font-size: 15px;
+    -unity-font-style: bold;
+}
+.root.support-menu-mode #safe-area Button.game-button:hover {
+    background-color: rgb(51, 67, 53);
+    border-color: rgb(212, 180, 123);
+}
+.root.support-menu-mode #safe-area Button.game-button:active {
+    background-color: rgb(29, 39, 31);
+}
+.root.support-menu-mode #safe-area Button.game-button:focus {
+    border-width: 2px;
+    border-color: rgb(246, 239, 221);
+}
+.root.support-menu-mode #safe-area Button.game-button.primary {
+    min-height: 54px;
+    background-color: rgb(212, 180, 123);
+    color: rgb(17, 22, 17);
+    border-color: rgb(234, 212, 171);
+}
+.root.support-menu-mode #safe-area Button.game-button.primary:hover {
+    background-color: rgb(234, 210, 164);
+}
+.root.support-menu-mode #safe-area Button.game-button:disabled,
+.root.support-menu-mode #safe-area Button.game-button:disabled:hover {
+    border-color: rgb(73, 83, 72);
+    background-color: rgb(31, 38, 32);
+    color: rgb(155, 155, 142);
+    opacity: 0.7;
+}
+.root.support-menu-mode #safe-area Button.game-button.back-link {
+    min-height: 44px;
+    padding: 7px 3px;
+    margin: 1px 0 4px 0;
+    border-width: 0;
+    background-color: transparent;
+    color: rgb(221, 197, 158);
+    font-size: 14px;
+    -unity-font-style: normal;
+    -unity-text-align: middle-left;
+}
+
+/* Squad setup: shorter cards, readable unit identity and a trustworthy
+ * fixed Deploy dock. The core still governs composition and eligibility. */
+.root.support-menu-mode .team-summary {
+    border-top-width: 2px;
+    border-top-color: rgb(212, 180, 123);
+    padding: 11px;
+}
+.root.support-menu-mode .roster-entry {
+    padding: 9px;
+    margin-bottom: 8px;
+}
+.root.support-menu-mode #safe-area Button.game-button.squad-card {
+    padding: 10px 8px;
+    min-height: 82px;
+    margin: 0;
+    background-color: rgb(37, 46, 40);
+}
+.root.support-menu-mode #safe-area Button.game-button.squad-card.selected {
+    background-color: rgb(45, 53, 43);
+    border-left-width: 3px;
+    border-left-color: rgb(212, 180, 123);
+}
+.root.support-menu-mode .squad-card .unit-badge {
+    width: 51px;
+    height: 51px;
+    margin-right: 9px;
+    margin-bottom: 0;
+    border-width: 2px;
+}
+.root.support-menu-mode .squad-card .badge-id {
+    font-size: 18px;
+}
+.root.support-menu-mode .unit-identity .section {
+    font-size: 18px;
+    margin: 0;
+}
+.root.support-menu-mode .squad-card .detail {
+    font-size: 13px;
+    margin-top: 3px;
+    margin-bottom: 1px;
+}
+.root.support-menu-mode .squad-card .hint,
+.root.support-menu-mode .squad-card .eyebrow,
+.root.support-menu-mode .tile-state {
+    font-size: 12px;
+    margin: 3px 0;
+}
+.root.support-menu-mode #safe-area Button.game-button.inspect-button {
+    min-height: 46px;
+    padding: 7px 9px;
+    background-color: transparent;
+    border-color: rgba(125, 133, 119, 0.45);
+    font-size: 13px;
+}
+.root.support-menu-mode .team-summary .section {
+    font-size: 16px;
+}
+.root.support-menu-mode .deploy-dock {
+    flex-shrink: 0;
+    padding: 10px 12px;
+    border-color: rgba(212, 180, 123, 0.55);
+    background-color: rgba(17, 22, 17, 0.98);
+}
+.root.support-menu-mode #safe-area .deploy-dock Button.game-button.primary {
+    min-height: 55px;
+}
+.root.support-menu-mode .stat {
+    flex-basis: 44%;
+    flex-grow: 1;
+    min-width: 0;
+    margin: 3px;
+    padding: 9px;
+    background-color: rgb(20, 28, 23);
+}
+.root.support-menu-mode .stat .section {
+    font-size: 19px;
+}
+.root.support-menu-mode .stat .hint {
+    font-size: 11px;
+}
+.root.support-menu-mode .ability-card {
+    background-color: rgb(20, 27, 23);
+    padding: 10px;
+    margin-bottom: 8px;
+    border-left-color: rgb(146, 131, 105);
+}
+.root.support-menu-mode .ability-timing {
+    font-size: 13px;
+    color: rgb(212, 190, 153);
+    margin-top: 5px;
+}
+
+/* Results: prevent a 58pt title and giant reward numerals dominating portrait.
+ * Keep the explicit Claim/Save and post-result actions unchanged. */
+.root.results-mode.support-menu-mode .result-summary {
+    padding: 15px;
+    border-top-width: 2px;
+    border-top-color: rgb(212, 180, 123);
+}
+.root.results-mode.support-menu-mode .result-summary .display-title {
+    font-size: 40px;
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+.root.results-mode.support-menu-mode .result-summary .section {
+    font-size: 18px;
+}
+.root.results-mode.support-menu-mode .result-assurance {
+    font-size: 14px;
+    margin: 7px 0;
+}
+.root.results-mode.support-menu-mode .result-status {
+    font-size: 12px;
+    margin-top: 5px;
+}
+.root.results-mode.support-menu-mode .result-reward-row {
+    padding: 7px 0;
+}
+.root.results-mode.support-menu-mode .reward-amount {
+    font-size: 20px;
+    margin-left: 8px;
+}
+.root.results-mode.support-menu-mode .result-rewards .section,
+.root.results-mode.support-menu-mode .result-next .section {
+    font-size: 19px;
+}
+
+/* On very short landscape Editor windows, content scrolls; the nav stays
+ * reachable but controls do not become unreasonably small. */
+.root.short-home #safe-area .navigation.unified-navigation > Button.game-button.unified-nav-button {
+    min-height: 44px;
+    padding: 4px 1px;
+}
+.root.short-home #safe-area .navigation.unified-navigation .nav-label {
+    font-size: 12px;
+}
+.root.short-home #safe-area .navigation.unified-navigation .unified-nav-button .home-icon {
+    width: 18px;
+    height: 18px;
+    margin-bottom: 1px;
+}
+.root.compact-home.support-menu-mode .display-title {
+    font-size: 28px;
+}
+.root.compact-home.support-menu-mode .card {
+    padding: 10px;
+}
+.root.short-home.support-menu-mode .heading {
+    display: none;
+}
+.root.short-home.support-menu-mode #safe-area Button.game-button {
+    min-height: 44px;
+    font-size: 13px;
+    padding: 6px 8px;
+}
+.root.short-home.support-menu-mode .result-summary .display-title {
+    font-size: 30px;
+}
