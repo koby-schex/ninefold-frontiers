@@ -17,7 +17,7 @@ namespace Ninefold.Editor
     {
         private const string Folder = "Assets/Ninefold/ArtReview";
         private static string ScenePath = "";
-        private const string Revision = "Material study 08 / Unity review 10";
+        private const string Revision = "Detail study 11 / Unity review 11";
         private string sourceVersion = "", importedVersion = "";
         private const string Source = "SourceArt/GreatStrider/";
         private float yaw = 145, pitch = 12, distance = 19;
@@ -42,8 +42,8 @@ namespace Ninefold.Editor
         private void OnGUI()
         {
             scroll = EditorGUILayout.BeginScrollView(scroll);
-            GUILayout.Label("Great Strider · Material study 08", EditorStyles.boldLabel);
-            EditorGUILayout.HelpBox("Textured source study — not final art or a canon revision. Unity review 10 uses neutral lighting and material inspection for the current mesh, eight textures and translucent membranes. Static review prefab; no production rig or battlefield replacement.", MessageType.Info);
+            GUILayout.Label("Great Strider · Detail study 11", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox("Textured source study — not final art or a canon revision. Unity review 11 uses neutral lighting and material inspection for the current mesh, eight textures and translucent membranes. Static review prefab; no production rig or battlefield replacement.", MessageType.Info);
             EditorGUILayout.LabelField("Source revision", Revision);
             EditorGUILayout.LabelField("Source fingerprint", sourceVersion);
             EditorGUILayout.HelpBox("Imported scene: " + importedVersion, MessageType.None);
@@ -173,15 +173,15 @@ namespace Ninefold.Editor
             var shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null) throw new InvalidOperationException("URP Lit shader unavailable. Finish package import first.");
             string fingerprint = Fingerprint();
-            string destination = Folder + "/GreatStrider10_" + fingerprint.Substring(0, 12);
-            string expectedScene = destination + "/GreatStriderReview10.unity";
+            string destination = Folder + "/GreatStrider11_" + fingerprint.Substring(0, 12);
+            string expectedScene = destination + "/GreatStriderReview11.unity";
             if (!fresh && File.Exists(expectedScene))
             { ScenePath = expectedScene; EditorSceneManager.OpenScene(ScenePath); return true; }
             // Validate the entire source before creating assets or changing the scene.
             var surfaces = GreatStriderSource.ReadMaterials(File.ReadLines(Source + "GreatStrider.mtl"), Source);
             var data = GreatStriderSource.ReadMesh(File.ReadLines(Source + "GreatStrider.obj"), surfaces);
             var manifest = JsonUtility.FromJson<SourceManifest>(File.ReadAllText(Source + "manifest.json"));
-            if (manifest == null || manifest.status != "material study 08; not production ready" ||
+            if (manifest == null || manifest.status != "detail study 11; not production ready" ||
                 manifest.vertices != data.SourceVertices || manifest.triangles != data.Triangles || manifest.parts != data.Parts ||
                 manifest.height != 6 || manifest.up != "Y" || manifest.forward != "Z" || manifest.units != "meters" ||
                 surfaces.Count != 12 || surfaces.Count(m => m.Texture != null) != 8)
@@ -219,7 +219,7 @@ namespace Ninefold.Editor
                     if (surfaces.Find(m => m.Name == section.Material).Opacity < 1)
                         renderer.shadowCastingMode = ShadowCastingMode.Off;
                 }
-                prefab = PrefabUtility.SaveAsPrefabAsset(root, destination + "/GreatStriderStudy08.prefab");
+                prefab = PrefabUtility.SaveAsPrefabAsset(root, destination + "/GreatStriderStudy11.prefab");
                 if (prefab == null) throw new IOException("Could not create Great Strider prefab.");
                 File.WriteAllText(destination + "/source-version.txt", Revision + "\nSHA-256 " + fingerprint +
                     "\n" + data.SourceVertices + " source vertices / " + data.Triangles + " triangles / " +
@@ -249,7 +249,7 @@ namespace Ninefold.Editor
             var rotation = Quaternion.Euler(12, 145, 0);
             camera.transform.SetPositionAndRotation(new Vector3(0, 3, 0) - rotation * Vector3.forward * 19, rotation);
             AssetDatabase.SaveAssets();
-            ScenePath = destination + "/GreatStriderReview10.unity";
+            ScenePath = destination + "/GreatStriderReview11.unity";
             if (!EditorSceneManager.SaveScene(scene, ScenePath)) throw new IOException("Could not save review scene.");
             Selection.activeGameObject = model;
             Debug.Log(ValidateImported());

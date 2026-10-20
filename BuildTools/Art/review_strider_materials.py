@@ -62,11 +62,11 @@ def checks(before,after):
                 textured_parts=textured,uv_coordinates=uvs,textures=len(tiles()),
                 geometry_identical=True,opacity_unchanged=True,texture_bytes_reproducible=True,
                 rest_uvs_retained_in_sampled_motion=True,mip_filter_converges_to_mean=True,
-                scope='Source texture/UV review, not production unwrap or Unity/device certification')
+                scope='Pinned study 08 geometry comparison plus current texture/UV export checks; not Unity/device certification')
 
 
 def main():
-    before,after=load_meshes(BASELINE,None)
+    before,after=load_meshes(BASELINE,'c67234628d2b767c4fe0816fe3e2c9a39fd82a67')
     report=checks(before,after);OUTPUT.mkdir(parents=True,exist_ok=True)
     (OUTPUT/'checks.json').write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps(report,indent=2),flush=True)

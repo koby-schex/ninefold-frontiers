@@ -28,7 +28,7 @@ internal static partial class Program
         string root = StriderRoot();
         var materials = GreatStriderSource.ReadMaterials(File.ReadLines(Path.Combine(root, "GreatStrider.mtl")), root);
         var mesh = GreatStriderSource.ReadMesh(File.ReadLines(Path.Combine(root, "GreatStrider.obj")), materials);
-        if (mesh.SourceVertices != 40646 || mesh.Triangles != 80556 || mesh.Parts != 184) throw new Exception("Unexpected study 08 mesh.");
+        if (mesh.SourceVertices != 40646 || mesh.Triangles != 80556 || mesh.Parts != 184) throw new Exception("Unexpected study 11 mesh.");
         if (materials.Count != 12 || materials.Count(m => m.Texture != null) != 8) throw new Exception("Missing source materials/textures.");
         if (Math.Abs(materials.Single(m => m.Name == "sail_membrane").Opacity - .68f) > .00001) throw new Exception("Opacity lost.");
         foreach (var m in materials.Where(m => m.Texture != null))

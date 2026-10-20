@@ -28,8 +28,8 @@ MATERIALS = {
 
 # Provisional finish controls, not locked material canon. Ns is shared with the MTL.
 FINISH = {name: (28, .12) for name in MATERIALS}
-FINISH.update(living_pearl=(32,.10), cloth=(8,.018), avar_skin=(24,.06), soft_charcoal=(16,.045),
-    limb_tissue=(28,.07), grown_mineral=(58,.17), ceramic=(100,.22),
+FINISH.update(living_pearl=(22,.08), cloth=(4,.012), avar_skin=(24,.06), soft_charcoal=(16,.045),
+    limb_tissue=(18,.055), grown_mineral=(82,.17), ceramic=(100,.22),
     continuance_frame=(100,.13), sail_membrane=(64,.18), survey_light=(72,.18))
 # Exported opacity; software review uses the nearest membrane surface only.
 OPACITY = {'sail_membrane': .68}
@@ -260,7 +260,8 @@ def make_model():
             ((side*.42,3.87,-.23),.04,.05),((side*.46,3.99,.05),.07,.15),
             ((side*.45,4.08,.39),.065,.15),((side*.39,4.13,.67),.02,.04)],10)
         def cradle_shell(t,v):
-            return (side*(.43+.045*math.sin(math.pi*t)+.016*math.sin(math.pi*v)),
+            return (side*(.43+.045*math.sin(math.pi*t)+.016*math.sin(math.pi*v)
+                    -.009*math.sin(math.pi*t)**2*math.sin(math.pi*v)**2),
                 3.91+.26*v+.07*math.sin(math.pi*t),-.26+.91*t)
         m.panel('Cradle_SidePanel_'+s,'ceramic',cradle_shell,14,7,.006,(1,0,0))
         m.strand('Cradle_PanelRim_'+s,'continuance_frame',[cradle_shell(k/10,1) for k in range(11)],.013)
@@ -341,6 +342,24 @@ def make_model():
             m.strand('Avarin_TabardHem_'+s+str(v),'continuance_frame',[add(drape(k/9,v),(0,0,.012)) for k in range(10)],.007)
         for k in range(3):
             m.strand('Avarin_SensoryRibbon_'+s+str(k),'sail_vein',[(side*(.25+k*.085),4.63,-.46),(side*(.26+k*.085),4.49,-.49),(side*(.28+k*.085),4.39,-.46)],.012)
+    # Detail study 11: restrained root fullness and neck relief on existing
+    # topology. Caps remain fixed inside hosts, and all joint centers stay put.
+    for part in m.parts:
+        name=part['name']
+        if not (name.startswith('Ilyth_Limb_') or name=='Ilyth_ShortNeck'):
+            continue
+        sides=part['loft_sides']; rows=(len(part['vertices'])-2)//sides
+        original=list(part['vertices'])
+        for row in range(1,rows-1):
+            t=row/(rows-1)
+            center=tuple(sum(original[row*sides+j][axis] for j in range(sides))/sides for axis in range(3))
+            # Broaden only the buried-to-visible hip transition. Below row 5
+            # nothing changes; the generated mineral sheath follows the result.
+            fullness=.10*math.sin(math.pi*row/6)**2 if name.startswith('Ilyth_Limb_') and row<6 else 0
+            for j in range(sides):
+                index=row*sides+j; v=original[index]; radial=sub(v,center)
+                relief=.003*math.sin(math.pi*t)**2*math.cos(4*math.pi*j/sides) if name=='Ilyth_ShortNeck' else 0
+                part['vertices'][index]=add(v,add(mul(radial,fullness),mul(unit(radial),relief)))
     # Cloth relief tapers to zero at each loft end, preserving wrist/hip/calf fits.
     for part in m.parts:
         if part['name'].startswith(('Avarin_Arm_', 'Avarin_Leg_', 'Avarin_Torso')):
@@ -351,7 +370,7 @@ def make_model():
                 center=tuple(sum(verts[row*sides+j][axis] for j in range(sides))/sides for axis in range(3))
                 for j in range(sides):
                     index=row*sides+j; v=verts[index]; angle=j*math.tau/sides
-                    relief=.0035*math.sin(math.pi*t)**2*math.sin(10*math.pi*t+2*angle)
+                    relief=.006*math.sin(math.pi*t)**2*math.sin(8*math.pi*t+2*angle)
                     part['vertices'][index]=add(v,mul(unit(sub(v,center)),relief))
     # Grown coverings follow the limb surfaces; soft joint gaps remain visible.
     for p in list(m.parts):
@@ -386,7 +405,7 @@ def write(mesh, output):
     factor=6/(top-bottom)
     for p in mesh.parts: p['vertices']=[mul(sub(v,(0,bottom,0)),factor) for v in p['vertices']]
     attach_uvs(mesh.parts)
-    obj=['# Great Strider material study 08; meters; Y up; Z forward', 'mtllib GreatStrider.mtl']
+    obj=['# Great Strider detail study 11; meters; Y up; Z forward', 'mtllib GreatStrider.mtl']
     offset=1; uv_offset=1
     for p in mesh.parts:
         obj.extend(['o '+p['name'],'usemtl '+p['material'],'s 1'])
@@ -403,14 +422,14 @@ def write(mesh, output):
         albedo_color_space='sRGB',opacity=OPACITY.get(name,1),review_specular_exponent=FINISH[name][0],
         review_specular_strength=FINISH[name][1],surface_description=SURFACES[name][2] if name in SURFACES else 'unchanged study material')
         for name,rgb in MATERIALS.items()}
-    (output/'materials.json').write_text(json.dumps(dict(status='provisional material study 08',
+    (output/'materials.json').write_text(json.dumps(dict(status='provisional detail study 11',
         uv_mapping='rest-pose dominant-axis box projection, repeating textures',materials=catalog),indent=2)+'\n')
     mtl=[]
     for name,rgb in MATERIALS.items():
         mtl.extend(['newmtl '+name,'Kd '+' '.join(map(str,(1,1,1) if name in SURFACES else rgb)),'Ks '+' '.join([str(FINISH[name][1])]*3),'Ns '+str(FINISH[name][0]),'d '+str(OPACITY.get(name,1)),''])
         if name in SURFACES: mtl.extend(['map_Kd Textures/'+name+'.png',''])
     (output/'GreatStrider.mtl').write_text('\n'.join(mtl))
-    report=dict(status='material study 08; not production ready',units='meters',up='Y',forward='Z',
+    report=dict(status='detail study 11; not production ready',units='meters',up='Y',forward='Z',
         height=6,parts=len(mesh.parts),vertices=offset-1,
         triangles=sum(len(p['faces']) for p in mesh.parts),
         materials=list(MATERIALS),limbs=['L_Fore','R_Fore','L_Rear','R_Rear'],
