@@ -526,6 +526,8 @@ namespace Ninefold.Presentation
                 Text(identity, !mission.Available ? "LOCKED" : mission.IsReplay ? "CLEARED · REPLAY"
                     : highlighted ? "UP NEXT" : "AVAILABLE", "campaign-status").AddToClassList("mission-path-status");
                 Text(identity, MissionName(missionId), "section").AddToClassList("mission-path-name");
+                if (mission.Definition.Encounter == EncounterKind.WorldCollision)
+                    Text(identity, "WORLD COLLISION", "eyebrow").AddToClassList("vmp-world-collision");
                 if (!mission.Available)
                 {
                     string reason = mission.FactionRosterLocked
