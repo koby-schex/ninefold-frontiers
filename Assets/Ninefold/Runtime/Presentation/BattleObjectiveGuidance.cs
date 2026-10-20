@@ -153,8 +153,13 @@ namespace Ninefold.Presentation
                     Dot(unit.Position.Value, "btg-active");
             }
 
-            Label(radar, current == null ? "COMPLETE" :
-                hasDestination ? "GOLD = GOAL" : "HOLD POSITION", "btg-radar-foot");
+            string footer = current == null
+                ? battle.Objectives.Any(o => o.Status == ObjectiveStatus.Failed) ? "FAILED" : "COMPLETE"
+                : hasDestination ? "GOLD = GOAL"
+                : current.Kind == ObjectiveKind.Survive ? "HOLD POSITION"
+                : current.Kind == ObjectiveKind.Protect ? "GUARD TARGET"
+                : "FOLLOW GOAL";
+            Label(radar, footer, "btg-radar-foot");
             return radar;
         }
 
