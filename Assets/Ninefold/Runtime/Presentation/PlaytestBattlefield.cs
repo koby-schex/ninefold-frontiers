@@ -198,9 +198,10 @@ namespace Ninefold.Presentation
             return polygon.ToArray();
         }
 
-        private void BuildMap(BattlefieldMap map, IReadOnlyList<ObjectiveDefinition> objectives, string missionId)
+        private void BuildMap(BattlefieldMap map, IReadOnlyList<ObjectiveDefinition> objectives, string missionId,
+            string environmentKey)
         {
-            var direction = BattlefieldSceneDirection.ForMission(missionId);
+            var direction = BattlefieldSceneDirection.ForMission(missionId,environmentKey);
             drawnSceneStudy = direction.Study;
             camera.backgroundColor = direction.Sky;
             foreach (var label in objectiveLabels.Values) label.RemoveFromHierarchy();
