@@ -94,8 +94,12 @@ namespace Ninefold.Core.Content
                     new Ninefold.Core.Missions.InteractionDefinition(target, 1.6m, new[] { "$squad" }));
             }
 
+            string SceneKey(string id) => id == "fixture-opening" ? "study-w5-survey"
+                : id == "fixture-finale" ? "study-w5-fracture"
+                : id == "fixture-next" ? "study-neutral-other" : "study-neutral-mixed";
             var missions = source.Missions.Values.Select(m => new MissionContent(m.Id,m.FactionId,m.IsCampaign,m.MinimumSquad,
-                Map(m.Id),Deployment(m.Id,m),m.Actors,Primary(m.Id,m),m.Priority,m.Objectives.Skip(1))).ToArray();
+                Map(m.Id),Deployment(m.Id,m),m.Actors,Primary(m.Id,m),m.Priority,m.Objectives.Skip(1),
+                EncounterKind.Standard,expandedLayouts ? SceneKey(m.Id) : null)).ToArray();
             // A new battle layout needs a new save revision. Old V2 attempts
             // continue against the frozen V2 catalog below until claimed.
             return new ContentCatalog(new ContentManifest("abstract-flow",expandedLayouts ? "fixture-layouts-v3" : "fixture-layouts-v2",
