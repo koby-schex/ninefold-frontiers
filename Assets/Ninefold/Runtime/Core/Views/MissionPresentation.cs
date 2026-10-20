@@ -70,6 +70,20 @@ namespace Ninefold.Core.Views
             if (flow.ValidateSquad(missionId,squad) != SquadFailure.None) throw new InvalidOperationException("Invalid squad or locked mission.");
             flow.Start(missionId,squad); Reset(); return ResumeBattle();
         }
+        /// <summary>Explicitly end the saved encounter without erasing profile or
+        /// replaying commands. The defeat receipt is persisted before selection
+        /// becomes available; on a failed write the existing recovery rules apply.</summary>
+        public void AbandonBattle()
+        {
+            Ready();
+            if (flow.Phase != MissionFlowPhase.Battle)
+                throw new InvalidOperationException("No active battle to end.");
+            flow.Execute(b => b.Mission.Forfeit());
+            flow.ClaimRewards(); // Defeat rewards are empty; record exactly once.
+            flow.ReturnToSelection();
+            Reset();
+        }
+
         public BattleInteraction ResumeBattle()
         {
             Ready(); if (flow.Phase != MissionFlowPhase.Battle) throw new InvalidOperationException("No active battle to resume.");
