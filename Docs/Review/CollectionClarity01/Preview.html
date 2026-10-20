@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ninefold: Frontiers — Collection Clarity 01</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:20px;background:#111611;color:#f6efdd;font-family:Arial,sans-serif}
+main{max-width:920px;margin:auto}
+h1,h2{font-family:Georgia,serif;font-weight:normal}
+h1{font-size:33px;margin:4px 0}
+h2{font-size:24px;margin:5px 0}
+p{color:#c9c7b7}
+.small{font-size:12px}
+.kicker{color:#d4b47b;font-size:12px;letter-spacing:2px}
+.panels{display:flex;flex-wrap:wrap;gap:22px}
+.phone{width:390px;max-width:100%;min-height:620px;border:1px solid #5b695b;border-radius:14px;background:#182019;padding:17px}
+.filters{display:flex;gap:6px;margin:14px 0}
+.filter{flex:1;border:1px solid #5d695a;border-radius:5px;text-align:center;padding:12px 5px;color:#cccbb7}
+.filter.selected{border-color:#d4b47b;background:#4d472f60;color:#f6efdd}
+.row{display:flex;gap:12px;align-items:center;background:#1c241e;border:1px solid #7d86718a;border-radius:7px;padding:12px;margin:8px 0}
+.badge{width:52px;height:52px;flex-shrink:0;border:2px solid #b1a6c7;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.badge.apex{border-color:#d4b47b;border-radius:8px}
+.meta{font-size:12px;color:#c0c2ab}
+.arrow{margin-left:auto;color:#d4b47b;font-size:25px}
+.card{padding:14px;background:#1c241e;border:1px solid #7d86718a;border-radius:7px;margin:12px 0}
+.track{height:5px;background:#0a110a}
+.fill{height:5px;width:70%;background:#d4b47b}
+.cta{border:1px solid #e6cfaa;border-radius:5px;background:#d4b47b;color:#111611;text-align:center;padding:15px;margin:12px 0;font-weight:bold}
+.secondary{border:1px solid #687968;border-radius:5px;background:#29362c;color:#f6efdd;text-align:center;padding:12px;margin:6px 0}
+</style></head>
+<body><main>
+<p class="small">Static browser layout study. No real navigation, 3D models, or saved progression; fixture IDs are not canon art.</p>
+<div class="panels">
+<section class="phone">
+<div class="kicker">YOUR ROSTER</div><h1>Units</h1><p>3 of 8 unlocked</p>
+<div class="filters"><div class="filter selected">All</div><div class="filter">Owned</div><div class="filter">Locked</div></div>
+<h2>Test faction A</h2>
+<div class="row"><div class="badge">A1</div><div><strong>A1</strong><div class="meta">STANDARD · Rank 1</div><div class="meta">5 / 10 fragments</div></div><div class="arrow">›</div></div>
+<div class="row"><div class="badge">A2</div><div><strong>A2</strong><div class="meta">STANDARD · Rank 1</div><div class="meta">7 / 10 fragments</div></div><div class="arrow">›</div></div>
+<div class="row"><div class="badge apex">AX</div><div><strong>AX</strong><div class="meta">APEX · Locked</div><div class="meta">0 / 30 fragments</div></div><div class="arrow">›</div></div>
+<h2>Test faction B</h2><div class="row"><div class="badge">B1</div><div><strong>B1</strong><div class="meta">STANDARD · Locked</div><div class="meta">2 / 10 fragments</div></div><div class="arrow">›</div></div>
+</section>
+<section class="phone">
+<p class="kicker">‹ ALL UNITS</p>
+<div class="card">
+<div class="row"><div class="badge">A1</div><div><div class="kicker">STANDARD UNIT</div><h2>A1</h2><div class="meta">UNLOCKED · RANK 1</div></div></div>
+<p>5 / 10 fragments · Next rank</p><div class="track"><div class="fill"></div></div>
+<p class="small">5 more fragments needed</p>
+<div class="cta">Advance unit · 10 fragments</div>
+<div class="secondary">Adjust health / armor</div>
+<p>Health 100 · Armor 10 · Move 4</p>
+<div class="secondary">View stats &amp; abilities ›</div>
+</div>
+<p class="small">Expanded stats and ability kit appear only when requested. Upgrade preview must be explicitly confirmed.</p>
+</section>
+</div></main>
+</body></html>
