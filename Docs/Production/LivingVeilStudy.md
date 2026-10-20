@@ -1,83 +1,85 @@
-# Living Veil / Olyra — resting form study 01
+# Living Veil / Olyra — canopy study 02
 
 ## Authority and scope
 
 Master Lore v26.0 is the reconciliation layer; unchanged v25.3 anatomy and the
 locked World Five Avarin / Continuance visual master remain authoritative.
-Reviewed v25.3's Living Veil/Olyra and Avarin anatomy, equipment and bond sections,
-v26.0 section 26.6, and the World Five master. Production Foundations 1–8 and
-all locked masters remain controlling. This model is an implementation proposal,
-not a new visual master, canon lock or finished production asset.
+This pass checked v26.0 section 26.6, v25.3 Living Veil anatomy/equipment and the
+actual World Five master image. Production Foundations 1–8 remain controlling.
+This is a model implementation proposal, not a canon revision or finished asset.
 
 ## Canon-to-model mapping
 
-| Canon | First-study treatment |
+| Canon | Study treatment |
 | --- | --- |
-| Dense core with five broad overlapping translucent lobes | Dark charcoal-plum core; five asymmetrical lobes folded downward around it |
-| No conventional head, wings or flight | Small smooth forward sensory crest and tiny visual organs; no head/wing appendages |
-| Pearl-gray membranes, clearer edges, organic pale ribbing | Three opacity bands per lobe, with pale curved ribs; no permanent rainbow glow |
-| Independent consensual partner | Avarin standing alongside; no saddle, reins, control collar or mounted pose |
-| Avarin two arms/two legs; living crescent mantle and 4–6 ribbons | Two arms/two legs, six ribbons, established face/mantle geometry reused from the Strider source study |
-| Veil Harness with clips, monitors, suspension lines and regulator | Low-profile shoulder straps, clips, monitor/regulator and stowed line housings |
-| 4–6 m deployed membrane span | Deferred to a deployed pose; the folded study is about 2.6 m across, not a substitute scale target |
+| Dense core and five overlapping translucent lobes | Same five lobes and dark core in resting and protective static poses |
+| Folded rest; asymmetric floating canopy | Folded span about 2.6 m; protective span 5.56 m with curved sheltering sides |
+| No conventional head or flight wings | Small smooth forward crest and tiny visual organs; no additional head/wing appendages |
+| Smoky pearl membranes, clearer edges and organic pale ribbing | One continuous UV-mapped shell per lobe; smooth RGBA alpha gradient; curved main ribs and finer branches |
+| Consensual independent partner and deliberate protection | Avarin stands alongside at rest, beneath the shelter in the protective pose; no control harness or force-field geometry |
+| Light Veil Harness | Clips, monitor/regulator, stowed emergency lines; no suspended traversal pose yet |
+| Two arms/two legs, crescent mantle and 4–6 sensory ribbons | Existing Avarin study anatomy retained with six ribbons |
 
-The three tiny visual organs, lobe curvature, harness housing placement, exact
-opacity values and standing pose are provisional implementation choices. Final
-visual acceptance requires review against the master. The software render uses
-nearest-shell transparency; layered overlap appearance can differ in Unity.
+Exact curvature, vein layout, alpha values, three tiny visual organs and harness
+housing placement are provisional. The protective pose is a broad shelter pose;
+a tighter body-wrapping variation, locomotion and gliding remain future work.
+No permanent spectral glow is added. The silhouette is still a study requiring
+visual acceptance against the master, especially membrane layering and core detail.
 
-## Source and output
+## Source and outputs
 
-- `BuildTools/Art/build_living_veil.py`: deterministic editable model generator.
-- `SourceArt/LivingVeil/LivingVeil.obj` and `.mtl`: actual exported geometry/materials.
-- `SourceArt/LivingVeil/manifest.json`: revision, bounds, counts and limitations.
-- `BuildTools/Art/review_living_veil.py`: reproducibility/geometry checks and optional renders.
-- `Assets/Ninefold/Editor/LivingVeilReview.cs`: opt-in native Unity review importer.
+- Generator: `BuildTools/Art/build_living_veil.py`
+- Resting source: `SourceArt/LivingVeil/LivingVeil.obj`, `manifest.json`
+- Protective source: `SourceArt/LivingVeil/LivingVeilProtective.obj`, `protective-manifest.json`
+- Shared material source: `LivingVeil.mtl`, `Textures/OlyraMembrane.png`
+- Validation and six-view comparison: `BuildTools/Art/review_living_veil.py`
+- Unity review tool: `Assets/Ninefold/Editor/LivingVeilReview.cs`
 
-77 named parts, 27,398 source vertices, 54,488 triangles, 14 flat materials.
-Meters, Y up, +Z forward. The grounded Avarin is approximately 1.82 m tall;
-Olyra's resting presentation floats above ground and tops out near 3.01 m.
-Its presentation altitude is not a fixed biological height or gameplay rule.
-No game roster, campaign, abilities, profile, progression or battlefield is changed.
+Each pose has 97 named parts, 33,668 source vertices, 66,948 triangles and 12
+materials. Five lobe shells plus the Avarin mantle remain separate transparent
+render sections. Meters, Y up, +Z forward; Avarin height approximately 1.82 m.
+The two poses have matching source topology, but are not an animation or rig.
+Protective pose top is about 3.41 m; this review altitude is not a gameplay rule.
 
-The generator reuses the existing Mesh primitives and Avarin face/mantle study.
-Future shared-source changes must regenerate and verify both units. Export
-reproducibility gates detect stale checked-in Olyra assets. The importer reuses
-the tested OBJ/MTL parser; translucent bands stay separate for native sorting.
+The 256 × 256 RGBA texture contains the membrane tint and continuous alpha.
+MTL `d=0.55` marks the surface as transparent for the existing parser; the Unity
+review importer deliberately uses a base-color alpha multiplier of 1 for the
+mapped membrane. Other OBJ importers may multiply `d` again and look darker.
+Texture alpha is read from input; clamp, mipmaps and trilinear filtering are enabled.
+Remaining body, harness and rib materials are flat study surfaces.
 
 ## Unity review
 
-1. Pull the merged PR; open Unity 6000.3.21f1 and let compilation finish.
+1. Pull the merged changes and open Unity 6000.3.21f1; finish package import.
 2. Open **Ninefold > Art > Living Veil Review**.
-3. Click **Open / create latest review scene**. Configure the URP foundation
-   through the existing Playtest Launcher if prompted. No Play mode is needed.
-4. Confirm **Resting form study 01 / Unity review 01**; inspect front, side,
-   back, tactical and Avarin/Veil Harness detail views. Use portrait Game view.
-5. Expand material inspection or run **Validate imported review assets**.
+3. Choose **Show resting fold** or **Show protective canopy**. Each pose has a
+   separate versioned scene/prefab. Unsaved scene changes receive the usual prompt.
+4. Confirm **Canopy study 02 / Unity review 02**. Use front, side, back, tactical
+   and partner-detail presets. The two full views use the same camera distance.
+5. Run **Validate imported review assets** and inspect membrane overlap, core
+   visibility and Avarin readability. Use a 540 × 960 portrait Game view.
 
-Generated assets live under `Assets/Ninefold/ArtReview/LivingVeil01_<fingerprint>/`.
-Reopening preserves saved edits; **Build fresh review copy** creates a unique
-folder. The save-scene prompt can be canceled. Great Strider scenes remain intact.
-Scene display controls hide grid/gizmos/skybox; Unity's normal controls restore them.
+No Play mode is required. Configure the existing URP foundation through the
+Playtest Launcher if needed. Existing review scenes and edits are preserved;
+**Build fresh review copy** generates a new unique folder. No model is installed
+in the live battlefield, Collection screen or a player profile by this tool.
 
-## Validation and acceptance limits
+See `ModelPreviewHandoff.md` for paths and integration requirements.
 
-`python BuildTools/Art/review_living_veil.py` checks deterministic exports, closed
-and outward-wound individual parts, nondegenerate triangles, finite vertices,
-five three-band lobes, two arms/two legs, six ribbons, partner height/grounding,
-and a positive gap between creature and partner bounds in this resting pose.
-The C# parser test imports the real asset, checks counts, normals and all 16
-separate transparent sections (15 lobe bands plus Avarin mantle).
+## Validation and limits
 
-`python BuildTools/Art/review_living_veil.py --render` produces three source views
-and checks.json in the ignored local Review folder. GitHub's Living Veil art
-review workflow publishes them as a downloadable artifact. These are actual
-source renders, not generated concept images or native Unity screenshots.
+`python BuildTools/Art/review_living_veil.py --render` validates both source poses
+and publishes `SourceArt/LivingVeil/Review/LivingVeil-Review.png` and checks.json.
+Checks cover finite/nondegenerate geometry, closed outward-wound individual parts,
+five continuous lobes, membrane UV domain, continuous alpha samples, partner
+anatomy/grounding, deterministic OBJ/MTL/PNG/manifests, resting separation and a
+conservative triangle-versus-expanded-partner-box exclusion in the protective pose.
+These checks do not certify lobe-to-lobe self-intersection or deformation quality.
 
-Native Unity compilation and visual checks remain pending: check band sorting
-from all views, core visibility, portrait framing and partner readability.
-The three opacity bands are an interim approximation, not a seamless alpha map.
-Closed individual parts do not certify inter-part intersections or deformation.
-No final textures, production topology, UV unwrap, rig, animation, LODs or device
-performance claims. Protective wrapping, deployed canopy and suspended traversal
-poses will be developed after review of this resting form.
+The C# test imports both actual OBJ files through the shared parser and verifies
+geometry counts, normals, UV coverage and all six transparent sections. The
+software renderer's opt-in interpolated alpha path has a numeric blend regression
+check; existing constant-alpha rendering is unchanged. Software comparison views
+use the nearest transparent shell, not all overlapping layers or refraction.
+Native Unity compilation, transparency sorting and visual acceptance remain
+pending. No mobile performance, final rig, animation, LOD or production-ready claim.

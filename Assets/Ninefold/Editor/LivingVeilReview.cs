@@ -12,15 +12,18 @@ using UnityEngine.SceneManagement;
 
 namespace Ninefold.Editor
 {
-    /// <summary>Opt-in, editor-only review of the unchanged source mesh. No game/profile access.</summary>
+    /// <summary>Opt-in, editor-only review of the two static source poses. No game/profile access.</summary>
     public sealed class LivingVeilReview : EditorWindow
     {
         private const string Folder = "Assets/Ninefold/ArtReview";
         private static string ScenePath = "";
-        private const string Revision = "Resting form study 01 / Unity review 01";
+        private const string Revision = "Canopy study 02 / Unity review 02";
+        private static bool Protective = true;
+        private static string Stem => Protective ? "LivingVeilProtective" : "LivingVeil";
+        private static string Manifest => Protective ? "protective-manifest.json" : "manifest.json";
         private string sourceVersion = "", importedVersion = "";
         private const string Source = "SourceArt/LivingVeil/";
-        private float yaw = 145, pitch = 12, distance = 11;
+        private float yaw = 145, pitch = 12, distance = 17;
         private string status = "";
         private Vector2 scroll;
         private bool detail;
@@ -35,6 +38,13 @@ namespace Ninefold.Editor
         {
             try { sourceVersion = Fingerprint().Substring(0, 12); }
             catch (Exception e) { sourceVersion = "Unavailable: " + e.Message; }
+            var active = SceneManager.GetActiveScene();
+            if (active.path.StartsWith(Folder + "/LivingVeil", StringComparison.Ordinal) &&
+                Path.GetFileName(active.path) == "LivingVeilReview02.unity")
+            {
+                ScenePath = active.path;
+                Protective = active.GetRootGameObjects().Any(go => go.name.StartsWith("Living Veil — protective — ", StringComparison.Ordinal));
+            }
             string report = Path.Combine(Path.GetDirectoryName(SceneManager.GetActiveScene().path) ?? "", "source-version.txt");
             importedVersion = File.Exists(report) ? File.ReadAllText(report) : "No current review scene open";
         }
@@ -42,22 +52,25 @@ namespace Ninefold.Editor
         private void OnGUI()
         {
             scroll = EditorGUILayout.BeginScrollView(scroll);
-            GUILayout.Label("Living Veil · Resting form study 01", EditorStyles.boldLabel);
-            EditorGUILayout.HelpBox("First resting-form study: five folded membrane lobes and an independent Avarin partner. Flat study materials; no texture unwrap, animation or production rig. Not final art or canon approval.", MessageType.Info);
+            GUILayout.Label("Living Veil · Canopy study 02", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox("Resting and protective static poses with five continuous membrane lobes, an alpha texture and an independent Avarin partner. No animation or production rig. Not final art or canon approval.", MessageType.Info);
             EditorGUILayout.LabelField("Source revision", Revision);
             EditorGUILayout.LabelField("Source fingerprint", sourceVersion);
             EditorGUILayout.HelpBox("Imported scene: " + importedVersion, MessageType.None);
             if (GUILayout.Button("Refresh version status")) RefreshVersion();
             EditorGUILayout.LabelField("Scale", "Meters · Avarin approximately 1.82 m");
-            EditorGUILayout.HelpBox("Folded Olyra span is about 2.6 m. Canonical 4–6 m deployed canopy is a later pose. Locked lore and visual masters remain authoritative.", MessageType.None);
+            EditorGUILayout.HelpBox("Folded span about 2.6 m; protective span about 5.6 m. Locked lore and visual masters remain authoritative.", MessageType.None);
             using (new EditorGUI.DisabledScope(Busy))
             {
+                EditorGUILayout.LabelField("Selected pose", Protective ? "Protective canopy" : "Resting fold");
+                if (GUILayout.Button("Show resting fold")) OpenPose(false);
+                if (GUILayout.Button("Show protective canopy")) OpenPose(true);
                 if (GUILayout.Button("Open / create latest review scene", GUILayout.Height(36)))
                 {
                     try { if (OpenScene())
                         {
                             var view = PrepareSceneView();
-                            view.LookAt(new Vector3(.55f, 1.5f, 0), Quaternion.Euler(12, 145, 0), 3.5f, false, true);
+                            view.LookAt(new Vector3(.3f, 1.7f, 0), Quaternion.Euler(12, 145, 0), 5.5f, false, true);
                             RefreshVersion(); status = "Review scene ready. No Play mode needed.";
                         } }
                     catch (Exception e) { status = e.Message; Debug.LogException(e); }
@@ -80,11 +93,11 @@ namespace Ninefold.Editor
                     pitch = EditorGUILayout.Slider("Elevation", pitch, -10, 70);
                     distance = EditorGUILayout.Slider("Camera distance", distance, 2, 20);
                     if (EditorGUI.EndChangeCheck()) ApplyView();
-                    if (GUILayout.Button("Tactical camera · portrait")) Preset(140, 45, 12, false);
-                    if (GUILayout.Button("Full silhouette · portrait")) Preset(145, 12, 11, false);
-                    if (GUILayout.Button("Front (+Z)")) Preset(180, 0, 11, false);
-                    if (GUILayout.Button("Side")) Preset(90, 0, 11, false);
-                    if (GUILayout.Button("Back")) Preset(0, 0, 11, false);
+                    if (GUILayout.Button("Tactical camera · portrait")) Preset(140, 45, 17, false);
+                    if (GUILayout.Button("Full silhouette · portrait")) Preset(145, 12, 17, false);
+                    if (GUILayout.Button("Front (+Z)")) Preset(180, 0, 17, false);
+                    if (GUILayout.Button("Side")) Preset(90, 0, 17, false);
+                    if (GUILayout.Button("Back")) Preset(0, 0, 17, false);
                     if (GUILayout.Button("Avarin / Veil Harness detail")) Preset(180, 0, 5, true);
                     if (GUILayout.Button("Open Game view")) EditorApplication.ExecuteMenuItem("Window/General/Game");
                     if (GUILayout.Button("Open Scene view")) PrepareSceneView().Focus();
@@ -142,13 +155,25 @@ namespace Ninefold.Editor
             }
         }
 
+        private void OpenPose(bool protective)
+        {
+            bool previous = Protective;
+            Protective = protective;
+            try
+            {
+                if (OpenScene()) { RefreshVersion(); Preset(145, 12, 17, false); status = "Static pose opened; no Play mode needed."; }
+                else Protective = previous;
+            }
+            catch (Exception e) { Protective = previous; status = e.Message; Debug.LogException(e); }
+        }
+
         private void Preset(float y, float p, float d, bool close)
         { yaw = y; pitch = p; distance = d; detail = close; ApplyView(); }
 
         private void ApplyView()
         {
             if (SceneManager.GetActiveScene().path != ScenePath) return;
-            var target = detail ? new Vector3(1.95f, 1.1f, .5f) : new Vector3(.55f, 1.5f, 0);
+            var target = detail ? new Vector3(Protective ? .25f : 1.95f, 1.1f, Protective ? .15f : .5f) : new Vector3(.3f, 1.7f, 0);
             var rotation = Quaternion.Euler(pitch, yaw, 0);
             var camera = Camera.main;
             if (camera != null)
@@ -171,22 +196,22 @@ namespace Ninefold.Editor
             var shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null) throw new InvalidOperationException("URP Lit shader unavailable. Finish package import first.");
             string fingerprint = Fingerprint();
-            string destination = Folder + "/LivingVeil01_" + fingerprint.Substring(0, 12);
-            string expectedScene = destination + "/LivingVeilReview01.unity";
+            string destination = Folder + "/" + Stem + "02_" + fingerprint.Substring(0, 12);
+            string expectedScene = destination + "/LivingVeilReview02.unity";
             if (!fresh && File.Exists(expectedScene))
             { ScenePath = expectedScene; EditorSceneManager.OpenScene(ScenePath); return true; }
             // Validate the entire source before creating assets or changing the scene.
             var surfaces = GreatStriderSource.ReadMaterials(File.ReadLines(Source + "LivingVeil.mtl"), Source);
-            var data = GreatStriderSource.ReadMesh(File.ReadLines(Source + "LivingVeil.obj"), surfaces);
-            var manifest = JsonUtility.FromJson<SourceManifest>(File.ReadAllText(Source + "manifest.json"));
-            if (manifest == null || manifest.status != "resting form study 01; not production ready" ||
+            var data = GreatStriderSource.ReadMesh(File.ReadLines(Source + Stem + ".obj"), surfaces);
+            var manifest = JsonUtility.FromJson<SourceManifest>(File.ReadAllText(Source + Manifest));
+            if (manifest == null || manifest.status != "canopy study 02; not production ready" ||
                 manifest.vertices != data.SourceVertices || manifest.triangles != data.Triangles || manifest.parts != data.Parts ||
-                Math.Abs(manifest.height - 3.0099094f) > .0001f || manifest.up != "Y" || manifest.forward != "Z" || manifest.units != "meters" ||
-                surfaces.Count != 14 || surfaces.Any(m => m.Texture != null))
+                Math.Abs(manifest.height - (Protective ? 3.4147113f : 3.0099094f)) > .0001f || manifest.up != "Y" || manifest.forward != "Z" || manifest.units != "meters" ||
+                surfaces.Count != 12 || surfaces.Count(m => m.Texture != null) != 1 || surfaces.Single(m => m.Texture != null).Name != "olyra_membrane")
                 throw new InvalidDataException("Unexpected source revision/counts. Update and review the importer before proceeding.");
             var positions = data.Sections.SelectMany(x => x.Vertices).ToArray();
             if (Math.Abs(positions.Min(v => v[1])) > .0001 || Math.Abs(positions.Max(v => v[1])-manifest.height) > .0001)
-                throw new InvalidDataException("Unexpected resting-study bounds; no automatic rescaling.");
+                throw new InvalidDataException("Unexpected pose bounds; no automatic rescaling.");
             if (!AssetDatabase.IsValidFolder(Folder)) AssetDatabase.CreateFolder("Assets/Ninefold", "ArtReview");
             destination = AssetDatabase.GenerateUniqueAssetPath(destination);
             AssetDatabase.CreateFolder(Folder, Path.GetFileName(destination));
@@ -201,7 +226,7 @@ namespace Ninefold.Editor
                     materials.Add(surface.Name, ImportMaterial(shader, surface, destination));
                 ground = Material(shader, "Studio ground", new Color(.20f, .20f, .20f), destination);
                 marker = Material(shader, "Scale marker", new Color(.72f, .62f, .39f), destination);
-                var root = new GameObject("Living Veil — " + Revision + " — " + fingerprint.Substring(0,12));
+                var root = new GameObject("Living Veil — " + (Protective ? "protective" : "resting") + " — " + Revision + " — " + fingerprint.Substring(0,12));
                 SceneManager.MoveGameObjectToScene(root, preview);
                 foreach (var section in data.Sections)
                 {
@@ -217,11 +242,11 @@ namespace Ninefold.Editor
                     if (surfaces.Find(m => m.Name == section.Material).Opacity < 1)
                         renderer.shadowCastingMode = ShadowCastingMode.Off;
                 }
-                prefab = PrefabUtility.SaveAsPrefabAsset(root, destination + "/LivingVeilStudy01.prefab");
+                prefab = PrefabUtility.SaveAsPrefabAsset(root, destination + "/" + Stem + "Study02.prefab");
                 if (prefab == null) throw new IOException("Could not create Living Veil prefab.");
                 File.WriteAllText(destination + "/source-version.txt", Revision + "\nSHA-256 " + fingerprint +
                     "\n" + data.SourceVertices + " source vertices / " + data.Triangles + " triangles / " +
-                    data.Sections.Count + " render sections / flat study materials\nStatic review asset; Unity visual acceptance pending.\n");
+                    data.Sections.Count + " render sections / smooth membrane alpha map\nStatic review asset; Unity visual acceptance pending.\n");
                 AssetDatabase.ImportAsset(destination + "/source-version.txt");
                 AssetDatabase.SaveAssets();
             }
@@ -236,18 +261,18 @@ namespace Ninefold.Editor
             var model = (GameObject)PrefabUtility.InstantiatePrefab(prefab, scene);
             Primitive("Neutral studio ground", PrimitiveType.Cube, new Vector3(0, -.1f, 0), new Vector3(32, .2f, 32), ground);
             Primitive("Avarin baseline — 1.82 m measuring post, NOT anatomy", PrimitiveType.Cube,
-                new Vector3(-2.6f, .91f, 0), new Vector3(.12f, 1.82f, .12f), marker);
+                new Vector3(-3.2f, .91f, 0), new Vector3(.12f, 1.82f, .12f), marker);
             Primitive("1.82 m height crossbar", PrimitiveType.Cube,
-                new Vector3(-2.6f, 1.81f, 0), new Vector3(.6f, .02f, .12f), marker);
+                new Vector3(-3.2f, 1.81f, 0), new Vector3(.6f, .02f, .12f), marker);
             Light("Studio key", new Vector3(45, -35, 0), Color.white, 1.2f, LightShadows.Soft);
             Light("Studio fill", new Vector3(25, 140, 0), Color.white, .6f, LightShadows.None);
             var camera = new GameObject("Review camera").AddComponent<Camera>();
             camera.tag = "MainCamera"; camera.fieldOfView = 40; camera.nearClipPlane = .1f; camera.farClipPlane = 100;
             camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = new Color(.12f, .12f, .12f);
             var rotation = Quaternion.Euler(12, 145, 0);
-            camera.transform.SetPositionAndRotation(new Vector3(.55f, 1.5f, 0) - rotation * Vector3.forward * 11, rotation);
+            camera.transform.SetPositionAndRotation(new Vector3(.3f, 1.7f, 0) - rotation * Vector3.forward * 17, rotation);
             AssetDatabase.SaveAssets();
-            ScenePath = destination + "/LivingVeilReview01.unity";
+            ScenePath = destination + "/LivingVeilReview02.unity";
             if (!EditorSceneManager.SaveScene(scene, ScenePath)) throw new IOException("Could not save review scene.");
             Selection.activeGameObject = model;
             Debug.Log(ValidateImported());
@@ -298,22 +323,26 @@ namespace Ninefold.Editor
                     {
                         var importer = AssetImporter.GetAtPath(path) as TextureImporter;
                         if (importer == null || !importer.sRGBTexture || !importer.mipmapEnabled ||
-                            importer.wrapMode != TextureWrapMode.Repeat || importer.filterMode != FilterMode.Trilinear)
+                            importer.wrapMode != TextureWrapMode.Clamp || importer.filterMode != FilterMode.Trilinear ||
+                            importer.alphaSource != TextureImporterAlphaSource.FromInput || !importer.alphaIsTransparency)
                             throw new InvalidDataException("Unexpected texture import settings: " + path);
                         textures.Add(texture);
                     }
                 }
+                if (material.name == "olyra_membrane" &&
+                    (material.GetTexture("_BaseMap") == null || material.GetColor("_BaseColor").a != 1))
+                    throw new InvalidDataException("Membrane alpha texture/multiplier missing.");
                 if (material.GetFloat("_Surface") > .5f)
                 {
                     transparent++;
                     if (!material.IsKeywordEnabled("_SURFACE_TYPE_TRANSPARENT") || material.GetFloat("_ZWrite") != 0 ||
-                        material.renderQueue != (int)RenderQueue.Transparent || material.GetColor("_BaseColor").a <= 0 || material.GetColor("_BaseColor").a >= 1)
+                        material.renderQueue != (int)RenderQueue.Transparent || material.GetColor("_BaseColor").a <= 0 || (material.GetColor("_BaseColor").a >= 1 && material.GetTexture("_BaseMap") == null))
                         throw new InvalidDataException("Incorrect membrane configuration: " + filter.name);
                 }
             }
-            if (triangles != 54488 || textures.Count != 0 || transparent != 16)
+            if (triangles != 66948 || textures.Count != 1 || transparent != 6)
                 throw new InvalidDataException("Unexpected imported geometry/texture/membrane count.");
-            return "Imported assets verified: 54,488 triangles, flat study materials, " + transparent +
+            return "Imported assets verified: 66,948 triangles, smooth membrane alpha map, " + transparent +
                 " separate transparent shells. Visual review and device testing remain required.";
         }
 
@@ -326,7 +355,7 @@ namespace Ninefold.Editor
         }
         private static string Fingerprint()
         {
-            var files = new[] { "LivingVeil.obj", "LivingVeil.mtl", "manifest.json" }
+            var files = new[] { "LivingVeil.obj", "LivingVeilProtective.obj", "LivingVeil.mtl", "manifest.json", "protective-manifest.json", "Textures/OlyraMembrane.png" }
                 .Select(f => Source + f)
                 .Concat(new[] { "Assets/Ninefold/Editor/LivingVeilReview.cs", "Assets/Ninefold/Editor/GreatStriderSource.cs" })
                 .OrderBy(f => f, StringComparer.Ordinal);
@@ -347,7 +376,7 @@ namespace Ninefold.Editor
         {
             // MTL Kd is linear; Unity's serialized color property is authored in sRGB.
             var color = new Color(surface.Color[0], surface.Color[1], surface.Color[2]).gamma;
-            color.a = surface.Opacity;
+            color.a = surface.Texture != null ? 1 : surface.Opacity;
             float smoothness = 1 - Mathf.Pow(2 / (surface.Exponent + 2), .25f);
             var material = Material(shader, surface.Name, color, destination, smoothness);
             material.SetFloat("_Metallic", 0); // Review approximation, not locked physical parameters.
@@ -360,12 +389,12 @@ namespace Ninefold.Editor
                 if (importer == null) throw new IOException("Could not import texture: " + target);
                 importer.textureType = TextureImporterType.Default;
                 importer.sRGBTexture = true; importer.mipmapEnabled = true;
-                importer.wrapMode = TextureWrapMode.Repeat; importer.filterMode = FilterMode.Trilinear;
+                importer.wrapMode = TextureWrapMode.Clamp; importer.filterMode = FilterMode.Trilinear;
                 importer.textureCompression = TextureImporterCompression.Uncompressed;
-                importer.alphaSource = TextureImporterAlphaSource.None; importer.isReadable = false;
+                importer.alphaSource = TextureImporterAlphaSource.FromInput; importer.alphaIsTransparency = true; importer.isReadable = false;
                 importer.SaveAndReimport();
                 material.SetTexture("_BaseMap", AssetDatabase.LoadAssetAtPath<Texture2D>(target));
-                // The map contains the full baked tint; Kd is white for textured surfaces.
+                // RGBA map contains tint and continuous alpha. Kd is white; alpha multiplier is one.
             }
             bool transparent = surface.Opacity < 1;
             material.SetFloat("_Surface", transparent ? 1 : 0);

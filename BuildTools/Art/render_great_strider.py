@@ -108,7 +108,12 @@ def render(data, eye, size=(880,1000), extent=7.0, target=(0,3,0), fit=True):
             value=(np.clip(shade,0,1)**(1/1.6)*255).astype(np.uint8)
             if opacity < 1:
                 transparent[ymin:ymax+1,xmin:xmax+1][mask]=value[mask]
-                alpha[ymin:ymax+1,xmin:xmax+1][mask]=opacity
+                if 'vertex_opacity' in part:
+                    weights=np.asarray(part['vertex_opacity'])[ids]
+                    pixel_alpha=a*weights[0]+b*weights[1]+c*weights[2]
+                    alpha[ymin:ymax+1,xmin:xmax+1][mask]=pixel_alpha[mask]
+                else:
+                    alpha[ymin:ymax+1,xmin:xmax+1][mask]=opacity
                 glass_depth[mask]=z[mask]
             else:
                 pixels[ymin:ymax+1,xmin:xmax+1][mask]=value[mask]
