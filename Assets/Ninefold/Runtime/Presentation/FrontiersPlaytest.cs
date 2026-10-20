@@ -123,6 +123,11 @@ namespace Ninefold.Presentation
             var collectionVisual = Resources.Load<StyleSheet>("Home/CollectionVisual03");
             if (collectionVisual != null) root.styleSheets.Add(collectionVisual);
             else Debug.LogWarning("Collection visual styles are missing. Check project import.", this);
+            // Applies only to Campaign overview, Mission Path and Briefing.
+            // Unit previews/model systems and battlefield gameplay are untouched.
+            var campaignMissionVisual = Resources.Load<StyleSheet>("Home/CampaignMissionVisual03");
+            if (campaignMissionVisual != null) root.styleSheets.Add(campaignMissionVisual);
+            else Debug.LogWarning("Campaign/mission visual styles are missing. Check project import.", this);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
