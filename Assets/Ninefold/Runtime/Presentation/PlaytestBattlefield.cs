@@ -41,7 +41,10 @@ namespace Ninefold.Presentation
         private readonly LineRenderer path, range;
         private GameObject terrain;
         private readonly BattlefieldScenery scenery;
-        public string SceneryStatus => terrain == null ? "not built (open a battle)" : "study 02 | meshes: " + scenery.MeshCount + " | visible: " + world.activeInHierarchy;
+        private string drawnSceneStudy = "none";
+        public string SceneryStatus => terrain == null ? "not built (open a battle)" :
+            "study 03 | " + drawnSceneStudy + " | meshes: " + scenery.MeshCount +
+            " | visible: " + world.activeInHierarchy;
         private string drawnAttempt;
         private readonly GameObject destination, selection, inspection, impact;
         private VisualElement surface;
@@ -102,7 +105,11 @@ namespace Ninefold.Presentation
         {
             var view = interaction.Battle; var intent = interaction.Pending;
             surface = target; world.SetActive(true); camera.enabled = true;
-            if (drawnAttempt != view.AttemptId) { BuildMap(view.Map,objectives); drawnAttempt = view.AttemptId; }
+            if (drawnAttempt != view.AttemptId)
+            {
+                BuildMap(view.Map,objectives,view.MissionId);
+                drawnAttempt = view.AttemptId;
+            }
             Reconcile(view);
             foreach (var token in tokens.Values) surface.Add(token.Bar);
             foreach (var item in feedback) surface.Add(item.Label);
@@ -190,8 +197,11 @@ namespace Ninefold.Presentation
             return polygon.ToArray();
         }
 
-        private void BuildMap(BattlefieldMap map, IReadOnlyList<ObjectiveDefinition> objectives)
+        private void BuildMap(BattlefieldMap map, IReadOnlyList<ObjectiveDefinition> objectives, string missionId)
         {
+            var direction = BattlefieldSceneDirection.ForMission(missionId);
+            drawnSceneStudy = direction.Study;
+            camera.backgroundColor = direction.Sky;
             foreach (var label in objectiveLabels.Values) label.RemoveFromHierarchy();
             objectiveLabels.Clear(); objectivePositions.Clear();
             if (terrain != null) { terrain.SetActive(false); Object.Destroy(terrain); }
@@ -205,7 +215,7 @@ namespace Ninefold.Presentation
             float width=max.x-min.x, depth=max.z-min.z;
             Shape("Bounded floor",new Vector3(center.x,-.16f,center.z),new Vector3(width,.3f,depth),floor);
             Shape("Arena plinth",new Vector3(center.x,-.42f,center.z),new Vector3(width+.4f,.25f,depth+.4f),grid);
-            scenery.Build(terrain.transform, map, floor);
+            scenery.Build(terrain.transform, map, floor, direction);
             Shape("West boundary",new Vector3(min.x,.15f,center.z),new Vector3(.1f,.3f,depth),trim);
             Shape("East boundary",new Vector3(max.x,.15f,center.z),new Vector3(.1f,.3f,depth),trim);
             Shape("South boundary",new Vector3(center.x,.15f,min.z),new Vector3(width,.3f,.1f),trim);
@@ -224,6 +234,12 @@ namespace Ninefold.Presentation
                 Shape("Objective inset",p+Vector3.up*.07f,new Vector3(.78f,.025f,.78f),floor);
                 Shape("Objective cross X",p+Vector3.up*.09f,new Vector3(.58f,.025f,.1f),active);
                 Shape("Objective cross Z",p+Vector3.up*.09f,new Vector3(.1f,.025f,.58f),active);
+                // A modest high-contrast route cue. This is a UI marker, not
+                // fictional World Five machinery or a new interactable object.
+                Shape("Objective guide post",p+new Vector3(.65f,.48f,0),
+                    new Vector3(.10f,.84f,.10f),gold);
+                Shape("Objective guide tip",p+new Vector3(.65f,.93f,0),
+                    new Vector3(.29f,.08f,.29f),active);
                 var label = new Label { pickingMode = PickingMode.Ignore }; label.AddToClassList("objective-marker");
                 objectiveLabels.Add(o.Id,label); objectivePositions.Add(o.Id,p);
             }
