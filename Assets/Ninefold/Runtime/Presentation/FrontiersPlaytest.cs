@@ -146,6 +146,10 @@ namespace Ninefold.Presentation
             bool campaignScreen = resultsScreen || page == Page.Settings || menuView.Phase == MissionFlowPhase.Selection &&
                 (page == Page.Battles || page == Page.Missions || page == Page.Briefing || page == Page.Squad || page == Page.Collection || page == Page.Settings);
             root.EnableInClassList("campaign-mode", campaignScreen);
+            // Campaign overview has its own restrained hierarchy; mission briefing
+            // and squad pages keep their existing presentation.
+            root.EnableInClassList("campaign-overview-mode",
+                menuView.Phase == MissionFlowPhase.Selection && page == Page.Battles);
             root.EnableInClassList("results-mode", resultsScreen);
             root.EnableInClassList("unit-mode", menuView.Phase == MissionFlowPhase.Selection && (page == Page.Squad || page == Page.Collection));
             root.EnableInClassList("briefing-mode", campaignScreen && page == Page.Briefing);
@@ -281,34 +285,82 @@ namespace Ninefold.Presentation
 
         private void BuildSelection(VisualElement parent)
         {
-            Text(parent, "CHOOSE YOUR CAMPAIGN", "eyebrow");
-            Text(parent, "Campaigns", "display-title");
-            Text(parent, "Unlock three standard units from a faction to enter its campaign.", "detail");
+            // Present a clear next step without turning a fixture campaign list
+            // into a collection of competing, oversized calls to action.
+            Text(parent, "CHOOSE YOUR PATH", "eyebrow").AddToClassList("campaign-overview-overline");
+            Text(parent, "Campaigns", "display-title").AddToClassList("campaign-overview-title");
+            Text(parent, "Each campaign requires three standard units from its faction.", "detail")
+                .AddToClassList("campaign-overview-intro");
+
+            string recommendedId = menuView.ClaimableCampaignId
+                ?? menuView.NextCampaignMission?.CampaignId
+                ?? menuView.Campaigns.FirstOrDefault(c => c.CanEnter)?.CampaignId;
+
             foreach (var c in menuView.Campaigns)
             {
                 string id = c.CampaignId;
                 var missions = catalog.Campaigns.Single(x => x.Id == id).Missions
                     .Select(node => menuView.Missions.Single(m => m.Definition.Id == node.MissionId)).ToArray();
                 var next = missions.FirstOrDefault(m => m.Available && !m.IsReplay);
-                var card = Card(parent, "campaign-panel"); card.EnableInClassList("locked-card", !c.CanEnter);
-                Text(card, !c.CanEnter ? "FACTION LOCKED" : c.IsComplete ? "CAMPAIGN COMPLETED" : "AVAILABLE", "campaign-status");
-                Text(card, CampaignName(id), "campaign-name");
-                Text(card, c.CompletedMissions + " / " + c.TotalMissions + " missions completed", "detail");
+                bool featured = c.CanEnter && id == recommendedId;
+                int ownedStandards = missions.Length > 0 ? Math.Min(3, missions[0].OwnedFactionStandards) : 0;
+
+                var card = Card(parent, "campaign-panel");
+                card.AddToClassList("campaign-choice");
+                card.EnableInClassList("locked-card", !c.CanEnter);
+                card.EnableInClassList("campaign-choice-featured", featured);
+                card.EnableInClassList("campaign-choice-locked", !c.CanEnter);
+
+                string status = !c.CanEnter ? "LOCKED"
+                    : c.IsComplete ? c.RewardsClaimed ? "COMPLETED" : "REWARDS READY"
+                    : c.CompletedMissions > 0 ? "IN PROGRESS" : "READY TO BEGIN";
+                Text(card, status, "campaign-status").AddToClassList("campaign-choice-status");
+                Text(card, CampaignName(id), "campaign-name").AddToClassList("campaign-choice-name");
+                Text(card, c.CompletedMissions + " of " + c.TotalMissions + " missions completed", "detail")
+                    .AddToClassList("campaign-choice-progress");
                 Meter(card, c.CompletedMissions, c.TotalMissions);
-                Text(card, Math.Min(3, missions[0].OwnedFactionStandards) + " / 3 standard units for entry", "hint");
-                if (!c.CanEnter) Text(card, "Collect this faction’s unit fragments to unlock more standard units. Apex units do not count toward entry.", "lock-reason");
-                else if (c.IsComplete && !c.RewardsClaimed)
-                    Primary(card, "Collect completion rewards  ›", () => ClaimCampaign(id));
+
+                if (!c.CanEnter)
+                {
+                    // A locked campaign still permits a read-only mission preview;
+                    // ownership and Apex restrictions remain enforced by the core.
+                    Text(card, ownedStandards + " / 3 standard units · Unlock more in Units.", "lock-reason")
+                        .AddToClassList("campaign-choice-lock");
+                    var preview = Button(card, "Preview missions  ›", () => { selectedCampaign = id; Navigate(Page.Missions); });
+                    preview.AddToClassList("campaign-choice-secondary");
+                    continue;
+                }
+
+                if (c.IsComplete && !c.RewardsClaimed)
+                {
+                    var claim = Button(card, "Collect rewards  ›", () => ClaimCampaign(id));
+                    claim.AddToClassList("campaign-choice-action");
+                    if (featured) claim.AddToClassList("primary");
+                }
                 else if (next != null)
                 {
-                    Text(card, "NEXT · " + MissionName(next.Definition.Id), "next-mission-label");
+                    Text(card, "NEXT · " + MissionName(next.Definition.Id), "next-mission-label")
+                        .AddToClassList("campaign-choice-next");
                     string nextId = next.Definition.Id;
-                    Primary(card, "Continue campaign  ›", () => SelectMission(nextId));
+                    var proceed = Button(card, "Continue campaign  ›", () => SelectMission(nextId));
+                    proceed.AddToClassList("campaign-choice-action");
+                    if (featured) proceed.AddToClassList("primary");
                 }
-                else Text(card, "Completed missions remain available to replay.", "hint");
-                Button(card, c.CanEnter ? "View all missions  ›" : "Preview locked missions  ›", () => { selectedCampaign = id; Navigate(Page.Missions); });
+                else if (c.IsComplete)
+                {
+                    Text(card, "All missions cleared · Replays available", "hint")
+                        .AddToClassList("campaign-choice-next");
+                }
+
+                // This remains available even when a completion reward is waiting,
+                // but it is visually secondary to the current recommended action.
+                var viewAll = Button(card,
+                    c.IsComplete && c.RewardsClaimed ? "Replay missions  ›" : "View all missions  ›",
+                    () => { selectedCampaign = id; Navigate(Page.Missions); });
+                viewAll.AddToClassList("campaign-choice-secondary");
             }
-            Text(parent, "PLAYTEST · Campaign lengths and faction labels are abstract fixtures.", "fixture-note");
+            Text(parent, "PLAYTEST · Campaign names and mission counts are temporary.", "fixture-note")
+                .AddToClassList("campaign-overview-footnote");
         }
 
         private void BuildMissionList(VisualElement parent)
