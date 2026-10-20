@@ -575,6 +575,8 @@ namespace Ninefold.Presentation
 
             // Present what the player is about to do before any secondary detail.
             PreparationHeader(parent, false);
+            if (definition.Encounter == EncounterKind.WorldCollision)
+                Text(parent, "WORLD COLLISION", "eyebrow").AddToClassList("vmp-world-collision");
             var mission = menuView.Missions.Single(m => m.Definition.Id == definition.Id);
             if (mission.IsReplay)
                 Text(parent, "REPLAY · COMPLETED MISSION", "eyebrow")
