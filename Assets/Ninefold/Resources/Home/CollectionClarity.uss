@@ -1,0 +1,396 @@
+/*
+ * Unit Collection Clarity 01 — Ninefold's Living Atlas UI treatment.
+ * All selectors are anchored on the Collection-only root mode.
+ * Squad, battle, campaign, home, and core mechanics remain unchanged.
+ */
+.root.collection-clarity-mode #safe-area {
+    padding-left: 14px;
+    padding-right: 14px;
+    padding-bottom: 6px;
+}
+.root.collection-clarity-mode .heading {
+    background-color: rgba(17, 22, 17, 0.97);
+    border-bottom-color: rgba(212, 180, 123, 0.27);
+    padding-top: 6px;
+    padding-bottom: 4px;
+}
+.root.collection-clarity-mode .heading .brand {
+    font-size: 23px;
+    letter-spacing: 4px;
+    color: rgb(246, 239, 221);
+}
+.root.collection-clarity-mode .heading .notice {
+    min-height: 0;
+    margin-top: 2px;
+    font-size: 12px;
+    color: rgb(189, 185, 171);
+}
+.root.collection-clarity-mode .page-scroll {
+    padding: 8px 2px 0 2px;
+    background-color: rgba(17, 22, 17, 0.91);
+}
+.root.collection-clarity-mode .page-scroll > .unity-scroll-view__content-viewport > .unity-scroll-view__content-container {
+    padding-right: 4px;
+    padding-bottom: 16px;
+}
+.root.collection-clarity-mode .collection-overline {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: rgb(212, 180, 123);
+    margin-top: 2px;
+    margin-bottom: 4px;
+}
+.root.collection-clarity-mode .collection-page-title {
+    font-size: 34px;
+    color: rgb(246, 239, 221);
+    margin: 2px 0 5px 0;
+}
+.root.collection-clarity-mode .collection-overview-summary {
+    font-size: 14px;
+    color: rgb(204, 201, 185);
+    margin: 0 0 11px 0;
+}
+.root.collection-clarity-mode .collection-footnote {
+    font-size: 11px;
+    color: rgb(167, 167, 149);
+    margin: 10px 0 6px 0;
+}
+.root.collection-clarity-mode .collection-empty-state {
+    font-size: 14px;
+    margin: 20px 0;
+    color: rgb(201, 198, 183);
+}
+/* Light segmented filtering. Do not show a separate navigation layer. */
+.root.collection-clarity-mode .collection-filters {
+    margin-bottom: 12px;
+    flex-wrap: nowrap;
+}
+.root.collection-clarity-mode #safe-area Button.game-button.collection-filter {
+    flex-grow: 1;
+    flex-basis: 0;
+    min-width: 0;
+    min-height: 46px;
+    margin: 0 3px;
+    padding: 8px 5px;
+    border-width: 1px;
+    border-radius: 5px;
+    border-color: rgb(93, 105, 90);
+    background-color: rgb(29, 39, 31);
+    color: rgb(204, 203, 186);
+    font-size: 14px;
+    -unity-font-style: normal;
+}
+.root.collection-clarity-mode #safe-area Button.game-button.collection-filter.selected {
+    background-color: rgba(212, 180, 123, 0.17);
+    border-color: rgb(212, 180, 123);
+    color: rgb(246, 239, 221);
+}
+.root.collection-clarity-mode #safe-area Button.game-button.collection-filter:hover {
+    border-color: rgb(224, 204, 166);
+}
+.root.collection-clarity-mode #safe-area Button.game-button.collection-filter:focus {
+    border-width: 2px;
+    border-color: rgb(246, 239, 221);
+}
+/* One full-width row per unit. Avoid the old two-column giant tile grid. */
+.root.collection-clarity-mode .collection-faction-title {
+    font-size: 20px;
+    color: rgb(246, 239, 221);
+    margin: 12px 0 8px 0;
+}
+.root.collection-clarity-mode #safe-area Button.game-button.collection-roster-entry {
+    min-height: 90px;
+    padding: 10px 12px;
+    margin: 0 0 8px 0;
+    border-width: 1px;
+    border-color: rgba(125, 134, 113, 0.53);
+    border-radius: 7px;
+    background-color: rgba(28, 36, 30, 0.96);
+    -unity-text-align: middle-left;
+}
+.root.collection-clarity-mode #safe-area Button.game-button.collection-roster-entry:hover {
+    background-color: rgb(41, 53, 43);
+    border-color: rgb(212, 180, 123);
+}
+.root.collection-clarity-mode #safe-area Button.game-button.collection-roster-entry:active {
+    background-color: rgb(25, 34, 27);
+}
+.root.collection-clarity-mode #safe-area Button.game-button.collection-roster-entry:focus {
+    border-width: 2px;
+    border-color: rgb(246, 239, 221);
+}
+.root.collection-clarity-mode .collection-roster-row {
+    align-items: center;
+    flex-wrap: nowrap;
+}
+.root.collection-clarity-mode .collection-roster-copy {
+    min-width: 0;
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+.root.collection-clarity-mode .collection-roster-row .unit-badge {
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+    border-width: 2px;
+    border-color: rgb(177, 166, 199);
+    background-color: rgb(41, 39, 50);
+    margin: 0 11px 0 0;
+}
+.root.collection-clarity-mode .collection-roster-row .unit-badge.faction-b {
+    border-color: rgb(117, 166, 166);
+    background-color: rgb(30, 49, 49);
+}
+.root.collection-clarity-mode .collection-roster-row .unit-badge.apex-badge {
+    border-color: rgb(212, 180, 123);
+}
+.root.collection-clarity-mode .collection-roster-row .badge-id {
+    font-size: 18px;
+    color: rgb(246, 239, 221);
+}
+.root.collection-clarity-mode .collection-roster-title {
+    font-size: 20px;
+    color: rgb(246, 239, 221);
+    margin: 0 0 2px 0;
+}
+.root.collection-clarity-mode .collection-roster-state {
+    font-size: 12px;
+    color: rgb(213, 207, 190);
+    margin: 1px 0;
+}
+.root.collection-clarity-mode .collection-roster-fragments {
+    font-size: 12px;
+    color: rgb(173, 174, 155);
+    margin: 2px 0 0 0;
+}
+.root.collection-clarity-mode .collection-roster-arrow {
+    font-size: 26px;
+    color: rgb(212, 180, 123);
+    margin: 0 0 0 8px;
+    flex-shrink: 0;
+}
+/* Detail/confirmation are separate states; inspection reveals data on demand. */
+.root.collection-clarity-mode #safe-area Button.game-button.collection-back {
+    min-height: 44px;
+    padding: 6px 4px;
+    margin: 0 0 7px 0;
+    border-width: 0;
+    border-radius: 0;
+    background-color: transparent;
+    color: rgb(222, 200, 163);
+    font-size: 14px;
+    -unity-font-style: normal;
+    -unity-text-align: middle-left;
+}
+.root.collection-clarity-mode #safe-area Button.game-button.collection-back:hover {
+    background-color: rgba(212, 180, 123, 0.10);
+}
+.root.collection-clarity-mode #safe-area Button.game-button.collection-back:focus {
+    border-width: 1px;
+    border-color: rgb(246, 239, 221);
+}
+.root.collection-clarity-mode .collection-detail-card,
+.root.collection-clarity-mode .collection-confirmation {
+    padding: 14px;
+    margin: 0 0 10px 0;
+    border-width: 1px;
+    border-color: rgba(127, 137, 113, 0.58);
+    border-radius: 7px;
+    background-color: rgba(28, 36, 30, 0.97);
+}
+.root.collection-clarity-mode .collection-detail-identity {
+    align-items: center;
+    margin-bottom: 12px;
+}
+.root.collection-clarity-mode .collection-detail-identity .unit-badge {
+    width: 66px;
+    height: 66px;
+    flex-shrink: 0;
+    border-width: 2px;
+    margin: 0 12px 0 0;
+}
+.root.collection-clarity-mode .collection-detail-copy {
+    min-width: 0;
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+.root.collection-clarity-mode .collection-detail-title {
+    font-size: 30px;
+    color: rgb(246, 239, 221);
+    margin: 0 0 3px 0;
+}
+.root.collection-clarity-mode .collection-detail-status {
+    font-size: 13px;
+    color: rgb(216, 207, 188);
+    margin: 0;
+}
+.root.collection-clarity-mode .collection-fragments {
+    font-size: 14px;
+    color: rgb(220, 213, 193);
+    margin: 2px 0 5px 0;
+}
+.root.collection-clarity-mode .collection-detail-card .progress-track {
+    height: 5px;
+    margin: 3px 0 6px 0;
+    background-color: rgb(11, 18, 13);
+}
+.root.collection-clarity-mode .collection-detail-card .progress-fill {
+    height: 5px;
+    background-color: rgb(212, 180, 123);
+}
+.root.collection-clarity-mode .collection-detail-reason {
+    font-size: 13px;
+    color: rgb(198, 195, 177);
+    margin: 4px 0 9px 0;
+    padding: 0;
+    border-width: 0;
+    background-color: transparent;
+}
+.root.collection-clarity-mode .collection-glance {
+    font-size: 14px;
+    color: rgb(224, 219, 203);
+    margin: 13px 0 4px 0;
+}
+.root.collection-clarity-mode #safe-area Button.game-button.collection-primary {
+    min-height: 54px;
+    margin: 5px 0;
+    padding: 9px 12px;
+    border-width: 1px;
+    border-color: rgb(230, 210, 165);
+    border-radius: 5px;
+    background-color: rgb(212, 180, 123);
+    color: rgb(17, 22, 17);
+    font-size: 16px;
+    -unity-font-style: bold;
+}
+.root.collection-clarity-mode #safe-area Button.game-button.collection-primary:hover {
+    background-color: rgb(235, 210, 165);
+}
+.root.collection-clarity-mode #safe-area Button.game-button.collection-primary:active {
+    background-color: rgb(182, 149, 101);
+}
+.root.collection-clarity-mode #safe-area Button.game-button.collection-primary:focus {
+    border-width: 2px;
+    border-color: rgb(246, 239, 221);
+}
+.root.collection-clarity-mode #safe-area Button.game-button.collection-primary:disabled {
+    background-color: rgb(38, 45, 36);
+    border-color: rgb(78, 86, 75);
+    color: rgb(159, 157, 142);
+}
+.root.collection-clarity-mode #safe-area Button.game-button.collection-secondary {
+    min-height: 46px;
+    padding: 8px 10px;
+    margin: 3px 0;
+    border-width: 1px;
+    border-color: rgba(125, 134, 113, 0.60);
+    border-radius: 5px;
+    background-color: rgba(35, 46, 37, 0.78);
+    color: rgb(233, 227, 211);
+    font-size: 14px;
+    -unity-font-style: normal;
+}
+.root.collection-clarity-mode #safe-area Button.game-button.collection-secondary:hover {
+    border-color: rgb(212, 180, 123);
+    background-color: rgb(47, 60, 48);
+}
+.root.collection-clarity-mode #safe-area Button.game-button.collection-secondary:focus {
+    border-width: 2px;
+    border-color: rgb(246, 239, 221);
+}
+.root.collection-clarity-mode .collection-expanded {
+    margin-top: 12px;
+    border-top-width: 1px;
+    border-top-color: rgba(212, 180, 123, 0.35);
+    padding-top: 10px;
+}
+.root.collection-clarity-mode .collection-expanded .stat,
+.root.collection-clarity-mode .collection-confirmation .stat {
+    flex-basis: 44%;
+    flex-grow: 1;
+    min-width: 0;
+    margin: 3px;
+    padding: 9px;
+    border-left-width: 2px;
+    border-left-color: rgba(212, 180, 123, 0.60);
+    background-color: rgb(19, 26, 21);
+}
+.root.collection-clarity-mode .collection-expanded .stat .section,
+.root.collection-clarity-mode .collection-confirmation .stat .section {
+    font-size: 19px;
+    color: rgb(246, 239, 221);
+}
+.root.collection-clarity-mode .collection-expanded .stat .hint,
+.root.collection-clarity-mode .collection-confirmation .stat .hint {
+    font-size: 11px;
+    color: rgb(184, 184, 166);
+}
+.root.collection-clarity-mode .collection-expanded .ability-card {
+    padding: 10px;
+    margin: 6px 0;
+    border-left-width: 3px;
+    border-left-color: rgb(141, 138, 113);
+    background-color: rgb(19, 27, 22);
+}
+.root.collection-clarity-mode .collection-expanded .ability-card .section {
+    font-size: 18px;
+    color: rgb(246, 239, 221);
+}
+.root.collection-clarity-mode .collection-expanded .ability-card .detail {
+    font-size: 14px;
+    color: rgb(212, 208, 193);
+}
+.root.collection-clarity-mode .collection-expanded .ability-timing {
+    font-size: 13px;
+    color: rgb(211, 190, 152);
+    margin-top: 6px;
+}
+.root.collection-clarity-mode .collection-confirmation .collection-confirm-cost {
+    font-size: 16px;
+    color: rgb(233, 206, 150);
+    margin-top: 12px;
+}
+.root.collection-clarity-mode .collection-confirmation .collection-confirm-note {
+    font-size: 12px;
+    color: rgb(183, 181, 165);
+    margin: 8px 0;
+}
+/* Shared bottom navigation now matches the recently simplified Home/Campaigns. */
+.root.collection-clarity-mode #safe-area .navigation {
+    padding: 3px 0 0 0;
+    background-color: rgba(17, 22, 17, 0.98);
+    border-top-color: rgba(212, 180, 123, 0.3);
+}
+.root.collection-clarity-mode #safe-area Button.game-button.nav-button {
+    min-height: 62px;
+    padding: 5px 2px;
+    margin: 1px;
+    border-width: 0;
+    border-bottom-width: 2px;
+    border-bottom-color: transparent;
+    border-radius: 0;
+    background-color: transparent;
+}
+.root.collection-clarity-mode #safe-area Button.game-button.nav-button.selected {
+    border-bottom-color: rgb(212, 180, 123);
+    background-color: rgba(212, 180, 123, 0.08);
+}
+.root.collection-clarity-mode #safe-area Button.game-button.nav-button:hover {
+    background-color: rgba(212, 180, 123, 0.11);
+}
+.root.collection-clarity-mode #safe-area .nav-label {
+    font-size: 14px;
+    color: rgb(222, 215, 201);
+}
+.root.collection-clarity-mode #safe-area .nav-button .home-icon {
+    width: 23px;
+    height: 23px;
+    margin-bottom: 3px;
+}
+.root.compact-home.collection-clarity-mode .collection-page-title { font-size: 30px; }
+.root.compact-home.collection-clarity-mode .collection-detail-title { font-size: 26px; }
+.root.compact-home.collection-clarity-mode #safe-area Button.game-button.nav-button { min-height: 56px; }
+.root.short-home.collection-clarity-mode .heading { display: none; }
+.root.short-home.collection-clarity-mode #safe-area Button.game-button.nav-button { min-height: 44px; }
+.root.short-home.collection-clarity-mode #safe-area .nav-label { font-size: 12px; }
+.root.short-home.collection-clarity-mode #safe-area .nav-button .home-icon { width: 18px; height: 18px; }
