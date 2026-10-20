@@ -80,6 +80,11 @@ namespace Ninefold.Presentation
             sharedControlsLoaded = sharedControls != null;
             if (sharedControlsLoaded) root.styleSheets.Add(sharedControls);
             else Debug.LogError("Shared playtest controls are missing. Pull the complete project and check import errors.", this);
+            // Home-only accents come after shared controls so the approved sanctuary
+            // can adopt the interface foundation without changing any other screen.
+            var homePolish = Resources.Load<StyleSheet>("Home/HomePolish");
+            if (homePolish != null) root.styleSheets.Add(homePolish);
+            else Debug.LogWarning("Home polish styles are missing. Check project import.", this);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
@@ -201,24 +206,24 @@ namespace Ninefold.Presentation
             scroll.contentViewport.RegisterCallback<GeometryChangedEvent>(evt =>
                 scroll.contentContainer.style.minHeight = Mathf.Max(0, evt.newRect.height));
             var vista = new VisualElement { pickingMode = PickingMode.Ignore }; vista.AddToClassList("home-vista"); scroll.Add(vista);
-            var panel = new VisualElement(); panel.AddToClassList("home-actions"); scroll.Add(panel);
+            var panel = new VisualElement(); panel.AddToClassList("home-actions"); panel.AddToClassList("nf-panel--quiet"); scroll.Add(panel);
             bool active = menuView.Phase == MissionFlowPhase.Battle;
             var next = menuView.NextCampaignMission;
             string claim = menuView.ClaimableCampaignId;
-            Text(panel, "WORLD 5 · THE CONTINUANCE", "home-kicker");
+            Text(panel, "WORLD 5 · THE CONTINUANCE", "home-kicker").AddToClassList("nf-overline");
             // Keep test content honest: the artwork is approved, the fixture campaign is not the story campaign.
-            Text(panel, active ? "Return to the field" : claim != null ? "Campaign complete" : next != null ? CampaignName(next.CampaignId) : "Explore the frontiers", "home-title");
-            Text(panel, active ? MissionName(menuView.Resume.MissionId) + " · Battle saved" : claim != null ? CampaignName(claim) + " · One-time rewards ready" : next != null ? MissionName(next.Definition.Id) + " · Your next mission" : "Replay missions or discover campaign requirements.", "home-summary");
+            Text(panel, active ? "Return to the field" : claim != null ? "Campaign complete" : next != null ? CampaignName(next.CampaignId) : "Explore the frontiers", "home-title").AddToClassList("nf-display");
+            Text(panel, active ? MissionName(menuView.Resume.MissionId) + " · Battle saved" : claim != null ? CampaignName(claim) + " · One-time rewards ready" : next != null ? MissionName(next.Definition.Id) + " · Your next mission" : "Replay missions or discover campaign requirements.", "home-summary").AddToClassList("nf-secondary");
             Button main;
             if (active) main = Button(panel, "RESUME BATTLE  ›", () => { inBattle = true; message = "Battle resumed."; });
             else if (claim != null) main = Button(panel, "COLLECT REWARDS  ›", () => ClaimCampaign(claim));
             else if (next != null) main = Button(panel, "CONTINUE CAMPAIGN  ›", () => SelectMission(next.Definition.Id));
             else main = Button(panel, "BROWSE CAMPAIGNS  ›", () => Navigate(Page.Battles));
-            main.AddToClassList("home-primary");
+            main.AddToClassList("home-primary"); main.AddToClassList("nf-control"); main.AddToClassList("nf-control--primary");
             var shortcuts = Row(panel); shortcuts.AddToClassList("home-shortcuts");
             HomeShortcut(shortcuts, "Quick Battle", "Mixed-faction missions", "routes", () => SelectMission("fixture-mixed"), !active);
             HomeShortcut(shortcuts, "Your Units", menuView.Units.Count(u => u.Owned) + " unlocked · Collection", "units", () => Navigate(Page.Collection), !active);
-            if (active) Text(panel, "Finish or resume your current battle. Campaigns and unit upgrades are locked until it ends.", "home-status");
+            if (active) Text(panel, "Other activities are unavailable until this saved battle ends.", "home-status");
             else if (message != "Your progress saves automatically.") Text(panel, message, "home-status");
             Text(panel, PlaytestRevision.Id + " · Abstract missions and units", "home-fixture");
             BuildNavigation(content);
@@ -226,7 +231,7 @@ namespace Ninefold.Presentation
 
         private void HomeShortcut(VisualElement parent, string title, string subtitle, string icon, Action action, bool enabled)
         {
-            var button = Button(parent, "", action, enabled); button.AddToClassList("home-shortcut");
+            var button = Button(parent, "", action, enabled); button.AddToClassList("home-shortcut"); button.AddToClassList("nf-control");
             HomeIcon(button, icon); Text(button, title, "home-shortcut-title"); Text(button, subtitle, "home-shortcut-detail");
             button.tooltip = title;
         }
@@ -789,6 +794,8 @@ namespace Ninefold.Presentation
         private void BuildNavigation(VisualElement parent)
         {
             var nav = Row(parent); nav.AddToClassList("navigation");
+            bool homeNavigation = root.ClassListContains("home-mode");
+            if (homeNavigation) nav.AddToClassList("nf-nav");
             bool activeBattle = menuView.Phase == MissionFlowPhase.Battle;
             foreach (var target in new[] { Page.Home, Page.Battles, Page.Collection, Page.Settings })
             {
@@ -796,6 +803,7 @@ namespace Ninefold.Presentation
                 var label = target == Page.Battles ? "Campaigns" : target == Page.Collection ? "Units" : target.ToString();
                 var button = Button(nav, "", () => Navigate(destinationPage), !activeBattle || target == Page.Home || target == Page.Settings);
                 button.AddToClassList("nav-button");
+                if (homeNavigation) button.AddToClassList("nf-nav-item");
                 HomeIcon(button, target == Page.Home ? "home" : target == Page.Settings ? "settings" : target == Page.Collection ? "units" : "routes");
                 Text(button, label, "nav-label"); button.tooltip = label;
                 button.EnableInClassList("selected", page == target || target == Page.Battles && page == Page.Missions);
