@@ -1,0 +1,180 @@
+/*
+ * Battle Objective Guidance 01 — PT-059
+ * A compact readable mission purpose + noninteractive tactical inset.
+ * No controls, input states, map-size badges, canon location art, or
+ * planned routes are created by this stylesheet.
+ */
+.root.visual-hud-mode .btg-objective-header {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    align-items: center;
+    justify-content: center;
+    margin: 0 6px;
+    padding: 2px 3px;
+}
+.root.visual-hud-mode .btg-goal-line {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+}
+.root.visual-hud-mode .btg-goal {
+    color: rgb(241, 217, 166);
+    font-size: 14px;
+    -unity-font-style: bold;
+    white-space: normal;
+    -unity-text-align: middle-center;
+    flex-grow: 0;
+    flex-shrink: 1;
+}
+.root.visual-hud-mode .btg-progress {
+    flex-shrink: 0;
+    color: rgb(247, 238, 218);
+    background-color: rgb(56, 66, 53);
+    padding: 4px 5px;
+    margin-left: 5px;
+    font-size: 12px;
+    -unity-font-style: bold;
+    border-radius: 4px;
+}
+.root.visual-hud-mode .btg-optional {
+    color: rgb(191, 194, 178);
+    font-size: 10px;
+    letter-spacing: 1px;
+    margin-top: 3px;
+}
+
+/* A live, schematic objective inset. All children use PickingMode.Ignore
+ * in C#; battle pointer handlers ALSO exclude the inset rectangle.
+ * It must never become a misleading world movement target. */
+.root.visual-hud-mode #battle-surface .btg-radar {
+    position: absolute;
+    right: 8px;
+    top: 11px;
+    width: 118px;
+    height: 142px;
+    padding: 7px;
+    border-width: 1px;
+    border-color: rgba(221, 199, 158, 0.77);
+    border-radius: 6px;
+    background-color: rgba(16, 24, 20, 0.94);
+}
+.root.visual-hud-mode #battle-surface .btg-radar-caption {
+    font-size: 10px;
+    -unity-font-style: bold;
+    letter-spacing: 2px;
+    color: rgb(245, 230, 193);
+    margin-bottom: 5px;
+    -unity-text-align: middle-center;
+}
+.root.visual-hud-mode #battle-surface .btg-radar-map {
+    position: relative;
+    width: 100%;
+    height: 91px;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-width: 1px;
+    border-color: rgba(142, 154, 127, 0.68);
+    background-color: rgb(34, 48, 37);
+}
+.root.visual-hud-mode #battle-surface .btg-radar-foot {
+    -unity-text-align: middle-center;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: rgb(223, 203, 161);
+    margin-top: 5px;
+}
+.root.visual-hud-mode #battle-surface .btg-cover {
+    position: absolute;
+    background-color: rgb(103, 118, 129);
+    border-width: 1px;
+    border-color: rgb(153, 168, 172);
+}
+.root.visual-hud-mode #battle-surface .btg-slow {
+    position: absolute;
+    background-color: rgb(113, 82, 50);
+    border-color: rgb(173, 139, 82);
+}
+.root.visual-hud-mode #battle-surface .btg-point {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    margin-left: -4px;
+    margin-top: -4px;
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: rgb(233, 241, 228);
+    background-color: rgb(181, 196, 176);
+}
+.root.visual-hud-mode #battle-surface .btg-ally {
+    background-color: rgb(85, 226, 212);
+    border-color: rgb(10, 43, 38);
+    border-radius: 5px;
+}
+.root.visual-hud-mode #battle-surface .btg-enemy {
+    background-color: rgb(240, 114, 90);
+    border-color: rgb(66, 22, 21);
+    border-radius: 1px;
+}
+.root.visual-hud-mode #battle-surface .btg-neutral {
+    background-color: rgb(222, 220, 206);
+    border-color: rgb(56, 62, 53);
+}
+.root.visual-hud-mode #battle-surface .btg-waypoint {
+    width: 18px;
+    height: 18px;
+    margin-left: -9px;
+    margin-top: -9px;
+    border-radius: 9px;
+    border-width: 3px;
+    border-color: rgb(251, 208, 109);
+    background-color: rgba(251, 208, 109, 0.13);
+}
+.root.visual-hud-mode #battle-surface .btg-active {
+    width: 13px;
+    height: 13px;
+    margin-left: -6px;
+    margin-top: -6px;
+    border-radius: 7px;
+    border-width: 2px;
+    border-color: rgb(252, 246, 233);
+    background-color: rgba(17, 25, 21, 0.01);
+}
+
+/* In compact portrait the radar stays secondary to actual units and
+ * on-field objective markers. Don't shrink functional battle buttons. */
+.root.compact-home.visual-hud-mode #battle-surface .btg-radar {
+    width: 99px;
+    height: 119px;
+    right: 6px;
+    top: 6px;
+    padding: 5px;
+}
+.root.compact-home.visual-hud-mode #battle-surface .btg-radar-map {
+    height: 73px;
+}
+.root.compact-home.visual-hud-mode .btg-goal {
+    font-size: 12px;
+}
+.root.compact-home.visual-hud-mode .btg-progress {
+    font-size: 11px;
+    padding: 3px 4px;
+}
+.root.short-home.visual-hud-mode #battle-surface .btg-radar {
+    width: 83px;
+    height: 101px;
+    padding: 4px;
+}
+.root.short-home.visual-hud-mode #battle-surface .btg-radar-map {
+    height: 60px;
+}
+.root.short-home.visual-hud-mode #battle-surface .btg-radar-caption,
+.root.short-home.visual-hud-mode #battle-surface .btg-radar-foot {
+    font-size: 9px;
+    margin: 1px;
+}
+.root.short-home.visual-hud-mode .btg-goal {
+    font-size: 11px;
+}
