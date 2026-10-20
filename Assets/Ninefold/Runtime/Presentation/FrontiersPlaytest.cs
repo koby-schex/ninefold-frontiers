@@ -102,6 +102,11 @@ namespace Ninefold.Presentation
             var collectionClarity = Resources.Load<StyleSheet>("Home/CollectionClarity");
             if (collectionClarity != null) root.styleSheets.Add(collectionClarity);
             else Debug.LogWarning("Collection clarity styles are missing. Check project import.", this);
+            // Consolidate bottom tabs and the remaining non-battle menu density.
+            // Loaded after all screen-specific sheets for explicit priority.
+            var mobileShell = Resources.Load<StyleSheet>("Home/MobileShell");
+            if (mobileShell != null) root.styleSheets.Add(mobileShell);
+            else Debug.LogWarning("Mobile shell styles are missing. Check project import.", this);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
@@ -176,6 +181,11 @@ namespace Ninefold.Presentation
             // Collection UI refinement is separate from Squad and the battle HUD.
             root.EnableInClassList("collection-clarity-mode",
                 menuView.Phase == MissionFlowPhase.Selection && page == Page.Collection);
+            // The remaining prototype-heavy menu screens use one consistent
+            // compact portrait shell; combat and polished screens are excluded.
+            root.EnableInClassList("support-menu-mode",
+                resultsScreen || page == Page.Settings ||
+                (menuView.Phase == MissionFlowPhase.Selection && page == Page.Squad));
             root.EnableInClassList("briefing-mode", campaignScreen && page == Page.Briefing);
             root.EnableInClassList("home-mode", home);
             heading.style.display = home || (menuView.Phase == MissionFlowPhase.Battle && inBattle) ? DisplayStyle.None : DisplayStyle.Flex;
@@ -676,7 +686,12 @@ namespace Ninefold.Presentation
 
         private void CollectionFilterButton(VisualElement parent, string title, CollectionFilter filter)
         {
-            var button = Button(parent, title, () => collectionFilter = filter);
+            var button = Button(parent, title, () => {
+                // Prevent retaining an out-of-range scroll position after
+                // filtering down to fewer units.
+                collectionFilter = filter;
+                menuScroll = null;
+            });
             button.AddToClassList("collection-filter");
             button.EnableInClassList("selected", collectionFilter == filter);
         }
@@ -1043,6 +1058,7 @@ namespace Ninefold.Presentation
         private void BuildNavigation(VisualElement parent)
         {
             var nav = Row(parent); nav.AddToClassList("navigation");
+            nav.AddToClassList("unified-navigation");
             bool homeNavigation = root.ClassListContains("home-mode");
             if (homeNavigation) nav.AddToClassList("nf-nav");
             bool activeBattle = menuView.Phase == MissionFlowPhase.Battle;
@@ -1052,10 +1068,13 @@ namespace Ninefold.Presentation
                 var label = target == Page.Battles ? "Campaigns" : target == Page.Collection ? "Units" : target.ToString();
                 var button = Button(nav, "", () => Navigate(destinationPage), !activeBattle || target == Page.Home || target == Page.Settings);
                 button.AddToClassList("nav-button");
+                button.AddToClassList("unified-nav-button");
                 if (homeNavigation) button.AddToClassList("nf-nav-item");
                 HomeIcon(button, target == Page.Home ? "home" : target == Page.Settings ? "settings" : target == Page.Collection ? "units" : "routes");
                 Text(button, label, "nav-label"); button.tooltip = label;
-                button.EnableInClassList("selected", page == target || target == Page.Battles && page == Page.Missions);
+                button.EnableInClassList("selected",
+                    page == target || (target == Page.Battles &&
+                    (page == Page.Missions || page == Page.Briefing || page == Page.Squad)));
             }
         }
         private void BuildSettings(VisualElement parent)
