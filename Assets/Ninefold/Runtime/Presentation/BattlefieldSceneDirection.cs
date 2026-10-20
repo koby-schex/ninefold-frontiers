@@ -32,7 +32,7 @@ namespace Ninefold.Presentation
             // Avarin/Continuance World Five-inspired material *studies* only;
             // neither represents a canon-approved named site. Different
             // encounters must not reuse a flat backdrop and identical shelves.
-            if (id == "fixture-opening")
+            if (key == "study-w5-survey" || key == "fixture-opening")
                 return new BattlefieldSceneDirection("W5 study · pale survey corridor",
                     C(.37f,.34f,.37f),C(.54f,.50f,.52f),C(.38f,.31f,.36f),
                     C(.68f,.62f,.63f),C(.31f,.27f,.38f),C(.24f,.22f,.31f),
