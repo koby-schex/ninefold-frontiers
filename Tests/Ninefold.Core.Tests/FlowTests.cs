@@ -112,6 +112,32 @@ internal static partial class Program
         f.Execute(b => { b.RemoveUnit("a"); b.RemoveUnit("c"); b.Mission.Evaluate(); });
         Equal(MissionOutcome.Defeat, f.ClaimRewards().Outcome); Equal(10L, f.Progress.Balance("test-resource")); f.ReturnToSelection();
     }
+    private static void FlowRetreat()
+    {
+        var fixture = new FlowFixture();
+        var flow = fixture.Create();
+        StartFlow(flow);
+        string abandonedAttempt = flow.ReadBattle().Mission.Definition.AttemptId;
+        flow.Execute(b => b.Mission.Forfeit());
+        Equal(MissionFlowPhase.Results, flow.Phase);
+        Equal("PlayerRetreated", flow.ReadBattle().Mission.Result.Reason);
+        Equal(MissionOutcome.Defeat, flow.ReadBattle().Mission.Result.Outcome);
+
+        // An unclaimed retreat survives restart and does not silently erase a save.
+        flow = fixture.Reopen();
+        Equal(MissionFlowPhase.Results, flow.Phase);
+        Equal(abandonedAttempt, flow.ReadBattle().Mission.Definition.AttemptId);
+        var receipt = flow.ClaimRewards();
+        Equal(MissionOutcome.Defeat, receipt.Outcome);
+        Equal(0L, flow.Progress.Balance("test-resource"));
+        Equal(0, flow.Progress.Missions.Count);
+        flow.ReturnToSelection();
+        flow = fixture.Reopen();
+        Equal(MissionFlowPhase.Selection, flow.Phase);
+        StartFlow(flow);
+        Equal(false, abandonedAttempt == flow.ReadBattle().Mission.Definition.AttemptId);
+    }
+
     private static void FlowPending()
     {
         var f = new FlowFixture().Create(); StartFlow(f); Throws<InvalidOperationException>(() => StartFlow(f));
