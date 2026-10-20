@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ninefold Frontiers — Mission UI approximation</title>
+<style>
+*{box-sizing:border-box}
+body{background:#111611;color:#f6efdd;font-family:Arial,sans-serif;margin:0;padding:20px}
+h1,h2{font-family:Georgia,serif;font-weight:normal}
+h1{font-size:34px}
+h2{font-size:25px}
+p{color:#d2ccbd}
+main{max-width:920px;margin:auto}
+.panels{display:flex;gap:24px;flex-wrap:wrap}
+.phone{width:390px;max-width:100%;min-height:620px;background:#182019;border:1px solid #66705e;border-radius:14px;padding:18px}
+.kicker{color:#d4b47b;font-size:12px;letter-spacing:2px}
+.card{padding:13px;border:1px solid #5c6859;border-radius:7px;background:#1c241e;margin:12px 0}
+.gold-border{border-left:3px solid #d4b47b}
+.status{color:#d4b47b;font-size:12px}
+.button{background:#d4b47b;color:#111611;text-align:center;padding:17px;border-radius:5px;font-weight:bold}
+.secondary{background:#344337;color:#f6efdd}
+.track{height:5px;background:#0c140e}
+.fill{width:35%;height:5px;background:#d4b47b}
+.map{height:130px;border:1px solid #6f7a6d;background:#243027;display:flex;align-items:center;justify-content:center;color:#c6c9b8}
+.foot{font-size:12px;color:#aba891}
+</style></head>
+<body>
+<main>
+<p class="foot">Static layout study, not a Unity screenshot or functioning game. Fixture mission labels are temporary.</p>
+<div class="panels">
+<section class="phone">
+<p class="kicker">CAMPAIGN PATH</p><h1>Test campaign A</h1>
+<p>1 of 3 complete</p><div class="track"><div class="fill"></div></div>
+<div class="card gold-border"><p class="status">02 · UP NEXT</p><h2>Stabilization</h2><p>Stabilize the marked objective.</p><div class="button">View briefing</div></div>
+<div class="card"><p class="status">01 · COMPLETED / REPLAY</p><h2>Earlier mission</h2><div class="button secondary">Review replay</div></div>
+<div class="card"><p class="status">03 · LOCKED</p><h2>Final encounter</h2><p>First complete: Stabilization</p></div>
+</section>
+<section class="phone">
+<p class="kicker">1 BRIEFING / 2 SQUAD NEXT</p><h1>Stabilization</h1>
+<div class="card gold-border"><p class="kicker">OBJECTIVE</p><p>Stabilize the marked objective. An open center with offset side cover.</p></div>
+<div class="card"><p class="kicker">BATTLEFIELD OVERVIEW</p><div class="map">Abstract map schematic</div><p class="foot">Deployment / cover / slow terrain / objective</p></div>
+<div class="card"><h2>Victory rewards</h2><p>Test supplies +10</p><p class="foot">Collected after victory</p></div>
+<p class="foot">Faction squad · Untimed turns</p><div class="button">Choose squad</div>
+</section>
+</div>
+</main>
+</body></html>
