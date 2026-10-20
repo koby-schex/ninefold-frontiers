@@ -108,6 +108,11 @@ namespace Ninefold.Presentation
             var mobileShell = Resources.Load<StyleSheet>("Home/MobileShell");
             if (mobileShell != null) root.styleSheets.Add(mobileShell);
             else Debug.LogWarning("Mobile shell styles are missing. Check project import.", this);
+            // Final presentation layer: native game-lobby actions and tactical
+            // console UI. No combat HUD selectors or new canon art.
+            var gameApp = Resources.Load<StyleSheet>("Home/GameApp");
+            if (gameApp != null) root.styleSheets.Add(gameApp);
+            else Debug.LogWarning("Game app styles are missing. Check project import.", this);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
