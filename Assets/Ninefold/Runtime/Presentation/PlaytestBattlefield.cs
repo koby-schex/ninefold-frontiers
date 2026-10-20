@@ -146,15 +146,27 @@ namespace Ninefold.Presentation
                 new Vector3((float)(bounds.Max.X-bounds.Min.X),2,(float)(bounds.Max.Z-bounds.Min.Z)));
             framing.center = new Vector3(framing.center.x,1,framing.center.z);
             range.positionCount = 0;
-            if (actor != null && interaction.SelectedAbility.HasValue)
+            if (actor != null && view.Phase == BattleSessionPhase.PlayerInput)
             {
-                var ability = actor.Abilities.FirstOrDefault(a => a.Slot == interaction.SelectedAbility.Value);
-                if (ability != null)
+                Vector3 origin;
+                float radius;
+                if (interaction.SelectedAbility.HasValue)
                 {
-                    var origin = Vector(actor.Position.Value) + Vector(actor.Body.AttackOffset);
-                    var points = ClippedRange(origin, (float)ability.Range, bounds);
-                    range.positionCount = points.Length; range.SetPositions(points);
+                    var ability = actor.Abilities.FirstOrDefault(a => a.Slot == interaction.SelectedAbility.Value);
+                    origin = Vector(actor.Position.Value) + Vector(actor.Body.AttackOffset);
+                    radius = ability == null ? 0f : (float)ability.Range;
                 }
+                else
+                {
+                    // Geometric radius of remaining movement, clipped to the
+                    // real arena. Walls and slow ground can further constrain a
+                    // path: the authoritative core still validates every tap.
+                    origin = Vector(actor.Position.Value) + Vector3.up * .04f;
+                    radius = (float)(view.Activation?.MovementRemaining ?? 0m);
+                }
+                var points = ClippedRange(origin,radius,bounds);
+                range.positionCount = points.Length;
+                if (points.Length > 0) range.SetPositions(points);
             }
             foreach (var pair in tokens)
             {
