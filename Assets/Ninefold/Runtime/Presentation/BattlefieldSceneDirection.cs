@@ -23,8 +23,12 @@ namespace Ninefold.Presentation
             HorizonDetail=horizonDetail; PlantDetail=plantDetail; SilhouetteHeight=silhouetteHeight;
         }
 
-        internal static BattlefieldSceneDirection ForMission(string id)
+        internal static BattlefieldSceneDirection ForMission(string id, string environmentKey)
         {
+            // Authored content may choose a scene mood without coupling the
+            // renderer to faction/gameplay IDs. The old fixture ID is a fallback
+            // only while recovering a previous layout revision.
+            string key = environmentKey ?? id;
             // Avarin/Continuance World Five-inspired material *studies* only;
             // neither represents a canon-approved named site. Different
             // encounters must not reuse a flat backdrop and identical shelves.
