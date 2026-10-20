@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Frontiers — Home Clarity 02 / UI sketch</title>
+<style>
+*{box-sizing:border-box}
+:root{--gold:#d4b47b;--ink:#111611;--ivory:#f6efdd;--violet:#b1a6c7}
+body{margin:0;background:#141c16;color:var(--ivory);font-family:Arial,Helvetica,sans-serif;padding:14px}
+p.hint{max-width:420px;margin:0 auto 12px;color:#cabfb1;font-size:12px;line-height:1.45}
+.phone{position:relative;isolation:isolate;margin:auto;width:min(390px,100%);height:min(844px,calc(100dvh - 92px));min-height:420px;border:1px solid #536151;border-radius:17px;overflow:hidden;display:flex;flex-direction:column;background:var(--ink) url("../../../Assets/Ninefold/Resources/Home/Sanctuary.jpg") no-repeat center/cover;box-shadow:0 20px 65px #000b}
+.header{text-align:center;padding:19px 5px 12px;background:#11161138}
+.logo{font:400 38px/1.04 Georgia,serif;letter-spacing:5px}
+.brand{font:400 13px/1.5 Georgia,serif;letter-spacing:4px;color:#e1dacf;margin-top:3px}
+.scroller{overflow-y:auto;flex:1;display:flex;flex-direction:column;min-height:0}
+.vista{flex:1;min-height:160px}
+.dock{padding:17px 18px 15px;background:#111611f0;border-top:1px solid #d4b47b8c;flex-shrink:0}
+.eyebrow{font-size:11px;font-weight:bold;letter-spacing:2px;color:var(--gold);margin-bottom:6px}
+h1{font:400 38px/1.08 Georgia,serif;margin:0}
+.summary{font-size:15px;color:#d6d0c1;margin:7px 0 12px}
+button{font-family:inherit;cursor:pointer}
+.main{width:100%;min-height:59px;background:var(--gold);color:var(--ink);border-radius:5px;border:1px solid #e7d1a5;border-bottom:2px solid #725a3a;font-size:17px;letter-spacing:1px;font-weight:bold;margin:4px 0 5px}
+.main:hover{background:#eedaae}
+.secondary{width:100%;min-height:50px;background:#222d24db;color:#e6e0d3;border-radius:5px;border:1px solid #aba89170;font-size:15px;margin:2px 0 0}
+.secondary:hover{border-color:var(--gold);background:#303c32}
+.status{font-size:13px;color:var(--gold);margin-top:7px}
+nav{display:flex;background:#111611fb;border-top:1px solid #d4b47b59;padding-top:3px;flex-shrink:0}
+nav button{flex:1;min-width:0;min-height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:transparent;border:0;border-bottom:2px solid transparent;color:#dcd4c6;font-size:14px}
+nav button.selected{border-bottom-color:var(--violet);background:#b1a6c71a;color:var(--ivory)}
+nav button:disabled{opacity:.55;cursor:default}
+nav img{width:23px;height:23px;object-fit:contain}
+@media(max-height:850px){.header{padding:10px 4px 8px}.logo{font-size:33px}.dock{padding:13px 15px}.vista{min-height:35px}h1{font-size:31px}nav button{min-height:58px}}
+@media(max-height:510px){.header{display:none}.vista{min-height:0}.dock{padding:10px 12px}h1{font-size:27px}.main,.secondary{min-height:44px;font-size:14px}nav button{min-height:44px}}
+</style></head>
+<body>
+<p class="hint"><strong>Visual approximation only.</strong> This local browser mockup uses the existing approved World Five sanctuary background. It is not a Unity screenshot or final-resolution artwork. Append <code>?state=resume</code>, <code>?state=claim</code>, or <code>?state=browse</code> for alternative actions.</p>
+<main class="phone">
+<header class="header"><div class="logo">NINEFOLD</div><div class="brand">FRONTIERS</div></header>
+<div class="scroller"><div class="vista" aria-hidden="true"></div>
+<section class="dock" aria-label="Continue playing">
+<div class="eyebrow" id="context">YOUR NEXT MISSION</div>
+<h1 id="headline">Your journey continues</h1>
+<p class="summary" id="detail">Test campaign A · Stabilization</p>
+<button class="main" id="primary">VIEW MISSION ›</button>
+<button class="secondary" id="quick">Quick Battle ›</button>
+<div class="status" id="status" hidden>Other activities unlock when this battle ends.</div>
+</section></div>
+<nav aria-label="Game screens">
+<button type="button" class="selected"><img src="../../../Assets/Ninefold/Resources/Home/home.png" alt="">Home</button>
+<button type="button" id="campaign"><img src="../../../Assets/Ninefold/Resources/Home/routes.png" alt="">Campaigns</button>
+<button type="button" id="units"><img src="../../../Assets/Ninefold/Resources/Home/units.png" alt="">Units</button>
+<button type="button"><img src="../../../Assets/Ninefold/Resources/Home/settings.png" alt="">Settings</button>
+</nav>
+</main>
+<script>
+const state=new URLSearchParams(location.search).get('state')||'next';
+const states={
+ next:['YOUR NEXT MISSION','Your journey continues','Test campaign A · Stabilization','VIEW MISSION ›',false],
+ resume:['BATTLE IN PROGRESS','Return to the field','Stabilization · Saved battle','RESUME BATTLE ›',true],
+ claim:['REWARD READY','Campaign complete','Test campaign A · Completion rewards','COLLECT REWARDS ›',false],
+ browse:['THE FRONTIERS','Choose your campaign','Explore available missions and continue your progress.','EXPLORE CAMPAIGNS ›',false]
+};
+const [context,headline,detail,primary,active]=states[state]||states.next;
+for(const [id,value] of Object.entries({context,headline,detail,primary}))document.getElementById(id).textContent=value;
+document.getElementById('quick').hidden=active;
+document.getElementById('status').hidden=!active;
+document.getElementById('campaign').disabled=active;
+document.getElementById('units').disabled=active;
+</script>
+</body></html>
