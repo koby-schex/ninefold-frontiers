@@ -1002,11 +1002,16 @@ namespace Ninefold.Presentation
             var top = Card(content, "battle-header");
             var line = Row(top); line.AddToClassList("battle-title-row");
             var actor = b.Units.FirstOrDefault(u => u.Id == b.Activation?.UnitId);
-            Button(line, "Home", () => { input.Cancel(); inBattle = false; battleDetails = false; Navigate(Page.Home); }, !battleView.IsAnimating);
+            var exit = Button(line, "‹", () => { input.Cancel(); inBattle = false; battleDetails = false; Navigate(Page.Home); }, !battleView.IsAnimating);
+            exit.AddToClassList("mobile-battle-back"); exit.tooltip = "Return Home · battle saved";
             // The primary objective always reflects the real objective kind;
             // bonus goals remain a small secondary progress counter.
             BattleObjectiveGuidance.Header(line, b.Objectives);
-            Button(line, battleDetails ? "Close" : "Info", () => { battleDetails = !battleDetails; });
+            long turnId = b.Activation?.ActivationId ?? 0;
+            var end = Button(line, "END", () => Handle(input.EndTurn(turnId)),
+                !battleView.IsAnimating && b.Phase == BattleSessionPhase.PlayerInput &&
+                battleView.Pending == null);
+            end.AddToClassList("mobile-battle-end"); end.tooltip = "End this unit's turn";
             var stage = new VisualElement(); stage.AddToClassList("battle-stage"); content.Add(stage);
             surface = new VisualElement { name = "battle-surface" }; surface.style.flexGrow = 1; surface.style.minHeight = 100;
             surface.style.overflow = Overflow.Hidden; stage.Add(surface);
@@ -1064,7 +1069,7 @@ namespace Ninefold.Presentation
                 }
                 foreach (var objective in input.ReadPlanning().Objectives)
                     Text(details, "Stabilize · " + ObjectiveReadiness(objective.Failure), "detail");
-                Text(details, "Tap ground to plan movement. Choose an attack, then a marked target. Tap the preview again or Confirm. Every health strip stays visible. Orders always use the current turn’s unit.", "detail");
+                Text(details, "Tap ground to move. Tap an enemy to select a normal attack, then tap again to confirm. Choose an ability to target it. Tap an objective marker when in reach. Only your current unit acts.", "detail");
                 Button(details, "Back to battle", () => battleDetails = false);
             }
         }
@@ -1073,48 +1078,55 @@ namespace Ninefold.Presentation
         {
             controls.Clear();
             var b = battleView.Battle;
-            bool ready = !battleView.IsAnimating && !suspended && !battleDetails;
-            var activeUnit = b.Units.FirstOrDefault(u => u.Id == b.Activation?.UnitId);
-            var actorStrip = Row(controls); actorStrip.AddToClassList("vif-actor-strip");
-            FrontiersVisualPrimitives.HudChip(actorStrip,
-                (activeUnit?.IsEnemyControlled == true ? "ENEMY " : "") + UnitName(b.Activation?.UnitId), "ACTIVE");
-            FrontiersVisualPrimitives.HudChip(actorStrip,
-                b.Activation?.MovementRemaining.ToString("0.#") ?? "0", "MOVE");
-            FrontiersVisualPrimitives.HudChip(actorStrip,
-                b.Activation?.PrimaryActionAvailable == true ? "READY" : "SPENT", "ACTION");
-            var row = Row(controls); row.AddToClassList("ability-row");
+            bool ready = !battleView.IsAnimating && !suspended && !battleDetails &&
+                b.Phase == BattleSessionPhase.PlayerInput;
+            var active = b.Units.FirstOrDefault(u => u.Id == b.Activation?.UnitId);
+            var strip = Row(controls); strip.AddToClassList("mobile-active-unit");
+            Text(strip, (active?.IsEnemyControlled == true ? "ENEMY · " : "") +
+                UnitName(b.Activation?.UnitId), "mobile-actor-name");
+            Text(strip, (b.Activation?.MovementRemaining.ToString("0.#") ?? "0") + " MOVE",
+                "mobile-actor-move");
+            Text(strip, b.Activation?.PrimaryActionAvailable == true ? "ACTION READY" : "ACTION USED",
+                "mobile-actor-action");
+
+            // Ground taps move and objective taps interact. Do not keep
+            // redundant Move/Stabilize/End Turn button rows on the screen.
+            var row = Row(controls); row.AddToClassList("mobile-ability-strip");
             if (battleView.Pending != null)
             {
-                var p = battleView.Pending;
-                string preview = p.Kind == IntentKind.Movement ? "Move · " + p.Movement.Cost.ToString("0.#") + (p.RequestedDestination.HasValue && !p.RequestedDestination.Value.Equals(p.Movement.Path.Last()) ? " · partial route" : "") : p.Kind == IntentKind.Interaction ? "Stabilize objective" : TargetSummary(p.Target);
-                Text(row, preview, "compact-preview");
-                Primary(row, "Confirm", () => Handle(input.Confirm(p.Id)), ready);
-                Button(row, "Cancel", () => Handle(input.Cancel()), ready);
+                var pending = battleView.Pending;
+                var preview = pending.Kind == IntentKind.Movement
+                    ? "MOVE " + pending.Movement.Cost.ToString("0.#")
+                    : pending.Kind == IntentKind.Interaction ? "INTERACT"
+                    : TargetSummary(pending.Target);
+                Text(row, preview, "mobile-action-preview");
+                var confirm = Primary(row, "CONFIRM", () => Handle(input.Confirm(pending.Id)), ready);
+                confirm.AddToClassList("mobile-confirm");
+                var cancel = Button(row, "CANCEL", () => Handle(input.Cancel()), ready);
+                cancel.AddToClassList("mobile-cancel");
             }
             else
             {
-                foreach (var a in b.Actions.Where(a => a.Slot != AbilitySlot.Passive))
+                foreach (var a in b.Actions.Where(a => a.Slot == AbilitySlot.NormalAttack ||
+                    a.Slot == AbilitySlot.Main || a.Slot == AbilitySlot.Ultimate))
                 {
                     var slot = a.Slot;
-                    var shortName = slot == AbilitySlot.Main ? "Main" : AbilityName(slot);
-                    var button = Button(row, shortName, () => Handle(input.SelectAbility(slot)), ready && a.CanSelect);
-                    button.tooltip = AbilityName(slot) + " · " + AbilityReadiness(a, activeUnit);
+                    var title = slot == AbilitySlot.NormalAttack ? "ATTACK" :
+                        slot == AbilitySlot.Main ? "ABILITY" : "ULT";
+                    var button = Button(row, title, () => Handle(input.SelectAbility(slot)),
+                        ready && a.CanSelect);
+                    button.AddToClassList("mobile-ability-button");
+                    button.tooltip = AbilityName(slot) + " · " + AbilityReadiness(a,active);
                     button.EnableInClassList("selected", battleView.SelectedAbility == slot);
                 }
+                var passive = Button(row, "PASSIVE", () => battleDetails = !battleDetails);
+                passive.AddToClassList("mobile-passive-button");
+                passive.tooltip = AbilityName(AbilitySlot.Passive) + " · Unit details";
             }
-            row = Row(controls); row.AddToClassList("utility-row");
-            Button(row, "Move", () => Handle(input.Cancel()), ready && b.Phase == BattleSessionPhase.PlayerInput)
-                .EnableInClassList("selected", !battleView.SelectedAbility.HasValue && battleView.Pending == null);
-            foreach (var objective in input.ReadPlanning().Objectives.Where(o => b.Objectives.Any(x => x.Id == o.Id && x.Status == ObjectiveStatus.Active)))
-            {
-                string id = objective.Id;
-                var button = Button(row, "Stabilize", () => Handle(input.TapObjective(id)), ready && objective.CanInteract);
-                button.tooltip = ObjectiveReadiness(objective.Failure);
-            }
-            long activation = b.Activation?.ActivationId ?? 0;
-            Button(row, "End turn", () => Handle(input.EndTurn(activation)), ready && b.Phase == BattleSessionPhase.PlayerInput);
-            string hint = battleView.IsAnimating ? "Resolving…" : b.Phase != BattleSessionPhase.PlayerInput ? "Enemy turn…" : battleView.Pending != null ? "Confirm or tap target again" : battleView.SelectedAbility.HasValue ? (battleView.Targets.Any(t => t.IsValid) ? "Tap marked target" : "Move for line of sight") : "Tap field to move";
-            Text(controls, battleRejection ?? hint, "battle-message");
+            if (battleRejection != null)
+                Text(controls, battleRejection, "mobile-battle-feedback");
+            else if (battleView.Pending != null)
+                Text(controls, "Tap target again to confirm", "mobile-battle-feedback");
         }
 
         private void Pick(Vector2 panelPosition)
