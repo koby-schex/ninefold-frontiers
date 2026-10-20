@@ -35,16 +35,19 @@ namespace Ninefold.Presentation
             return label;
         }
 
-        private static void PreviewTexture(VisualElement frame, Texture texture)
+        private static void PreviewTexture(VisualElement frame, Texture texture, bool showFullModel = false)
         {
             if (texture == null) return;
+            // Campaign art may crop to fill a wide card, but unit previews must
+            // preserve the complete model. Olyra's protective form is very wide.
             var image = new Image
             {
                 image = texture,
-                scaleMode = ScaleMode.ScaleAndCrop,
+                scaleMode = showFullModel ? ScaleMode.ScaleToFit : ScaleMode.ScaleAndCrop,
                 pickingMode = PickingMode.Ignore
             };
             image.AddToClassList("vif-preview-image");
+            image.AddToClassList(showFullModel ? "vif-model-fit" : "vif-art-crop");
             frame.Add(image);
         }
 
@@ -76,6 +79,35 @@ namespace Ninefold.Presentation
             Label(ribbon, completed + " / " + total, "vif-campaign-count");
         }
 
+        /// <summary>
+        /// Portrait thumbnail for Collection rows. Reads the same optional
+        /// provider as UnitPreview, but never creates or retains model objects.
+        /// The badge is only a fallback for unregistered gameplay IDs.
+        /// </summary>
+        public static void UnitPortrait(VisualElement parent, string unitId, bool apex, bool owned)
+        {
+            var frame = new VisualElement { pickingMode = PickingMode.Ignore };
+            frame.AddToClassList("vif-roster-portrait");
+            frame.EnableInClassList("vif-portrait-apex", apex);
+            frame.EnableInClassList("vif-preview-locked", !owned);
+            parent.Add(frame);
+
+            Texture texture = FrontiersPreviewRegistry.Source?.GetUnitPreview(unitId);
+            PreviewTexture(frame, texture, true);
+            if (texture == null)
+            {
+                var fallback = new VisualElement { pickingMode = PickingMode.Ignore };
+                fallback.AddToClassList("vif-roster-fallback");
+                frame.Add(fallback);
+                Label(fallback, FrontiersPlaytest.UnitName(unitId), "vif-roster-fallback-id");
+            }
+
+            var role = new VisualElement { pickingMode = PickingMode.Ignore };
+            role.AddToClassList("vif-roster-role");
+            frame.Add(role);
+            Label(role, apex ? "APEX" : "UNIT", "vif-roster-role-text");
+        }
+
         public static void UnitPreview(VisualElement parent, string unitId, bool apex, bool owned)
         {
             var frame = new VisualElement { pickingMode = PickingMode.Ignore };
@@ -86,7 +118,7 @@ namespace Ninefold.Presentation
             // RenderTexture and ordinary Texture are both accepted here.
             // The producer owns the render cycle and asset lifetime.
             var texture = FrontiersPreviewRegistry.Source?.GetUnitPreview(unitId);
-            PreviewTexture(frame, texture);
+            PreviewTexture(frame, texture, true);
 
             if (texture == null)
             {
