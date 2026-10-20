@@ -238,69 +238,119 @@ namespace Ninefold.Presentation
 
         private void BuildHomeScreen()
         {
-            // One journey, one primary action. The scenery and surrounding world
-            // stay visible; duplicate Units controls do not compete with bottom nav.
-            var masthead = new VisualElement(); masthead.AddToClassList("home-masthead"); content.Add(masthead);
+            // A game lobby, not a web landing page. Preserve the approved sanctuary
+            // art; a small functional HUD and mission-command dock frame the view.
+            var masthead = new VisualElement();
+            masthead.AddToClassList("home-masthead");
+            masthead.AddToClassList("game-lobby-masthead");
+            content.Add(masthead);
+            var hud = Row(masthead);
+            hud.AddToClassList("game-lobby-hud");
+            Text(hud, "WORLD 05 · SANCTUARY", "game-lobby-hud-world");
+            Text(hud, menuView.Progress.OwnedUnits.Count + " UNITS", "game-lobby-hud-roster");
             Text(masthead, "NINEFOLD", "home-wordmark");
             Text(masthead, "FRONTIERS", "home-submark");
 
-            var scroll = new ScrollView(ScrollViewMode.Vertical); scroll.AddToClassList("home-scroll");
+            var scroll = new ScrollView(ScrollViewMode.Vertical);
+            scroll.AddToClassList("home-scroll");
+            scroll.AddToClassList("game-lobby-scroll");
             scroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             content.Add(scroll);
-            // Preserve the portrait hero on tall devices. Short screens can scroll
-            // instead of reducing interactive targets below their useful sizes.
             scroll.contentContainer.style.flexGrow = 1;
             scroll.contentViewport.RegisterCallback<GeometryChangedEvent>(evt =>
                 scroll.contentContainer.style.minHeight = Mathf.Max(0, evt.newRect.height));
-            var vista = new VisualElement { pickingMode = PickingMode.Ignore }; vista.AddToClassList("home-vista");
+            var vista = new VisualElement { pickingMode = PickingMode.Ignore };
+            vista.AddToClassList("home-vista");
+            vista.AddToClassList("game-lobby-vista");
             scroll.Add(vista);
+            // Subtle gameplay wayfinding, not a map location or invented emblem.
+            Text(vista, "THE CONTINUANCE  /  WORLD FIVE", "game-lobby-scene-label").pickingMode = PickingMode.Ignore;
 
-            var panel = new VisualElement(); panel.AddToClassList("home-actions"); scroll.Add(panel);
+            var panel = new VisualElement();
+            panel.AddToClassList("home-actions");
+            panel.AddToClassList("game-lobby-dock");
+            scroll.Add(panel);
             bool active = menuView.Phase == MissionFlowPhase.Battle;
             var next = menuView.NextCampaignMission;
             string claim = menuView.ClaimableCampaignId;
+            string status = active ? "SAVED ENCOUNTER"
+                : claim != null ? "COMPLETION REWARD"
+                : next != null ? "NEXT DEPLOYMENT" : "READY FOR ORDERS";
+            var header = Row(panel); header.AddToClassList("game-lobby-status-line");
+            Text(header, "●", "game-lobby-signal");
+            Text(header, status, "home-kicker");
 
-            // Fixture campaign names are deliberately contextual, not presented as
-            // final story branding. The approved World Five artwork remains unchanged.
-            string context = active ? "BATTLE IN PROGRESS"
-                : claim != null ? "REWARD READY"
-                : next != null ? "YOUR NEXT MISSION"
-                : "THE FRONTIERS";
-            string headline = active ? "Return to the field"
-                : claim != null ? "Campaign complete"
-                : next != null ? "Your journey continues"
-                : "Choose your campaign";
-            string detail = active ? MissionName(menuView.Resume.MissionId) + " · Saved battle"
-                : claim != null ? CampaignName(claim) + " · Completion rewards"
+            if (active && battleExitPrompt)
+            {
+                Text(panel, "End this battle?", "home-title").AddToClassList("game-lobby-title");
+                Text(panel, "Your saved encounter will end as a defeat, with no battle rewards. Your units, unlocks and completed missions are kept. This cannot be undone.",
+                    "home-summary").AddToClassList("game-lobby-description");
+                var end = Button(panel, "END BATTLE · CHOOSE ANOTHER  ›", () => {
+                    // Full transaction: terminal defeat, zero-reward receipt,
+                    // return to selection. Never delete battle files or profiles.
+                    menu.AbandonBattle();
+                    input = null; inBattle = false; battleExitPrompt = false;
+                    Navigate(Page.Home);
+                    message = "Battle ended. Choose a campaign or Quick Battle.";
+                });
+                end.AddToClassList("game-lobby-danger");
+                var keep = Button(panel, "KEEP SAVED BATTLE", () => battleExitPrompt = false);
+                keep.AddToClassList("game-lobby-cancel");
+                BuildNavigation(content);
+                return;
+            }
+
+            string headline = active ? "Return to battle"
+                : claim != null ? "Rewards await"
+                : next != null ? "Continue the journey" : "Choose your mission";
+            string detail = active ? MissionName(menuView.Resume.MissionId) + " · Checkpoint saved"
+                : claim != null ? CampaignName(claim) + " · Ready to claim"
                 : next != null ? CampaignName(next.CampaignId) + " · " + MissionName(next.Definition.Id)
-                : "Explore available missions and continue your progress.";
-
-            Text(panel, context, "home-kicker");
-            Text(panel, headline, "home-title");
-            Text(panel, detail, "home-summary");
+                : "Choose a campaign, or enter a quick encounter.";
+            Text(panel, headline, "home-title").AddToClassList("game-lobby-title");
+            Text(panel, detail, "home-summary").AddToClassList("game-lobby-description");
 
             Button main;
-            if (active) main = Button(panel, "RESUME BATTLE  ›", () => { inBattle = true; message = "Battle resumed."; });
-            else if (claim != null) main = Button(panel, "COLLECT REWARDS  ›", () => ClaimCampaign(claim));
-            else if (next != null) main = Button(panel, "VIEW MISSION  ›", () => SelectMission(next.Definition.Id));
-            else main = Button(panel, "EXPLORE CAMPAIGNS  ›", () => Navigate(Page.Battles));
-            main.AddToClassList("home-primary");
-
-            if (!active)
+            string actionLabel;
+            if (active)
             {
-                // Units already has a permanent nav destination. Quick Battle is
-                // the only additional route and has deliberately secondary weight.
-                var quick = Button(panel, "Quick Battle  ›", () => SelectMission("fixture-mixed"));
-                quick.AddToClassList("home-quick-link");
+                actionLabel = "RESUME BATTLE";
+                main = Button(panel, "", () => { inBattle = true; message = "Battle resumed."; });
+            }
+            else if (claim != null)
+            {
+                actionLabel = "COLLECT REWARDS";
+                main = Button(panel, "", () => ClaimCampaign(claim));
+            }
+            else if (next != null)
+            {
+                actionLabel = "VIEW NEXT MISSION";
+                main = Button(panel, "", () => SelectMission(next.Definition.Id));
             }
             else
             {
-                Text(panel, "Other activities unlock when this battle ends.", "home-status");
+                actionLabel = "EXPLORE CAMPAIGNS";
+                main = Button(panel, "", () => Navigate(Page.Battles));
             }
-            // Preserve actionable nonfatal messages that used to be visible on
-            // Home, without showing the redundant default save notice.
-            if (!active && message != "Your progress saves automatically.")
-                Text(panel, message, "home-status");
+            main.AddToClassList("home-primary");
+            main.AddToClassList("game-lobby-primary");
+            HomeIcon(main, "routes");
+            Text(main, actionLabel, "game-lobby-primary-label");
+            Text(main, "›", "game-lobby-primary-chevron");
+
+            // A saved game can be browsed read-only. Starting another requires
+            // an explicit confirmation, not a silent checkpoint overwrite.
+            var secondary = Button(panel, active ? "NEW BATTLE  ›" : "QUICK BATTLE  ›",
+                active ? (Action)(() => battleExitPrompt = true)
+                    : () => SelectMission("fixture-mixed"));
+            secondary.AddToClassList("home-quick-link");
+            secondary.AddToClassList("game-lobby-secondary");
+            if (active)
+                Text(panel, "Campaigns and Units can be explored while your battle is saved.",
+                    "home-status").AddToClassList("game-lobby-assurance");
+            else if (message != "Your progress saves automatically.")
+                Text(panel, message, "home-status").AddToClassList("game-lobby-assurance");
+
             BuildNavigation(content);
         }
 
