@@ -128,6 +128,11 @@ namespace Ninefold.Presentation
             var campaignMissionVisual = Resources.Load<StyleSheet>("Home/CampaignMissionVisual03");
             if (campaignMissionVisual != null) root.styleSheets.Add(campaignMissionVisual);
             else Debug.LogWarning("Campaign/mission visual styles are missing. Check project import.", this);
+            // Battle-only, read-only objective wayfinding. The Work chat's
+            // model and rendering assets are intentionally untouched.
+            var battleGuidance = Resources.Load<StyleSheet>("Home/BattleObjectiveGuidance01");
+            if (battleGuidance != null) root.styleSheets.Add(battleGuidance);
+            else Debug.LogWarning("Battle objective guidance styles are missing. Check project import.", this);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
