@@ -133,6 +133,9 @@ namespace Ninefold.Presentation
             var battleGuidance = Resources.Load<StyleSheet>("Home/BattleObjectiveGuidance01");
             if (battleGuidance != null) root.styleSheets.Add(battleGuidance);
             else Debug.LogWarning("Battle objective guidance styles are missing. Check project import.", this);
+            var nativeMobile = Resources.Load<StyleSheet>("Home/NativeMobileExperience01");
+            if (nativeMobile != null) root.styleSheets.Add(nativeMobile);
+            else Debug.LogWarning("Native mobile experience styles are missing. Check project import.", this);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
