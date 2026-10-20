@@ -38,6 +38,9 @@ namespace Ninefold.Presentation
         private string renderedUnit;
         private bool renderedOffer;
         private string savePath, inspectedUnit, message = "Your progress saves automatically.";
+        private enum CollectionFilter { All, Owned, Locked }
+        private CollectionFilter collectionFilter = CollectionFilter.All;
+        private bool collectionDetailsExpanded;
         private enum Page { Home, Battles, Missions, Briefing, Squad, Collection, Settings }
         private Page page;
         private string selectedCampaign, squadInspection;
@@ -94,6 +97,11 @@ namespace Ninefold.Presentation
             var missionClarity = Resources.Load<StyleSheet>("Home/MissionClarity");
             if (missionClarity != null) root.styleSheets.Add(missionClarity);
             else Debug.LogWarning("Mission clarity styles are missing. Check project import.", this);
+            // Collection-specific density and disclosure rules load last.
+            // They never affect squad cards, battle or other menu views.
+            var collectionClarity = Resources.Load<StyleSheet>("Home/CollectionClarity");
+            if (collectionClarity != null) root.styleSheets.Add(collectionClarity);
+            else Debug.LogWarning("Collection clarity styles are missing. Check project import.", this);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
@@ -165,6 +173,9 @@ namespace Ninefold.Presentation
                 menuView.Phase == MissionFlowPhase.Selection && page == Page.Briefing);
             root.EnableInClassList("results-mode", resultsScreen);
             root.EnableInClassList("unit-mode", menuView.Phase == MissionFlowPhase.Selection && (page == Page.Squad || page == Page.Collection));
+            // Collection UI refinement is separate from Squad and the battle HUD.
+            root.EnableInClassList("collection-clarity-mode",
+                menuView.Phase == MissionFlowPhase.Selection && page == Page.Collection);
             root.EnableInClassList("briefing-mode", campaignScreen && page == Page.Briefing);
             root.EnableInClassList("home-mode", home);
             heading.style.display = home || (menuView.Phase == MissionFlowPhase.Battle && inBattle) ? DisplayStyle.None : DisplayStyle.Flex;
@@ -530,45 +541,48 @@ namespace Ninefold.Presentation
         private void BuildCollection(VisualElement parent)
         {
             var view = menu.Collection.Read();
-            Text(parent, "Your collection", "display-title");
-            Text(parent, "Select a unit to inspect its kit and progression.", "detail");
             var units = view.Factions.SelectMany(f => f.Units).ToArray();
-            if (!units.Any(u => u.Unit.Definition.Id == inspectedUnit))
+            var selected = units.FirstOrDefault(u => u.Unit.Definition.Id == inspectedUnit);
+
+            if (selected == null)
             {
                 inspectedUnit = null;
-                Text(parent, "PLAYTEST · Abstract units and badges; not canonical faction designs.", "fixture-note");
+                collectionDetailsExpanded = false;
+                Text(parent, "YOUR ROSTER", "eyebrow").AddToClassList("collection-overline");
+                Text(parent, "Units", "display-title").AddToClassList("collection-page-title");
+                Text(parent, units.Count(u => u.Unit.Owned) + " of " + units.Length + " unlocked", "detail")
+                    .AddToClassList("collection-overview-summary");
+
+                var filters = Row(parent); filters.AddToClassList("collection-filters");
+                CollectionFilterButton(filters, "All", CollectionFilter.All);
+                CollectionFilterButton(filters, "Owned", CollectionFilter.Owned);
+                CollectionFilterButton(filters, "Locked", CollectionFilter.Locked);
                 BuildCollectionRoster(parent, view);
+                Text(parent, "PLAYTEST · Unit badges and faction labels are temporary.", "fixture-note")
+                    .AddToClassList("collection-footnote");
                 return;
             }
-            Button(parent, "‹ All units", () => { menu.Collection.Cancel(); inspectedUnit = null; }).AddToClassList("back-link");
-            var current = units.First(u => u.Unit.Definition.Id == inspectedUnit);
-            var detail = Card(parent, "unit-detail");
-            Text(parent, "PLAYTEST · Abstract units and badges; not canonical faction designs.", "fixture-note");
-            UnitBadge(detail, inspectedUnit, current.Unit.Definition.Roster.IsApex);
-            Text(detail, UnitName(inspectedUnit), "display-title");
-            Text(detail, (current.Unit.Owned ? "UNLOCKED" : "LOCKED") + (current.Unit.Definition.Roster.IsApex ? " · APEX" : " · STANDARD"), "eyebrow");
-            BuildUnitStats(detail, current.Unit);
-            Text(detail, "Rank " + current.Unit.Rank + " • " + current.Fragments + " fragments", "section");
-            var offer = current.Unit.Owned ? current.Advance : current.Unlock;
-            if (offer.Block != CollectionBlock.MaximumRank)
-            {
-                Text(detail, current.Fragments + " / " + offer.Cost + " fragments · " + (current.Unit.Owned ? "next rank" : "unlock requirement"), "hint");
-                Meter(detail, current.Fragments, Math.Max(1, offer.Cost));
-            }
-            Text(detail, offer.CanConfirm ? "Ready to " + (current.Unit.Owned ? "advance" : "unlock") : CollectionReason(offer), "hint");
-            var operation = current.Unit.Owned ? CollectionOperation.Advance : CollectionOperation.Unlock;
-            if (offer.Block != CollectionBlock.MaximumRank) Primary(detail, (current.Unit.Owned ? "Advance unit" : "Unlock unit") + " · " + offer.Cost + " fragments", () => menu.Collection.Preview(operation, inspectedUnit), offer.CanConfirm);
-            if (current.Unit.Owned && current.Customizations.Any(o => o.Id == "fixture-health"))
-                Button(detail, current.Unit.CustomizationId == null ? "Adjust health / armor" : "Reset stat adjustment", () => menu.Collection.Preview(CollectionOperation.Customize, inspectedUnit, current.Unit.CustomizationId == null ? "fixture-health" : null));
-            BuildAbilityKit(detail, current.Unit);
+
+            var back = Button(parent, "‹ All units", () => {
+                menu.Collection.Cancel();
+                inspectedUnit = null;
+                collectionDetailsExpanded = false;
+            });
+            back.AddToClassList("back-link"); back.AddToClassList("collection-back");
+
+            // Confirmation is intentionally separate from inspection. No resources
+            // are consumed until the player explicitly confirms the pending offer.
             if (view.Pending != null)
             {
-                detail.style.display = DisplayStyle.None;
                 var p = view.Pending;
                 var confirmation = Card(parent, "confirmation");
-                Text(confirmation, "Review change · " + UnitName(p.UnitId), "section");
-                Text(confirmation, p.Operation == CollectionOperation.Unlock ? "Unlock this unit for your roster" : p.Operation == CollectionOperation.Advance ? "Advance this unit's rank" : "Adjust this unit's stats", "eyebrow");
-                Text(confirmation, "CURRENT  →  AFTER CONFIRMATION", "hint");
+                confirmation.AddToClassList("collection-confirmation");
+                Text(confirmation, "REVIEW CHANGE", "eyebrow").AddToClassList("collection-overline");
+                Text(confirmation, UnitName(p.UnitId), "display-title").AddToClassList("collection-page-title");
+                Text(confirmation, p.Operation == CollectionOperation.Unlock ? "Unlock this unit"
+                    : p.Operation == CollectionOperation.Advance ? "Advance this unit's rank"
+                    : "Adjust this unit's stats", "detail").AddToClassList("collection-overview-summary");
+                Text(confirmation, "BEFORE  →  AFTER", "eyebrow").AddToClassList("collection-overline");
                 var comparison = Row(confirmation); comparison.AddToClassList("stat-row");
                 Stat(comparison, "HEALTH", p.Before.Health + " → " + p.After.Health);
                 Stat(comparison, "ARMOR", p.Before.Armor + " → " + p.After.Armor);
@@ -578,35 +592,133 @@ namespace Ninefold.Presentation
                 foreach (var after in p.After.Abilities.Where(a => a.Effect != null && a.Effect.HasHealthEffect))
                 {
                     var before = p.Before.Abilities.Single(a => a.Slot == after.Slot);
-                    Stat(comparison, AbilityName(after.Slot).ToUpperInvariant() + " POWER", before.Effect.Amount + " → " + after.Effect.Amount);
+                    Stat(comparison, AbilityName(after.Slot).ToUpperInvariant() + " POWER",
+                        before.Effect.Amount + " → " + after.Effect.Amount);
                 }
-                Text(confirmation, p.ResourceId == null ? "No fragment cost" : "Spend " + p.Cost + " fragments · " + p.Balance + " → " + (p.Balance - p.Cost) + " remaining", "preview");
-                Text(confirmation, "Nothing changes until you confirm. Progression is shared across modes.", "hint");
-                if (!p.CanConfirm) Text(confirmation, CollectionReason(p), "lock-reason");
-                Primary(confirmation, "Confirm & save", () => { menu.Collection.Confirm(p.Id); message = "Unit updated. Changes apply across modes."; }, p.CanConfirm);
-                Button(confirmation, "Cancel", () => menu.Collection.Cancel());
+                Text(confirmation, p.ResourceId == null ? "No fragment cost"
+                    : "Spend " + p.Cost + " fragments · " + p.Balance + " → " + (p.Balance - p.Cost) + " remaining",
+                    "preview").AddToClassList("collection-confirm-cost");
+                Text(confirmation, "Your change is saved across all game modes after confirmation.", "hint")
+                    .AddToClassList("collection-confirm-note");
+                if (!p.CanConfirm)
+                    Text(confirmation, CollectionReason(p), "lock-reason").AddToClassList("collection-detail-reason");
+                var confirm = Primary(confirmation, "CONFIRM & SAVE", () => {
+                    menu.Collection.Confirm(p.Id);
+                    message = "Unit updated. Changes apply across modes.";
+                }, p.CanConfirm);
+                confirm.AddToClassList("collection-primary");
+                var cancel = Button(confirmation, "Cancel", () => menu.Collection.Cancel());
+                cancel.AddToClassList("collection-secondary");
                 return;
             }
+
+            var detail = Card(parent, "unit-detail");
+            detail.AddToClassList("collection-detail-card");
+            var identity = Row(detail); identity.AddToClassList("collection-detail-identity");
+            UnitBadge(identity, inspectedUnit, selected.Unit.Definition.Roster.IsApex);
+            var copy = new VisualElement(); copy.AddToClassList("collection-detail-copy"); identity.Add(copy);
+            Text(copy, selected.Unit.Definition.Roster.IsApex ? "APEX UNIT" : "STANDARD UNIT", "eyebrow")
+                .AddToClassList("collection-overline");
+            Text(copy, UnitName(inspectedUnit), "display-title").AddToClassList("collection-detail-title");
+            Text(copy, selected.Unit.Owned ? "UNLOCKED · RANK " + selected.Unit.Rank : "LOCKED", "detail")
+                .AddToClassList("collection-detail-status");
+
+            var offer = selected.Unit.Owned ? selected.Advance : selected.Unlock;
+            if (offer.Block != CollectionBlock.MaximumRank)
+            {
+                Text(detail, selected.Fragments + " / " + offer.Cost + " fragments · "
+                    + (selected.Unit.Owned ? "Next rank" : "To unlock"), "detail")
+                    .AddToClassList("collection-fragments");
+                Meter(detail, selected.Fragments, Math.Max(1, offer.Cost));
+            }
+            else
+                Text(detail, "Maximum test rank · " + selected.Fragments + " fragments held", "detail")
+                    .AddToClassList("collection-fragments");
+
+            Text(detail, offer.CanConfirm
+                ? selected.Unit.Owned ? "Ready to advance" : "Ready to unlock"
+                : CollectionReason(offer), "hint").AddToClassList("collection-detail-reason");
+
+            var operation = selected.Unit.Owned ? CollectionOperation.Advance : CollectionOperation.Unlock;
+            if (offer.Block != CollectionBlock.MaximumRank)
+            {
+                var upgrade = Button(detail, (selected.Unit.Owned ? "Advance unit" : "Unlock unit")
+                    + " · " + offer.Cost + " fragments",
+                    () => menu.Collection.Preview(operation, inspectedUnit), offer.CanConfirm);
+                upgrade.AddToClassList("collection-primary");
+            }
+            if (selected.Unit.Owned && selected.Customizations.Any(o => o.Id == "fixture-health"))
+            {
+                var adjust = Button(detail, selected.Unit.CustomizationId == null
+                    ? "Adjust health / armor" : "Reset stat adjustment",
+                    () => menu.Collection.Preview(CollectionOperation.Customize, inspectedUnit,
+                        selected.Unit.CustomizationId == null ? "fixture-health" : null));
+                adjust.AddToClassList("collection-secondary");
+            }
+
+            // The full six-stat comparison and four-slot ability kit remain
+            // accessible, but are not dumped on players by default.
+            Text(detail, "Health " + selected.Unit.Health + "  ·  Armor " + selected.Unit.Armor
+                + "  ·  Move " + selected.Unit.Movement.ToString("0.##"), "detail")
+                .AddToClassList("collection-glance");
+            var expand = Button(detail, collectionDetailsExpanded ? "Hide stats & abilities  ‹"
+                : "View stats & abilities  ›", () => collectionDetailsExpanded = !collectionDetailsExpanded);
+            expand.AddToClassList("collection-secondary");
+            if (collectionDetailsExpanded)
+            {
+                var extended = new VisualElement(); extended.AddToClassList("collection-expanded"); detail.Add(extended);
+                BuildUnitStats(extended, selected.Unit);
+                BuildAbilityKit(extended, selected.Unit);
+            }
+            Text(parent, "PLAYTEST · Unit badges and stats are provisional.", "fixture-note")
+                .AddToClassList("collection-footnote");
+        }
+
+        private void CollectionFilterButton(VisualElement parent, string title, CollectionFilter filter)
+        {
+            var button = Button(parent, title, () => collectionFilter = filter);
+            button.AddToClassList("collection-filter");
+            button.EnableInClassList("selected", collectionFilter == filter);
         }
 
         private void BuildCollectionRoster(VisualElement parent, CollectionView view)
         {
+            bool anyVisible = false;
             foreach (var faction in view.Factions)
             {
-                Text(parent, faction.Id == "fixture-a" ? "Test faction A" : "Test faction B", "section");
-                var roster = Row(parent); roster.AddToClassList("unit-grid");
-                foreach (var u in faction.Units)
+                var filtered = faction.Units.Where(u => collectionFilter == CollectionFilter.All
+                    || (collectionFilter == CollectionFilter.Owned && u.Unit.Owned)
+                    || (collectionFilter == CollectionFilter.Locked && !u.Unit.Owned)).ToArray();
+                if (filtered.Length == 0) continue;
+                anyVisible = true;
+                Text(parent, faction.Id == "fixture-a" ? "Test faction A" : "Test faction B", "section")
+                    .AddToClassList("collection-faction-title");
+                foreach (var entry in filtered)
                 {
-                    string id = u.Unit.Definition.Id;
-                    var tile = Button(roster, "", () => { menu.Collection.Cancel(); inspectedUnit = id; });
-                    tile.AddToClassList("unit-tile"); tile.EnableInClassList("selected", id == inspectedUnit);
-                    UnitBadge(tile, id, u.Unit.Definition.Roster.IsApex);
-                    Text(tile, UnitName(id), "section");
-                    Text(tile, (u.Unit.Definition.Roster.IsApex ? "APEX · " : "STANDARD · ") + (u.Unit.Owned ? "Rank " + u.Unit.Rank : "Locked"), "detail");
-                    Text(tile, u.Unit.Owned && u.Advance.Block == CollectionBlock.MaximumRank ? u.Fragments + " fragments held" : u.Fragments + " / " + (u.Unit.Owned ? u.Advance.Cost : u.Unlock.Cost) + " fragments", "hint");
-                    Text(tile, u.Unit.Owned && u.Advance.Block == CollectionBlock.MaximumRank ? "Maximum test rank" : "Inspect unit  ›", "tile-state");
+                    string id = entry.Unit.Definition.Id;
+                    var tile = Button(parent, "", () => {
+                        menu.Collection.Cancel();
+                        inspectedUnit = id;
+                        collectionDetailsExpanded = false;
+                    });
+                    tile.AddToClassList("collection-roster-entry");
+                    var line = Row(tile); line.AddToClassList("collection-roster-row");
+                    UnitBadge(line, id, entry.Unit.Definition.Roster.IsApex);
+                    var identity = new VisualElement(); identity.AddToClassList("collection-roster-copy"); line.Add(identity);
+                    Text(identity, UnitName(id), "section").AddToClassList("collection-roster-title");
+                    Text(identity, (entry.Unit.Definition.Roster.IsApex ? "APEX · " : "STANDARD · ")
+                        + (entry.Unit.Owned ? "Rank " + entry.Unit.Rank : "Locked"), "detail")
+                        .AddToClassList("collection-roster-state");
+                    var offer = entry.Unit.Owned ? entry.Advance : entry.Unlock;
+                    Text(identity, offer.Block == CollectionBlock.MaximumRank
+                        ? entry.Fragments + " fragments held · Maximum test rank"
+                        : entry.Fragments + " / " + offer.Cost + " fragments", "hint")
+                        .AddToClassList("collection-roster-fragments");
+                    Text(line, "›", "section").AddToClassList("collection-roster-arrow");
                 }
             }
+            if (!anyVisible)
+                Text(parent, "No units in this view.", "detail").AddToClassList("collection-empty-state");
         }
 
         private static void BuildUnitStats(VisualElement parent, PreparationUnit unit)
