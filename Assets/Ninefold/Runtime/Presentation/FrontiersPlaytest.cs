@@ -218,7 +218,9 @@ namespace Ninefold.Presentation
                 (menuView.Phase == MissionFlowPhase.Selection && page == Page.Squad));
             root.EnableInClassList("briefing-mode", campaignScreen && page == Page.Briefing);
             root.EnableInClassList("home-mode", home);
-            heading.style.display = home || (menuView.Phase == MissionFlowPhase.Battle && inBattle) ? DisplayStyle.None : DisplayStyle.Flex;
+            // All playable menus use an actual native-width toolbar, not
+            // the old website masthead above a floating content card.
+            heading.style.display = DisplayStyle.None;
             // Never project the sanctuary/backdrop behind other menu pages.
             // Campaign, Collection, Squad and Settings are distinct full-screen apps.
             homeBackdrop.style.display = home ? DisplayStyle.Flex : DisplayStyle.None;
@@ -243,11 +245,11 @@ namespace Ninefold.Presentation
                     BuildHomeScreen();
                     return;
                 }
+                BuildMobilePageHeader(content);
                 var scroll = new ScrollView(ScrollViewMode.Vertical); scroll.AddToClassList("page-scroll");
                 scroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
                 scroll.verticalScrollerVisibility = ScrollerVisibility.Hidden;
                 content.Add(scroll);
-                BuildMobilePageHeader(scroll);
                 if (menuView.Phase == MissionFlowPhase.Results) BuildResults(scroll);
                 else if (page == Page.Settings) BuildSettings(scroll);
                 else if (page == Page.Collection) BuildCollection(scroll);
@@ -1311,7 +1313,14 @@ namespace Ninefold.Presentation
                 var label = target == Page.Battles ? "Campaigns" : target == Page.Collection ? "Units" : target.ToString();
                 // Browsing is permitted during a saved battle; progression and
                 // new deployments remain guarded until it has been resolved.
-                var button = Button(nav, "", () => Navigate(destinationPage));
+                var button = Button(nav, "", () => {
+                    if (destinationPage == Page.Collection)
+                    {
+                        inspectedUnit = null;
+                        collectionDetailsExpanded = false;
+                    }
+                    Navigate(destinationPage);
+                });
                 button.AddToClassList("nav-button");
                 button.AddToClassList("unified-nav-button");
                 if (homeNavigation) button.AddToClassList("nf-nav-item");
