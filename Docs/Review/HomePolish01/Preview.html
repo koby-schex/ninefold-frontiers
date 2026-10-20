@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ninefold: Frontiers — Home Polish 01 (browser approximation)</title>
+<style>
+*{box-sizing:border-box}
+:root{--ink:#111611;--raised:#253027;--ivory:#f6efdd;--gold:#d4b47b;--secondary:#aba891;--violet:#b1a6c7}
+body{margin:0;padding:18px 12px;background:#101412;color:var(--ivory);font-family:Arial,Helvetica,sans-serif}
+.note{max-width:420px;margin:0 auto 12px;font-size:12px;line-height:1.5;color:#c5c4b4}
+.phone{position:relative;width:min(100%,390px);height:min(850px,calc(100vh - 120px));min-height:440px;margin:auto;display:flex;flex-direction:column;overflow:hidden;isolation:isolate;background:var(--ink) url("../../../Assets/Ninefold/Resources/Home/Sanctuary.jpg") center/cover no-repeat;border:1px solid #536055;border-radius:16px;box-shadow:0 20px 70px #0009}
+.phone:before{position:absolute;content:"";inset:0;background:linear-gradient(to bottom,rgba(17,22,17,.24),transparent 25%,transparent 48%,rgba(17,22,17,.1));pointer-events:none;z-index:-1}
+.masthead{text-align:center;padding:20px 8px 10px;background:rgba(17,22,17,.24)}
+.wordmark{font:400 43px/1.05 Georgia,serif;letter-spacing:6px}
+.submark{font:400 14px Georgia,serif;letter-spacing:3px;margin-top:6px}
+.scroller{display:flex;flex-direction:column;flex:1;min-height:0;overflow-y:auto}
+.vista{flex-grow:1;min-height:130px}
+.panel{flex-shrink:0;padding:16px;background:rgba(17,22,17,.94);border-top:1px solid rgba(212,180,123,.5)}
+.kicker{color:var(--gold);font-size:12px;letter-spacing:1px;margin-bottom:6px}
+.title{font:400 39px/1.05 Georgia,serif;margin:0}
+.summary{font-size:16px;color:#d9d2c5;margin:7px 0 9px}
+button{font-family:inherit;cursor:pointer}
+.primary{width:100%;border-radius:6px;border:1px solid #e7d1a5;border-bottom:2px solid #755e40;background:var(--gold);color:var(--ink);font-size:18px;font-weight:700;letter-spacing:.5px;min-height:64px;margin:7px 0 10px}
+.primary:hover{background:#ecd5a7}
+.shortcuts{display:flex;gap:6px}
+.shortcut{flex:1;min-width:0;min-height:90px;background:rgba(37,47,39,.76);border:1px solid rgba(171,168,145,.45);border-radius:6px;color:var(--ivory);padding:8px 5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.shortcut:disabled{opacity:.45;cursor:default}
+.shortcut svg{width:24px;height:24px;stroke:currentColor;stroke-width:1.8;fill:none}
+.shortcut strong{font:400 17px Georgia,serif}
+.shortcut small{font-size:12px;color:#bbbba5;text-align:center}
+.status{font-size:13px;color:var(--gold);margin-top:8px}
+.fixture{font-size:10px;color:#aeab9e;text-align:center;margin-top:7px}
+.nav{display:flex;background:rgba(17,22,17,.97);border-top:1px solid #d4b47b57;flex-shrink:0;padding-top:4px}
+.nav button{flex:1;min-width:0;background:none;color:#d9d2c5;border:0;border-bottom:2px solid transparent;min-height:66px;font-size:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.nav button[aria-current="page"]{border-bottom-color:var(--violet);background:#b1a6c71a;color:var(--ivory)}
+.nav svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8}
+@media(max-height:880px),(max-width:370px){.masthead{padding:9px 8px 7px}.wordmark{font-size:36px}.title{font-size:32px}.panel{padding:12px}.vista{min-height:30px}.shortcut{min-height:68px}.shortcut small{display:none}.nav button{min-height:58px}}
+@media(max-height:540px){.masthead{display:none}.vista{min-height:0}.title{font-size:28px}.primary{min-height:44px;font-size:14px}.shortcut{min-height:46px}.shortcut svg{width:18px;height:18px}.shortcut strong{font-size:13px}.nav button{min-height:44px;font-size:12px}}
+</style>
+</head>
+<body>
+<p class="note"><strong>Design review only.</strong> Browser approximation using approved sanctuary JPEG. Not a Unity screenshot or playable build. Add <code>?state=resume</code>, <code>?state=claim</code> or <code>?state=browse</code> to the URL to review the primary-action states.</p>
+<main class="phone" aria-label="Home screen">
+ <header class="masthead"><div class="wordmark">NINEFOLD</div><div class="submark">F R O N T I E R S</div></header>
+ <div class="scroller">
+  <div class="vista" aria-hidden="true"></div>
+  <section class="panel">
+   <div class="kicker">WORLD 5 · THE CONTINUANCE</div>
+   <h1 class="title" id="title">Test campaign A</h1>
+   <p class="summary" id="summary">Stabilization · Your next mission</p>
+   <button type="button" class="primary" id="primary">CONTINUE CAMPAIGN ›</button>
+   <div class="shortcuts">
+    <button class="shortcut" id="quick" type="button" aria-label="Quick Battle">
+     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 18L19 4M10 5l9 9M3 15l6 6M4 12l8 8"/></svg>
+     <strong>Quick Battle</strong><small>Mixed-faction missions</small>
+    </button>
+    <button class="shortcut" id="units" type="button" aria-label="Your Units">
+     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="3"/><path d="M5 21v-3a7 7 0 0 1 14 0v3"/></svg>
+     <strong>Your Units</strong><small>3 unlocked · Collection</small>
+    </button>
+   </div>
+   <div class="status" id="status" hidden>Other activities are unavailable until this saved battle ends.</div>
+   <div class="fixture">PT-048 · Abstract missions and units</div>
+  </section>
+ </div>
+ <nav class="nav" aria-label="Main navigation">
+  <button aria-current="page" type="button"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v11h14V10M9 21v-7h6v7"/></svg>Home</button>
+  <button type="button"><svg viewBox="0 0 24 24"><path d="M3 6h18M6 3v6M18 3v6M3 11h18v9H3z"/></svg>Campaigns</button>
+  <button type="button"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="3"/><path d="M5 21v-3a7 7 0 0 1 14 0v3"/></svg>Units</button>
+  <button type="button"><svg viewBox="0 0 24 24"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.2 2.2M16.2 16.2l2.2 2.2M18.4 5.6l-2.2 2.2M7.8 16.2l-2.2 2.2"/><circle cx="12" cy="12" r="4"/></svg>Settings</button>
+ </nav>
+</main>
+<script>
+const q=new URLSearchParams(location.search);const s=q.get('state')||'continue';
+const options={resume:['Return to the field','Stabilization · Battle saved','RESUME BATTLE ›'],claim:['Campaign complete','Test campaign A · One-time rewards ready','COLLECT REWARDS ›'],browse:['Explore the frontiers','Replay missions or discover campaign requirements.','BROWSE CAMPAIGNS ›'],continue:['Test campaign A','Stabilization · Your next mission','CONTINUE CAMPAIGN ›']};
+const [title,summary,button]=options[s]||options.continue;
+document.getElementById('title').textContent=title;
+document.getElementById('summary').textContent=summary;
+document.getElementById('primary').textContent=button;
+const inBattle=s==='resume';
+for(const id of ['quick','units'])document.getElementById(id).disabled=inBattle;
+document.getElementById('status').hidden=!inBattle;
+</script>
+</body>
+</html>
