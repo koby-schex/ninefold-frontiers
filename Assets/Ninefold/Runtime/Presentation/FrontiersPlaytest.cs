@@ -447,8 +447,9 @@ namespace Ninefold.Presentation
             // Present what the player is about to do before any secondary detail.
             PreparationHeader(parent, false);
             var mission = menuView.Missions.Single(m => m.Definition.Id == definition.Id);
-            Text(parent, mission.IsReplay ? "REPLAY · COMPLETED MISSION" : "MISSION BRIEFING", "eyebrow")
-                .AddToClassList("mission-brief-context");
+            if (mission.IsReplay)
+                Text(parent, "REPLAY · COMPLETED MISSION", "eyebrow")
+                    .AddToClassList("mission-brief-context");
 
             var objective = Card(parent, "briefing-objective");
             objective.AddToClassList("mission-brief-objective");
