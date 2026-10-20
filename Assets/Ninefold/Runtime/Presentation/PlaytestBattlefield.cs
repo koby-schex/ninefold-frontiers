@@ -108,7 +108,7 @@ namespace Ninefold.Presentation
             surface = target; world.SetActive(true); camera.enabled = true;
             if (drawnAttempt != view.AttemptId)
             {
-                BuildMap(view.Map,objectives,view.MissionId);
+                BuildMap(view.Map,objectives,view.MissionId,environmentKey);
                 drawnAttempt = view.AttemptId;
             }
             Reconcile(view);
