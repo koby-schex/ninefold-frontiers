@@ -1,0 +1,46 @@
+{
+  "status": "resting form study 01; not production ready",
+  "units": "meters",
+  "up": "Y",
+  "forward": "Z",
+  "parts": 77,
+  "vertices": 27398,
+  "triangles": 54488,
+  "height": 3.009909379719954,
+  "bounds": [
+    [
+      -1.2879215940173936,
+      0.0,
+      -1.2841954805903646
+    ],
+    [
+      2.4322846241911975,
+      3.009909379719954,
+      1.2829349760473003
+    ]
+  ],
+  "lobes": 5,
+  "materials": [
+    "avar_skin",
+    "ceramic",
+    "cloth",
+    "continuance_frame",
+    "eye",
+    "grown_mineral",
+    "olyra_core",
+    "olyra_edge",
+    "olyra_membrane",
+    "olyra_tip",
+    "sail_membrane",
+    "sail_vein",
+    "soft_charcoal",
+    "survey_light"
+  ],
+  "pose": "resting folded lobes; Avarin standing alongside",
+  "limitations": [
+    "Provisional anatomy/surface study, not locked visual acceptance",
+    "No deployed/protective poses, rig, animation, UV unwrap or LODs",
+    "Separate closed membrane bands approximate edge clarity; transparency sorting needs native review",
+    "Harness line housings and three tiny visual organs are implementation proposals, not new locked canon"
+  ]
+}

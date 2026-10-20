@@ -1,0 +1,32 @@
+name: Living Veil art review
+on:
+  pull_request:
+    paths:
+      - 'BuildTools/Art/**'
+      - 'SourceArt/LivingVeil/**'
+      - '.github/workflows/living-veil-review.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'BuildTools/Art/**'
+      - 'SourceArt/LivingVeil/**'
+      - '.github/workflows/living-veil-review.yml'
+permissions:
+  contents: read
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r BuildTools/Art/requirements-review.txt
+      - run: python BuildTools/Art/review_living_veil.py --render
+      - uses: actions/upload-artifact@v4
+        with:
+          name: living-veil-review-${{ github.sha }}
+          retention-days: 30
+          if-no-files-found: error
+          path: SourceArt/LivingVeil/Review/
