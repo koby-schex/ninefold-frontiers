@@ -1131,21 +1131,58 @@ namespace Ninefold.Presentation
 
         private void Pick(Vector2 panelPosition)
         {
-            string id = field.PickUnit(panelPosition, root);
-            if (id != null) { Handle(input.TapUnit(id)); return; }
-            if (!field.PickGround(panelPosition, root, out var destination)) return;
-            // Tolerate finger drift only inside the visible destination marker; preserve core preview tokens.
-            var pending = battleView.Pending;
-            if (pending?.Kind == IntentKind.Movement && Vector2.Distance(field.Project(PlaytestBattlefield.Vector(pending.Movement.Path.Last()), root), panelPosition) < 22)
-                Handle(input.Confirm(pending.Id));
-            else Handle(input.TapDestination(destination));
+            string id = field.PickUnit(panelPosition,root);
+            if (id != null)
+            {
+                var unit = battleView.Battle.Units.FirstOrDefault(u => u.Id == id);
+                if (unit?.IsEnemyControlled == true &&
+                    !battleView.SelectedAbility.HasValue && battleView.Pending == null &&
+                    battleView.Battle.Actions.Any(a => a.Slot == AbilitySlot.NormalAttack && a.CanSelect))
+                {
+                    // Enemy taps choose the default normal attack. The second
+                    // tap on the same target commits the safe preview token.
+                    var selected = input.SelectAbility(AbilitySlot.NormalAttack);
+                    if (selected.Outcome == InputOutcome.Selected)
+                    {
+                        Handle(input.TapUnit(id));
+                        return;
+                    }
+                }
+                Handle(input.TapUnit(id));
+                return;
+            }
+            // A ready objective can be interacted with by tapping its on-field
+            // marker. No additional permanent Stabilize button is required.
+            var mission = catalog.Missions[battleView.Battle.MissionId];
+            var objective = input.ReadPlanning().Objectives.FirstOrDefault(o => o.CanInteract &&
+                mission.Objectives.Any(x => x.Id == o.Id && x.Interaction != null &&
+                    Vector2.Distance(field.Project(PlaytestBattlefield.Vector(x.Interaction.Point),root),
+                        panelPosition) < 28));
+            if (objective != null)
+            {
+                var result = input.TapObjective(objective.Id);
+                if (result.Outcome == InputOutcome.Previewed)
+                    result = input.Confirm(input.Read().Pending.Id);
+                Handle(result);
+                return;
+            }
+            if (!field.PickGround(panelPosition,root,out var destination)) return;
+            // Intentional touch-to-move: use the SAME preview legality and
+            // versioned commit/save path as the old Confirm button, including
+            // automatically clipped partial movement.
+            var move = input.TapDestination(destination);
+            if (move.Outcome == InputOutcome.Previewed)
+                move = input.Confirm(input.Read().Pending.Id);
+            Handle(move);
         }
 
         private void Handle(BattleInputResult result)
         {
             battleRejection = result.Outcome == InputOutcome.Rejected ? RejectionReason(result) : null;
             message = result.Outcome == InputOutcome.Rejected ? RejectionReason(result)
-                : result.Outcome == InputOutcome.Previewed ? "Preview ready. Tap again or confirm below." : result.Outcome == InputOutcome.Selected ? "Choose a target or destination." : result.Outcome == InputOutcome.Committed ? "Progress saved." : "Ready.";
+                : result.Outcome == InputOutcome.Previewed ? "Tap target again to confirm."
+                : result.Outcome == InputOutcome.Selected ? "Tap a target."
+                : result.Outcome == InputOutcome.Committed ? "Saved." : "Ready.";
             notice.text = message;
             if (result.AnimationId != null)
             {
@@ -1298,7 +1335,7 @@ namespace Ninefold.Presentation
             });
             var help = Card(parent);
             Text(help, "How to play", "section");
-            Text(help, "1. Tap ground to preview a move.\n2. Tap the same destination again, or select Confirm.\n3. Select an ability, then a marked target. Review the effect before confirming.\n4. End your turn when ready. There is no timer.", "detail");
+            Text(help, "Tap the field to move. Tap an enemy to aim a normal attack, then tap again to confirm. Choose Ability or Ult to target a special action. Tap gold objective markers to interact when in reach. Use END at the top when finished.", "detail");
             Text(help, "Long moves stop at your remaining movement allowance. Walls, units and arena boundaries still limit valid destinations.", "detail");
             Text(help, "Cyan units are allies; red units are enemies. Gold marks objectives and valid targets. Striped ground costs extra movement.", "detail");
             Text(parent, "DEVELOPMENT BUILD", "eyebrow");
