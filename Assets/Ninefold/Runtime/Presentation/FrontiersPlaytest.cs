@@ -155,6 +155,10 @@ namespace Ninefold.Presentation
             // and squad pages keep their existing presentation.
             root.EnableInClassList("campaign-overview-mode",
                 menuView.Phase == MissionFlowPhase.Selection && page == Page.Battles);
+            root.EnableInClassList("mission-path-mode",
+                menuView.Phase == MissionFlowPhase.Selection && page == Page.Missions);
+            root.EnableInClassList("mission-briefing-clarity-mode",
+                menuView.Phase == MissionFlowPhase.Selection && page == Page.Briefing);
             root.EnableInClassList("results-mode", resultsScreen);
             root.EnableInClassList("unit-mode", menuView.Phase == MissionFlowPhase.Selection && (page == Page.Squad || page == Page.Collection));
             root.EnableInClassList("briefing-mode", campaignScreen && page == Page.Briefing);
@@ -370,33 +374,57 @@ namespace Ninefold.Presentation
 
         private void BuildMissionList(VisualElement parent)
         {
-            Button(parent, "‹ All campaigns", () => Navigate(Page.Battles)).AddToClassList("back-link");
-            Text(parent, "CAMPAIGN MISSIONS", "eyebrow");
-            Text(parent, CampaignName(selectedCampaign), "display-title");
+            // A compact, legible path from the campaign overview to one briefing.
+            // Campaign order and availability continue to come from the core.
+            var back = Button(parent, "‹ Campaigns", () => Navigate(Page.Battles));
+            back.AddToClassList("back-link"); back.AddToClassList("mission-path-back");
+            Text(parent, "CAMPAIGN PATH", "eyebrow").AddToClassList("mission-path-overline");
+            Text(parent, CampaignName(selectedCampaign), "display-title").AddToClassList("mission-path-title");
             var progress = menuView.Campaigns.Single(c => c.CampaignId == selectedCampaign);
-            Text(parent, progress.CompletedMissions + " / " + progress.TotalMissions + " completed · Untimed solo battles", "detail");
+            Text(parent, progress.CompletedMissions + " of " + progress.TotalMissions + " complete", "detail")
+                .AddToClassList("mission-path-progress");
             Meter(parent, progress.CompletedMissions, progress.TotalMissions);
+
             var authored = catalog.Campaigns.Single(c => c.Id == selectedCampaign);
             string nextId = authored.Missions.Select(n => menuView.Missions.Single(m => m.Definition.Id == n.MissionId))
                 .FirstOrDefault(m => m.Available && !m.IsReplay)?.Definition.Id;
             int number = 0;
             foreach (var node in authored.Missions)
             {
-                var m = menuView.Missions.Single(x => x.Definition.Id == node.MissionId);
-                string id = m.Definition.Id;
+                var mission = menuView.Missions.Single(m => m.Definition.Id == node.MissionId);
+                string missionId = mission.Definition.Id;
+                bool highlighted = missionId == nextId;
                 var card = Card(parent, "mission-entry");
-                card.EnableInClassList("locked-card", !m.Available);
-                card.EnableInClassList("next-mission", id == nextId);
-                var line = Row(card); line.AddToClassList("mission-heading");
-                Text(line, (++number).ToString("00"), "mission-number");
-                var words = new VisualElement(); words.AddToClassList("mission-identity"); line.Add(words);
-                Text(words, !m.Available ? "LOCKED" : m.IsReplay ? "COMPLETED · REPLAY" : id == nextId ? "UP NEXT" : "AVAILABLE", "campaign-status");
-                Text(words, MissionName(id), "section");
-                Text(card, Description(id), "detail");
-                if (!m.Available) Text(card, m.FactionRosterLocked ? "Unlock three standard units from this faction (" + m.OwnedFactionStandards + " / 3)." : "Complete " + string.Join(", ", m.MissingPrerequisites.Select(MissionName)) + " first.", "lock-reason");
-                var button = Button(card, m.IsReplay ? "Review replay  ›" : !m.Available ? "Mission locked" : "View briefing  ›", () => SelectMission(id), m.Available);
-                if (id == nextId) button.AddToClassList("primary");
+                card.AddToClassList("mission-path-card");
+                card.EnableInClassList("locked-card", !mission.Available);
+                card.EnableInClassList("mission-path-current", highlighted);
+                card.EnableInClassList("mission-path-locked", !mission.Available);
+                var heading = Row(card); heading.AddToClassList("mission-heading");
+                Text(heading, (++number).ToString("00"), "mission-number").AddToClassList("mission-path-number");
+                var identity = new VisualElement(); identity.AddToClassList("mission-identity"); heading.Add(identity);
+                Text(identity, !mission.Available ? "LOCKED" : mission.IsReplay ? "COMPLETED · REPLAY"
+                    : highlighted ? "UP NEXT" : "AVAILABLE", "campaign-status").AddToClassList("mission-path-status");
+                Text(identity, MissionName(missionId), "section").AddToClassList("mission-path-name");
+                if (!mission.Available)
+                {
+                    string reason = mission.FactionRosterLocked
+                        ? "Requires 3 standard faction units (" + mission.OwnedFactionStandards + " / 3 owned)."
+                        : mission.MissingPrerequisites.Count > 0
+                            ? "First complete: " + string.Join(", ", mission.MissingPrerequisites.Select(MissionName))
+                            : "This mission is currently unavailable.";
+                    Text(card, reason, "lock-reason").AddToClassList("mission-path-lock");
+                    // Locked missions remain visible, never selectable or launchable.
+                    continue;
+                }
+
+                Text(card, Description(missionId), "detail").AddToClassList("mission-path-objective");
+                var choose = Button(card, mission.IsReplay ? "Review replay  ›" : "View briefing  ›",
+                    () => SelectMission(missionId));
+                choose.AddToClassList("mission-path-action");
+                if (highlighted) choose.AddToClassList("primary");
             }
+            Text(parent, "PLAYTEST · Missions and maps are temporary content.", "fixture-note")
+                .AddToClassList("mission-path-footnote");
         }
 
         private void PreparationHeader(VisualElement parent, bool squad)
@@ -408,27 +436,49 @@ namespace Ninefold.Presentation
         private void BuildBriefing(VisualElement parent)
         {
             var definition = catalog.Missions[menuView.SelectedMissionId];
-            Button(parent, definition.IsCampaign ? "‹ Mission list" : "‹ Home", () => Navigate(definition.IsCampaign ? Page.Missions : Page.Home)).AddToClassList("back-link");
+            var back = Button(parent, definition.IsCampaign ? "‹ Missions" : "‹ Home",
+                () => Navigate(definition.IsCampaign ? Page.Missions : Page.Home));
+            back.AddToClassList("back-link"); back.AddToClassList("mission-brief-back");
+
+            // Present what the player is about to do before any secondary detail.
             PreparationHeader(parent, false);
-            var terrain = Card(parent, "briefing-terrain");
-            BuildMapPreview(terrain, definition);
-            var brief = Card(parent, "briefing-objective");
-            Text(brief, "YOUR OBJECTIVE", "eyebrow"); Text(brief, Description(definition.Id), "detail");
-            Text(brief, "Untimed turns • no character or progression loss on defeat", "hint");
-            var rewards = Card(parent);
             var mission = menuView.Missions.Single(m => m.Definition.Id == definition.Id);
-            Text(rewards, mission.IsReplay ? "Replay victory rewards" : "First-clear victory rewards", "section");
-            if (mission.VictoryRewards.Count == 0) Text(rewards, "No resource rewards for this mission.", "hint");
+            Text(parent, mission.IsReplay ? "REPLAY · COMPLETED MISSION" : "MISSION BRIEFING", "eyebrow")
+                .AddToClassList("mission-brief-context");
+
+            var objective = Card(parent, "briefing-objective");
+            objective.AddToClassList("mission-brief-objective");
+            Text(objective, "OBJECTIVE", "eyebrow").AddToClassList("mission-brief-overline");
+            Text(objective, Description(definition.Id), "detail").AddToClassList("mission-brief-description");
+
+            var terrain = Card(parent, "briefing-terrain");
+            terrain.AddToClassList("mission-brief-terrain");
+            BuildMapPreview(terrain, definition);
+
+            var rewards = Card(parent);
+            rewards.AddToClassList("mission-brief-rewards");
+            Text(rewards, mission.IsReplay ? "Replay rewards" : "Victory rewards", "section")
+                .AddToClassList("mission-brief-reward-title");
+            if (mission.VictoryRewards.Count == 0)
+                Text(rewards, "No resource rewards for this mission.", "hint").AddToClassList("mission-brief-reward-note");
             foreach (var grant in mission.VictoryRewards)
             {
-                var row = Row(rewards); row.AddToClassList("briefing-reward");
-                Text(row, ResourceName(grant.ResourceId), "reward-name");
-                Text(row, "+" + grant.Amount, "reward-amount");
+                var line = Row(rewards); line.AddToClassList("briefing-reward");
+                Text(line, ResourceName(grant.ResourceId), "reward-name");
+                Text(line, "+" + grant.Amount, "reward-amount");
             }
-            Text(rewards, "Collect after victory. Campaign completion rewards are separate and one-time.", "hint");
+            Text(rewards, "Collect after victory · Separate campaign rewards may also apply.", "hint")
+                .AddToClassList("mission-brief-reward-note");
+
+            // Continue remains fixed outside the scroll area. No mission starts,
+            // rewards transfer, or squad draft changes on mere briefing view.
             var dock = Card(content, "deploy-dock");
-            Text(dock, definition.MinimumSquad + "–" + definition.MaximumSquad + " units • " + (definition.IsCampaign ? "faction squad" : "mixed factions allowed"), "hint");
-            Primary(dock, "CHOOSE SQUAD  ›", () => Navigate(Page.Squad));
+            dock.AddToClassList("mission-brief-dock");
+            Text(dock, definition.MinimumSquad + "–" + definition.MaximumSquad + " units · "
+                + (definition.IsCampaign ? "Faction squad" : "Mixed factions") + " · Untimed turns", "hint")
+                .AddToClassList("mission-brief-squad-summary");
+            var chooseSquad = Primary(dock, "CHOOSE SQUAD  ›", () => Navigate(Page.Squad));
+            chooseSquad.AddToClassList("mission-brief-next");
         }
 
         private void BuildSquad(VisualElement parent)
