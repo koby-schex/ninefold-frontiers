@@ -55,6 +55,11 @@ namespace Ninefold.Presentation
             report.AppendLine("Platform: " + Application.platform + " | Editor: " + Application.isEditor);
             report.AppendLine("Scene: " + SceneManager.GetActiveScene().name);
             report.AppendLine("Screen: " + Screen.width + " x " + Screen.height + " | Safe area: " + Screen.safeArea);
+            if (root != null && root.panel != null && safe != null)
+                report.AppendLine("UI panel (UI units): " + root.resolvedStyle.width.ToString("0.#") + " x " +
+                    root.resolvedStyle.height.ToString("0.#") + " | safe viewport: " +
+                    safe.resolvedStyle.width.ToString("0.#") + " x " + safe.resolvedStyle.height.ToString("0.#"));
+            report.AppendLine("Editor Game-view Scale zoom is not an in-game UI size setting.");
             report.AppendLine("Graphics: " + SystemInfo.graphicsDeviceType + " | " + SystemInfo.graphicsDeviceName);
             report.AppendLine("Observed FPS (~1 second): " + (diagnosticFps > 0 ? diagnosticFps.ToString("0.0") : "not sampled"));
             report.AppendLine("Fatal: " + fatal + " | Suspended: " + suspended + " | Animating: " + (playback != null));
@@ -101,7 +106,7 @@ namespace Ninefold.Presentation
             var refresh = new Button(() => { report.value = GetDiagnosticsReport(); status.text = "Snapshot refreshed."; }) { text = "Refresh report" };
             var copy = new Button(() => { GUIUtility.systemCopyBuffer = report.value; status.text = "Report copied. Paste it into the chat."; }) { text = "Copy report" };
             refresh.AddToClassList("game-button"); copy.AddToClassList("game-button");
-            refresh.style.minHeight = copy.style.minHeight = 76;
+            refresh.style.minHeight = copy.style.minHeight = 54;
             panel.Add(refresh); panel.Add(copy);
         }
     }
