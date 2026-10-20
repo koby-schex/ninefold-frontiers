@@ -114,20 +114,58 @@ namespace Ninefold.Core.Content
         public bool IsLegacy { get; }
         private PlaytestProfile(ContentCatalog catalog, MissionPresentation menu, bool legacy)
         { Catalog = catalog; Menu = menu; IsLegacy = legacy; }
-        public static PlaytestProfile Open(IBattleSaveFiles legacy, IBattleSaveFiles current, IProgressSaveFiles progress)
+        /// <summary>
+        /// Each layout revision has its own durable battle directory. Pending
+        /// fights remain on the original authored map until claimed. Once no
+        /// earlier attempt is pending, newly started missions use V3. No
+        /// catalog revision is silently applied to saved geometry.
+        /// </summary>
+        public static PlaytestProfile Open(IBattleSaveFiles legacy, IBattleSaveFiles current, IProgressSaveFiles progress,
+            IBattleSaveFiles latest = null)
         {
-            bool hasCurrent = current.Read(0) != null || current.Read(1) != null;
+            if (legacy == null || current == null || progress == null)
+                throw new ArgumentNullException("Battle and progress stores required.");
+            // Existing three-argument integration callers continue to use the
+            // latest content against their supplied battle store.
+            var newFiles = latest ?? current;
+            bool hasNew = newFiles.Read(0) != null || newFiles.Read(1) != null;
+            bool hasV2 = latest != null && (current.Read(0) != null || current.Read(1) != null);
             bool hasLegacy = legacy.Read(0) != null || legacy.Read(1) != null;
             bool hasProfile = progress.Read(0) != null || progress.Read(1) != null;
-            if (!hasProfile && (hasLegacy || hasCurrent)) throw new InvalidOperationException("Battle exists without its profile; recover the profile before playing.");
-            if (!hasCurrent && hasLegacy)
+            if (!hasProfile && (hasLegacy || hasV2 || hasNew))
+                throw new InvalidOperationException("Battle exists without its profile; recover the profile before playing.");
+
+            // A V3 battle, if present, has priority. Load errors are NOT
+            // swallowed as if corruption were an older layout revision.
+            var catalog = PlaytestContentPackage.Create();
+            var menu = new MissionPresentation(catalog,newFiles,progress,ProfileId);
+            if (hasNew)
             {
-                var oldCatalog = AbstractContentPackage.Create();
-                var oldMenu = new MissionPresentation(oldCatalog,legacy,progress,ProfileId); oldMenu.Open();
-                if (oldMenu.Read().Phase != MissionFlowPhase.Selection) return new PlaytestProfile(oldCatalog,oldMenu,true);
+                menu.Open();
+                if (menu.Read().Phase != MissionFlowPhase.Selection)
+                    return new PlaytestProfile(catalog,menu,false);
             }
-            var catalog = PlaytestContentPackage.Create(); var menu = new MissionPresentation(catalog,current,progress,ProfileId);
-            if (hasProfile) menu.Open(); else menu.CreateProfile();
+            if (hasV2)
+            {
+                var v2 = PlaytestContentPackage.CreateLayoutV2();
+                var v2Menu = new MissionPresentation(v2,current,progress,ProfileId);
+                v2Menu.Open();
+                if (v2Menu.Read().Phase != MissionFlowPhase.Selection)
+                    return new PlaytestProfile(v2,v2Menu,true);
+            }
+            if (hasLegacy)
+            {
+                var previous = AbstractContentPackage.Create();
+                var oldMenu = new MissionPresentation(previous,legacy,progress,ProfileId);
+                oldMenu.Open();
+                if (oldMenu.Read().Phase != MissionFlowPhase.Selection)
+                    return new PlaytestProfile(previous,oldMenu,true);
+            }
+            if (!hasNew)
+            {
+                if (hasProfile) menu.Open();
+                else menu.CreateProfile();
+            }
             return new PlaytestProfile(catalog,menu,false);
         }
     }
