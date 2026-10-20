@@ -15,10 +15,12 @@ Model PRs avoid `FrontiersPlaytest.cs`, shared UI styles and presentation script
 Explain any proposed overlap in preview interfaces or shared gameplay architecture
 to Koby before implementing it. Canon and locked visual masters remain controlling.
 
-The canopy pass incorporates `main` through PR #66. PR #67 was reported as the
-upcoming reusable preview interface, but was not retrievable when this document
-was drafted. No assumptions about its API are implemented. Recheck it before
-runtime integration; document the agreed mapping here without renaming gameplay IDs.
+The canopy pass incorporates `main` through PR #66. The UI preview-interface PR
+was described as planned #67, but did not exist when checked. GitHub then assigned
+#67 to this Olyra model pass. Identify the eventual UI PR by its actual title and
+branch, not that planned number. No assumptions about its API are implemented.
+Read its contract before runtime integration and document the agreed mapping here
+without renaming gameplay IDs.
 
 ## Asset inventory
 
@@ -34,7 +36,7 @@ suffix. Do not hardcode these generated paths in Collection UI or gameplay.
 
 Olyra's source manifest model identifier is `world05.living-veil.olyra`; pose keys
 are `resting` and `protective`. This is an art identifier, NOT a gameplay UnitId.
-A future mapping must use the existing roster and PR #67's agreed API. Stable
+A future mapping must use the existing roster and the UI preview interface's agreed API. Stable
 production prefab paths/GUIDs and the Great Strider art ID will be assigned during
 that integration. Keep source identifiers separate from display names and revisions.
 
