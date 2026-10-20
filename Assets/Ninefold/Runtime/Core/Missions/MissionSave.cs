@@ -63,14 +63,25 @@ namespace Ninefold.Core.Missions
             if(r.ReadBoolean())
             {
                 var outcome=SaveIO.EnumValue<MissionOutcome>(r); int round=r.ReadInt32(); string reason=SaveIO.Text(r);
-                SaveIO.Require(turns.IsBattleEnded && round==turns.RoundNumber && round>0,"Result on open battle.");
-                bool won=restored[0].Status==ObjectiveStatus.Completed;
-                bool squadLost=!squad.Any(controller.Alive);
-                bool failed=squadLost || restored[0].Status==ObjectiveStatus.Failed;
-                bool victory=won && (!failed || priority==OutcomePriority.SuccessFirst);
-                SaveIO.Require((won || failed) && (outcome==MissionOutcome.Victory)==victory,"Inconsistent outcome.");
-                string expected=victory ? "PrimaryCompleted" : squadLost ? "SquadUnavailable" : "PrimaryFailed";
-                SaveIO.Require(reason==expected,"Invalid result reason.");
+                bool retreated = reason=="PlayerRetreated";
+                SaveIO.Require(turns.IsBattleEnded && round==turns.RoundNumber &&
+                    (round>0 || retreated),"Result on open battle.");
+                if (retreated)
+                {
+                    // A deliberate retreat need not fail an authored objective,
+                    // but always records a defeat and never a first-clear.
+                    SaveIO.Require(outcome==MissionOutcome.Defeat,"Retreat cannot award victory.");
+                }
+                else
+                {
+                    bool won=restored[0].Status==ObjectiveStatus.Completed;
+                    bool squadLost=!squad.Any(controller.Alive);
+                    bool failed=squadLost || restored[0].Status==ObjectiveStatus.Failed;
+                    bool victory=won && (!failed || priority==OutcomePriority.SuccessFirst);
+                    SaveIO.Require((won || failed) && (outcome==MissionOutcome.Victory)==victory,"Inconsistent outcome.");
+                    string expected=victory ? "PrimaryCompleted" : squadLost ? "SquadUnavailable" : "PrimaryFailed";
+                    SaveIO.Require(reason==expected,"Invalid result reason.");
+                }
                 controller.Result=new BattleResult(definition,outcome,round,reason,restored.Select(s=>s.View()).ToArray());
             }
             return controller;
