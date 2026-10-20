@@ -1,0 +1,359 @@
+/*
+ * Native Mobile Experience 01 — PT-060
+ * Dedicated full-screen app destinations instead of popup-like website cards.
+ * Home artwork is preserved; no canonical world artwork is repurposed.
+ * Touch-first battle controls: ability-only strip, one compact END control.
+ */
+
+/* Full-screen destinations own the phone viewport. Do not inherit the
+ * sanctuary overlay or translucent website container appearance. */
+.root.native-screen-mode #safe-area {
+    padding: 0;
+    background-color: rgb(14, 23, 19);
+}
+.root.native-screen-mode #screen-content {
+    flex-grow: 1;
+    min-height: 0;
+    padding: 0;
+    margin: 0;
+    background-color: rgb(13, 24, 21);
+}
+.root.native-screen-mode.campaign-overview-mode #screen-content,
+.root.native-screen-mode.mission-path-mode #screen-content,
+.root.native-screen-mode.mission-briefing-clarity-mode #screen-content {
+    background-color: rgb(16, 28, 27);
+}
+.root.native-screen-mode.collection-clarity-mode #screen-content {
+    background-color: rgb(15, 25, 20);
+}
+.root.native-screen-mode.support-menu-mode #screen-content {
+    background-color: rgb(19, 27, 26);
+}
+.root.native-screen-mode .page-scroll {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0;
+    margin: 0;
+    padding: 12px 14px 12px 14px;
+    border-width: 0;
+    border-radius: 0;
+    background-color: transparent;
+}
+.root.native-screen-mode .page-scroll > .unity-scroll-view__content-viewport >
+.unity-scroll-view__content-container {
+    padding: 0 0 15px 0;
+}
+.root.native-screen-mode .native-page-bar {
+    min-height: 56px;
+    max-height: 56px;
+    width: 100%;
+    flex-shrink: 0;
+    margin: 0;
+    padding: 5px 12px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(212, 180, 123, 0.40);
+    background-color: rgb(14, 23, 20);
+}
+.root.native-screen-mode #safe-area Button.game-button.native-top-back,
+.root.native-screen-mode #safe-area Button.game-button.native-top-home {
+    width: 49px;
+    min-width: 49px;
+    height: 45px;
+    min-height: 45px;
+    margin: 0;
+    padding: 0;
+    border-width: 1px;
+    border-color: rgba(154, 148, 125, 0.55);
+    border-radius: 7px;
+    background-color: rgb(35, 47, 38);
+    color: rgb(249, 241, 223);
+    font-size: 24px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+.root.native-screen-mode #safe-area Button.game-button.native-top-back:hover,
+.root.native-screen-mode #safe-area Button.game-button.native-top-home:hover {
+    border-color: rgb(229, 197, 145);
+    background-color: rgb(57, 66, 51);
+}
+.root.native-screen-mode #safe-area Button.game-button.native-top-back:focus,
+.root.native-screen-mode #safe-area Button.game-button.native-top-home:focus {
+    border-width: 2px;
+    border-color: rgb(253, 242, 213);
+}
+.root.native-screen-mode .native-top-emblem {
+    width: 49px;
+    min-width: 49px;
+    -unity-text-align: middle-center;
+    font-size: 23px;
+    -unity-font-style: bold;
+    color: rgb(212, 180, 123);
+}
+.root.native-screen-mode .native-top-title {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    padding: 3px 7px;
+    font-size: 14px;
+    letter-spacing: 2px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    color: rgb(247, 238, 216);
+    white-space: nowrap;
+}
+/* Full-bleed mobile tab bar. Navigation does not scroll away with content. */
+.root.native-screen-mode #safe-area .navigation.unified-navigation {
+    flex-shrink: 0;
+    min-height: 59px;
+    max-height: 67px;
+    padding: 2px 4px 3px 4px;
+    margin: 0;
+    border-top-width: 1px;
+    border-top-color: rgba(212, 180, 123, 0.50);
+    background-color: rgb(12, 20, 17);
+}
+.root.native-screen-mode #safe-area .navigation.unified-navigation >
+Button.game-button.unified-nav-button {
+    flex-grow: 1;
+    flex-basis: 0;
+    min-width: 0;
+    min-height: 55px;
+    max-height: 61px;
+    margin: 0 2px;
+    padding: 3px 2px;
+    border-width: 0;
+    border-bottom-width: 2px;
+    border-bottom-color: transparent;
+    border-radius: 5px;
+    background-color: transparent;
+}
+.root.native-screen-mode #safe-area .navigation.unified-navigation >
+Button.game-button.unified-nav-button.selected {
+    border-bottom-color: rgb(212, 180, 123);
+    background-color: rgba(212, 180, 123, 0.14);
+}
+.root.native-screen-mode #safe-area .navigation.unified-navigation .nav-label {
+    font-size: 11px;
+    margin: 0;
+    color: rgb(233, 222, 202);
+}
+.root.native-screen-mode #safe-area .navigation.unified-navigation .unified-nav-button .home-icon {
+    width: 22px;
+    height: 22px;
+    margin-bottom: 3px;
+}
+/* Briefing and squad need a visible fixed deploy action ABOVE the nav. */
+.root.native-screen-mode .deploy-dock {
+    flex-shrink: 0;
+    width: 100%;
+    margin: 0;
+    padding: 7px 12px 7px 12px;
+    border-width: 0;
+    border-top-width: 1px;
+    border-top-color: rgba(212, 180, 123, 0.43);
+    border-radius: 0;
+    background-color: rgb(17, 28, 24);
+}
+.root.native-screen-mode .deploy-dock .vmp-deploy-facts {
+    margin: 0 0 3px 0;
+}
+.root.native-screen-mode #safe-area .deploy-dock Button.game-button.primary {
+    min-height: 46px;
+    margin: 2px 0;
+    padding: 7px 12px;
+    border-radius: 6px;
+}
+.root.native-screen-mode .roster-entry {
+    margin-bottom: 7px;
+}
+.root.native-screen-mode .card {
+    border-radius: 6px;
+}
+.root.native-screen-mode #safe-area Button.game-button.back-link,
+.root.native-screen-mode #safe-area Button.game-button.collection-back {
+    min-height: 46px;
+    padding: 8px;
+}
+/* Touch scrolling is the native interface. No draggable scroll bars anywhere,
+ * including Settings and expanded unit details. */
+.root .unity-scroll-view__vertical-scroller,
+.root .unity-scroll-view__horizontal-scroller {
+    display: none;
+}
+
+/* The battlefield itself fills nearly the entire remaining screen. */
+.root.visual-hud-mode .battle-header {
+    flex-shrink: 0;
+    padding: 3px 5px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(212, 180, 123, 0.50);
+    background-color: rgba(14, 22, 18, 0.98);
+}
+.root.visual-hud-mode .battle-title-row {
+    align-items: center;
+    justify-content: space-between;
+}
+.root.visual-hud-mode #safe-area .battle-title-row >
+Button.game-button.mobile-battle-back,
+.root.visual-hud-mode #safe-area .battle-title-row >
+Button.game-button.mobile-battle-end {
+    flex-grow: 0;
+    flex-shrink: 0;
+    flex-basis: 44px;
+    min-width: 44px;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 3px;
+    margin: 0 2px;
+    border-radius: 5px;
+    border-width: 1px;
+    border-color: rgba(136, 145, 118, 0.63);
+    background-color: rgb(33, 45, 36);
+    color: rgb(246, 236, 211);
+    font-size: 14px;
+    -unity-font-style: bold;
+}
+.root.visual-hud-mode #safe-area .battle-title-row >
+Button.game-button.mobile-battle-end:disabled {
+    background-color: rgb(25, 32, 29);
+    color: rgb(143, 143, 128);
+}
+.root.visual-hud-mode .btg-objective-header {
+    min-width: 0;
+    flex-grow: 1;
+}
+.root.visual-hud-mode .btg-goal {
+    font-size: 12px;
+}
+.root.visual-hud-mode .battle-dock {
+    height: 112px;
+    min-height: 112px;
+    flex-shrink: 0;
+    border-top-width: 1px;
+    border-top-color: rgba(212, 180, 123, 0.56);
+    background-color: rgba(14, 22, 18, 0.99);
+}
+.root.visual-hud-mode .controls {
+    padding: 5px 7px 4px 7px;
+    background-color: transparent;
+}
+.root.visual-hud-mode .mobile-active-unit {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    min-height: 25px;
+    margin: 0 0 3px 0;
+    padding: 0 2px;
+}
+.root.visual-hud-mode .mobile-actor-name {
+    flex-grow: 1;
+    min-width: 0;
+    font-size: 15px;
+    -unity-font-style: bold;
+    color: rgb(249, 241, 221);
+    white-space: nowrap;
+}
+.root.visual-hud-mode .mobile-actor-move,
+.root.visual-hud-mode .mobile-actor-action {
+    flex-shrink: 0;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: rgb(218, 204, 177);
+    margin-left: 8px;
+}
+.root.visual-hud-mode .mobile-ability-strip {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 50px;
+    margin: 0;
+}
+.root.visual-hud-mode #safe-area .mobile-ability-strip >
+Button.game-button.mobile-ability-button,
+.root.visual-hud-mode #safe-area .mobile-ability-strip >
+Button.game-button.mobile-passive-button {
+    min-width: 0;
+    flex-grow: 1;
+    flex-basis: 0;
+    flex-shrink: 1;
+    min-height: 47px;
+    height: 47px;
+    margin: 0 3px;
+    padding: 6px 3px;
+    border-radius: 5px;
+    border-width: 1px;
+    border-color: rgba(143, 156, 130, 0.67);
+    background-color: rgb(38, 51, 41);
+    color: rgb(244, 237, 219);
+    font-size: 12px;
+    -unity-font-style: bold;
+}
+.root.visual-hud-mode #safe-area .mobile-ability-strip >
+Button.game-button.mobile-ability-button.selected {
+    background-color: rgb(91, 83, 57);
+    border-color: rgb(227, 190, 129);
+}
+.root.visual-hud-mode #safe-area .mobile-ability-strip >
+Button.game-button.mobile-passive-button {
+    background-color: rgb(35, 40, 48);
+    border-color: rgba(177, 166, 199, 0.62);
+}
+.root.visual-hud-mode .mobile-action-preview {
+    min-width: 0;
+    flex-grow: 1;
+    flex-basis: 46%;
+    font-size: 13px;
+    -unity-font-style: bold;
+    color: rgb(240, 216, 177);
+    white-space: normal;
+}
+.root.visual-hud-mode #safe-area .mobile-ability-strip >
+Button.game-button.mobile-confirm,
+.root.visual-hud-mode #safe-area .mobile-ability-strip >
+Button.game-button.mobile-cancel {
+    flex-shrink: 0;
+    flex-basis: 65px;
+    min-width: 65px;
+    min-height: 47px;
+    height: 47px;
+    margin: 0 2px;
+    padding: 4px;
+    border-radius: 5px;
+    border-width: 1px;
+    border-color: rgb(212, 180, 123);
+    font-size: 11px;
+}
+.root.visual-hud-mode #safe-area .mobile-ability-strip >
+Button.game-button.mobile-cancel {
+    background-color: rgb(39, 50, 44);
+    border-color: rgb(116, 132, 113);
+}
+.root.visual-hud-mode .mobile-battle-feedback {
+    font-size: 11px;
+    color: rgb(224, 210, 186);
+    margin: 2px 3px 0 3px;
+    white-space: normal;
+}
+.root.visual-hud-mode .health-overlay {
+    background-color: rgba(13, 20, 18, 0.82);
+}
+/* Preserve comfortable hit zones on small mobile screens. */
+.root.compact-home.native-screen-mode .native-page-bar { min-height: 50px; max-height: 50px; }
+.root.compact-home.native-screen-mode .native-top-title { font-size: 12px; }
+.root.compact-home.visual-hud-mode .battle-dock { height: 105px; min-height: 105px; }
+.root.compact-home.visual-hud-mode .mobile-actor-name { font-size: 13px; }
+.root.compact-home.visual-hud-mode .mobile-actor-action { font-size: 9px; }
+.root.short-home.native-screen-mode .native-page-bar { min-height: 47px; max-height: 47px; }
+.root.short-home.native-screen-mode .page-scroll { padding: 6px 10px; }
+.root.short-home.visual-hud-mode .battle-dock { height: auto; min-height: 0; width: 190px; }
+.root.short-home.visual-hud-mode .mobile-ability-strip { flex-wrap: wrap; }
+.root.short-home.visual-hud-mode #safe-area .mobile-ability-strip >
+Button.game-button.mobile-ability-button,
+.root.short-home.visual-hud-mode #safe-area .mobile-ability-strip >
+Button.game-button.mobile-passive-button { min-height: 44px; height: 44px; }
