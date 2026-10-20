@@ -189,7 +189,12 @@ internal static partial class Program
         foreach(var starters in new[] { new[] { "fixture-a-1","fixture-a-2","fixture-a-5" }, new[] { "fixture-b-1","fixture-b-2","fixture-b-3" } })
             Throws<ArgumentException>(()=>Repackage(c,starters:starters));
         var m=c.Missions["fixture-opening"];
-        var oversized=new MissionContent(m.Id,m.FactionId,true,1,m.Map,Enumerable.Range(0,6).Select(i=>P(i*2,0)),m.Actors,m.Objectives[0]);
+        Throws<ArgumentException>(()=>new MissionContent(m.Id,m.FactionId,true,1,m.Map,
+            Enumerable.Range(0,6).Select(i=>P(i*2,0)),m.Actors,m.Objectives[0]));
+        // Explicit World Collision still cannot exceed the eligible roster.
+        var oversized=new MissionContent(m.Id,m.FactionId,true,6,m.Map,
+            Enumerable.Range(0,6).Select(i=>P(i*2,0)),m.Actors,m.Objectives[0],
+            encounter:EncounterKind.WorldCollision);
         Throws<ArgumentException>(()=>ReplaceMission(c,oversized));
     }
     private static void ContentRevisions()
