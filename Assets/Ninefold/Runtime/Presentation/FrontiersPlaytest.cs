@@ -118,6 +118,11 @@ namespace Ninefold.Presentation
             var visualFoundation = Resources.Load<StyleSheet>("Home/VisualFoundation02");
             if (visualFoundation != null) root.styleSheets.Add(visualFoundation);
             else Debug.LogWarning("Visual foundation 02 styles are missing. Check project import.", this);
+            // Roster thumbnails belong to Collection only and are safely
+            // optional until production preview textures are registered.
+            var collectionVisual = Resources.Load<StyleSheet>("Home/CollectionVisual03");
+            if (collectionVisual != null) root.styleSheets.Add(collectionVisual);
+            else Debug.LogWarning("Collection visual styles are missing. Check project import.", this);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
@@ -705,7 +710,8 @@ namespace Ninefold.Presentation
             detail.AddToClassList("collection-detail-card");
             FrontiersVisualPrimitives.UnitPreview(detail, inspectedUnit, selected.Unit.Definition.Roster.IsApex, selected.Unit.Owned);
             var identity = Row(detail); identity.AddToClassList("collection-detail-identity");
-            UnitBadge(identity, inspectedUnit, selected.Unit.Definition.Roster.IsApex);
+            // The preview now serves as the unit's visual identity. Avoid
+            // repeating an oversized prototype ID badge beneath the render.
             var copy = new VisualElement(); copy.AddToClassList("collection-detail-copy"); identity.Add(copy);
             Text(copy, selected.Unit.Definition.Roster.IsApex ? "APEX UNIT" : "STANDARD UNIT", "eyebrow")
                 .AddToClassList("collection-overline");
@@ -798,18 +804,31 @@ namespace Ninefold.Presentation
                         collectionDetailsExpanded = false;
                     });
                     tile.AddToClassList("collection-roster-entry");
+                    tile.AddToClassList("vif-roster-tile");
+                    tile.tooltip = UnitName(id) + (entry.Unit.Owned ? " · Unlocked" : " · Locked");
                     var line = Row(tile); line.AddToClassList("collection-roster-row");
-                    UnitBadge(line, id, entry.Unit.Definition.Roster.IsApex);
+                    FrontiersVisualPrimitives.UnitPortrait(line, id,
+                        entry.Unit.Definition.Roster.IsApex, entry.Unit.Owned);
                     var identity = new VisualElement(); identity.AddToClassList("collection-roster-copy"); line.Add(identity);
                     Text(identity, UnitName(id), "section").AddToClassList("collection-roster-title");
-                    Text(identity, (entry.Unit.Definition.Roster.IsApex ? "APEX · " : "STANDARD · ")
-                        + (entry.Unit.Owned ? "Rank " + entry.Unit.Rank : "Locked"), "detail")
+                    Text(identity, entry.Unit.Owned ? "RANK " + entry.Unit.Rank : "LOCKED", "detail")
                         .AddToClassList("collection-roster-state");
                     var offer = entry.Unit.Owned ? entry.Advance : entry.Unlock;
-                    Text(identity, offer.Block == CollectionBlock.MaximumRank
-                        ? entry.Fragments + " fragments held · Maximum test rank"
-                        : entry.Fragments + " / " + offer.Cost + " fragments", "hint")
-                        .AddToClassList("collection-roster-fragments");
+                    if (offer.Block == CollectionBlock.MaximumRank)
+                    {
+                        Text(identity, "MAX RANK", "hint").AddToClassList("collection-roster-fragments");
+                    }
+                    else
+                    {
+                        // Resource quantity and visual meter reflect the existing
+                        // core offer; this never changes balance or eligibility.
+                        var progress = Row(identity); progress.AddToClassList("vif-roster-resource");
+                        Text(progress, entry.Fragments + " / " + offer.Cost, "hint")
+                            .AddToClassList("collection-roster-fragments");
+                        if (offer.CanConfirm)
+                            Text(progress, "READY", "hint").AddToClassList("vif-roster-ready");
+                        Meter(identity, entry.Fragments, Math.Max(1, offer.Cost));
+                    }
                     Text(line, "›", "section").AddToClassList("collection-roster-arrow");
                 }
             }
