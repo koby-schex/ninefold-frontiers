@@ -103,9 +103,16 @@ namespace Ninefold.Core.Content
             Id = id; UnitId = unitId; Position = position; IsHostile = isHostile; Behavior = behavior;
         }
     }
+    // Authored encounter type, not a player-selected battlefield size.
+    // Only a deliberately authored World Collision permits 6-8 deployments.
+    public enum EncounterKind { Standard, WorldCollision }
+
     public sealed class MissionContent
     {
         public string Id { get; }
+        public EncounterKind Encounter { get; }
+        // Visual direction key, never canonical geography or a game-rule input.
+        public string EnvironmentKey { get; }
         public string FactionId { get; }
         public bool IsCampaign { get; }
         public int MinimumSquad { get; }
@@ -117,15 +124,25 @@ namespace Ninefold.Core.Content
         public OutcomePriority Priority { get; }
         public MissionContent(string id, string factionId, bool isCampaign, int minimumSquad, BattlefieldMap map,
             IEnumerable<FieldPoint> deployment, IEnumerable<ActorSpawn> actors, ObjectiveDefinition primary,
-            OutcomePriority priority = OutcomePriority.FailureFirst, IEnumerable<ObjectiveDefinition> optional = null)
+            OutcomePriority priority = OutcomePriority.FailureFirst, IEnumerable<ObjectiveDefinition> optional = null,
+            EncounterKind encounter = EncounterKind.Standard, string environmentKey = null)
         {
             ContentIds.Check(id); if (factionId != null) ContentIds.Check(factionId);
             if (isCampaign && factionId == null) throw new ArgumentException("Campaign mission requires a faction.");
             var points = deployment?.ToArray() ?? throw new ArgumentNullException(nameof(deployment));
-            if (minimumSquad < 1 || points.Length < minimumSquad || points.Length > 8) throw new ArgumentException("Catalog squads must have 1–8 deployment slots.");
+            if (minimumSquad < 1 || points.Length < minimumSquad || points.Length > 8)
+                throw new ArgumentException("Catalog squads must have 1–8 deployment slots.");
+            if (!Enum.IsDefined(typeof(EncounterKind),encounter))
+                throw new ArgumentOutOfRangeException(nameof(encounter));
+            if (encounter == EncounterKind.WorldCollision && (points.Length <= 5 || minimumSquad <= 5))
+                throw new ArgumentException("World Collision requires six or more combatants in its authored squad.");
+            if (encounter == EncounterKind.Standard && points.Length > 5)
+                throw new ArgumentException("Standard encounters cannot silently gain World Collision squad capacity.");
+            if (environmentKey != null) ContentIds.Check(environmentKey);
             var spawns = ContentIds.Items(actors, a => a.Id);
             var definition = new MissionDefinition(id, "validation", new[] { "$leader" }, primary, priority, optional);
             Id = id; FactionId = factionId; IsCampaign = isCampaign; MinimumSquad = minimumSquad;
+            Encounter = encounter; EnvironmentKey = environmentKey;
             Map = map ?? throw new ArgumentNullException(nameof(map)); Deployment = Array.AsReadOnly(points);
             Actors = Array.AsReadOnly(spawns); Objectives = definition.Objectives; Priority = priority;
         }
