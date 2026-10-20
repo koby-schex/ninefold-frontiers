@@ -17,6 +17,7 @@ internal static partial class Program
         ("Flow reopens claimed result at selection without another grant", FlowClaimed),
         ("Flow replay gets a fresh attempt and replay rewards", FlowReplay),
         ("Flow defeat preserves progress and returns to selection", FlowDefeat),
+        ("Flow voluntary retreat persists zero-reward defeat and permits another attempt", FlowRetreat),
         ("Flow rejects replacing a pending or unclaimed battle", FlowPending),
         ("Flow enforces unknown locked duplicate and sized squads", FlowSquad),
         ("Flow enforces one Apex even in mixed-faction modes", FlowApex),
