@@ -1,0 +1,200 @@
+/*
+ * Home Screen Polish 01 — website-informed, approved-sanctuary-preserving pass.
+ * Loaded after Controls.uss; intentionally restricted to .home-mode.
+ * No input logic, battle HUD, non-Home menu, or art changes.
+ */
+
+/* Keep the World Five sanctuary visible; frame its content in the official
+ * Ninefold ink/ivory/gold language instead of a second, busy decoration layer. */
+.root.home-mode .home-masthead {
+    padding-top: 18px;
+    padding-bottom: 10px;
+    background-color: rgba(17, 22, 17, 0.24);
+}
+.root.home-mode .home-wordmark {
+    font-size: 43px;
+    letter-spacing: 6px;
+    color: rgb(246, 239, 221);
+}
+.root.home-mode .home-submark {
+    font-size: 14px;
+    color: rgb(246, 239, 221);
+}
+.root.home-mode .home-actions {
+    padding: 16px;
+    background-color: rgba(17, 22, 17, 0.94);
+    border-top-color: rgba(212, 180, 123, 0.50);
+}
+.root.home-mode .home-kicker {
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: rgb(212, 180, 123);
+    margin-bottom: 6px;
+}
+.root.home-mode .home-title {
+    font-size: 39px;
+    color: rgb(246, 239, 221);
+}
+.root.home-mode .home-summary {
+    font-size: 16px;
+    color: rgb(217, 210, 197);
+    margin-top: 7px;
+    margin-bottom: 9px;
+}
+
+/* One unmistakable action; a flatter, crafted control instead of a beveled
+ * stack. Specificity beats the shared game-button rules loaded earlier. */
+.root.home-mode #safe-area Button.game-button.home-primary {
+    min-height: 64px;
+    margin-top: 7px;
+    margin-bottom: 10px;
+    padding: 11px 14px;
+    border-width: 1px;
+    border-bottom-width: 2px;
+    border-color: rgb(231, 209, 165);
+    border-bottom-color: rgb(117, 94, 64);
+    border-radius: 6px;
+    background-color: rgb(212, 180, 123);
+    color: rgb(17, 22, 17);
+    font-size: 18px;
+    letter-spacing: 1px;
+}
+.root.home-mode #safe-area Button.game-button.home-primary:hover {
+    background-color: rgb(236, 213, 167);
+    border-color: rgb(246, 239, 221);
+}
+.root.home-mode #safe-area Button.game-button.home-primary:active {
+    background-color: rgb(191, 155, 100);
+    border-color: rgb(171, 135, 82);
+}
+.root.home-mode #safe-area Button.game-button.home-primary:focus {
+    border-color: rgb(246, 239, 221);
+    border-width: 2px;
+}
+
+/* Two quiet, equal-weight shortcuts. Unlike the prototype's 170px minimum,
+ * flexible buttons can coexist at narrow phone widths without stacking. */
+.root.home-mode .home-shortcuts {
+    flex-wrap: nowrap;
+}
+.root.home-mode #safe-area Button.game-button.home-shortcut {
+    min-width: 0;
+    flex-basis: 0;
+    flex-grow: 1;
+    min-height: 90px;
+    margin: 3px;
+    padding: 8px 5px;
+    border-width: 1px;
+    border-color: rgba(171, 168, 145, 0.45);
+    border-radius: 6px;
+    background-color: rgba(37, 47, 39, 0.76);
+}
+.root.home-mode #safe-area Button.game-button.home-shortcut:hover {
+    background-color: rgba(50, 63, 52, 0.95);
+    border-color: rgb(212, 180, 123);
+}
+.root.home-mode #safe-area Button.game-button.home-shortcut:active {
+    background-color: rgb(30, 40, 32);
+}
+.root.home-mode #safe-area Button.game-button.home-shortcut:focus {
+    border-color: rgb(246, 239, 221);
+    border-width: 2px;
+}
+.root.home-mode .home-shortcut .home-icon {
+    width: 26px;
+    height: 26px;
+    margin-bottom: 3px;
+    -unity-image-tint-color: rgb(246, 239, 221);
+}
+.root.home-mode .home-shortcut-title {
+    font-size: 17px;
+    color: rgb(246, 239, 221);
+}
+.root.home-mode .home-shortcut-detail {
+    font-size: 12px;
+    color: rgb(187, 186, 165);
+    margin-top: 3px;
+}
+.root.home-mode .home-status {
+    font-size: 13px;
+    color: rgb(212, 180, 123);
+    margin-top: 8px;
+}
+.root.home-mode .home-fixture {
+    font-size: 10px;
+    color: rgb(174, 171, 158);
+    margin-top: 7px;
+}
+
+/* Bottom nav must be familiar and quiet; silver-violet selection acknowledges
+ * the already-approved World Five sanctuary without universalizing its palette. */
+.root.home-mode #safe-area .navigation {
+    padding-top: 4px;
+    background-color: rgba(17, 22, 17, 0.97);
+    border-top-color: rgba(212, 180, 123, 0.34);
+}
+.root.home-mode #safe-area Button.game-button.nav-button {
+    min-height: 66px;
+    padding: 5px 2px;
+    margin: 1px;
+    border-width: 0;
+    border-bottom-width: 2px;
+    border-bottom-color: transparent;
+    border-radius: 0;
+    background-color: transparent;
+}
+.root.home-mode #safe-area Button.game-button.nav-button.selected {
+    background-color: rgba(177, 166, 199, 0.10);
+    border-bottom-color: rgb(177, 166, 199);
+}
+.root.home-mode #safe-area Button.game-button.nav-button:hover {
+    background-color: rgba(177, 166, 199, 0.16);
+}
+.root.home-mode #safe-area Button.game-button.nav-button:focus {
+    border-top-width: 2px;
+    border-top-color: rgb(246, 239, 221);
+}
+.root.home-mode #safe-area .nav-label {
+    font-size: 14px;
+    color: rgb(217, 210, 197);
+}
+.root.home-mode #safe-area .nav-button.selected .nav-label {
+    color: rgb(246, 239, 221);
+}
+.root.home-mode #safe-area .nav-button .home-icon {
+    width: 23px;
+    height: 23px;
+    margin-bottom: 3px;
+}
+
+/* Compact phone sizes: preserve the atmosphere by removing *text density*,
+ * never by shrinking controls below useful finger-target sizes. */
+.root.compact-home.home-mode .home-masthead {
+    padding-top: 9px;
+    padding-bottom: 7px;
+}
+.root.compact-home.home-mode .home-wordmark { font-size: 36px; }
+.root.compact-home.home-mode .home-title { font-size: 32px; }
+.root.compact-home.home-mode .home-actions { padding: 12px; }
+.root.compact-home.home-mode .home-shortcut-detail { display: none; }
+.root.compact-home.home-mode #safe-area Button.game-button.home-shortcut { min-height: 68px; }
+.root.compact-home.home-mode #safe-area Button.game-button.nav-button { min-height: 58px; }
+.root.compact-home.home-mode .home-vista { min-height: 30px; }
+
+/* Short landscape/window must remain scrollable with the header hidden; the
+ * short-mode rule wins over the regular Home declarations above. */
+.root.short-home.home-mode .home-masthead { display: none; }
+.root.short-home.home-mode .home-vista { min-height: 0; }
+.root.short-home.home-mode .home-title { font-size: 28px; }
+.root.short-home.home-mode #safe-area Button.game-button.home-primary {
+    min-height: 44px;
+    font-size: 14px;
+    padding: 7px 10px;
+}
+.root.short-home.home-mode #safe-area Button.game-button.home-shortcut { min-height: 46px; }
+.root.short-home.home-mode #safe-area Button.game-button.nav-button { min-height: 44px; }
+.root.short-home.home-mode .home-shortcut-detail { display: none; }
+.root.short-home.home-mode .home-shortcut .home-icon { width: 18px; height: 18px; }
+.root.short-home.home-mode .home-shortcut-title { font-size: 13px; }
+.root.short-home.home-mode #safe-area .nav-label { font-size: 12px; }
+.root.short-home.home-mode #safe-area .nav-button .home-icon { width: 18px; height: 18px; }
