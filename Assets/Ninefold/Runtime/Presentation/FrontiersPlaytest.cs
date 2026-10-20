@@ -31,7 +31,7 @@ namespace Ninefold.Presentation
         private long announcedActivation;
         private float turnCueUntil;
         private PlaytestBattlefield field;
-        private VisualElement root, safe, content, surface, controls, heading, homeBackdrop;
+        private VisualElement root, safe, content, surface, controls, heading, homeBackdrop, battleRadar;
         private Label notice;
         private ScrollView menuScroll;
         private Page renderedPage;
@@ -1000,24 +1000,33 @@ namespace Ninefold.Presentation
             var line = Row(top); line.AddToClassList("battle-title-row");
             var actor = b.Units.FirstOrDefault(u => u.Id == b.Activation?.UnitId);
             Button(line, "Home", () => { input.Cancel(); inBattle = false; battleDetails = false; Navigate(Page.Home); }, !battleView.IsAnimating);
-            Text(line, string.Join(" · ", b.Objectives.Select(o => (o.Kind == ObjectiveKind.Stabilize ? "Stabilize" : "Defeat enemies") + " " + o.Progress + "/" + o.Required)), "objective-text");
+            // The primary objective always reflects the real objective kind;
+            // bonus goals remain a small secondary progress counter.
+            BattleObjectiveGuidance.Header(line, b.Objectives);
             Button(line, battleDetails ? "Close" : "Info", () => { battleDetails = !battleDetails; });
             var stage = new VisualElement(); stage.AddToClassList("battle-stage"); content.Add(stage);
             surface = new VisualElement { name = "battle-surface" }; surface.style.flexGrow = 1; surface.style.minHeight = 100;
             surface.style.overflow = Overflow.Hidden; stage.Add(surface);
             surface.RegisterCallback<PointerDownEvent>(e => {
+                // The inset is informational, never a second command surface.
+                if (battleRadar != null && battleRadar.worldBound.Contains(e.position)) { pointer = -1; return; }
                 if (e.button != 0 || !e.isPrimary || pointer != -1) { pointer = -1; return; }
                 pointer = e.pointerId; pointerStart = e.position;
             });
             surface.RegisterCallback<PointerCancelEvent>(_ => pointer = -1);
             surface.RegisterCallback<PointerLeaveEvent>(_ => pointer = -1);
             surface.RegisterCallback<PointerUpEvent>(e => {
-                bool tap = pointer == e.pointerId && e.button == 0 && e.isPrimary && Vector2.Distance(pointerStart, (Vector2)e.position) <= 12;
+                bool inset = battleRadar != null && battleRadar.worldBound.Contains(e.position);
+                bool tap = !inset && pointer == e.pointerId && e.button == 0 &&
+                    e.isPrimary && Vector2.Distance(pointerStart, (Vector2)e.position) <= 12;
                 pointer = -1; e.StopPropagation();
                 if (tap && !dirty && playback == null && !suspended && !battleDetails) Guard(() => Pick((Vector2)e.position));
             });
-            field.Show(battleView, input.ReadPlanning(), catalog.Missions[b.MissionId].Objectives, surface,
-                catalog.Missions[b.MissionId].EnvironmentKey);
+            var mission = catalog.Missions[b.MissionId];
+            field.Show(battleView, input.ReadPlanning(), mission.Objectives, surface, mission.EnvironmentKey);
+            // A read-only overhead schematic reinforces world-specific map
+            // wayfinding without inventing collision routes or adding UI prose.
+            battleRadar = BattleObjectiveGuidance.Radar(surface, mission, b);
             if (b.Activation != null)
             {
                 if (announcedAttempt != b.AttemptId || announcedActivation != b.Activation.ActivationId)
@@ -1377,7 +1386,18 @@ namespace Ninefold.Presentation
         private static Label Text(VisualElement parent, string text, string cls) { var l = new Label(text); l.AddToClassList(cls); parent.Add(l); return l; }
         public static string UnitName(string id) => id == null ? "—" : id.Replace("fixture-enemy-", "Enemy ").Replace("fixture-a-", "A").Replace("fixture-b-", "B");
         private static string ResourceName(string id) => id.StartsWith("fragment-") ? UnitName(id.Substring(9)) + " fragments" : "Test supplies";
-        private static string Description(string id) => id == "fixture-mixed" ? "Defeat the enemy. Use either side of the central cover island to approach." : id == "fixture-opening" ? "Stabilize the marked objective. An open center with offset side cover." : id == "fixture-finale" ? "Stabilize the objective. A northern barrier and slow central ground change your routes." : "Stabilize the objective with faction B units. Offset walls create an asymmetric arena.";
+        private string Description(string id)
+        {
+            if (catalog.Manifest.ContentRevision != "fixture-layouts-v3")
+                return id == "fixture-mixed" ? "Defeat the enemy. Use either side of the central cover island to approach."
+                    : id == "fixture-opening" ? "Stabilize the marked objective. An open center with offset side cover."
+                    : id == "fixture-finale" ? "Stabilize the objective. A northern barrier and slow central ground change your routes."
+                    : "Stabilize the objective with faction B units. Offset walls create an asymmetric arena.";
+            return id == "fixture-mixed" ? "Defeat the enemy. Cover divides two approaches."
+                : id == "fixture-opening" ? "Reach and stabilize the marked objective beyond the entry cover."
+                : id == "fixture-finale" ? "Advance through staggered cover or the slow central route to stabilize."
+                : "Stabilize the marked objective beyond the asymmetric cover.";
+        }
         private static string MissionName(string id) => id == "fixture-opening" ? "Stabilization" : id == "fixture-mixed" ? "Quick combat" : id == "fixture-finale" ? "Campaign finale" : "Faction B: stabilization";
         private void OnDestroy() { if (playback != null) StopCoroutine(playback); field?.Dispose(); }
     }
