@@ -102,6 +102,11 @@ namespace Ninefold.Presentation
             var collectionClarity = Resources.Load<StyleSheet>("Home/CollectionClarity");
             if (collectionClarity != null) root.styleSheets.Add(collectionClarity);
             else Debug.LogWarning("Collection clarity styles are missing. Check project import.", this);
+            // Consolidate bottom tabs and the remaining non-battle menu density.
+            // Loaded after all screen-specific sheets for explicit priority.
+            var mobileShell = Resources.Load<StyleSheet>("Home/MobileShell");
+            if (mobileShell != null) root.styleSheets.Add(mobileShell);
+            else Debug.LogWarning("Mobile shell styles are missing. Check project import.", this);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
