@@ -201,6 +201,7 @@ namespace Ninefold.Presentation
             heading.style.display = home || (menuView.Phase == MissionFlowPhase.Battle && inBattle) ? DisplayStyle.None : DisplayStyle.Flex;
             homeBackdrop.style.display = home || campaignScreen ? DisplayStyle.Flex : DisplayStyle.None;
             root.EnableInClassList("battle-mode", menuView.Phase == MissionFlowPhase.Battle && inBattle);
+            root.EnableInClassList("visual-hud-mode", menuView.Phase == MissionFlowPhase.Battle && inBattle);
             if (menuView.Phase == MissionFlowPhase.Battle && inBattle)
             {
                 content.style.backgroundColor = Color.clear;
@@ -408,13 +409,14 @@ namespace Ninefold.Presentation
                 card.EnableInClassList("locked-card", !c.CanEnter);
                 card.EnableInClassList("campaign-choice-featured", featured);
                 card.EnableInClassList("campaign-choice-locked", !c.CanEnter);
+                FrontiersVisualPrimitives.CampaignArt(card, id, c.CompletedMissions, c.TotalMissions, !c.CanEnter);
 
                 string status = !c.CanEnter ? "LOCKED"
                     : c.IsComplete ? c.RewardsClaimed ? "COMPLETED" : "REWARDS READY"
                     : c.CompletedMissions > 0 ? "IN PROGRESS" : "READY TO BEGIN";
                 Text(card, status, "campaign-status").AddToClassList("campaign-choice-status");
                 Text(card, CampaignName(id), "campaign-name").AddToClassList("campaign-choice-name");
-                Text(card, c.CompletedMissions + " of " + c.TotalMissions + " missions completed", "detail")
+                Text(card, c.CompletedMissions + " / " + c.TotalMissions + " missions", "detail")
                     .AddToClassList("campaign-choice-progress");
                 Meter(card, c.CompletedMissions, c.TotalMissions);
 
@@ -696,6 +698,7 @@ namespace Ninefold.Presentation
 
             var detail = Card(parent, "unit-detail");
             detail.AddToClassList("collection-detail-card");
+            FrontiersVisualPrimitives.UnitPreview(detail, inspectedUnit, selected.Unit.Definition.Roster.IsApex, selected.Unit.Owned);
             var identity = Row(detail); identity.AddToClassList("collection-detail-identity");
             UnitBadge(identity, inspectedUnit, selected.Unit.Definition.Roster.IsApex);
             var copy = new VisualElement(); copy.AddToClassList("collection-detail-copy"); identity.Add(copy);
@@ -740,9 +743,10 @@ namespace Ninefold.Presentation
 
             // The full six-stat comparison and four-slot ability kit remain
             // accessible, but are not dumped on players by default.
-            Text(detail, "Health " + selected.Unit.Health + "  ·  Armor " + selected.Unit.Armor
-                + "  ·  Move " + selected.Unit.Movement.ToString("0.##"), "detail")
-                .AddToClassList("collection-glance");
+            var glance = Row(detail); glance.AddToClassList("vif-unit-glance");
+            FrontiersVisualPrimitives.HudChip(glance, selected.Unit.Health.ToString(), "HP");
+            FrontiersVisualPrimitives.HudChip(glance, selected.Unit.Armor.ToString(), "ARMOR");
+            FrontiersVisualPrimitives.HudChip(glance, selected.Unit.Movement.ToString("0.##"), "MOVE");
             var expand = Button(detail, collectionDetailsExpanded ? "Hide stats & abilities  ‹"
                 : "View stats & abilities  ›", () => collectionDetailsExpanded = !collectionDetailsExpanded);
             expand.AddToClassList("collection-secondary");
@@ -999,7 +1003,13 @@ namespace Ninefold.Presentation
             var b = battleView.Battle;
             bool ready = !battleView.IsAnimating && !suspended && !battleDetails;
             var activeUnit = b.Units.FirstOrDefault(u => u.Id == b.Activation?.UnitId);
-            Text(controls, (activeUnit?.IsEnemyControlled == true ? "ENEMY · " : "") + UnitName(b.Activation?.UnitId) + " · Move " + (b.Activation?.MovementRemaining.ToString("0.#") ?? "0") + " · " + (b.Activation?.PrimaryActionAvailable == true ? "1 action" : "Action spent"), "actor-status");
+            var actorStrip = Row(controls); actorStrip.AddToClassList("vif-actor-strip");
+            FrontiersVisualPrimitives.HudChip(actorStrip,
+                (activeUnit?.IsEnemyControlled == true ? "ENEMY " : "") + UnitName(b.Activation?.UnitId), "ACTIVE");
+            FrontiersVisualPrimitives.HudChip(actorStrip,
+                b.Activation?.MovementRemaining.ToString("0.#") ?? "0", "MOVE");
+            FrontiersVisualPrimitives.HudChip(actorStrip,
+                b.Activation?.PrimaryActionAvailable == true ? "READY" : "SPENT", "ACTION");
             var row = Row(controls); row.AddToClassList("ability-row");
             if (battleView.Pending != null)
             {
@@ -1014,8 +1024,9 @@ namespace Ninefold.Presentation
                 foreach (var a in b.Actions.Where(a => a.Slot != AbilitySlot.Passive))
                 {
                     var slot = a.Slot;
-                    var button = Button(row, AbilityName(slot), () => Handle(input.SelectAbility(slot)), ready && a.CanSelect);
-                    button.tooltip = AbilityReadiness(a, activeUnit);
+                    var shortName = slot == AbilitySlot.Main ? "Main" : AbilityName(slot);
+                    var button = Button(row, shortName, () => Handle(input.SelectAbility(slot)), ready && a.CanSelect);
+                    button.tooltip = AbilityName(slot) + " · " + AbilityReadiness(a, activeUnit);
                     button.EnableInClassList("selected", battleView.SelectedAbility == slot);
                 }
             }
@@ -1030,7 +1041,7 @@ namespace Ninefold.Presentation
             }
             long activation = b.Activation?.ActivationId ?? 0;
             Button(row, "End turn", () => Handle(input.EndTurn(activation)), ready && b.Phase == BattleSessionPhase.PlayerInput);
-            string hint = battleView.IsAnimating ? "Resolving…" : b.Phase != BattleSessionPhase.PlayerInput ? "Enemy turn…" : battleView.Pending != null ? "Tap the preview again or Confirm" : battleView.SelectedAbility.HasValue ? (battleView.Targets.Any(t => t.IsValid) ? "Tap a marked target" : "No valid targets · Move to a clear position") : "Tap ground to move";
+            string hint = battleView.IsAnimating ? "Resolving…" : b.Phase != BattleSessionPhase.PlayerInput ? "Enemy turn…" : battleView.Pending != null ? "Confirm or tap target again" : battleView.SelectedAbility.HasValue ? (battleView.Targets.Any(t => t.IsValid) ? "Tap marked target" : "Move for line of sight") : "Tap field to move";
             Text(controls, battleRejection ?? hint, "battle-message");
         }
 
