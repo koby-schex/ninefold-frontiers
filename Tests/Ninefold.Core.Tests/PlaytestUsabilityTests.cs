@@ -4,6 +4,8 @@ using System.Linq;
 using Ninefold.Core.Combat;
 using Ninefold.Core.Content;
 using Ninefold.Core.Flow;
+using Ninefold.Core.Missions;
+using Ninefold.Core.Progression;
 using Ninefold.Core.Views;
 
 internal static partial class Program
@@ -112,10 +114,13 @@ internal static partial class Program
         {
             var objective = m.Objectives[0].Interaction;
             Equal(true, objective != null);
-            Equal(true, m.Map.Bounds.Contains(objective.Point));
+            bool Inside(FieldBox box, FieldPoint point) =>
+                point.X >= box.Min.X && point.X <= box.Max.X &&
+                point.Z >= box.Min.Z && point.Z <= box.Max.Z;
+            Equal(true, Inside(m.Map.Bounds,objective.Point));
             Equal(false, m.Deployment.Any(p => p.Equals(objective.Point)));
             Equal(true, m.Deployment.All(p => !m.Map.Obstacles.Any(o =>
-                o.BlocksMovement && o.Bounds.Contains(p))));
+                o.BlocksMovement && Inside(o.Bounds,p))));
         }
 
         var menu = new MissionPresentation(current,new FakeSaveFiles(),new ProgressFiles(),"varied-profile");
