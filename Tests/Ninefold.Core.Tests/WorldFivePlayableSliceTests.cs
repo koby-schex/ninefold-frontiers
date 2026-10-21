@@ -10,10 +10,12 @@ internal static partial class Program
 {
     private static (string Name,Action Run)[] WorldFivePlayableSliceTests() =>
         new (string,Action)[] {
-            ("World Five slice constructs three separate validated authored fields", SliceMaps),
+            ("World Five slice constructs six separate validated authored fields", SliceMaps),
             ("World Five slice isolates campaign progression and exposes proper mission prerequisites", SliceLocks),
             ("World Five slice saves independently of the original campaign profile", SliceCheckpoint),
-            ("World Five rescue has a distinct extraction zone and chosen carrier", SliceRescue)
+            ("World Five rescue has a distinct extraction zone and chosen carrier", SliceRescue),
+            ("World Five missions 004–006 teach distinct zone, defense and survival rules", SliceSecondAct),
+            ("World Five six-mission arc is sequential with no recycled map geometry", SliceCampaignAudit)
         };
 
     private static void SliceMaps()
@@ -21,12 +23,13 @@ internal static partial class Program
         var c=WorldFivePlayableSlice.Create();
         Equal(ContentClassification.AbstractFixture,c.Manifest.Classification);
         Equal(WorldFivePlayableSlice.Revision,c.Manifest.ContentRevision);
-        Equal(4,c.Missions.Count); // three authored stages + unrelated Quick Battle fixture
+        Equal(7,c.Missions.Count); // six authored stages + unrelated Quick Battle fixture
         Equal(1,c.Campaigns.Count);
         var missions=WorldFivePlayableSlice.MissionIds.Select(id=>c.Missions[id]).ToArray();
-        Equal(3,missions.Length);
+        Equal(6,missions.Length);
         Equal(true,missions.All(m=>m.IsCampaign && m.FactionId=="fixture-a" &&
             m.Encounter==EncounterKind.Standard && m.MaximumSquad==3));
+        Equal(true,missions.All(m=>m.MinimumSquad>=1 && m.MinimumSquad<=3));
         Equal(true,missions.All(m=>m.EnvironmentKey.StartsWith("study-w5-")));
         Equal(2,missions.Count(m=>m.Objectives[0].Kind==ObjectiveKind.Stabilize));
         Equal(ObjectiveKind.RescueAndExtract,missions[2].Objectives[0].Kind);
@@ -39,7 +42,8 @@ internal static partial class Program
             Equal(true,m.Deployment.All(p=>!m.Map.Obstacles.Any(o=>o.BlocksMovement &&
                 p.X>=o.Bounds.Min.X && p.X<=o.Bounds.Max.X &&
                 p.Z>=o.Bounds.Min.Z && p.Z<=o.Bounds.Max.Z)));
-            Equal(false,m.Deployment.Any(p=>p.Equals(m.Objectives[0].Interaction.Point)));
+            if (m.Objectives[0].Interaction != null)
+                Equal(false,m.Deployment.Any(p=>p.Equals(m.Objectives[0].Interaction.Point)));
         }
         Equal(true,PlaytestContentPackage.Create().Missions.ContainsKey("fixture-opening"));
         Equal(false,PlaytestContentPackage.Create().Missions.ContainsKey(WorldFivePlayableSlice.MissionIds[0]));
@@ -55,6 +59,8 @@ internal static partial class Program
         Equal(true,view.Missions.Single(m=>m.Definition.Id==WorldFivePlayableSlice.MissionIds[0]).Available);
         Equal(false,view.Missions.Single(m=>m.Definition.Id==WorldFivePlayableSlice.MissionIds[1]).Available);
         Equal(false,view.Missions.Single(m=>m.Definition.Id==WorldFivePlayableSlice.MissionIds[2]).Available);
+        for(int i=3;i<WorldFivePlayableSlice.MissionIds.Length;i++)
+            Equal(false,view.Missions.Single(m=>m.Definition.Id==WorldFivePlayableSlice.MissionIds[i]).Available);
         menu.SelectMission(WorldFivePlayableSlice.MissionIds[1]);
         menu.SetSquad(new[]{"fixture-a-1"});
         Equal(false,menu.Read().CanStart);
@@ -81,6 +87,63 @@ internal static partial class Program
         var resumed=WorldFivePlayableSlice.Open(sliceBattle,sliceProgress);
         Equal(MissionFlowPhase.Battle,resumed.Read().Phase);
         Equal(WorldFivePlayableSlice.MissionIds[0],resumed.Read().Resume.MissionId);
+    }
+
+    private static void SliceSecondAct()
+    {
+        var content=WorldFivePlayableSlice.Create();
+        var fourth=content.Missions[WorldFivePlayableSlice.MissionIds[3]];
+        var fifth=content.Missions[WorldFivePlayableSlice.MissionIds[4]];
+        var sixth=content.Missions[WorldFivePlayableSlice.MissionIds[5]];
+        var secure=fourth.Objectives[0];
+        Equal(ObjectiveKind.Secure,secure.Kind);
+        Equal(2,secure.Required);
+        Equal(true,secure.Consecutive);
+        Equal("$squad",secure.Subjects.Single());
+        Equal("w5-zone-test-threat",secure.Contestants.Single());
+        Equal(true,fourth.Actors.Single().IsHostile);
+
+        var protect=fifth.Objectives[0];
+        Equal(ObjectiveKind.Protect,protect.Kind);
+        Equal(2,protect.Required);
+        Equal("w5-shelter-test-party",protect.Subjects.Single());
+        Equal(false,fifth.Actors.Single(a=>a.Id==protect.Subjects[0]).IsHostile);
+        Equal(true,fifth.Actors.Any(a=>a.IsHostile));
+
+        var survive=sixth.Objectives[0];
+        Equal(ObjectiveKind.Survive,survive.Kind);
+        Equal(3,survive.Required);
+        Equal<ObjectiveDefinition>(survive,sixth.Objectives.Single());
+        Equal(true,sixth.Actors.All(a=>a.IsHostile));
+        Equal(2,sixth.Actors.Count);
+        Equal(2,sixth.MinimumSquad);
+        Equal(true,new[]{fourth,fifth,sixth}.All(m=>m.Deployment.Count==3 &&
+            m.EnvironmentKey.StartsWith("study-w5-")));
+
+        // A survive encounter should never imply that players must run
+        // to a physical waypoint. No interaction or capture zone is authored.
+        Equal<InteractionDefinition>(null,survive.Interaction);
+        Equal<FieldBox>(null,survive.Zone);
+    }
+
+    private static void SliceCampaignAudit()
+    {
+        var c=WorldFivePlayableSlice.Create();
+        var campaign=c.Campaigns.Single();
+        Equal(6,campaign.Missions.Count);
+        Equal(6,WorldFivePlayableSlice.MissionIds.Length);
+        var linked=campaign.Missions.Select(x=>x.MissionId).ToArray();
+        Equal(true,linked.SequenceEqual(WorldFivePlayableSlice.MissionIds));
+        for(int i=1;i<linked.Length;i++)
+            Equal(true,campaign.Missions[i].Prerequisites.SequenceEqual(new[]{linked[i-1]}));
+        var report=CampaignProductionAudit.Review(c,WorldFivePlayableSlice.CampaignId,
+            environmentPrefix:"study-w5-");
+        Equal(true,report.PassesGate);
+        Equal(6,report.MissionCount);
+        Equal(6,report.DistinctLayoutCount);
+        Equal(5,report.DistinctPrimaryObjectiveCount);
+        Equal(false,report.Findings.Any(f=>f.Code=="CONSECUTIVE_MAP_REPEAT" ||
+            f.Code=="CROSS_WORLD_ENVIRONMENT"));
     }
 
     private static void SliceRescue()
