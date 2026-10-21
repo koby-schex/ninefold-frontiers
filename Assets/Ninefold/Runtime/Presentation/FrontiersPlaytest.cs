@@ -828,9 +828,31 @@ namespace Ninefold.Presentation
                 return;
             }
 
+            // Dedicated profile opens from the Collection roster. Existing
+            // progress/upgrade actions remain connected to the same core flow.
+            var profileHeader = Row(parent);
+            profileHeader.AddToClassList("unit-profile-header");
+            var returnToRoster = Button(profileHeader, "‹  All units", () => {
+                inspectedUnit = null;
+                collectionDetailsExpanded = false;
+                menuScroll = null;
+            });
+            returnToRoster.AddToClassList("unit-profile-back");
+            Text(profileHeader, "UNIT PROFILE", "eyebrow")
+                .AddToClassList("unit-profile-overline");
+
+            var viewer = Card(parent, "unit-profile-viewer");
+            viewer.AddToClassList("unit-profile-viewer-card");
+            Text(viewer, "3D MODEL VIEWER", "eyebrow");
+            // Intentionally leave the approved model render/rotation pipeline
+            // to its owner; avoid showing an unrelated generic 3D creature.
+            FrontiersVisualPrimitives.UnitPreview(viewer, inspectedUnit,
+                selected.Unit.Definition.Roster.IsApex, selected.Unit.Owned);
+            Text(viewer, "Interactive model rotation and zoom are coming in the next viewer integration pass.",
+                "hint").AddToClassList("unit-profile-viewer-note");
+
             var detail = Card(parent, "unit-detail");
             detail.AddToClassList("collection-detail-card");
-            FrontiersVisualPrimitives.UnitPreview(detail, inspectedUnit, selected.Unit.Definition.Roster.IsApex, selected.Unit.Owned);
             var identity = Row(detail); identity.AddToClassList("collection-detail-identity");
             // The preview now serves as the unit's visual identity. Avoid
             // repeating an oversized prototype ID badge beneath the render.
@@ -890,7 +912,19 @@ namespace Ninefold.Presentation
                 BuildUnitStats(extended, selected.Unit);
                 BuildAbilityKit(extended, selected.Unit);
             }
-            Text(parent, "PLAYTEST · Unit badges and stats are provisional.", "fixture-note")
+            var equipment = Card(parent, "unit-profile-equipment");
+            equipment.AddToClassList("unit-profile-secondary");
+            Text(equipment, "RARE EQUIPMENT", "section");
+            Text(equipment, "One equipped item per unit · No launch items assigned yet.", "detail");
+            Text(equipment, "Future named items will be limited by each unit's anatomy and lore, with visible model attachments.",
+                "hint");
+
+            var lore = Card(parent, "unit-profile-lore");
+            lore.AddToClassList("unit-profile-secondary");
+            Text(lore, "UNIT LORE", "section");
+            Text(lore, "Canonical biography pending approved unit-specific lore integration.",
+                "hint");
+                        Text(parent, "PLAYTEST · Unit badges and stats are provisional.", "fixture-note")
                 .AddToClassList("collection-footnote");
         }
 
