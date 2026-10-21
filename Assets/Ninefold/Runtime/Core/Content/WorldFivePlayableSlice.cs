@@ -68,7 +68,7 @@ namespace Ninefold.Core.Content
                 new[] { P(-2,-3),P(-1,-3),P(0,-3) },
                 new[] { new ActorSpawn("w5-rescue-proxy","fixture-npc",P(6,3),false) },
                 ObjectiveDefinition.RescueCarried("primary","w5-rescue-proxy",
-                    B(-5,-4,-3,-2,3),
+                    B(-5,-4,-1,-2,3),
                     new InteractionDefinition(P(6,3),1.4m,new[] { "$leader" }),
                     "$leader"),
                 environmentKey:"study-w5-survey");
