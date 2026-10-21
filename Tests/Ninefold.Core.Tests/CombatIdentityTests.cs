@@ -19,12 +19,15 @@ internal static partial class Program
         var support=c.Units[UnitCombatIdentityPrototype.SupportUnitId];
         var kit=c.Kits[support.KitId];
         Equal("identity-support-kit",kit.Id);
-        Equal(25,c.Abilities[kit.AbilityIds[1]].Effect.Amount);
-        Equal(45,c.Abilities[kit.AbilityIds[2]].Effect.Amount);
-        Equal(35,c.Abilities[kit.AbilityIds[3]].Effect.Amount);
+        Equal(300,c.Abilities[kit.AbilityIds[1]].Effect.Amount);
+        Equal(540,c.Abilities[kit.AbilityIds[2]].Effect.Amount);
+        Equal(420,c.Abilities[kit.AbilityIds[3]].Effect.Amount);
         Equal(true,c.Abilities[kit.AbilityIds[0]].IsPassivePlaceholder);
         Equal(false,c.Units["fixture-a-1"].KitId==support.KitId);
-        Equal(40,c.Abilities[c.Kits[c.Units["fixture-a-1"].KitId].AbilityIds[1]].Effect.Amount);
+        Equal(480,c.Abilities[c.Kits[c.Units["fixture-a-1"].KitId].AbilityIds[1]].Effect.Amount);
+        Equal(1220,c.Units["fixture-a-1"].Health);
+        Equal(1320,support.Health);
+        Equal(1080,c.Units["fixture-npc"].Health);
     }
     private static void CombatIdentityIsolation()
     {
