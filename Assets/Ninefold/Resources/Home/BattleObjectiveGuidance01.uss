@@ -178,3 +178,12 @@
 .root.short-home.visual-hud-mode .btg-goal {
     font-size: 11px;
 }
+
+.btg-rescue-instruction {
+    font-size: 11px;
+    color: #d5c8a5;
+    white-space: normal;
+    margin-top: 4px;
+    margin-bottom: 3px;
+    -unity-text-align: middle-left;
+}

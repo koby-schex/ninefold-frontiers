@@ -61,6 +61,17 @@ namespace Ninefold.Presentation
                 primary.Status == ObjectiveStatus.Failed ? "FAILED" :
                 primary.Progress + "/" + primary.Required, "btg-progress");
 
+            // Stage-specific rescue guidance is descriptive only. It never
+            // issues movement orders or assumes an unobstructed route.
+            if (primary.Kind == ObjectiveKind.RescueAndExtract &&
+                primary.Status == ObjectiveStatus.Active)
+            {
+                Label(panel, primary.Rescued
+                    ? "Bring the rescued target to the marked extraction zone."
+                    : "Reach the marked target and interact to begin the rescue.",
+                    "btg-rescue-instruction");
+            }
+
             var extras = objectives.Skip(1).ToArray();
             if (extras.Length == 0) return;
             int complete = extras.Count(o => o.Status == ObjectiveStatus.Completed);
