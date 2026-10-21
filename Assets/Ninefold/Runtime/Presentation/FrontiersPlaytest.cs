@@ -1288,7 +1288,7 @@ namespace Ninefold.Presentation
                 throw new InvalidOperationException("Finish your active battle before changing playtest campaigns.");
             worldFiveSlice = !worldFiveSlice;
             savePath = Path.Combine(Application.persistentDataPath,
-                worldFiveSlice ? "WorldFiveSlice-v1" : "AbstractPlaytest-v1");
+                worldFiveSlice ? "WorldFiveSlice-v2" : "AbstractPlaytest-v1");
             input = null; battleView = null; inBattle = false;
             battleExitPrompt = false; inspectedUnit = null; selectedCampaign = null;
             squadInspection = null; collectionDetailsExpanded = false;
@@ -1611,7 +1611,7 @@ namespace Ninefold.Presentation
                 if (id == WorldFivePlayableSlice.MissionIds[1])
                     return "Use the open or covered approach to stabilize the next route point.";
                 if (id == WorldFivePlayableSlice.MissionIds[2])
-                    return "Reach the stranded field proxy at the marked recovery zone and activate rescue.";
+                    return "Rescue the stranded traveler, then bring them back to the gold extraction zone using your first deployed unit.";
             }
             if (catalog.Manifest.ContentRevision != "fixture-layouts-v3")
                 return id == "fixture-mixed" ? "Defeat the enemy. Use either side of the central cover island to approach."
