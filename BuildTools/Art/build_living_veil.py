@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Living Veil surface study 04; actual editable geometry, meters/Y-up/+Z.
+"""Living Veil partner study 05; actual editable geometry, meters/Y-up/+Z.
 Uses shared loft/sheet primitives and the established Avarin face study.
 Two static poses; no production rig, animation, or final canon acceptance implied.
 """
 import argparse, copy, json, math, struct, zlib
 from functools import lru_cache
+from refine_avar_partner import refine_partner
 from pathlib import Path
 from build_great_strider import Mesh, make_model as strider_model, MATERIALS, FINISH as STRIDER_FINISH, add, sub, cross, unit, mul
 ROOT=Path(__file__).resolve().parents[2]
@@ -116,6 +117,7 @@ def make_model(pose='resting'):
     m.oval('VeilHarness_Regulator','ceramic',(1.95,1.14,.61),(.065,.07,.025))
     m.oval('VeilHarness_Monitor','survey_light',(1.95,1.15,.639),(.025,.03,.005))
     refine_surfaces(m)
+    refine_partner(m)
     # Ground the partner feet only, never rescale the organism to rider height.
     for p in m.parts:
         if p['name'].startswith('Avarin_Foot_'):
@@ -181,7 +183,7 @@ def refine_surfaces(m):
             p['vertices']=[tuple(center[k]+radius[k]*math.copysign(abs((q[k]-center[k])/radius[k])**.82,q[k]-center[k]) for k in range(3)) for q in v]
 
 def write(m,out,pose='resting'):
-    out.mkdir(parents=True,exist_ok=True);stem='LivingVeil' if pose=='resting' else 'LivingVeilProtective';obj=['# Living Veil surface study 04; meters; Y up; +Z forward','mtllib LivingVeil.mtl'];offset=1;uv_offset=1
+    out.mkdir(parents=True,exist_ok=True);stem='LivingVeil' if pose=='resting' else 'LivingVeilProtective';obj=['# Living Veil partner study 05; meters; Y up; +Z forward','mtllib LivingVeil.mtl'];offset=1;uv_offset=1
     used=sorted({p['material'] for p in m.parts})
     for p in m.parts:
         obj+=['o '+p['name'],'usemtl '+p['material'],'s 1']
@@ -195,7 +197,7 @@ def write(m,out,pose='resting'):
     (out/'LivingVeil.mtl').write_text('\n'.join('newmtl '+n+'\nKd '+' '.join(map(str,(1,1,1) if n=='olyra_membrane' else COLORS[n]))+'\nNs '+str(FINISH.get(n,(32,.08))[0])+'\nd '+str(ALPHA.get(n,1))+('\nmap_Kd Textures/OlyraMembrane.png' if n=='olyra_membrane' else '')+'\n' for n in used))
     vertices=[v for p in m.parts for v in p['vertices']]
     bounds=[[min(v[k] for v in vertices) for k in range(3)],[max(v[k] for v in vertices) for k in range(3)]]
-    report=dict(status='surface study 04; not production ready',units='meters',up='Y',forward='Z',parts=len(m.parts),vertices=len(vertices),triangles=sum(len(p['faces']) for p in m.parts),height=bounds[1][1],bounds=bounds,lobes=5,materials=used,
+    report=dict(status='partner study 05; not production ready',units='meters',up='Y',forward='Z',parts=len(m.parts),vertices=len(vertices),triangles=sum(len(p['faces']) for p in m.parts),height=bounds[1][1],bounds=bounds,lobes=5,materials=used,
         pose=pose,model_id='world05.living-veil.olyra',membrane_alpha='RGBA texture; MTL d is transparency classification, importer uses alpha multiplier 1',limitations=['Provisional static pose and surfaces; not locked visual acceptance','No gliding pose, production rig, animation or LODs','Layered transparency sorting needs native review','Exact curvature, harness detail and three tiny visual organs are implementation proposals'])
     (out/('manifest.json' if pose=='resting' else 'protective-manifest.json')).write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps(report,indent=2))

@@ -33,8 +33,8 @@ suffix. Do not hardcode these generated paths in Collection UI or gameplay.
 | Model | Source | Generated review prefab |
 | --- | --- | --- |
 | Great Strider / Ilyth | `SourceArt/GreatStrider/GreatStrider.obj` | `Assets/Ninefold/ArtReview/GreatStrider11_<fingerprint>/GreatStriderStudy11.prefab` |
-| Living Veil / Olyra — resting | `SourceArt/LivingVeil/LivingVeil.obj` | `Assets/Ninefold/ArtReview/LivingVeil04_<fingerprint>/LivingVeilStudy04.prefab` |
-| Living Veil / Olyra — protective | `SourceArt/LivingVeil/LivingVeilProtective.obj` | `Assets/Ninefold/ArtReview/LivingVeilProtective04_<fingerprint>/LivingVeilProtectiveStudy04.prefab` |
+| Living Veil / Olyra — resting | `SourceArt/LivingVeil/LivingVeil.obj` | `Assets/Ninefold/ArtReview/LivingVeil05_<fingerprint>/LivingVeilStudy05.prefab` |
+| Living Veil / Olyra — protective | `SourceArt/LivingVeil/LivingVeilProtective.obj` | `Assets/Ninefold/ArtReview/LivingVeilProtective05_<fingerprint>/LivingVeilProtectiveStudy05.prefab` |
 
 Olyra's source manifest model identifier is `world05.living-veil.olyra`; pose keys
 are `resting` and `protective`. This is an art identifier, NOT a gameplay UnitId.
@@ -73,3 +73,11 @@ Surface study 04 preserves all existing model identifiers and topology counts.
 It is based on main through PR #80 and changes only model generation, art review,
 source assets and this documentation. No preview provider, UI or gameplay
 registration is added. The source membrane texture is now 512 × 512 RGBA.
+
+Partner study 05 updates the standing Avarin only. The pair now has 122 parts,
+44,848 source vertices and 89,208 triangles per pose. Existing art IDs, source
+pose keys and GUIDs remain unchanged. No runtime prefab registration is implied.
+New review assets use revision-05 folders; previous review copies are retained.
+This pass starts from main through merged PR #93, keeping the other chat's
+rescue/extraction gameplay intact. Production LODs and device profiling remain
+necessary before battle integration.
