@@ -210,6 +210,46 @@ internal static partial class Program
         }
         Equal(true,committedMoves>1);
         Equal(true,menu.Read().Results==null);
+        // Explicit pickup after a legal, routed approach. Fail with a
+        // descriptive message if movement has not actually reached the NPC.
+        bool reached=false;
+        for(int step=0;step<60 && !reached;step++)
+        {
+            var phase=play.Read().Battle;
+            if(phase.Phase!=BattleSessionPhase.PlayerInput)
+            {
+                var advanced=play.Advance(new EnemyPerception(Array.Empty<string>(),Array.Empty<string>()));
+                if(advanced.AnimationId!=null) play.CompleteAnimation(advanced.AnimationId);
+                continue;
+            }
+            var plan=play.ReadPlanning();
+            if(plan.Objectives.Any(x=>x.Id=="primary" && x.CanInteract))
+            {
+                Equal(InputOutcome.Previewed,play.TapObjective("primary").Outcome);
+                var pickupAction=play.TapObjective("primary");
+                Equal(InputOutcome.Committed,pickupAction.Outcome);
+                if(pickupAction.AnimationId!=null) play.CompleteAnimation(pickupAction.AnimationId);
+                reached=true;
+                break;
+            }
+            var nearby=plan.Movement.OrderBy(x=>
+                (x.Position.X-pickup.X)*(x.Position.X-pickup.X)+
+                (x.Position.Z-pickup.Z)*(x.Position.Z-pickup.Z)).FirstOrDefault();
+            if(nearby!=null)
+            {
+                Equal(InputOutcome.Previewed,play.TapDestination(nearby.Position).Outcome);
+                var move=play.TapDestination(nearby.Position);
+                Equal(InputOutcome.Committed,move.Outcome);
+                if(move.AnimationId!=null) play.CompleteAnimation(move.AnimationId);
+            }
+            var current=play.Read().Battle;
+            if(current.Phase==BattleSessionPhase.PlayerInput)
+            {
+                var end=play.EndTurn(current.Activation.ActivationId);
+                if(end.AnimationId!=null) play.CompleteAnimation(end.AnimationId);
+            }
+        }
+        if(!reached) throw new Exception("Rescue pickup remains unreachable after legal waypoint traversal.");
         menu=WorldFiveOpeningTenPrototype.Open(stores.Battles,stores.Progress);
         Equal(MissionFlowPhase.Battle,menu.Read().Phase);
         Equal(ids[2],menu.Read().Resume.MissionId);
