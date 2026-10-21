@@ -408,7 +408,7 @@ namespace Ninefold.Presentation
             secondary.AddToClassList("home-quick-link");
             secondary.AddToClassList("game-lobby-secondary");
             var switchMode = Button(panel,
-                worldFiveSlice ? "RETURN TO ORIGINAL PLAYTEST  ›" : "TRY WORLD FIVE MISSIONS 001–003  ›",
+                worldFiveSlice ? "RETURN TO ORIGINAL PLAYTEST  ›" : "TRY WORLD FIVE MISSIONS 001–006  ›",
                 SwitchCampaignPrototype, menuView.Phase == MissionFlowPhase.Selection);
             switchMode.AddToClassList("home-quick-link");
             switchMode.AddToClassList("world-five-slice-switch");
@@ -1288,7 +1288,7 @@ namespace Ninefold.Presentation
                 throw new InvalidOperationException("Finish your active battle before changing playtest campaigns.");
             worldFiveSlice = !worldFiveSlice;
             savePath = Path.Combine(Application.persistentDataPath,
-                worldFiveSlice ? "WorldFiveSlice-v2" : "AbstractPlaytest-v1");
+                worldFiveSlice ? "WorldFiveSlice-v3" : "AbstractPlaytest-v1");
             input = null; battleView = null; inBattle = false;
             battleExitPrompt = false; inspectedUnit = null; selectedCampaign = null;
             squadInspection = null; collectionDetailsExpanded = false;
@@ -1612,6 +1612,12 @@ namespace Ninefold.Presentation
                     return "Use the open or covered approach to stabilize the next route point.";
                 if (id == WorldFivePlayableSlice.MissionIds[2])
                     return "Rescue the stranded traveler, then bring them back to the gold extraction zone using your first deployed unit.";
+                if (id == WorldFivePlayableSlice.MissionIds[3])
+                    return "Occupy the marked zone for two consecutive rounds. A test opponent can contest it.";
+                if (id == WorldFivePlayableSlice.MissionIds[4])
+                    return "Protect the friendly traveler for two rounds. Keep the test threat away from them.";
+                if (id == WorldFivePlayableSlice.MissionIds[5])
+                    return "Keep at least one squad unit alive through three rounds. No destination is required.";
             }
             if (catalog.Manifest.ContentRevision != "fixture-layouts-v3")
                 return id == "fixture-mixed" ? "Defeat the enemy. Use either side of the central cover island to approach."
@@ -1627,6 +1633,9 @@ namespace Ninefold.Presentation
             id == WorldFivePlayableSlice.MissionIds[0] ? "The Wrong Arrival" :
             id == WorldFivePlayableSlice.MissionIds[1] ? "Hold the Passage" :
             id == WorldFivePlayableSlice.MissionIds[2] ? "Return the Stranded" :
+            id == WorldFivePlayableSlice.MissionIds[3] ? "The Safe Boundary" :
+            id == WorldFivePlayableSlice.MissionIds[4] ? "Shelter First" :
+            id == WorldFivePlayableSlice.MissionIds[5] ? "Wait for the Window" :
             id == "fixture-opening" ? "Stabilization" : id == "fixture-mixed" ? "Quick combat" :
             id == "fixture-finale" ? "Campaign finale" : "Faction B: stabilization";
         private void OnDestroy() { if (playback != null) StopCoroutine(playback); field?.Dispose(); }
