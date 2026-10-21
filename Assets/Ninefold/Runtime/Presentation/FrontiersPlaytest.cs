@@ -153,6 +153,9 @@ namespace Ninefold.Presentation
             var gameWideConsistency = Resources.Load<StyleSheet>("Home/GameWideConsistency01");
             if (gameWideConsistency != null) root.styleSheets.Add(gameWideConsistency);
             else Debug.LogWarning("Game-wide consistency styles are missing. Check project import.", this);
+            var layoutStyles = Resources.Load<StyleSheet>("Home/GameWideConsistency02");
+            if (layoutStyles != null) root.styleSheets.Add(layoutStyles);
+            else Debug.LogWarning("Game-wide layout styles are missing. Check project import.", this);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
