@@ -727,6 +727,36 @@ namespace Ninefold.Presentation
             Primary(deploy, "Deploy squad  ›", () => { input = menu.Start(plan); inBattle = true; message = "Tap ground to preview a move. Select an ability to find targets."; }, menuView.CanStart);
         }
 
+        // Empty until approved unit-to-tag metadata is provided. No class,
+        // faction or stat heuristics infer hints.
+        [Serializable]
+        public sealed class UnitTagEntry
+        {
+            public string UnitId;
+            public UnitPreviewTag Tags;
+        }
+        [SerializeField] private UnitTagEntry[] approvedUnitPreviewTags =
+            Array.Empty<UnitTagEntry>();
+
+        private void BuildUnitPreviewTags(VisualElement parent, string unitId)
+        {
+            if (approvedUnitPreviewTags == null || string.IsNullOrEmpty(unitId)) return;
+            var entry = approvedUnitPreviewTags.FirstOrDefault(x =>
+                x != null && x.UnitId == unitId);
+            if (entry == null) return;
+            var hints = UnitPreviewTagPresentation.Get(entry.Tags);
+            if (hints.Count == 0) return;
+            var strip = Row(parent);
+            strip.AddToClassList("unit-preview-tag-strip");
+            foreach (var hint in hints)
+            {
+                var label = Text(strip, hint.Label, "hint");
+                label.AddToClassList("unit-preview-tag");
+                label.AddToClassList("unit-preview-tag-" + hint.IconKey);
+                label.tooltip = hint.Label + " · optional playstyle hint";
+            }
+        }
+
         private void BuildCollection(VisualElement parent)
         {
             var view = menu.Collection.Read();
@@ -808,6 +838,7 @@ namespace Ninefold.Presentation
             Text(copy, selected.Unit.Definition.Roster.IsApex ? "APEX UNIT" : "STANDARD UNIT", "eyebrow")
                 .AddToClassList("collection-overline");
             Text(copy, UnitName(inspectedUnit), "display-title").AddToClassList("collection-detail-title");
+            BuildUnitPreviewTags(copy, inspectedUnit);
             Text(copy, selected.Unit.Owned ? "UNLOCKED · RANK " + selected.Unit.Rank : "LOCKED", "detail")
                 .AddToClassList("collection-detail-status");
 
