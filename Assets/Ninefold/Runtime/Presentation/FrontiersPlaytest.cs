@@ -1318,6 +1318,8 @@ namespace Ninefold.Presentation
                 heading.style.display = DisplayStyle.Flex;
                 root.RemoveFromClassList("battle-mode");
                 root.RemoveFromClassList("home-mode");
+                root.RemoveFromClassList("primary-tab-mode");
+                root.RemoveFromClassList("ambient-menu-mode");
                 root.RemoveFromClassList("campaign-mode");
                 root.RemoveFromClassList("results-mode");
                 root.RemoveFromClassList("unit-mode");
