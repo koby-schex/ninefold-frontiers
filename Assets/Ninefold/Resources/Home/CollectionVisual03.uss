@@ -195,3 +195,41 @@
     padding-top: 3px;
     padding-bottom: 3px;
 }
+
+/* Individual unit hub: preview first, management tools below. */
+.unit-profile-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.unit-profile-back {
+    min-height: 42px;
+    padding-left: 14px;
+    padding-right: 14px;
+}
+.unit-profile-overline {
+    color: #d1bd8c;
+}
+.unit-profile-viewer-card {
+    min-height: 245px;
+    margin-bottom: 12px;
+    background-color: #152521;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-color: #6b624c;
+    border-bottom-color: #6b624c;
+    border-left-color: #6b624c;
+    border-right-color: #6b624c;
+}
+.unit-profile-viewer-note {
+    margin-top: 10px;
+    font-size: 11px;
+}
+.unit-profile-secondary {
+    margin-top: 12px;
+    padding-top: 14px;
+    padding-bottom: 14px;
+}
