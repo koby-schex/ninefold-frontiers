@@ -53,6 +53,9 @@ namespace Ninefold.Presentation
         private bool battleDetails;
         private bool sharedControlsLoaded;
         private string battleRejection;
+        private string lastTapUnitId;
+        private float lastTapUnitTime;
+        private const float AttackDoubleTapWindow = 0.65f;
 
         private void Start()
         {
@@ -1112,7 +1115,7 @@ namespace Ninefold.Presentation
                 }
                 foreach (var objective in input.ReadPlanning().Objectives)
                     Text(details, "Stabilize · " + ObjectiveReadiness(objective.Failure), "detail");
-                Text(details, "Tap ground to move. Tap an enemy to select a normal attack, then tap again to confirm. Choose an ability to target it. Tap an objective marker when in reach. Only your current unit acts.", "detail");
+                Text(details, "Tap a unit once to inspect health, armor and attacks. Double-tap an enemy for a normal attack. Choose Ability or Ult to target special actions. Tap ground to move and objectives to interact.", "detail");
                 Button(details, "Back to battle", () => battleDetails = false);
             }
         }
@@ -1124,13 +1127,42 @@ namespace Ninefold.Presentation
             bool ready = !battleView.IsAnimating && !suspended && !battleDetails &&
                 b.Phase == BattleSessionPhase.PlayerInput;
             var active = b.Units.FirstOrDefault(u => u.Id == b.Activation?.UnitId);
-            var strip = Row(controls); strip.AddToClassList("mobile-active-unit");
-            Text(strip, (active?.IsEnemyControlled == true ? "ENEMY · " : "") +
-                UnitName(b.Activation?.UnitId), "mobile-actor-name");
-            Text(strip, (b.Activation?.MovementRemaining.ToString("0.#") ?? "0") + " MOVE",
+            // No world-space HP bars: the active unit's vital state is always
+            // visible above abilities. Tapping any other unit adds its own
+            // inspect-only line, without granting control or spending actions.
+            var status = new VisualElement(); status.AddToClassList("mobile-combat-status"); controls.Add(status);
+            var current = Row(status); current.AddToClassList("mobile-active-unit");
+            Text(current, "ACTIVE  " + UnitName(active?.Id), "mobile-actor-name");
+            Text(current, (b.Activation?.MovementRemaining.ToString("0.#") ?? "0") + " MOVE",
                 "mobile-actor-move");
-            Text(strip, b.Activation?.PrimaryActionAvailable == true ? "ACTION READY" : "ACTION USED",
+            Text(current, b.Activation?.PrimaryActionAvailable == true ? "READY" : "USED",
                 "mobile-actor-action");
+            if (active?.Health != null)
+            {
+                var vitals = Row(status); vitals.AddToClassList("mobile-health-row");
+                Text(vitals, "HP  " + active.Health.CurrentHealth + " / " +
+                    active.Health.MaximumHealth, "mobile-hp-value");
+                Meter(vitals, active.Health.CurrentHealth, active.Health.MaximumHealth);
+                Text(vitals, "ARMOR  " + (active.EffectiveArmor?.ToString() ?? "—"),
+                    "mobile-armor-value");
+            }
+            var inspected = b.Units.FirstOrDefault(u =>
+                u.Id == battleView.SelectedUnitId && u.IsEligible);
+            if (inspected != null && inspected.Id != active?.Id)
+            {
+                var selected = Row(status); selected.AddToClassList("mobile-inspected-unit");
+                Text(selected, (inspected.IsEnemyControlled ? "ENEMY  " : "ALLY  ") +
+                    UnitName(inspected.Id), "mobile-inspected-name");
+                if (inspected.Health != null)
+                    Text(selected, "HP " + inspected.Health.CurrentHealth + "/" +
+                        inspected.Health.MaximumHealth + "  •  ARM " +
+                        (inspected.EffectiveArmor?.ToString() ?? "—"), "mobile-inspected-vitals");
+                var attack = inspected.Abilities.FirstOrDefault(a =>
+                    a.Slot == AbilitySlot.NormalAttack);
+                if (attack != null)
+                    Text(selected, "ATK " + (attack.HasHealthEffect ? attack.Amount.ToString() : "STATUS") +
+                        " · RNG " + attack.Range.ToString("0.#"), "mobile-inspected-attack");
+            }
 
             // Ground taps move and objective taps interact. Do not keep
             // redundant Move/Stabilize/End Turn button rows on the screen.
@@ -1150,21 +1182,24 @@ namespace Ninefold.Presentation
             }
             else
             {
-                foreach (var a in b.Actions.Where(a => a.Slot == AbilitySlot.NormalAttack ||
-                    a.Slot == AbilitySlot.Main || a.Slot == AbilitySlot.Signature))
+                // Normal attacks are touch-only: tap to inspect, then
+                // double-tap an enemy to preview and commit safely.
+                foreach (var a in b.Actions.Where(a => a.Slot == AbilitySlot.Main ||
+                    a.Slot == AbilitySlot.Signature))
                 {
                     var slot = a.Slot;
-                    var title = slot == AbilitySlot.NormalAttack ? "ATTACK" :
-                        slot == AbilitySlot.Main ? "ABILITY" : "ULT";
-                    var button = Button(row, title, () => Handle(input.SelectAbility(slot)),
-                        ready && a.CanSelect);
+                    var title = slot == AbilitySlot.Main ? "ABILITY" : "ULT";
+                    var button = Button(row, title, () => {
+                        lastTapUnitId = null;
+                        Handle(input.SelectAbility(slot));
+                    }, ready && a.CanSelect);
                     button.AddToClassList("mobile-ability-button");
                     button.tooltip = AbilityName(slot) + " · " + AbilityReadiness(a,active);
                     button.EnableInClassList("selected", battleView.SelectedAbility == slot);
                 }
-                var passive = Button(row, "PASSIVE", () => battleDetails = !battleDetails);
+                var passive = Button(row, "ⓘ", () => battleDetails = !battleDetails);
                 passive.AddToClassList("mobile-passive-button");
-                passive.tooltip = AbilityName(AbilitySlot.Passive) + " · Unit details";
+                passive.tooltip = AbilityName(AbilitySlot.Passive) + " · Passive and unit details";
             }
             if (battleRejection != null)
                 Text(controls, battleRejection, "mobile-battle-feedback");
@@ -1198,22 +1233,45 @@ namespace Ninefold.Presentation
             if (id != null)
             {
                 var unit = battleView.Battle.Units.FirstOrDefault(u => u.Id == id);
-                if (unit?.IsEnemyControlled == true &&
-                    !battleView.SelectedAbility.HasValue && battleView.Pending == null &&
-                    battleView.Battle.Actions.Any(a => a.Slot == AbilitySlot.NormalAttack && a.CanSelect))
+                // Special-ability target taps preserve their established
+                // preview/confirm behavior. Default selection never attacks.
+                if (battleView.SelectedAbility.HasValue)
                 {
-                    // Enemy taps choose the default normal attack. The second
-                    // tap on the same target commits the safe preview token.
+                    lastTapUnitId = null;
+                    Handle(input.TapUnit(id));
+                    return;
+                }
+                bool doubleTap = id == lastTapUnitId &&
+                    Time.unscaledTime - lastTapUnitTime <= AttackDoubleTapWindow;
+                lastTapUnitId = id;
+                lastTapUnitTime = Time.unscaledTime;
+                bool canAttack = unit?.IsEnemyControlled == true &&
+                    battleView.Battle.Phase == BattleSessionPhase.PlayerInput &&
+                    battleView.Pending == null &&
+                    battleView.Battle.Actions.Any(a =>
+                        a.Slot == AbilitySlot.NormalAttack && a.CanSelect);
+                if (doubleTap && canAttack)
+                {
+                    // Validated double-tap normal attack: select trusted slot,
+                    // preview the selected enemy, then commit that *same*
+                    // preview through the authoritative transaction.
+                    lastTapUnitId = null;
                     var selected = input.SelectAbility(AbilitySlot.NormalAttack);
                     if (selected.Outcome == InputOutcome.Selected)
                     {
-                        Handle(input.TapUnit(id));
+                        var preview = input.TapUnit(id);
+                        Handle(preview.Outcome == InputOutcome.Previewed
+                            ? input.TapUnit(id) : preview);
                         return;
                     }
+                    Handle(selected);
+                    return;
                 }
-                Handle(input.TapUnit(id));
+                // First tap of any friendly/enemy unit is inspection only.
+                Handle(input.InspectUnit(id));
                 return;
             }
+            lastTapUnitId = null;
             // A ready objective can be interacted with by tapping its on-field
             // marker. No additional permanent Stabilize button is required.
             var mission = catalog.Missions[battleView.Battle.MissionId];
@@ -1505,7 +1563,7 @@ namespace Ninefold.Presentation
             var help = Card(parent);
             help.AddToClassList("shell-settings-card");
             Text(help, "How to play", "section");
-            Text(help, "Tap the field to move. Tap an enemy to aim a normal attack, then tap again to confirm. Choose Ability or Ult to target a special action. Tap gold objective markers to interact when in reach. Use END at the top when finished.", "detail");
+            Text(help, "Tap the field to move. Tap a unit once to inspect it; double-tap an enemy for a normal attack. Choose Ability or Ult for special attacks. Tap gold objectives to interact when in reach. Use END when finished.", "detail");
             Text(help, "Long moves stop at your remaining movement allowance. Walls, units and arena boundaries still limit valid destinations.", "detail");
             Text(help, "Cyan units are allies; red units are enemies. Gold marks objectives and valid targets. Striped ground costs extra movement.", "detail");
             // Diagnostics are useful in testing, but should never dominate
