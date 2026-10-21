@@ -1,0 +1,44 @@
+/* Game-Wide UI/UX Consistency 02 — spacing and navigation rhythm.
+ * Scoped to menu screens. Combat dock and shared 64px navigation remain unchanged.
+ */
+.root.primary-tab-mode .shell-tab-hero-copy {
+    padding-left: 16px;
+    padding-right: 16px;
+}
+.root.primary-tab-mode .shell-tab-eyebrow {
+    margin-bottom: 4px;
+}
+.root.primary-tab-mode .shell-tab-subtitle {
+    margin-top: 4px;
+}
+.root.native-screen-mode .native-page-bar {
+    min-height: 48px;
+    flex-shrink: 0;
+}
+.root.native-screen-mode .native-top-spacer {
+    height: 45px;
+    min-height: 45px;
+    flex-shrink: 0;
+}
+.root.primary-tab-mode .page-scroll,
+.root.ambient-menu-mode.native-screen-mode .page-scroll {
+    flex-grow: 1;
+    min-height: 0;
+}
+.root.primary-tab-mode .campaign-choice,
+.root.primary-tab-mode .collection-roster-entry,
+.root.primary-tab-mode .shell-settings-card {
+    margin-bottom: 12px;
+}
+.root.compact-home.primary-tab-mode .shell-tab-hero-copy {
+    padding-left: 12px;
+    padding-right: 12px;
+}
+.root.compact-home.primary-tab-mode .page-scroll {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+/* Preserve a single nav footprint in short portrait layouts. */
+.root.short-home #safe-area .navigation.unified-navigation {
+    flex-shrink: 0;
+}
