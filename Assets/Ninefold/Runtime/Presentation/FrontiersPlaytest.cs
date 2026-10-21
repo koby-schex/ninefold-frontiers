@@ -407,12 +407,21 @@ namespace Ninefold.Presentation
                     : () => SelectMission("fixture-mixed"));
             secondary.AddToClassList("home-quick-link");
             secondary.AddToClassList("game-lobby-secondary");
+            // Always leave this destination tappable. A saved-battle lock must
+            // explain itself instead of silently presenting a dead button.
+            // When selection is available, take the player DIRECTLY to the
+            // six-mission campaign path, not back to the same Home screen.
             var switchMode = Button(panel,
                 worldFiveSlice ? "RETURN TO ORIGINAL PLAYTEST  ›" : "TRY WORLD FIVE MISSIONS 001–006  ›",
-                SwitchCampaignPrototype, menuView.Phase == MissionFlowPhase.Selection);
+                OpenCampaignPrototypeFromHome);
             switchMode.AddToClassList("home-quick-link");
             switchMode.AddToClassList("world-five-slice-switch");
-            switchMode.tooltip = "Development prototype · independent saved progress";
+            switchMode.tooltip = menuView.Phase == MissionFlowPhase.Selection
+                ? "Open the six-mission prototype · independent saved progress"
+                : "Resolve your saved battle before changing prototypes";
+            if (menuView.Phase == MissionFlowPhase.Battle)
+                Text(panel, "To switch playtest campaigns, finish your saved encounter first.",
+                    "home-status").AddToClassList("game-lobby-assurance");
             if (active)
                 Text(panel, "Campaigns and Units can be explored while your battle is saved.",
                     "home-status").AddToClassList("game-lobby-assurance");
@@ -1282,20 +1291,45 @@ namespace Ninefold.Presentation
             catalog = profile.Catalog; menu = profile.Menu; legacyProfile = profile.IsLegacy;
             if (legacyProfile) message = "Your saved battle is preserved. Finish it to use the new battlefield layouts.";
         }
+        private void OpenCampaignPrototypeFromHome()
+        {
+            // Never let the shared Button wrapper silently swallow an
+            // unavailable prototype switch. Offer the existing explicit
+            // retreat confirmation, without forfeiting a battle on tap.
+            if (menu.Read().Phase == MissionFlowPhase.Battle)
+            {
+                battleExitPrompt = true;
+                message = "Your current battle is saved. Finish it or explicitly end it before switching campaigns.";
+                return;
+            }
+            if (menu.Read().Phase != MissionFlowPhase.Selection)
+            {
+                message = "Claim your battle result before changing campaigns.";
+                return;
+            }
+            SwitchCampaignPrototype();
+        }
+
         private void SwitchCampaignPrototype()
         {
             if (menu.Read().Phase != MissionFlowPhase.Selection)
                 throw new InvalidOperationException("Finish your active battle before changing playtest campaigns.");
-            worldFiveSlice = !worldFiveSlice;
+            bool openWorldFive = !worldFiveSlice;
+            worldFiveSlice = openWorldFive;
             savePath = Path.Combine(Application.persistentDataPath,
                 worldFiveSlice ? "WorldFiveSlice-v3" : "AbstractPlaytest-v1");
             input = null; battleView = null; inBattle = false;
-            battleExitPrompt = false; inspectedUnit = null; selectedCampaign = null;
+            battleExitPrompt = false; inspectedUnit = null;
             squadInspection = null; collectionDetailsExpanded = false;
-            page = Page.Home;
+            // Opening World Five must visibly reveal its six mission cards
+            // on the same click. The previous code left users on Home,
+            // making a successful switch look like it did nothing.
+            selectedCampaign = openWorldFive ? WorldFivePlayableSlice.CampaignId : null;
+            page = openWorldFive ? Page.Missions : Page.Home;
             OpenProfile();
-            message = worldFiveSlice ? "World Five opening prototype · separate progress" :
-                "Original playtest · previous progress restored";
+            message = worldFiveSlice
+                ? "World Five missions 001–006 · Select a mission to view its briefing."
+                : "Original playtest · previous progress restored";
         }
         private void Reload()
         {
