@@ -466,6 +466,9 @@ namespace Ninefold.Presentation
                 card.EnableInClassList("locked-card", !c.CanEnter);
                 card.EnableInClassList("campaign-choice-featured", featured);
                 card.EnableInClassList("campaign-choice-locked", !c.CanEnter);
+                // The approved World Five sanctuary is only used on the
+                // World Five slice card, never as false fixture-faction art.
+                card.EnableInClassList("shell-worldfive-campaign", id == WorldFivePlayableSlice.CampaignId);
                 FrontiersVisualPrimitives.CampaignArt(card, id, c.CompletedMissions, c.TotalMissions, !c.CanEnter);
 
                 string status = !c.CanEnter ? "LOCKED"
