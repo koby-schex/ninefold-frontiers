@@ -37,6 +37,7 @@ namespace Ninefold.Presentation
         private readonly List<Material> materials = new List<Material>();
         private readonly Dictionary<string, Label> objectiveLabels = new Dictionary<string, Label>();
         private readonly Dictionary<string, Vector3> objectivePositions = new Dictionary<string, Vector3>();
+        private readonly Dictionary<string, GameObject> objectiveVisuals = new Dictionary<string, GameObject>();
         private readonly List<FloatingFeedback> feedback = new List<FloatingFeedback>();
         private readonly Material friendly, enemy, active, floor, grid, gold, cover, trim, markings;
         private readonly LineRenderer path, range;
@@ -125,7 +126,22 @@ namespace Ninefold.Presentation
             {
                 var state = view.Objectives.First(o=>o.Id==pair.Key);
                 var available = planning.Objectives.FirstOrDefault(o=>o.Id==pair.Key);
-                pair.Value.text = state.Status == ObjectiveStatus.Active ? "◎" : state.Status == ObjectiveStatus.Completed ? "✓" : "×";
+                var definition = objectives.First(o=>o.Id==pair.Key);
+                if (state.Kind == ObjectiveKind.RescueAndExtract &&
+                    definition.Zone != null && definition.Interaction != null)
+                {
+                    var pickup = Vector(definition.Interaction.Point);
+                    var exit = (Vector(definition.Zone.Min) + Vector(definition.Zone.Max)) / 2f;
+                    exit.y = pickup.y;
+                    bool extractionStage = state.Rescued && state.Status == ObjectiveStatus.Active;
+                    objectivePositions[pair.Key] = extractionStage ? exit : pickup;
+                    if (objectiveVisuals.TryGetValue(pair.Key,out var marker))
+                        marker.transform.position = extractionStage ? exit - pickup : Vector3.zero;
+                }
+                pair.Value.text = state.Kind == ObjectiveKind.RescueAndExtract && state.Rescued &&
+                    state.Status == ObjectiveStatus.Active ? "EXIT" :
+                    state.Status == ObjectiveStatus.Active ? "◎" :
+                    state.Status == ObjectiveStatus.Completed ? "✓" : "×";
                 pair.Value.EnableInClassList("objective-ready",available?.CanInteract == true);
                 surface.Add(pair.Value);
             }
@@ -218,7 +234,7 @@ namespace Ninefold.Presentation
             drawnSceneStudy = direction.Study;
             camera.backgroundColor = direction.Sky;
             foreach (var label in objectiveLabels.Values) label.RemoveFromHierarchy();
-            objectiveLabels.Clear(); objectivePositions.Clear();
+            objectiveLabels.Clear(); objectivePositions.Clear(); objectiveVisuals.Clear();
             if (terrain != null) { terrain.SetActive(false); Object.Destroy(terrain); }
             terrain = new GameObject("Authored arena"); terrain.transform.SetParent(world.transform,false);
             GameObject Shape(string name, Vector3 position, Vector3 scale, Material material)
@@ -245,18 +261,28 @@ namespace Ninefold.Presentation
             foreach (var o in objectives.Where(o=>o.Interaction!=null))
             {
                 var p = Vector(o.Interaction.Point);
-                Shape("Objective "+o.Id,p+Vector3.up*.04f,new Vector3(1.05f,.04f,1.05f),gold);
-                Shape("Objective inset",p+Vector3.up*.07f,new Vector3(.78f,.025f,.78f),floor);
-                Shape("Objective cross X",p+Vector3.up*.09f,new Vector3(.58f,.025f,.1f),active);
-                Shape("Objective cross Z",p+Vector3.up*.09f,new Vector3(.1f,.025f,.58f),active);
-                // A modest high-contrast route cue. This is a UI marker, not
-                // fictional World Five machinery or a new interactable object.
+                var group = new GameObject("Objective stage marker · "+o.Id);
+                group.transform.SetParent(terrain.transform,false);
+                Shape("Objective "+o.Id,p+Vector3.up*.04f,new Vector3(1.05f,.04f,1.05f),gold)
+                    .transform.SetParent(group.transform,true);
+                Shape("Objective inset",p+Vector3.up*.07f,new Vector3(.78f,.025f,.78f),floor)
+                    .transform.SetParent(group.transform,true);
+                Shape("Objective cross X",p+Vector3.up*.09f,new Vector3(.58f,.025f,.1f),active)
+                    .transform.SetParent(group.transform,true);
+                Shape("Objective cross Z",p+Vector3.up*.09f,new Vector3(.1f,.025f,.58f),active)
+                    .transform.SetParent(group.transform,true);
+                // Existing navigation cue moves with the objective stage.
+                // It is decorative and has no collider or tap handler.
                 Shape("Objective guide post",p+new Vector3(.65f,.48f,0),
-                    new Vector3(.10f,.84f,.10f),gold);
+                    new Vector3(.10f,.84f,.10f),gold)
+                    .transform.SetParent(group.transform,true);
                 Shape("Objective guide tip",p+new Vector3(.65f,.93f,0),
-                    new Vector3(.29f,.08f,.29f),active);
-                var label = new Label { pickingMode = PickingMode.Ignore }; label.AddToClassList("objective-marker");
+                    new Vector3(.29f,.08f,.29f),active)
+                    .transform.SetParent(group.transform,true);
+                var label = new Label { pickingMode = PickingMode.Ignore };
+                label.AddToClassList("objective-marker");
                 objectiveLabels.Add(o.Id,label); objectivePositions.Add(o.Id,p);
+                objectiveVisuals.Add(o.Id,group);
             }
         }
 
