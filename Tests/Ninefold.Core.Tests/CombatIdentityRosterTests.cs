@@ -17,6 +17,8 @@ internal static partial class Program
         Equal(11,c.Units.Values.Select(u=>u.Health).Distinct().Count());
         Equal(11,c.Units.Values.Select(u=>
             c.Abilities[c.Kits[u.KitId].AbilityIds[1]].Effect.Amount).Distinct().Count());
+        Equal(11,c.Units.Values.Select(u=>
+            c.Abilities[c.Kits[u.KitId].AbilityIds[3]].Effect.Amount).Distinct().Count());
         Equal(true,c.Units.Values.All(u=>u.Health>=1000));
     }
     private static void IdentityRosterSaveIsolation()
