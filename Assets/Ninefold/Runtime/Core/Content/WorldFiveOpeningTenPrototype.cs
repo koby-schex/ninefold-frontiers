@@ -20,7 +20,7 @@ namespace Ninefold.Core.Content
         public const string ProfileId = "w5-opening-ten-profile-v4";
         public const string Revision = "w5-opening-ten-layout-04";
         public const string CampaignId = WorldFivePlayableSlice.CampaignId;
-        public const string Status = "PROTOTYPE CONTENT - NOT CANON-LOCKED OR UI-RELEASED";
+        public const string Status = "PLAYABLE PROTOTYPE - NOT CANON-LOCKED OR RELEASE-APPROVED";
 
         public static IReadOnlyList<string> MissionIds { get; } = Array.AsReadOnly(
             Enumerable.Range(1,10).Select(n => "w5-draft-" +
