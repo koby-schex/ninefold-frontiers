@@ -54,6 +54,7 @@ namespace Ninefold.Editor
             scroll = EditorGUILayout.BeginScrollView(scroll);
             GUILayout.Label("Living Veil · Canopy study 02", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox("Resting and protective static poses with five continuous membrane lobes, an alpha texture and an independent Avarin partner. No animation or production rig. Not final art or canon approval.", MessageType.Info);
+            if (GUILayout.Button("Open motion study · idle / deploy / retract")) LivingVeilMotionReview.Open();
             EditorGUILayout.LabelField("Source revision", Revision);
             EditorGUILayout.LabelField("Source fingerprint", sourceVersion);
             EditorGUILayout.HelpBox("Imported scene: " + importedVersion, MessageType.None);

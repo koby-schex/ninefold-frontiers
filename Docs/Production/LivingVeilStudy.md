@@ -38,7 +38,8 @@ visual acceptance against the master, especially membrane layering and core deta
 Each pose has 97 named parts, 33,668 source vertices, 66,948 triangles and 12
 materials. Five lobe shells plus the Avarin mantle remain separate transparent
 render sections. Meters, Y up, +Z forward; Avarin height approximately 1.82 m.
-The two poses have matching source topology, but are not an animation or rig.
+The two source poses have matching topology and remain static assets. Motion study
+03 uses them in a separate transient editor viewport; see LivingVeilMotionStudy.md.
 Protective pose top is about 3.41 m; this review altitude is not a gameplay rule.
 
 The 256 × 256 RGBA texture contains the membrane tint and continuous alpha.
@@ -83,3 +84,12 @@ check; existing constant-alpha rendering is unchanged. Software comparison views
 use the nearest transparent shell, not all overlapping layers or refraction.
 Native Unity compilation, transparency sorting and visual acceptance remain
 pending. No mobile performance, final rig, animation, LOD or production-ready claim.
+
+## Motion study 03 addition
+
+**Ninefold > Art > Living Veil Motion Review** opens the separate motion viewport.
+The static review window also links to it. Motion leaves source materials/meshes
+and open scenes intact. Protective strand rings are cyclically reindexed (same
+surface geometry and counts) to avoid cross-section collapse during blending.
+This is source correspondence repair, not new anatomy. Source export validation
+continues to cover both poses. No production rig or runtime integration is added.

@@ -103,6 +103,24 @@ def make_model(pose='resting'):
         for p in m.parts:
             if p['name'].startswith(('Avarin_','VeilHarness_')):
                 p['vertices']=[(x-1.70,y,z-.35) for x,y,z in p['vertices']]
+    if pose=='protective':
+        # Cyclic ring reindexing preserves each strand surface but aligns its
+        # cross-section correspondence for deformation (avoids half-turn collapse).
+        rest={p['name']:p for p in make_model('resting').parts}
+        for p in m.parts:
+            if not p['name'].startswith(('Olyra_Rib_','Olyra_Vein_')):continue
+            a=rest[p['name']]['vertices'];b=p['vertices'];sides=p['loft_sides'];rings=(len(b)-2)//sides
+            def score(shift):
+                total=0
+                for ring in range(rings):
+                    av=a[ring*sides:(ring+1)*sides];bv=b[ring*sides:(ring+1)*sides]
+                    ac=tuple(sum(v[k] for v in av)/sides for k in range(3));bc=tuple(sum(v[k] for v in bv)/sides for k in range(3))
+                    for j in range(sides):
+                        x=sub(av[j],ac);y=sub(bv[(j+shift)%sides],bc)
+                        total+=sum((v-w)**2 for v,w in zip(x,y))
+                return total
+            shift=min(range(sides),key=score)
+            p['vertices']=[b[ring*sides+(j+shift)%sides] for ring in range(rings) for j in range(sides)]+b[-2:]
     return m
 
 def write(m,out,pose='resting'):
