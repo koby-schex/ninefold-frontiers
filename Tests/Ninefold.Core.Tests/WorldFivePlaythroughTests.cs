@@ -19,6 +19,7 @@ internal static partial class Program
         menu.SelectMission(ids[0]);
         menu.SetSquad(new[]{"fixture-a-1"});
         var play=menu.Start(menu.Read().PlanId);
+        int movementLeg=0;
         for(int step=0;step<24 && menu.Read().Results==null;step++)
         {
             var v=play.Read().Battle;
@@ -37,7 +38,7 @@ internal static partial class Program
                 else
                 {
                     // Two reachable legs on the actual authored World Five field.
-                    var target=v.Round==1?P(1,0):P(3,2);
+                    var target=movementLeg++==0?P(1,0):P(3,3);
                     var preview=play.TapDestination(target);
                     Equal(InputOutcome.Previewed,preview.Outcome);
                     var moved=play.TapDestination(target);
@@ -52,6 +53,8 @@ internal static partial class Program
                 if(next.AnimationId!=null) play.CompleteAnimation(next.AnimationId);
             }
         }
+        if(menu.Read().Results==null)
+            throw new Exception("World Five mission 001 did not complete after scripted movement and interaction.");
         Equal(Ninefold.Core.Missions.MissionOutcome.Victory,menu.Read().Results.Result.Outcome);
         var attempt=menu.Read().Results.Result.AttemptId;
         menu.ClaimRewards(attempt);
