@@ -233,3 +233,17 @@
     padding-top: 14px;
     padding-bottom: 14px;
 }
+
+.unit-profile-orbit-controls {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 8px;
+}
+.unit-profile-orbit-controls Button {
+    min-height: 43px;
+    margin-right: 5px;
+    margin-bottom: 6px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
