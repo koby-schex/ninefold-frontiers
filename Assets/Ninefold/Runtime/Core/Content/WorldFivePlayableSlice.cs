@@ -94,10 +94,16 @@ namespace Ninefold.Core.Content
         /// Never silently import the user's previous checkpoint or wallet.
         /// </summary>
         public static MissionPresentation Open(IBattleSaveFiles battles,IProgressSaveFiles progress)
+            => Open(Create(),battles,progress);
+
+        public static MissionPresentation Open(ContentCatalog catalog,IBattleSaveFiles battles,IProgressSaveFiles progress)
         {
+            if (catalog == null || catalog.Manifest.PackageId != "w5-prototype" ||
+                catalog.Manifest.ContentRevision != Revision)
+                throw new ArgumentException("Expected the World Five slice catalog.",nameof(catalog));
             if (battles == null || progress == null)
                 throw new ArgumentNullException("Independent battle/profile files are required.");
-            var menu=new MissionPresentation(Create(),battles,progress,ProfileId);
+            var menu=new MissionPresentation(catalog,battles,progress,ProfileId);
             if (progress.Read(0) != null || progress.Read(1) != null) menu.Open();
             else menu.CreateProfile();
             return menu;
