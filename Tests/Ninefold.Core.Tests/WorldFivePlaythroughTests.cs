@@ -150,7 +150,7 @@ internal static partial class Program
         Equal(false,play.ReadPlanning().Objectives.Single(x=>x.Id=="primary").CanInteract);
         var pickup=objective.Interaction.Point;
         bool pickedUp=false;
-        for(int step=0;step<90 && !pickedUp;step++)
+        for(int step=0;step<180 && !pickedUp;step++)
         {
             var view=play.Read().Battle;
             BattleInputResult result;
@@ -178,14 +178,15 @@ internal static partial class Program
             }
             else result=play.Advance(new EnemyPerception(Array.Empty<string>(),Array.Empty<string>()));
             if(result.AnimationId!=null) play.CompleteAnimation(result.AnimationId);
-            if(!pickedUp && play.Read().Battle.Phase==BattleSessionPhase.PlayerInput &&
-                play.Read().Battle.Activation.MovementRemaining==0m)
+            // One verified movement per activation prevents a near-target
+            // low-budget loop from repeatedly selecting non-progress samples.
+            if(!pickedUp && play.Read().Battle.Phase==BattleSessionPhase.PlayerInput)
             {
                 var end=play.EndTurn(play.Read().Battle.Activation.ActivationId);
                 if(end.AnimationId!=null) play.CompleteAnimation(end.AnimationId);
             }
         }
-        Equal(true,pickedUp);
+        if(!pickedUp) throw new Exception("Rescue pickup not reached within 180 validated activations.");
         Equal(true,menu.Read().Results==null);
         menu=WorldFiveOpeningTenPrototype.Open(stores.Battles,stores.Progress);
         Equal(MissionFlowPhase.Battle,menu.Read().Phase);
