@@ -1,0 +1,235 @@
+/*
+ * Main Shell Convergence 01 — PT-062
+ * Home, Campaigns, Units and Settings are four sibling destinations.
+ * The shared approved Sanctuary illustration is presentation atmosphere;
+ * it is NOT an assertion that all factions or fixture characters are W5.
+ * World-specific campaign art remains optional via the preview registry.
+ */
+
+/* Preserve a single uninterrupted world behind the entire main-tab shell.
+ * Non-home tabs are still independent full-screen pages, never modal cards. */
+.root.primary-tab-mode #home-backdrop {
+    display: flex;
+    -unity-background-image-tint-color: rgba(179, 171, 189, 0.80);
+}
+.root.primary-tab-mode.native-screen-mode #safe-area {
+    padding: 0;
+    background-color: rgba(10, 20, 18, 0.66);
+}
+.root.primary-tab-mode.native-screen-mode #screen-content {
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+}
+.root.primary-tab-mode.native-screen-mode .page-scroll {
+    margin: 0;
+    border-width: 0;
+    border-radius: 0;
+    background-color: rgba(10, 21, 18, 0.76);
+    padding: 11px 14px 16px 14px;
+}
+
+/* Full-bleed, image-led title area, continuing the Home hero language.
+ * Title and image are ambient shell elements, not campaign-specific art. */
+.root.primary-tab-mode .shell-tab-hero {
+    width: 100%;
+    min-height: 142px;
+    max-height: 142px;
+    flex-shrink: 0;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-end;
+    border-bottom-width: 2px;
+    border-bottom-color: rgb(201, 170, 116);
+    background-color: rgba(13, 22, 21, 0.24);
+}
+.root.primary-tab-mode .shell-tab-hero-copy {
+    min-height: 110px;
+    width: 100%;
+    padding: 12px 16px 11px 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-end;
+    background-color: rgba(12, 21, 20, 0.56);
+}
+.root.primary-tab-mode .shell-tab-eyebrow {
+    font-size: 10px;
+    letter-spacing: 2px;
+    -unity-font-style: bold;
+    color: rgb(234, 206, 157);
+    margin: 0 0 4px 0;
+}
+.root.primary-tab-mode .shell-tab-title {
+    font-size: 33px;
+    -unity-font-style: normal;
+    color: rgb(254, 247, 231);
+    margin: 0 0 1px 0;
+}
+.root.primary-tab-mode .shell-tab-subtitle {
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: rgb(222, 217, 206);
+    margin: 4px 0 0 0;
+}
+
+/* The same visual hierarchy carries through to native secondary pages.
+ * Keep contextual Back (real drill-down) and remove Home from that header. */
+.root.native-screen-mode .native-page-bar {
+    background-color: rgba(14, 24, 21, 0.96);
+    border-bottom-color: rgba(212, 180, 123, 0.54);
+}
+.root.native-screen-mode .native-top-spacer {
+    width: 49px;
+    min-width: 49px;
+    height: 45px;
+    flex-shrink: 0;
+}
+.root.native-screen-mode .native-top-title {
+    color: rgb(245, 230, 204);
+    letter-spacing: 1px;
+}
+
+/* Campaign cards remain authored destinations, not a spreadsheet or pop-up.
+ * World Five art is an atmosphere cue ONLY on its own opt-in prototype card. */
+.root.primary-tab-mode.campaign-overview-mode .campaign-choice {
+    border-width: 1px;
+    border-top-width: 2px;
+    border-color: rgba(176, 165, 137, 0.55);
+    border-top-color: rgba(221, 186, 122, 0.75);
+    border-radius: 7px;
+    background-color: rgba(19, 32, 28, 0.90);
+    padding: 10px;
+    margin-bottom: 12px;
+}
+.root.primary-tab-mode.campaign-overview-mode .campaign-choice-featured {
+    border-left-width: 3px;
+    border-left-color: rgb(232, 192, 124);
+}
+.root.primary-tab-mode.campaign-overview-mode .campaign-choice .vif-campaign-art {
+    border-color: rgba(231, 199, 143, 0.48);
+    background-color: rgb(34, 46, 39);
+    margin-bottom: 9px;
+}
+.root.primary-tab-mode.campaign-overview-mode .campaign-choice.shell-worldfive-campaign .vif-campaign-art {
+    background-image: url("Sanctuary.jpg");
+    -unity-background-scale-mode: scale-and-crop;
+    -unity-background-image-tint-color: rgba(182, 174, 189, 0.65);
+}
+.root.primary-tab-mode.campaign-overview-mode .campaign-choice-name {
+    font-size: 24px;
+    color: rgb(249, 240, 223);
+}
+.root.primary-tab-mode.campaign-overview-mode .campaign-overview-intro {
+    color: rgb(226, 210, 178);
+    margin: 3px 0 11px 0;
+}
+.root.primary-tab-mode.campaign-overview-mode .campaign-choice .campaign-choice-next {
+    color: rgb(220, 208, 181);
+}
+
+/* Collection inherits the same ambience, but remains image-led per row
+ * and never substitutes generic World Five creatures for the real roster. */
+.root.primary-tab-mode.collection-clarity-mode .collection-filters {
+    margin: 5px 0 13px 0;
+}
+.root.primary-tab-mode.collection-clarity-mode .collection-overview-summary {
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: rgb(225, 218, 202);
+    margin: 3px 0 5px 0;
+}
+.root.primary-tab-mode.collection-clarity-mode .collection-roster-entry {
+    border-radius: 6px;
+    border-top-width: 1px;
+    border-top-color: rgba(222, 197, 152, 0.35);
+    background-color: rgba(20, 32, 27, 0.91);
+}
+.root.primary-tab-mode.collection-clarity-mode .collection-roster-title {
+    color: rgb(251, 239, 218);
+}
+.root.primary-tab-mode.collection-clarity-mode .collection-roster-group-title {
+    color: rgb(246, 225, 187);
+}
+
+/* Make regular Settings a game destination. Diagnostics stay accessible,
+ * but deliberately closed unless explicitly needed by a playtester. */
+.root.primary-tab-mode.support-menu-mode .shell-settings-card,
+.root.primary-tab-mode.support-menu-mode #shell-diagnostics-card {
+    margin: 0 0 12px 0;
+    padding: 13px;
+    border-radius: 7px;
+    border-width: 1px;
+    border-top-width: 2px;
+    border-color: rgba(183, 173, 142, 0.50);
+    border-top-color: rgba(219, 186, 126, 0.65);
+    background-color: rgba(20, 33, 28, 0.93);
+}
+.root.primary-tab-mode.support-menu-mode .shell-settings-card .section {
+    color: rgb(247, 237, 212);
+    margin: 4px 0 8px 0;
+}
+.root.primary-tab-mode.support-menu-mode .shell-settings-card .detail {
+    color: rgb(216, 211, 191);
+}
+.root.primary-tab-mode.support-menu-mode #safe-area Button.game-button.shell-diagnostics-toggle {
+    width: 100%;
+    min-height: 48px;
+    margin: 5px 0 0 0;
+    border-width: 1px;
+    border-color: rgba(151, 161, 134, 0.54);
+    background-color: rgba(36, 50, 40, 0.96);
+    color: rgb(234, 222, 193);
+}
+
+/* One always-visible, full-width bottom nav for all four primary tabs.
+ * The gold current-section indicator matches Home's main CTA language. */
+.root #safe-area .navigation.unified-navigation {
+    border-top-width: 1px;
+    border-top-color: rgba(211, 181, 128, 0.60);
+    background-color: rgba(13, 23, 19, 0.97);
+}
+.root.home-mode #safe-area .navigation.unified-navigation > Button.game-button.unified-nav-button.selected,
+.root.primary-tab-mode #safe-area .navigation.unified-navigation > Button.game-button.unified-nav-button.selected {
+    background-color: rgba(211, 181, 128, 0.18);
+    border-bottom-width: 2px;
+    border-bottom-color: rgb(222, 191, 135);
+}
+.root #safe-area .navigation.unified-navigation > Button.game-button.unified-nav-button {
+    min-height: 56px;
+    border-radius: 5px;
+}
+.root #safe-area .navigation.unified-navigation .unified-nav-button .home-icon {
+    width: 23px;
+    height: 23px;
+}
+.root #safe-area .navigation.unified-navigation .nav-label {
+    font-size: 11px;
+    color: rgb(240, 231, 214);
+}
+
+/* Limited-height Editor previews retain thumb-friendly touch targets and
+ * a scrollable content region without ever drawing scroll bars. */
+.root.compact-home.primary-tab-mode .shell-tab-hero {
+    min-height: 110px;
+    max-height: 110px;
+}
+.root.compact-home.primary-tab-mode .shell-tab-hero-copy {
+    min-height: 92px;
+    padding: 8px 12px;
+}
+.root.compact-home.primary-tab-mode .shell-tab-title { font-size: 26px; }
+.root.compact-home.primary-tab-mode .page-scroll { padding: 8px 10px 12px 10px; }
+.root.short-home.primary-tab-mode .shell-tab-hero {
+    min-height: 79px;
+    max-height: 79px;
+}
+.root.short-home.primary-tab-mode .shell-tab-hero-copy { min-height: 75px; }
+.root.short-home.primary-tab-mode .shell-tab-title { font-size: 21px; }
+.root.short-home.primary-tab-mode .shell-tab-subtitle { display: none; }
+.root.short-home.primary-tab-mode .page-scroll { padding: 6px 9px; }
+
+/* Touch scrolling stays active while the slider tracks stay hidden. */
+.root.primary-tab-mode .unity-scroll-view__vertical-scroller,
+.root.primary-tab-mode .unity-scroll-view__horizontal-scroller {
+    display: none;
+}
