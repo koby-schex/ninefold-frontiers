@@ -1122,7 +1122,7 @@ namespace Ninefold.Presentation
             else
             {
                 foreach (var a in b.Actions.Where(a => a.Slot == AbilitySlot.NormalAttack ||
-                    a.Slot == AbilitySlot.Main || a.Slot == AbilitySlot.Ultimate))
+                    a.Slot == AbilitySlot.Main || a.Slot == AbilitySlot.Signature))
                 {
                     var slot = a.Slot;
                     var title = slot == AbilitySlot.NormalAttack ? "ATTACK" :
