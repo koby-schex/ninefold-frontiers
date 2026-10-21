@@ -154,7 +154,7 @@
 /* Make regular Settings a game destination. Diagnostics stay accessible,
  * but deliberately closed unless explicitly needed by a playtester. */
 .root.primary-tab-mode.support-menu-mode .shell-settings-card,
-.root.primary-tab-mode.support-menu-mode #shell-diagnostics-card {
+.root.primary-tab-mode.support-menu-mode .shell-diagnostics-card {
     margin: 0 0 12px 0;
     padding: 13px;
     border-radius: 7px;
