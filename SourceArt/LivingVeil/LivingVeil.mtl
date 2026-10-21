@@ -1,22 +1,26 @@
 newmtl avar_skin
-Kd 0.32 0.245 0.33
-Ns 24
+Kd 1 1 1
+Ns 7.35393493851846
 d 1
+map_Kd Textures/avar_skin.png
 
 newmtl ceramic
-Kd 0.65 0.66 0.6
-Ns 100
+Kd 1 1 1
+Ns 93.91700493397073
 d 1
+map_Kd Textures/ceramic.png
 
 newmtl cloth
-Kd 0.115 0.12 0.155
-Ns 4
+Kd 1 1 1
+Ns 2.0171019276947364
 d 1
+map_Kd Textures/cloth.png
 
 newmtl continuance_frame
-Kd 0.36 0.38 0.4
-Ns 100
+Kd 1 1 1
+Ns 46.77305288827924
 d 1
+map_Kd Textures/continuance_frame.png
 
 newmtl eye
 Kd 0.055 0.065 0.07
@@ -40,9 +44,10 @@ d 0.55
 map_Kd Textures/OlyraMembrane.png
 
 newmtl sail_membrane
-Kd 0.32 0.28 0.43
-Ns 64
+Kd 1 1 1
+Ns 23.346997223616654
 d 0.68
+map_Kd Textures/sail_membrane.png
 
 newmtl sail_vein
 Kd 0.64 0.59 0.76
@@ -50,9 +55,10 @@ Ns 28
 d 1
 
 newmtl soft_charcoal
-Kd 0.12 0.13 0.16
-Ns 16
+Kd 1 1 1
+Ns 3.403206738360735
 d 1
+map_Kd Textures/soft_charcoal.png
 
 newmtl survey_light
 Kd 0.47 0.68 0.79

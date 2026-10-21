@@ -81,3 +81,16 @@ New review assets use revision-05 folders; previous review copies are retained.
 This pass starts from main through merged PR #93, keeping the other chat's
 rescue/extraction gameplay intact. Production LODs and device profiling remain
 necessary before battle integration.
+
+
+## Living Veil surface study 06
+
+Partner materials now include six 128 px albedo/normal/metallic-smoothness map sets.
+See [LivingVeilMaterialsStudy.md](LivingVeilMaterialsStudy.md) for import settings,
+validation limits and current generated prefab paths. Current review outputs are
+`LivingVeil06_<fingerprint>/LivingVeilStudy06.prefab` and
+`LivingVeilProtective06_<fingerprint>/LivingVeilProtectiveStudy06.prefab` under
+`Assets/Ninefold/ArtReview/`. The scene name is `LivingVeilReview06.unity`.
+Previous 05 paths above are historical. Source ID, geometry and preview contract
+are unchanged. No runtime provider or authoritative gameplay-ID mapping is added.
+Native material acceptance and mobile budgets remain outstanding.
