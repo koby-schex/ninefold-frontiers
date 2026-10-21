@@ -235,8 +235,14 @@ namespace Ninefold.Presentation
                 (page == Page.Battles || page == Page.Settings ||
                     (page == Page.Collection && inspectedUnit == null));
             root.EnableInClassList("primary-tab-mode", mainTab);
+            bool ambientMenu = !resultsScreen && !home &&
+                !(menuView.Phase == MissionFlowPhase.Battle && inBattle) &&
+                (page == Page.Battles || page == Page.Missions ||
+                    page == Page.Briefing || page == Page.Squad ||
+                    page == Page.Collection || page == Page.Settings);
+            root.EnableInClassList("ambient-menu-mode", ambientMenu);
             heading.style.display = DisplayStyle.None;
-            homeBackdrop.style.display = home || mainTab ? DisplayStyle.Flex : DisplayStyle.None;
+            homeBackdrop.style.display = home || ambientMenu ? DisplayStyle.Flex : DisplayStyle.None;
             root.EnableInClassList("native-screen-mode",
                 !home && !(menuView.Phase == MissionFlowPhase.Battle && inBattle));
             root.EnableInClassList("battle-mode", menuView.Phase == MissionFlowPhase.Battle && inBattle);
@@ -249,7 +255,7 @@ namespace Ninefold.Presentation
             }
             else
             {
-                content.style.backgroundColor = mainTab ? Color.clear :
+                content.style.backgroundColor = ambientMenu ? Color.clear :
                     page == Page.Collection ? new Color(.063f, .094f, .078f)
                     : page == Page.Settings ? new Color(.068f, .077f, .077f)
                     : new Color(.045f, .075f, .071f);
