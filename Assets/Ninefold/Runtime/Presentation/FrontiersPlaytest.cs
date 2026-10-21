@@ -418,12 +418,12 @@ namespace Ninefold.Presentation
             // When selection is available, take the player DIRECTLY to the
             // six-mission campaign path, not back to the same Home screen.
             var switchMode = Button(panel,
-                worldFiveSlice ? "RETURN TO ORIGINAL PLAYTEST  ›" : "TRY WORLD FIVE MISSIONS 001–006  ›",
+                worldFiveSlice ? "RETURN TO ORIGINAL PLAYTEST  ›" : "TRY WORLD FIVE MISSIONS 001–010  ›",
                 OpenCampaignPrototypeFromHome);
             switchMode.AddToClassList("home-quick-link");
             switchMode.AddToClassList("world-five-slice-switch");
             switchMode.tooltip = menuView.Phase == MissionFlowPhase.Selection
-                ? "Open the six-mission prototype · independent saved progress"
+                ? "Open the ten-mission World Five prototype · separate V4 progress; V3 saves retained"
                 : "Resolve your saved battle before changing prototypes";
             if (menuView.Phase == MissionFlowPhase.Battle)
                 Text(panel, "To switch playtest campaigns, finish your saved encounter first.",
@@ -1221,11 +1221,12 @@ namespace Ninefold.Presentation
 
         private void Pick(Vector2 panelPosition)
         {
-            // The rescue prototype places a friendly field proxy at its own
-            // recovery marker. The objective must be tappable over that proxy;
-            // a normal unit pick would otherwise swallow the interaction.
+            // Missions 003 and 009 both place a friendly recovery proxy
+            // directly over a pickup marker. Tapping the objective must
+            // take priority over inspecting that unit on either mission.
             if (worldFiveSlice && battleView != null &&
-                battleView.Battle.MissionId == WorldFivePlayableSlice.MissionIds[2])
+                (battleView.Battle.MissionId == WorldFiveOpeningTenPrototype.MissionIds[2] ||
+                 battleView.Battle.MissionId == WorldFiveOpeningTenPrototype.MissionIds[8]))
             {
                 var rescueObjective = catalog.Missions[battleView.Battle.MissionId].Objectives
                     .FirstOrDefault(o => o.Interaction != null && input.ReadPlanning().Objectives
@@ -1348,10 +1349,11 @@ namespace Ninefold.Presentation
         {
             if (worldFiveSlice)
             {
-                // New campaign prototype NEVER reads or writes existing fixture
-                // battle/profile slots; both can be resumed independently.
-                catalog = WorldFivePlayableSlice.Create();
-                menu = WorldFivePlayableSlice.Open(catalog,
+                // V4 never reads/writes the original playtest OR prior
+                // World Five V1/V2/V3 profiles. A new content revision gets
+                // an independent directory to protect all old checkpoints.
+                catalog = WorldFiveOpeningTenPrototype.Create();
+                menu = WorldFiveOpeningTenPrototype.Open(catalog,
                     new DirectoryBattleSaveFiles(savePath),new DirectoryProgressSaveFiles(savePath));
                 legacyProfile = false;
                 return;
@@ -1398,20 +1400,22 @@ namespace Ninefold.Presentation
             {
                 worldFiveSlice = openWorldFive;
                 savePath = Path.Combine(Application.persistentDataPath,
-                    worldFiveSlice ? "WorldFiveSlice-v3" : "AbstractPlaytest-v1");
+                    worldFiveSlice ? "WorldFiveOpeningTen-v4" : "AbstractPlaytest-v1");
                 input = null; battleView = null; inBattle = false;
                 battleExitPrompt = false; inspectedUnit = null;
                 squadInspection = null; collectionDetailsExpanded = false;
                 OpenProfile();
                 if (openWorldFive && !menu.Read().Campaigns.Any(
-                    c => c.CampaignId == WorldFivePlayableSlice.CampaignId))
+                    c => c.CampaignId == WorldFiveOpeningTenPrototype.CampaignId &&
+                        c.TotalMissions == WorldFiveOpeningTenPrototype.MissionIds.Count))
                     throw new InvalidOperationException("The World Five mission path is missing from the prototype catalog.");
                 // Do not leave the player on Home after a successful switch.
-                // Display all six missions immediately; the first is unlocked.
-                selectedCampaign = openWorldFive ? WorldFivePlayableSlice.CampaignId : null;
+                // Show ten authored missions at once; mission 001 is available
+                // and the rest retain the original sequential unlock rules.
+                selectedCampaign = openWorldFive ? WorldFiveOpeningTenPrototype.CampaignId : null;
                 page = openWorldFive ? Page.Missions : Page.Home;
                 message = openWorldFive
-                    ? "World Five missions 001–006 · Select a mission to view its briefing."
+                    ? "World Five missions 001–010 · V4 saves separately. Select a mission."
                     : "Original playtest · previous progress restored";
             }
             catch (Exception e)
@@ -1736,18 +1740,26 @@ namespace Ninefold.Presentation
         {
             if (worldFiveSlice)
             {
-                if (id == WorldFivePlayableSlice.MissionIds[0])
+                if (id == WorldFiveOpeningTenPrototype.MissionIds[0])
                     return "Approach the marked route point and stabilize it. Follow the gold objective.";
-                if (id == WorldFivePlayableSlice.MissionIds[1])
+                if (id == WorldFiveOpeningTenPrototype.MissionIds[1])
                     return "Use the open or covered approach to stabilize the next route point.";
-                if (id == WorldFivePlayableSlice.MissionIds[2])
+                if (id == WorldFiveOpeningTenPrototype.MissionIds[2])
                     return "Rescue the stranded traveler, then bring them back to the gold extraction zone using your first deployed unit.";
-                if (id == WorldFivePlayableSlice.MissionIds[3])
+                if (id == WorldFiveOpeningTenPrototype.MissionIds[3])
                     return "Occupy the marked zone for two consecutive rounds. A test opponent can contest it.";
-                if (id == WorldFivePlayableSlice.MissionIds[4])
+                if (id == WorldFiveOpeningTenPrototype.MissionIds[4])
                     return "Protect the friendly traveler for two rounds. Keep the test threat away from them.";
-                if (id == WorldFivePlayableSlice.MissionIds[5])
+                if (id == WorldFiveOpeningTenPrototype.MissionIds[5])
                     return "Keep at least one squad unit alive through three rounds. No destination is required.";
+                if (id == WorldFiveOpeningTenPrototype.MissionIds[6])
+                    return "Defeat both hostile test proxies. Tap to inspect a target, then double-tap to attack.";
+                if (id == WorldFiveOpeningTenPrototype.MissionIds[7])
+                    return "Hold the marked zone for two rounds. Routes around cover offer different approaches.";
+                if (id == WorldFiveOpeningTenPrototype.MissionIds[8])
+                    return "Your first deployed unit must recover the friendly proxy, then return to extraction.";
+                if (id == WorldFiveOpeningTenPrototype.MissionIds[9])
+                    return "Stabilize the marked point twice. Defeating the threat and surviving two rounds are optional.";
             }
             if (catalog.Manifest.ContentRevision != "fixture-layouts-v3")
                 return id == "fixture-mixed" ? "Defeat the enemy. Use either side of the central cover island to approach."
@@ -1760,12 +1772,16 @@ namespace Ninefold.Presentation
                 : "Stabilize the marked objective beyond the asymmetric cover.";
         }
         private static string MissionName(string id) =>
-            id == WorldFivePlayableSlice.MissionIds[0] ? "The Wrong Arrival" :
-            id == WorldFivePlayableSlice.MissionIds[1] ? "Hold the Passage" :
-            id == WorldFivePlayableSlice.MissionIds[2] ? "Return the Stranded" :
-            id == WorldFivePlayableSlice.MissionIds[3] ? "The Safe Boundary" :
-            id == WorldFivePlayableSlice.MissionIds[4] ? "Shelter First" :
-            id == WorldFivePlayableSlice.MissionIds[5] ? "Wait for the Window" :
+            id == WorldFiveOpeningTenPrototype.MissionIds[0] ? "The Wrong Arrival" :
+            id == WorldFiveOpeningTenPrototype.MissionIds[1] ? "Hold the Passage" :
+            id == WorldFiveOpeningTenPrototype.MissionIds[2] ? "Return the Stranded" :
+            id == WorldFiveOpeningTenPrototype.MissionIds[3] ? "The Safe Boundary" :
+            id == WorldFiveOpeningTenPrototype.MissionIds[4] ? "Shelter First" :
+            id == WorldFiveOpeningTenPrototype.MissionIds[5] ? "Wait for the Window" :
+            id == WorldFiveOpeningTenPrototype.MissionIds[6] ? "Clear the Approach" :
+            id == WorldFiveOpeningTenPrototype.MissionIds[7] ? "The Divided Route" :
+            id == WorldFiveOpeningTenPrototype.MissionIds[8] ? "Keep the Bond" :
+            id == WorldFiveOpeningTenPrototype.MissionIds[9] ? "A Line That Holds" :
             id == "fixture-opening" ? "Stabilization" : id == "fixture-mixed" ? "Quick combat" :
             id == "fixture-finale" ? "Campaign finale" : "Faction B: stabilization";
         private void OnDestroy() { if (playback != null) StopCoroutine(playback); field?.Dispose(); }
