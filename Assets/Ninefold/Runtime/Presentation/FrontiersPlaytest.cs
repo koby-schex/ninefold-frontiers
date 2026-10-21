@@ -1045,6 +1045,7 @@ namespace Ninefold.Presentation
         private void BuildBattle()
         {
             var b = battleView.Battle;
+            if (b.Phase != BattleSessionPhase.PlayerInput) lastTapUnitId = null;
             var top = Card(content, "battle-header");
             var line = Row(top); line.AddToClassList("battle-title-row");
             var actor = b.Units.FirstOrDefault(u => u.Id == b.Activation?.UnitId);
@@ -1108,6 +1109,14 @@ namespace Ninefold.Presentation
                 Text(details, "Next: " + string.Join(" → ", b.UpcomingTurns.Take(4).Select(UnitName)), "detail");
                 var inspected = b.Units.FirstOrDefault(u => u.Id == battleView.SelectedUnitId) ?? actor;
                 if (inspected?.Health != null) Text(details, UnitName(inspected.Id) + " · HP " + inspected.Health.CurrentHealth + "/" + inspected.Health.MaximumHealth + " · Armor " + inspected.EffectiveArmor, "detail");
+                Text(details, "PASSIVE · " + (actor == null ? "No active unit" :
+                    catalog.Units.TryGetValue(actor.Id,out var unitDefinition) &&
+                    catalog.Kits.TryGetValue(unitDefinition.KitId,out var kitDefinition) &&
+                    catalog.Abilities.TryGetValue(kitDefinition.AbilityIds[(int)AbilitySlot.Passive],out var passiveAbility)
+                        ? passiveAbility.IsPassivePlaceholder
+                            ? "This prototype unit has no authored passive effect yet."
+                            : "An always-on passive is configured for this unit."
+                        : "Passive data unavailable for this actor."), "detail");
                 foreach (var action in b.Actions.Where(a => a.Slot != AbilitySlot.Passive))
                 {
                     var ability = actor?.Abilities.FirstOrDefault(a => a.Slot == action.Slot);
@@ -1148,7 +1157,7 @@ namespace Ninefold.Presentation
             }
             var inspected = b.Units.FirstOrDefault(u =>
                 u.Id == battleView.SelectedUnitId && u.IsEligible);
-            if (inspected != null && inspected.Id != active?.Id)
+            if (inspected != null)
             {
                 var selected = Row(status); selected.AddToClassList("mobile-inspected-unit");
                 Text(selected, (inspected.IsEnemyControlled ? "ENEMY  " : "ALLY  ") +
@@ -1299,6 +1308,7 @@ namespace Ninefold.Presentation
 
         private void Handle(BattleInputResult result)
         {
+            if (result.Outcome == InputOutcome.Committed) lastTapUnitId = null;
             battleRejection = result.Outcome == InputOutcome.Rejected ? RejectionReason(result) : null;
             message = result.Outcome == InputOutcome.Rejected ? RejectionReason(result)
                 : result.Outcome == InputOutcome.Previewed ? "Tap target again to confirm."
