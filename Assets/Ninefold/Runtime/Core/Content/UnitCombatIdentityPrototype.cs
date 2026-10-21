@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using Ninefold.Core.Combat;
 using Ninefold.Core.Persistence;
+using Ninefold.Core.Progression;
 using Ninefold.Core.Views;
 
 namespace Ninefold.Core.Content
