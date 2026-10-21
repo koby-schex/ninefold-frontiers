@@ -17,8 +17,10 @@ namespace Ninefold.Core.Content
     public static class WorldFivePlayableSlice
     {
         public const string CampaignId = "w5-slice";
-        public const string ProfileId = "w5-slice-profile-v1";
-        public const string Revision = "w5-slice-layout-01";
+        // V2 is intentionally isolated from the original V1 profile/save
+        // directory. Legacy snapshots remain untouched and recoverable.
+        public const string ProfileId = "w5-slice-profile-v2";
+        public const string Revision = "w5-slice-layout-02";
         public static readonly string[] MissionIds = {
             "w5-draft-001", "w5-draft-002", "w5-draft-003"
         };
@@ -55,20 +57,20 @@ namespace Ninefold.Core.Content
                     new InteractionDefinition(P(6,5),1.4m,new[] { "$squad" })),
                 environmentKey:"study-w5-fracture");
 
-            // The current core has no escorted movement commands for a
-            // friendly NPC. Put this temporary rescue subject *inside* its
-            // marked extraction zone, so reaching and activating the rescue
-            // succeeds without requiring an uncommandable actor to walk.
-            // A two-stage escort mission is a future explicit gameplay task.
+            // Two-stage recovery: the first deployed squad member performs
+            // the pickup, then returns to a separate extraction zone. This
+            // uses actor-carried recovery rather than independently commanded
+            // NPC escort AI; it remains an abstract World Five prototype.
             var rescue=new MissionContent(MissionIds[2],"fixture-a",true,1,
                 new BattlefieldMap(B(-6,-5,10,8),new[] {
                     Cover(-4,-1,-2,2),Cover(1,0,3,2),Cover(7,5,8,6)
                 },new[] { new DifficultGround(B(3,-2,5,0,.1m),2m) }),
                 new[] { P(-2,-3),P(-1,-3),P(0,-3) },
                 new[] { new ActorSpawn("w5-rescue-proxy","fixture-npc",P(6,3),false) },
-                ObjectiveDefinition.Rescue("primary","w5-rescue-proxy",
-                    B(5,2,8,5,3),
-                    new InteractionDefinition(P(6,3),1.4m,new[] { "$squad" })),
+                ObjectiveDefinition.RescueCarried("primary","w5-rescue-proxy",
+                    B(-5,-4,-1,-2,3),
+                    new InteractionDefinition(P(6,3),1.4m,new[] { "$leader" }),
+                    "$leader"),
                 environmentKey:"study-w5-survey");
 
             var missions=new[] { one,two,rescue,fixture.Missions["fixture-mixed"] };

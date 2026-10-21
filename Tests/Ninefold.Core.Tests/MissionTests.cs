@@ -18,6 +18,8 @@ internal static partial class Program
         ("Round gate forbids skipping resolution", MissionRoundGate),
         ("Active stale and future round checks cannot grant progress", MissionBadRound),
         ("Rescue requires interaction before full-footprint extraction", MissionRescue),
+        ("Carrier rescue requires pickup then living carrier in separate exit", MissionRescueCarried),
+        ("Carrier loss fails rescued mission and original escort still works", MissionCarrierLoss),
         ("Rescued target loss fails before extraction", MissionRescueLoss),
         ("Secure awards uncontested full-body presence", MissionSecure),
         ("Contest pauses cumulative hold and resets consecutive hold", MissionContest),
@@ -128,6 +130,40 @@ internal static partial class Program
         Move(move,P(0,7)); Equal<BattleResult>(null,move.Mission.Result); // Center alone is insufficient.
         Move(move,P(0,8)); Equal(MissionOutcome.Victory,move.Mission.Result.Outcome);
     }
+    private static void MissionRescueCarried()
+    {
+        var plan=ObjectiveDefinition.RescueCarried("primary","c",Box(-1,7,1,9),InteractAt(),"a");
+        Equal("a",plan.ExtractionCarrier);
+        var b=MissionBattle(plan);
+        Equal<BattleResult>(null,b.Mission.Evaluate());
+        // A designated squad carrier must perform pickup; rescue alone cannot
+        // complete the objective even if the NPC happens to occupy the exit.
+        Interact(b,"primary");
+        Equal(true,b.Mission.GetObjective("primary").Rescued);
+        Equal<BattleResult>(null,b.Mission.Result);
+        Equal(P(0,6),b.Battlefield.GetPosition("c"));
+
+        Move(b,P(2,0),P(2,8),P(0,8));
+        Equal(MissionOutcome.Victory,b.Mission.Result.Outcome);
+        Equal(ObjectiveStatus.Completed,b.Mission.GetObjective("primary").Status);
+        Equal(P(0,6),b.Battlefield.GetPosition("c"));
+        // The mission is carrying a recovered traveler, not teleporting the
+        // NPC model or changing the existing placement collision system.
+    }
+
+    private static void MissionCarrierLoss()
+    {
+        var plan=ObjectiveDefinition.RescueCarried("primary","c",Box(-1,7,1,9),InteractAt(),"a");
+        var b=MissionBattle(plan);
+        Interact(b,"primary");
+        b.RemoveUnit("a");
+        Equal(MissionOutcome.Defeat,b.Mission.Evaluate().Outcome);
+        Equal(ObjectiveStatus.Failed,b.Mission.GetObjective("primary").Status);
+        // Validation rejects a carrier who is also the rescued subject.
+        Throws<ArgumentException>(()=>ObjectiveDefinition.RescueCarried(
+            "bad","c",Box(-1,7,1,9),InteractAt(),"c"));
+    }
+
     private static void MissionRescueLoss()
     {
         var b = MissionBattle(ObjectiveDefinition.Rescue("primary","c",Box(-1,7,1,9),InteractAt()));

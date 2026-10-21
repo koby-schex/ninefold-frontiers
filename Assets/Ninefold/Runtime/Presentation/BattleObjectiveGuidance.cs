@@ -54,7 +54,9 @@ namespace Ninefold.Presentation
             var headline = new VisualElement { pickingMode = PickingMode.Ignore };
             headline.AddToClassList("btg-goal-line");
             panel.Add(headline);
-            Label(headline, KindName(primary.Kind), "btg-goal");
+            Label(headline,
+                primary.Kind == ObjectiveKind.RescueAndExtract && primary.Rescued
+                    ? "EXTRACT" : KindName(primary.Kind), "btg-goal");
             Label(headline, primary.Status == ObjectiveStatus.Completed ? "DONE" :
                 primary.Status == ObjectiveStatus.Failed ? "FAILED" :
                 primary.Progress + "/" + primary.Required, "btg-progress");

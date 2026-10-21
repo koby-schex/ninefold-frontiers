@@ -165,7 +165,11 @@ namespace Ninefold.Core.Content
             {
                 case ObjectiveKind.Defeat: return ObjectiveDefinition.Defeat(o.Id, subjects);
                 case ObjectiveKind.Protect: return ObjectiveDefinition.Protect(o.Id, subjects.Single(), o.Required);
-                case ObjectiveKind.RescueAndExtract: return ObjectiveDefinition.Rescue(o.Id, subjects.Single(), o.Zone, interaction);
+                case ObjectiveKind.RescueAndExtract:
+                    return o.ExtractionCarrier == null
+                        ? ObjectiveDefinition.Rescue(o.Id, subjects.Single(), o.Zone, interaction)
+                        : ObjectiveDefinition.RescueCarried(o.Id, subjects.Single(), o.Zone,
+                            interaction, contestants.Single());
                 case ObjectiveKind.Secure: return ObjectiveDefinition.Secure(o.Id, o.Zone, subjects, contestants, o.Required, o.Consecutive);
                 case ObjectiveKind.Stabilize: return ObjectiveDefinition.Stabilize(o.Id, o.Required, interaction);
                 case ObjectiveKind.Survive: return ObjectiveDefinition.Survive(o.Id, o.Required);

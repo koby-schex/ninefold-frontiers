@@ -39,7 +39,12 @@ namespace Ninefold.Core.Missions
                 {
                     case ObjectiveKind.Defeat: d=ObjectiveDefinition.Defeat(id,subjects); break;
                     case ObjectiveKind.Protect: SaveIO.Require(subjects.Length==1,"Protect subject missing."); d=ObjectiveDefinition.Protect(id,subjects[0],required); break;
-                    case ObjectiveKind.RescueAndExtract: SaveIO.Require(subjects.Length==1,"Rescue subject missing."); d=ObjectiveDefinition.Rescue(id,subjects[0],zone,interaction); break;
+                    case ObjectiveKind.RescueAndExtract:
+                        SaveIO.Require(subjects.Length==1 && contestants.Length<=1,"Rescue actor references invalid.");
+                        d=contestants.Length==1
+                            ? ObjectiveDefinition.RescueCarried(id,subjects[0],zone,interaction,contestants[0])
+                            : ObjectiveDefinition.Rescue(id,subjects[0],zone,interaction);
+                        break;
                     case ObjectiveKind.Secure: d=ObjectiveDefinition.Secure(id,zone,subjects,contestants,required,consecutive); break;
                     case ObjectiveKind.Stabilize: d=ObjectiveDefinition.Stabilize(id,required,interaction); break;
                     default: d=ObjectiveDefinition.Survive(id,required); break;
