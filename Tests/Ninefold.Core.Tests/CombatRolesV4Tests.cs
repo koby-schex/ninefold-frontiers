@@ -11,7 +11,8 @@ internal static partial class Program
         ("Combat roles preserve unique health and attacks", RolesV4Unique),
         ("Combat roles preserve V3 and World Five save revisions", RolesV4Isolation),
         ("Combat roles open independent selectable campaign", RolesV4Open),
-        ("Unit preview tags allow multiple tags or none, without faction restrictions", RolesV4OptionalTags)
+        ("Unit preview tags allow multiple tags or none, without faction restrictions", RolesV4OptionalTags),
+        ("Unit preview hint labels and icon keys are optional and stable", RolesV4TagPresentation)
     };
     private static void RolesV4Distinct()
     {
@@ -66,5 +67,20 @@ internal static partial class Program
         // Tags are UI hints only: no faction or three-role lineup constraint.
         var catalog=UnitCombatRolesV4.Create();
         Equal(true,catalog.Campaigns.Count>0);
+    }
+    private static void RolesV4TagPresentation()
+    {
+        Equal(0,UnitPreviewTagPresentation.Get(UnitPreviewTag.None).Count);
+        var hints=UnitPreviewTagPresentation.Get(UnitPreviewTag.Frontline|UnitPreviewTag.Support);
+        Equal(2,hints.Count);
+        Equal("Frontline",hints[0].Label);
+        Equal("shield",hints[0].IconKey);
+        Equal("Support",hints[1].Label);
+        Equal("heart-handshake",hints[1].IconKey);
+        var all=UnitPreviewTagPresentation.Get(UnitPreviewTag.Frontline|UnitPreviewTag.Damage|UnitPreviewTag.Support);
+        Equal(3,all.Count);
+        Equal("Damage",all[1].Label);
+        Equal("swords",all[1].IconKey);
+        Throws<ArgumentOutOfRangeException>(()=>UnitPreviewTagPresentation.Get((UnitPreviewTag)8));
     }
 }
