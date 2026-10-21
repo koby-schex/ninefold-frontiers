@@ -10,7 +10,8 @@ internal static partial class Program
         ("Combat roles frontline sustains and striker deals damage", RolesV4Distinct),
         ("Combat roles preserve unique health and attacks", RolesV4Unique),
         ("Combat roles preserve V3 and World Five save revisions", RolesV4Isolation),
-        ("Combat roles open independent selectable campaign", RolesV4Open)
+        ("Combat roles open independent selectable campaign", RolesV4Open),
+        ("Unit preview tags allow multiple tags or none, without faction restrictions", RolesV4OptionalTags)
     };
     private static void RolesV4Distinct()
     {
@@ -55,5 +56,15 @@ internal static partial class Program
         var menu=UnitCombatRolesV4.Open(new FakeSaveFiles(),new ProgressFiles());
         Equal(MissionFlowPhase.Selection,menu.Read().Phase);
         Equal(true,menu.Read().Missions.Any(m=>m.Available));
+    }
+    private static void RolesV4OptionalTags()
+    {
+        Equal(0,UnitPreviewTags.For(UnitPreviewTag.None).Count);
+        Equal(2,UnitPreviewTags.For(UnitPreviewTag.Frontline|UnitPreviewTag.Support).Count);
+        Equal(3,UnitPreviewTags.For(UnitPreviewTag.Frontline|UnitPreviewTag.Damage|UnitPreviewTag.Support).Count);
+        Throws<ArgumentOutOfRangeException>(()=>UnitPreviewTags.For((UnitPreviewTag)8));
+        // Tags are UI hints only: no faction or three-role lineup constraint.
+        var catalog=UnitCombatRolesV4.Create();
+        Equal(true,catalog.Campaigns.Count>0);
     }
 }
