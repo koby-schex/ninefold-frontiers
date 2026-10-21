@@ -31,18 +31,26 @@ namespace Ninefold.Core.Content
                 int health=1180+index*95;
                 int attack=315+index*37;
                 string normalId="identity-v3-normal-"+original.Id;
+                int signature=735+index*43;
+                string signatureId="identity-v3-signature-"+original.Id;
                 string kitId="identity-v3-kit-"+original.Id;
                 abilities.Add(new AbilityContent(normalId,
                     new FieldAbility(AbilitySlot.NormalAttack,HealthEffectKind.Damage,
                         attack,source.Abilities[baseKit.AbilityIds[1]].Effect.Range,true)));
+                abilities.Add(new AbilityContent(signatureId,
+                    new FieldAbility(AbilitySlot.Signature,HealthEffectKind.Damage,
+                        signature,source.Abilities[baseKit.AbilityIds[3]].Effect.Range,true)));
                 kits.Add(new KitContent(kitId,baseKit.AbilityIds[0],normalId,
-                    baseKit.AbilityIds[2],baseKit.AbilityIds[3],baseKit.Availability));
+                    baseKit.AbilityIds[2],signatureId,baseKit.Availability));
                 units.Add(new UnitContent(original.Id,kitId,health,original.Armor,
                     original.Initiative,original.Movement,original.Body,original.Roster));
             }
             if(units.Select(u=>u.Health).Distinct().Count()!=units.Count ||
                 units.Select(u=>abilities.Single(a=>a.Id==
                     kits.Single(k=>k.Id==u.KitId).AbilityIds[1]).Effect.Amount)
+                    .Distinct().Count()!=units.Count ||
+                units.Select(u=>abilities.Single(a=>a.Id==
+                    kits.Single(k=>k.Id==u.KitId).AbilityIds[3]).Effect.Amount)
                     .Distinct().Count()!=units.Count)
                 throw new InvalidOperationException("Combat identity values must be unique.");
             return new ContentCatalog(new ContentManifest("w5-identity-roster",
