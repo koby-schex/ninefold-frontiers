@@ -1122,7 +1122,7 @@ namespace Ninefold.Presentation
             else
             {
                 foreach (var a in b.Actions.Where(a => a.Slot == AbilitySlot.NormalAttack ||
-                    a.Slot == AbilitySlot.Main || a.Slot == AbilitySlot.Ultimate))
+                    a.Slot == AbilitySlot.Main || a.Slot == AbilitySlot.Signature))
                 {
                     var slot = a.Slot;
                     var title = slot == AbilitySlot.NormalAttack ? "ATTACK" :
@@ -1151,14 +1151,14 @@ namespace Ninefold.Presentation
             if (worldFiveSlice && battleView != null &&
                 battleView.Battle.MissionId == WorldFivePlayableSlice.MissionIds[2])
             {
-                var objective = catalog.Missions[battleView.Battle.MissionId].Objectives
+                var rescueObjective = catalog.Missions[battleView.Battle.MissionId].Objectives
                     .FirstOrDefault(o => o.Interaction != null && input.ReadPlanning().Objectives
                         .Any(p => p.Id == o.Id && p.CanInteract) &&
                         Vector2.Distance(field.Project(PlaytestBattlefield.Vector(o.Interaction.Point),root),
                             panelPosition) < 32f);
-                if (objective != null)
+                if (rescueObjective != null)
                 {
-                    var ready = input.TapObjective(objective.Id);
+                    var ready = input.TapObjective(rescueObjective.Id);
                     if (ready.Outcome == InputOutcome.Previewed)
                         ready = input.Confirm(input.Read().Pending.Id);
                     Handle(ready);
