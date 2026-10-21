@@ -35,6 +35,11 @@ namespace Ninefold.Core.Missions
         public FieldBox Zone { get; }
         public InteractionDefinition Interaction { get; }
         public bool Consecutive { get; }
+        // For RescueAndExtract only, an optional designated carrier stored
+        // in the already-persisted actor-reference field. Ordinary rescue
+        // objectives leave this null and retain NPC-to-zone extraction.
+        public string ExtractionCarrier => Kind == ObjectiveKind.RescueAndExtract &&
+            Contestants.Count == 1 ? Contestants[0] : null;
         private ObjectiveDefinition(string id, ObjectiveKind kind, int required, IEnumerable<string> subjects = null,
             FieldBox zone = null, InteractionDefinition interaction = null, IEnumerable<string> contestants = null, bool consecutive = false)
         {
@@ -60,6 +65,22 @@ namespace Ninefold.Core.Missions
         public static ObjectiveDefinition Rescue(string id, string target, FieldBox exit, InteractionDefinition rescue)
             => new ObjectiveDefinition(id,ObjectiveKind.RescueAndExtract,1,new[] { target },
                 exit ?? throw new ArgumentNullException(nameof(exit)),rescue ?? throw new ArgumentNullException(nameof(rescue)));
+        /// <summary>
+        /// Two-stage rescue: rescue the subject, then carry them to the exit
+        /// with the designated actor. This is opt-in: existing Rescue remains
+        /// NPC-to-zone. Reuses the versioned checkpoint's existing actor-list
+        /// field rather than adding bytes to any saved-battle format.
+        /// </summary>
+        public static ObjectiveDefinition RescueCarried(string id, string target,
+            FieldBox exit, InteractionDefinition rescue, string carrier)
+        {
+            if (string.IsNullOrWhiteSpace(carrier) || carrier == target)
+                throw new ArgumentException("A separate extraction carrier is required.",nameof(carrier));
+            return new ObjectiveDefinition(id,ObjectiveKind.RescueAndExtract,1,
+                new[] { target },exit ?? throw new ArgumentNullException(nameof(exit)),
+                rescue ?? throw new ArgumentNullException(nameof(rescue)),
+                new[] { carrier });
+        }
         public static ObjectiveDefinition Secure(string id, FieldBox zone, IEnumerable<string> holders,
             IEnumerable<string> contestants, int rounds, bool consecutive)
         {
