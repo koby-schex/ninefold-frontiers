@@ -148,6 +148,11 @@ namespace Ninefold.Presentation
             var touchClarity = Resources.Load<StyleSheet>("Home/TouchCombatClarity01");
             if (touchClarity != null) root.styleSheets.Add(touchClarity);
             else Debug.LogWarning("Touch combat clarity styles are missing. Check project import.", this);
+            // Shared final-pass control states apply consistently across
+            // Home, Campaigns, Collection, Settings and contextual screens.
+            var gameWideConsistency = Resources.Load<StyleSheet>("Home/GameWideConsistency01");
+            if (gameWideConsistency != null) root.styleSheets.Add(gameWideConsistency);
+            else Debug.LogWarning("Game-wide consistency styles are missing. Check project import.", this);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);

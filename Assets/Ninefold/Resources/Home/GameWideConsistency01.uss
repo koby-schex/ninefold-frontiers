@@ -1,0 +1,36 @@
+/* Game-wide UI Consistency 01 — common touch states across main screens.
+ * Last-loaded, narrow selectors preserve canon-specific art and battle HUD.
+ * Existing navigation geometry from TouchCombatClarity01 remains authoritative.
+ */
+.root #safe-area Button.game-button:focus {
+    border-color: rgb(233, 195, 132);
+}
+.root #safe-area Button.game-button:disabled {
+    -unity-font-style: normal;
+    color: rgb(144, 155, 147);
+    border-color: rgba(111, 125, 118, 0.50);
+}
+.root #safe-area .navigation.unified-navigation > Button.game-button.unified-nav-button:hover {
+    background-color: rgba(197, 166, 113, 0.13);
+}
+.root #safe-area .navigation.unified-navigation > Button.game-button.unified-nav-button:active {
+    background-color: rgba(197, 166, 113, 0.25);
+}
+.root #safe-area .navigation.unified-navigation > Button.game-button.unified-nav-button:disabled {
+    background-color: transparent;
+    color: rgb(134, 144, 133);
+}
+.root #safe-area .navigation.unified-navigation > Button.game-button.unified-nav-button.selected:disabled {
+    border-bottom-color: rgb(222, 191, 135);
+}
+.root.primary-tab-mode .shell-tab-eyebrow,
+.root.native-screen-mode .native-top-title {
+    -unity-font-style: bold;
+    color: rgb(234, 206, 157);
+}
+.root.primary-tab-mode .shell-tab-title {
+    color: rgb(254, 247, 231);
+}
+.root #safe-area .native-page-bar > Button.game-button:active {
+    background-color: rgb(46, 72, 63);
+}
