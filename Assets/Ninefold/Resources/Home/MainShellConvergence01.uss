@@ -8,25 +8,31 @@
 
 /* Preserve a single uninterrupted world behind the entire main-tab shell.
  * Non-home tabs are still independent full-screen pages, never modal cards. */
-.root.primary-tab-mode #home-backdrop {
+.root.ambient-menu-mode #home-backdrop {
     display: flex;
     -unity-background-image-tint-color: rgba(179, 171, 189, 0.80);
 }
-.root.primary-tab-mode.native-screen-mode #safe-area {
+.root.ambient-menu-mode.native-screen-mode #safe-area {
     padding: 0;
-    background-color: rgba(10, 20, 18, 0.66);
+    background-color: rgba(10, 20, 18, 0.70);
 }
-.root.primary-tab-mode.native-screen-mode #screen-content {
+.root.ambient-menu-mode.native-screen-mode #screen-content {
     margin: 0;
     padding: 0;
     background-color: transparent;
 }
-.root.primary-tab-mode.native-screen-mode .page-scroll {
+.root.ambient-menu-mode.native-screen-mode .page-scroll {
     margin: 0;
     border-width: 0;
     border-radius: 0;
-    background-color: rgba(10, 21, 18, 0.76);
+    background-color: rgba(10, 21, 18, 0.88);
     padding: 11px 14px 16px 14px;
+}
+.root.primary-tab-mode.native-screen-mode #safe-area {
+    background-color: rgba(10, 20, 18, 0.63);
+}
+.root.primary-tab-mode.native-screen-mode .page-scroll {
+    background-color: rgba(10, 21, 18, 0.76);
 }
 
 /* Full-bleed, image-led title area, continuing the Home hero language.
