@@ -12,6 +12,7 @@ internal static partial class Program
         new (string,Action)[] {
             ("World Five slice constructs six separate validated authored fields", SliceMaps),
             ("World Five slice isolates campaign progression and exposes proper mission prerequisites", SliceLocks),
+            ("World Five launch entry exposes an enterable six-mission path and first briefing", SliceEntryPath),
             ("World Five slice saves independently of the original campaign profile", SliceCheckpoint),
             ("World Five rescue has a distinct extraction zone and chosen carrier", SliceRescue),
             ("World Five missions 004–006 teach distinct zone, defense and survival rules", SliceSecondAct),
@@ -65,6 +66,32 @@ internal static partial class Program
         menu.SetSquad(new[]{"fixture-a-1"});
         Equal(false,menu.Read().CanStart);
         menu.SelectMission(WorldFivePlayableSlice.MissionIds[0]);
+        menu.SetSquad(new[]{"fixture-a-1","fixture-a-2","fixture-a-3"});
+        Equal(true,menu.Read().CanStart);
+    }
+
+    private static void SliceEntryPath()
+    {
+        var store=new ProgressFiles();
+        var battles=new FakeSaveFiles();
+        var catalog=WorldFivePlayableSlice.Create();
+        var menu=WorldFivePlayableSlice.Open(catalog,battles,store);
+        var view=menu.Read();
+
+        // The Home entry point should always load exactly one real
+        // World Five campaign with six visible mission cards. Only the
+        // opening mission is playable before claiming its predecessor.
+        Equal(MissionFlowPhase.Selection,view.Phase);
+        var campaign=view.Campaigns.Single(c=>c.CampaignId==WorldFivePlayableSlice.CampaignId);
+        Equal(true,campaign.CanEnter);
+        Equal(6,campaign.TotalMissions);
+        Equal(6,catalog.Campaigns.Single().Missions.Count);
+        var first=view.Missions.Single(m=>m.Definition.Id==WorldFivePlayableSlice.MissionIds[0]);
+        Equal(true,first.Available);
+        Equal(false,first.FactionRosterLocked);
+        menu.SelectMission(first.Definition.Id);
+        var selected=menu.Read();
+        Equal(WorldFivePlayableSlice.MissionIds[0],selected.SelectedMissionId);
         menu.SetSquad(new[]{"fixture-a-1","fixture-a-2","fixture-a-3"});
         Equal(true,menu.Read().CanStart);
     }
