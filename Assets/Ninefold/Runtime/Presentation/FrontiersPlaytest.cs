@@ -1315,21 +1315,46 @@ namespace Ninefold.Presentation
             if (menu.Read().Phase != MissionFlowPhase.Selection)
                 throw new InvalidOperationException("Finish your active battle before changing playtest campaigns.");
             bool openWorldFive = !worldFiveSlice;
-            worldFiveSlice = openWorldFive;
-            savePath = Path.Combine(Application.persistentDataPath,
-                worldFiveSlice ? "WorldFiveSlice-v3" : "AbstractPlaytest-v1");
-            input = null; battleView = null; inBattle = false;
-            battleExitPrompt = false; inspectedUnit = null;
-            squadInspection = null; collectionDetailsExpanded = false;
-            // Opening World Five must visibly reveal its six mission cards
-            // on the same click. The previous code left users on Home,
-            // making a successful switch look like it did nothing.
-            selectedCampaign = openWorldFive ? WorldFivePlayableSlice.CampaignId : null;
-            page = openWorldFive ? Page.Missions : Page.Home;
-            OpenProfile();
-            message = worldFiveSlice
-                ? "World Five missions 001–006 · Select a mission to view its briefing."
-                : "Original playtest · previous progress restored";
+            // A failure opening the optional prototype must not strand the
+            // entire app in an unusable fatal screen. Preserve the previously
+            // loaded profile, catalog and path, then display a visible error.
+            bool previousMode = worldFiveSlice;
+            string previousPath = savePath;
+            var previousMenu = menu;
+            var previousCatalog = catalog;
+            bool previousLegacy = legacyProfile;
+            try
+            {
+                worldFiveSlice = openWorldFive;
+                savePath = Path.Combine(Application.persistentDataPath,
+                    worldFiveSlice ? "WorldFiveSlice-v3" : "AbstractPlaytest-v1");
+                input = null; battleView = null; inBattle = false;
+                battleExitPrompt = false; inspectedUnit = null;
+                squadInspection = null; collectionDetailsExpanded = false;
+                OpenProfile();
+                if (openWorldFive && !menu.Read().Campaigns.Any(
+                    c => c.CampaignId == WorldFivePlayableSlice.CampaignId))
+                    throw new InvalidOperationException("The World Five mission path is missing from the prototype catalog.");
+                // Do not leave the player on Home after a successful switch.
+                // Display all six missions immediately; the first is unlocked.
+                selectedCampaign = openWorldFive ? WorldFivePlayableSlice.CampaignId : null;
+                page = openWorldFive ? Page.Missions : Page.Home;
+                message = openWorldFive
+                    ? "World Five missions 001–006 · Select a mission to view its briefing."
+                    : "Original playtest · previous progress restored";
+            }
+            catch (Exception e)
+            {
+                worldFiveSlice = previousMode;
+                savePath = previousPath;
+                menu = previousMenu;
+                catalog = previousCatalog;
+                legacyProfile = previousLegacy;
+                page = Page.Home;
+                selectedCampaign = null;
+                Debug.LogException(e, this);
+                message = "World Five could not open. See the Console; your original profile is unchanged.";
+            }
         }
         private void Reload()
         {
