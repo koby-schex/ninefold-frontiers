@@ -20,6 +20,15 @@ namespace Ninefold.Presentation
         public static IFrontiersPreviewSource Source { get; set; }
     }
 
+    /// <summary>Optional model-team bridge for a manipulable unit viewport.
+    /// The asset/render provider owns model placement, camera and textures.
+    /// The collection UI only forwards intentional user controls.</summary>
+    public interface IFrontiersInteractivePreviewSource : IFrontiersPreviewSource
+    {
+        void RotateUnitPreview(string unitId, float degrees);
+        void ZoomUnitPreview(string unitId, float delta);
+    }
+
     /// <summary>
     /// Opt-in visual building blocks. World/faction content is supplied by
     /// existing authoritative game data; no speculative canon art or unit
