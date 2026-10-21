@@ -145,6 +145,9 @@ namespace Ninefold.Presentation
             var mainShell = Resources.Load<StyleSheet>("Home/MainShellConvergence01");
             if (mainShell != null) root.styleSheets.Add(mainShell);
             else Debug.LogWarning("Main shell convergence styles are missing. Check project import.", this);
+            var touchClarity = Resources.Load<StyleSheet>("Home/TouchCombatClarity01");
+            if (touchClarity != null) root.styleSheets.Add(touchClarity);
+            else Debug.LogWarning("Touch combat clarity styles are missing. Check project import.", this);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
