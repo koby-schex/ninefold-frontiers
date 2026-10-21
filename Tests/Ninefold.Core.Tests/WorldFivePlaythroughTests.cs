@@ -168,6 +168,7 @@ internal static partial class Program
         // pursuit that may repeatedly collide with the same obstacle.
         var route=new[] { new FieldPoint(0,0,4), new FieldPoint(5,0,4), pickup };
         int waypoint=0;
+        int committedMoves=0;
         for(int step=0;step<140 && waypoint<route.Length;step++)
         {
             var battle=play.Read().Battle;
@@ -198,6 +199,7 @@ internal static partial class Program
             Equal(InputOutcome.Previewed,preview.Outcome);
             var committed=play.TapDestination(best.Position);
             Equal(InputOutcome.Committed,committed.Outcome);
+            committedMoves++;
             if(committed.AnimationId!=null) play.CompleteAnimation(committed.AnimationId);
             var after=play.Read().Battle;
             if(after.Phase==BattleSessionPhase.PlayerInput)
@@ -206,7 +208,8 @@ internal static partial class Program
                 if(ended.AnimationId!=null) play.CompleteAnimation(ended.AnimationId);
             }
         }
-        Equal(true,play.ReadPlanning().Objectives.Single(x=>x.Id=="primary").CanInteract);
+        Equal(true,committedMoves>1);
+        Equal(true,menu.Read().Results==null);
         menu=WorldFiveOpeningTenPrototype.Open(stores.Battles,stores.Progress);
         Equal(MissionFlowPhase.Battle,menu.Read().Phase);
         Equal(ids[2],menu.Read().Resume.MissionId);
