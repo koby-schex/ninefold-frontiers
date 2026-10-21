@@ -1,0 +1,35 @@
+# Main Shell Convergence 01 — PT-062
+
+## Why
+The first user Unity screenshots after repairing the PT-061 Safe Mode compilation errors confirm a disconnect: Home uses the approved, atmospheric World Five sanctuary hero; Campaigns, Units and Settings use flat, opaque utility backgrounds and a large top **HOME** control. The user wants them to feel like **four peer tabs in one high-quality portrait-first game**, with no Home/back button on main tabs, while keeping a contextual Back control on actual drill-down pages.
+
+The screenshot review also showed: duplicate headers (CAMPAIGNS + Campaigns; UNITS + Units), a developer diagnostics area dominating Settings, generic atlas cards and large stretches of flat background. The previous full-screen architecture is retained: **do not return to floating panels or modal popups**.
+
+## Implemented
+- **Peer-tab navigation:** Home/Campaigns/Units/Settings share the existing fixed bottom navigation. The top HOME action is removed. Main tabs use a readable scenic hero with title/brand subtitle rather than a redundant back/home header. Mission Path, Briefing, Squad and Unit Detail retain only their required single contextual Back control. No extra Home button exists in the top header.
+- **Atmospheric continuity:** Reuse the *existing approved* `Home/Sanctuary.jpg` background as dimmed, noninteractive, UI-level visual atmosphere for main tabs **and related drill-down screens**. Apply dark translucent presentation layers over the shared image to retain text contrast. The complete underlying page remains full width, not a centered window. This is app chrome; it is **not** claimed to depict the geographical location of every campaign, faction or unit.
+- **Distinctive identities within the shared shell:** Campaigns, Units and Settings receive a refined top-level scenic hero with consistent gold rules, typography, alignment, and small contextual subtitle. Home continues to use its established larger logo and interactive battle/resume dock. Screens feel related rather than duplicated.
+- **Campaign card fidelity:** Existing real preview-provider artwork still takes precedence. Only the explicit `WorldFivePlayableSlice.CampaignId` card uses the existing sanctuary image as its *background ambience*. Other abstract fixture campaign cards keep their neutral atlas visual (never falsely advertised as World Five). Actual locks/progress/actions are unchanged.
+- **Units polish:** Keep portrait-ready unit tiles, rank/ownership/filter states and the full detail/upgrade flow. Remove the duplicated page title below the scenic tab title, brighten readable surfaces and preserve the prototype-placeholder boundary until Work produces real assets.
+- **Settings for a player, not a developer:** Battle animations/reduced motion and short gameplay controls now appear above testing tools. The large diagnostics report stays accessible by a `Show diagnostics` disclosure, closed by default, instead of occupying the entire opening screen. Stored motion setting and reporting behavior are unchanged.
+- **Navigation consistency:** One consistent selected-tab accent and tactile bottom bar for all four tabs; scrollviews remain swipeable with no visible scroller. More compact hero at portrait-safe small/short view sizes. Nested screens inherit stronger dark readability layers.
+- New `MainShellConvergence01.uss` + Unity `.meta`, stylesheet imported in the host **after** older UI styles and included in `PlaytestLauncher` resource validation. Source revision **PT-062**.
+
+## Source ownership and safety
+No change to Work-chat source art, 3D unit rigs/models/prefabs, shaders, materials, 3D preview provider or rendering, no modification to `Runtime/Core` content, campaign prerequisite rules, battle input/confirmation, save persistence, store balance, world story or canon archive. UI changes use existing controls, current page state and the approved sanctuary artwork already in the project. The roster still uses abstract test content; this pass does **not** claim finished release-quality character design.
+
+All top-level actions from Home, bottom tabs, Campaigns and Units are preserved. From a saved battle, navigation and read-only restrictions remain unchanged. Opening Settings no longer collects a diagnostics snapshot unless the playtester expands the section.
+
+## Unity manual validation (required)
+1. Stop Play, pull latest `main` after PR has passed CI and merged, wait for Unity 6.3 LTS import; launcher should show **PT-062**. No new style warnings or Console errors.
+2. At fixed **540×960 (fit Game tab), 390×844 and 320×568**, compare Home, Campaigns, Units and Settings. All four have shared artwork/atmospheric colors, consistent gold typography and bottom navigation; only Home uses its large sanctuary hero. There is **no top HOME or Back button on Campaigns, Units roster or Settings**.
+3. Scroll a long campaign list and Units roster with swipe/drag; tabs remain fixed, scrollbars remain invisible, text doesn't collide with top heroes, status and locks stay readable against scenery.
+4. Open the World Five slice from Home. Its campaign card alone may show the existing sanctuary under its neutral, optional preview image. The two original abstract fixture campaign cards must **not** accidentally show the World Five artwork as if they were canonical factions.
+5. Unit Detail: back arrow returns to Units roster. Campaign → Mission Path → Briefing → Squad: Back returns one level at a time; bottom tabs still allow peer navigation. Top bar should show no redundant Home action.
+6. Settings: Reduced Motion toggles and persists correctly, the gameplay help section remains readable, diagnostics are **collapsed by default** and expandable with the report/copy/refresh controls still functioning. No oversized blank diagnostics text area when collapsed.
+7. Start or resume an active battle. Inspect Home/Campaigns/Units while it is saved, ensure no new mission can be started or upgrades claimed; battle HUD, radar, move/attack/abilities and saved checkpoint unchanged.
+8. Reopen a checkpoint, complete and claim rewards, switch between original test and World Five slice. Confirm saves, progression, and optional World Five profile remain intact.
+9. Inspect screens for contrast, screen-height clipping, unintended art stretching, UI Toolkit USS warnings, glyph clipping and interactive hit targets, especially at smallest phone sizes and landscape fallback. The scenic background is visual atmosphere; it must **not** misrepresent a non-World Five faction's canonical location.
+
+## Known limitations
+This is a *layout and art-direction convergence pass*, not completed production art. There is no new generated illustration, new canon region, finalized unit art, full campaign story, real customer storefront or 3D integration. The logo/hero proportions and material layering require actual Unity screenshots; GitHub .NET/structural CI does not compile/run Unity UI Toolkit or certify that the visual hierarchy is finished.

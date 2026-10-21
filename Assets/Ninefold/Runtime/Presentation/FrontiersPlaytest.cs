@@ -46,6 +46,7 @@ namespace Ninefold.Presentation
         private Page page;
         private string selectedCampaign, squadInspection;
         private bool dirty, fatal, suspended, reducedMotion, inBattle, legacyProfile, worldFiveSlice;
+        private bool showDiagnostics;
         private Coroutine playback;
         private int pointer = -1;
         private Vector2 pointerStart;
@@ -136,6 +137,11 @@ namespace Ninefold.Presentation
             var nativeMobile = Resources.Load<StyleSheet>("Home/NativeMobileExperience01");
             if (nativeMobile != null) root.styleSheets.Add(nativeMobile);
             else Debug.LogWarning("Native mobile experience styles are missing. Check project import.", this);
+            // Unified primary-tab shell is additive and leaves the approved
+            // sanctuary source image and all Work-owned 3D assets untouched.
+            var mainShell = Resources.Load<StyleSheet>("Home/MainShellConvergence01");
+            if (mainShell != null) root.styleSheets.Add(mainShell);
+            else Debug.LogWarning("Main shell convergence styles are missing. Check project import.", this);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
@@ -221,13 +227,24 @@ namespace Ninefold.Presentation
                 (menuView.Phase == MissionFlowPhase.Selection && page == Page.Squad));
             root.EnableInClassList("briefing-mode", campaignScreen && page == Page.Briefing);
             root.EnableInClassList("home-mode", home);
-            // All playable menus use an actual native-width toolbar, not
-            // the old website masthead above a floating content card.
+            // Home, Campaigns, Units roster and Settings are sibling tabs in
+            // one game. The backdrop is shared atmospheric chrome, not
+            // campaign-specific artwork or a claimed canonical unit preview.
+            bool mainTab = !resultsScreen && !home &&
+                !(menuView.Phase == MissionFlowPhase.Battle && inBattle) &&
+                (page == Page.Battles || page == Page.Settings ||
+                    (page == Page.Collection && inspectedUnit == null));
+            root.EnableInClassList("primary-tab-mode", mainTab);
+            bool ambientMenu = !resultsScreen && !home &&
+                !(menuView.Phase == MissionFlowPhase.Battle && inBattle) &&
+                (page == Page.Battles || page == Page.Missions ||
+                    page == Page.Briefing || page == Page.Squad ||
+                    page == Page.Collection || page == Page.Settings);
+            root.EnableInClassList("ambient-menu-mode", ambientMenu);
             heading.style.display = DisplayStyle.None;
-            // Never project the sanctuary/backdrop behind other menu pages.
-            // Campaign, Collection, Squad and Settings are distinct full-screen apps.
-            homeBackdrop.style.display = home ? DisplayStyle.Flex : DisplayStyle.None;
-            root.EnableInClassList("native-screen-mode", !home && !(menuView.Phase == MissionFlowPhase.Battle && inBattle));
+            homeBackdrop.style.display = home || ambientMenu ? DisplayStyle.Flex : DisplayStyle.None;
+            root.EnableInClassList("native-screen-mode",
+                !home && !(menuView.Phase == MissionFlowPhase.Battle && inBattle));
             root.EnableInClassList("battle-mode", menuView.Phase == MissionFlowPhase.Battle && inBattle);
             root.EnableInClassList("visual-hud-mode", menuView.Phase == MissionFlowPhase.Battle && inBattle);
             if (menuView.Phase == MissionFlowPhase.Battle && inBattle)
@@ -238,7 +255,8 @@ namespace Ninefold.Presentation
             }
             else
             {
-                content.style.backgroundColor = page == Page.Collection ? new Color(.063f, .094f, .078f)
+                content.style.backgroundColor = ambientMenu ? Color.clear :
+                    page == Page.Collection ? new Color(.063f, .094f, .078f)
                     : page == Page.Settings ? new Color(.068f, .077f, .077f)
                     : new Color(.045f, .075f, .071f);
                 input = null; battleView = null; field.Hide();
@@ -426,10 +444,9 @@ namespace Ninefold.Presentation
         {
             // Present a clear next step without turning a fixture campaign list
             // into a collection of competing, oversized calls to action.
-            Text(parent, "CHOOSE YOUR PATH", "eyebrow").AddToClassList("campaign-overview-overline");
-            Text(parent, "Campaigns", "display-title").AddToClassList("campaign-overview-title");
-            // A single compact gate reminder; the actual eligibility explanation
-            // stays on each locked campaign card.
+            // Top-level campaign title and atmospheric identity live in the
+            // shared hero above the scroll; do not repeat a desktop page title.
+            // Actual eligibility remains on each locked campaign card.
             Text(parent, "UNLOCK: 3 STANDARD UNITS / FACTION", "detail")
                 .AddToClassList("campaign-overview-intro");
             bool readOnly = menuView.Phase == MissionFlowPhase.Battle;
@@ -455,6 +472,9 @@ namespace Ninefold.Presentation
                 card.EnableInClassList("locked-card", !c.CanEnter);
                 card.EnableInClassList("campaign-choice-featured", featured);
                 card.EnableInClassList("campaign-choice-locked", !c.CanEnter);
+                // The approved World Five sanctuary is only used on the
+                // World Five slice card, never as false fixture-faction art.
+                card.EnableInClassList("shell-worldfive-campaign", id == WorldFivePlayableSlice.CampaignId);
                 FrontiersVisualPrimitives.CampaignArt(card, id, c.CompletedMissions, c.TotalMissions, !c.CanEnter);
 
                 string status = !c.CanEnter ? "LOCKED"
@@ -698,8 +718,8 @@ namespace Ninefold.Presentation
             {
                 inspectedUnit = null;
                 collectionDetailsExpanded = false;
-                Text(parent, "YOUR ROSTER", "eyebrow").AddToClassList("collection-overline");
-                Text(parent, "Units", "display-title").AddToClassList("collection-page-title");
+                // The tab hero owns the page title; keep the useful count
+                // and native touch filters directly above roster content.
                 Text(parent, units.Count(u => u.Unit.Owned) + " of " + units.Length + " unlocked", "detail")
                     .AddToClassList("collection-overview-summary");
 
@@ -1298,6 +1318,8 @@ namespace Ninefold.Presentation
                 heading.style.display = DisplayStyle.Flex;
                 root.RemoveFromClassList("battle-mode");
                 root.RemoveFromClassList("home-mode");
+                root.RemoveFromClassList("primary-tab-mode");
+                root.RemoveFromClassList("ambient-menu-mode");
                 root.RemoveFromClassList("campaign-mode");
                 root.RemoveFromClassList("results-mode");
                 root.RemoveFromClassList("unit-mode");
@@ -1323,6 +1345,28 @@ namespace Ninefold.Presentation
         private void BuildMobilePageHeader(VisualElement parent)
         {
             if (menuView.Phase == MissionFlowPhase.Results) return;
+            bool topLevel = page == Page.Battles || page == Page.Settings ||
+                (page == Page.Collection && inspectedUnit == null);
+            if (topLevel)
+            {
+                // Full-width hero rather than a top Home/back button: the
+                // persistent bottom bar is the ONLY top-level navigation.
+                var hero = new VisualElement { pickingMode = PickingMode.Ignore };
+                hero.AddToClassList("shell-tab-hero");
+                parent.Add(hero);
+                var copy = new VisualElement { pickingMode = PickingMode.Ignore };
+                copy.AddToClassList("shell-tab-hero-copy");
+                hero.Add(copy);
+                Text(copy, worldFiveSlice ? "WORLD FIVE · OPENING STUDY" :
+                    "NINEFOLD · FRONTIERS", "shell-tab-eyebrow").pickingMode = PickingMode.Ignore;
+                string title = page == Page.Battles ? "Campaigns" :
+                    page == Page.Collection ? "Units" : "Settings";
+                Text(copy, title, "shell-tab-title").pickingMode = PickingMode.Ignore;
+                string sub = page == Page.Battles ? "YOUR JOURNEY THROUGH THE NINE WORLDS" :
+                    page == Page.Collection ? "YOUR TACTICAL ROSTER" : "PREFERENCES & PLAYTEST TOOLS";
+                Text(copy, sub, "shell-tab-subtitle").pickingMode = PickingMode.Ignore;
+                return;
+            }
             var header = Row(parent);
             header.AddToClassList("native-page-bar");
             bool unitDetail = page == Page.Collection && inspectedUnit != null;
@@ -1353,9 +1397,10 @@ namespace Ninefold.Presentation
                 : page == Page.Squad ? "SQUAD" : page == Page.Briefing ? "MISSION"
                 : page == Page.Missions ? "CAMPAIGN PATH" : "CAMPAIGNS";
             Text(header, label, "native-top-title").pickingMode = PickingMode.Ignore;
-            var home = Button(header, "HOME", () => Navigate(Page.Home));
-            home.AddToClassList("native-top-home");
-            home.tooltip = "Home";
+            // Nested screens have one contextual Back button only.
+            // Home is always accessible as a sibling tab at the bottom.
+            var spacer = new VisualElement { pickingMode = PickingMode.Ignore };
+            spacer.AddToClassList("native-top-spacer"); header.Add(spacer);
         }
 
         private void BuildNavigation(VisualElement parent)
@@ -1390,22 +1435,34 @@ namespace Ninefold.Presentation
         }
         private void BuildSettings(VisualElement parent)
         {
-            Text(parent, "Settings & help", "display-title");
-            Text(parent, PlaytestRevision.Id + " · " + PlaytestRevision.Features, "detail");
-            BuildDiagnostics(parent);
             var motion = Card(parent);
+            motion.AddToClassList("shell-settings-card");
+            Text(motion, "GAMEPLAY PREFERENCES", "eyebrow");
             Text(motion, "Battle animations", "section");
             Text(motion, "Reduced motion skips movement and action playback without changing the battle rules.", "detail");
             Button(motion, reducedMotion ? "Reduced motion: ON" : "Reduced motion: OFF", () => {
                 reducedMotion = !reducedMotion; PlayerPrefs.SetInt("Ninefold.ReducedMotion", reducedMotion ? 1 : 0); PlayerPrefs.Save();
             });
             var help = Card(parent);
+            help.AddToClassList("shell-settings-card");
             Text(help, "How to play", "section");
             Text(help, "Tap the field to move. Tap an enemy to aim a normal attack, then tap again to confirm. Choose Ability or Ult to target a special action. Tap gold objective markers to interact when in reach. Use END at the top when finished.", "detail");
             Text(help, "Long moves stop at your remaining movement allowance. Walls, units and arena boundaries still limit valid destinations.", "detail");
             Text(help, "Cyan units are allies; red units are enemies. Gold marks objectives and valid targets. Striped ground costs extra movement.", "detail");
-            Text(parent, "DEVELOPMENT BUILD", "eyebrow");
-            Text(parent, "Units, maps and badges in this build are abstract test content. They are not the final Ninefold art or canonical faction designs.", "detail");
+            // Diagnostics are useful in testing, but should never dominate
+            // the default consumer-facing Settings experience.
+            var tools = Card(parent, "shell-diagnostics-card");
+            Text(tools, "PLAYTEST TOOLS", "eyebrow");
+            var toggle = Button(tools,
+                showDiagnostics ? "Hide diagnostics  −" : "Show diagnostics  +",
+                () => showDiagnostics = !showDiagnostics);
+            toggle.AddToClassList("shell-diagnostics-toggle");
+            if (showDiagnostics)
+            {
+                Text(tools, PlaytestRevision.Id + " · " + PlaytestRevision.Features, "detail");
+                BuildDiagnostics(tools);
+                Text(tools, "Units, maps and badges are temporary abstract test content.", "detail");
+            }
         }
         private static string AbilityName(AbilitySlot slot) => slot == AbilitySlot.NormalAttack ? "Attack" : slot == AbilitySlot.Main ? "Main ability" : slot == AbilitySlot.Passive ? "Passive" : "Signature";
         private static string TargetSummary(TargetPreview preview)
