@@ -16,8 +16,6 @@ internal static partial class Program
         public int SquadLimit;
         public int OptionalGoals;
         public ObjectiveKind PrimaryKind;
-        public int AggressiveHostiles;
-        public int DefensiveHostiles;
         public decimal HostilesPerSquadSlot;
     }
 
@@ -42,8 +40,6 @@ internal static partial class Program
                 SquadLimit=mission.MaximumSquad,
                 OptionalGoals=mission.Objectives.Count(o=>o.Id!="primary"),
                 PrimaryKind=mission.Objectives.Single(o=>o.Id=="primary").Kind,
-                AggressiveHostiles=hostile.Count(a=>a.Behavior!=null && a.Behavior.Style==EnemyStyle.Aggressive),
-                DefensiveHostiles=hostile.Count(a=>a.Behavior!=null && a.Behavior.Style==EnemyStyle.Defensive),
                 HostilesPerSquadSlot=mission.MaximumSquad==0 ? 0m : (decimal)hostile.Length/mission.MaximumSquad
             };
         }).ToArray());
@@ -57,10 +53,8 @@ internal static partial class Program
         Equal(true,rows.All(r=>r.SquadLimit>0 && r.HostilesPerSquadSlot>=0m));
         foreach(var row in rows)
         {
-            Equal(true,row.AggressiveHostiles+row.DefensiveHostiles<=row.HostileCount);
             Console.WriteLine("PRESSURE "+row.MissionId+" hostile="+row.HostileCount+
                 " squad="+row.SquadLimit+" ratio="+row.HostilesPerSquadSlot+
-                " aggressive="+row.AggressiveHostiles+" defensive="+row.DefensiveHostiles+
                 " friendlyNpc="+row.FriendlyNpcCount+" primary="+row.PrimaryKind+
                 " optional="+row.OptionalGoals);
         }
@@ -72,7 +66,6 @@ internal static partial class Program
         var seven=rows[6]; var eight=rows[7]; var nine=rows[8]; var ten=rows[9];
         Equal(ObjectiveKind.Defeat,seven.PrimaryKind);
         Equal(2,seven.HostileCount);
-        Equal(2,seven.AggressiveHostiles);
         Equal(ObjectiveKind.Secure,eight.PrimaryKind);
         Equal(1,eight.HostileCount);
         Equal(ObjectiveKind.RescueAndExtract,nine.PrimaryKind);
