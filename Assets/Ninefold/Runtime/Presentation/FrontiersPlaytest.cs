@@ -45,7 +45,7 @@ namespace Ninefold.Presentation
         private enum Page { Home, Battles, Missions, Briefing, Squad, Collection, Settings }
         private Page page;
         private string selectedCampaign, squadInspection;
-        private bool dirty, fatal, suspended, reducedMotion, inBattle, legacyProfile;
+        private bool dirty, fatal, suspended, reducedMotion, inBattle, legacyProfile, worldFiveSlice;
         private Coroutine playback;
         private int pointer = -1;
         private Vector2 pointerStart;
@@ -268,7 +268,8 @@ namespace Ninefold.Presentation
             }
         }
 
-        private static string CampaignName(string id) => id == "fixture-starter" ? "Test campaign A" : "Test campaign B";
+        private static string CampaignName(string id) => id == WorldFivePlayableSlice.CampaignId
+            ? "World Five · Opening Prototype" : id == "fixture-starter" ? "Test campaign A" : "Test campaign B";
 
         private void ClaimCampaign(string id)
         {
@@ -350,6 +351,8 @@ namespace Ninefold.Presentation
                 : "Choose a campaign, or enter a quick encounter.";
             Text(panel, headline, "home-title").AddToClassList("game-lobby-title");
             Text(panel, detail, "home-summary").AddToClassList("game-lobby-description");
+            if (worldFiveSlice)
+                Text(panel, "PROTOTYPE CAMPAIGN · Separate save · Abstract units", "fixture-note");
 
             Button main;
             string actionLabel;
@@ -386,6 +389,12 @@ namespace Ninefold.Presentation
                     : () => SelectMission("fixture-mixed"));
             secondary.AddToClassList("home-quick-link");
             secondary.AddToClassList("game-lobby-secondary");
+            var switchMode = Button(panel,
+                worldFiveSlice ? "RETURN TO ORIGINAL PLAYTEST  ›" : "TRY WORLD FIVE MISSIONS 001–003  ›",
+                SwitchCampaignPrototype, menuView.Phase == MissionFlowPhase.Selection);
+            switchMode.AddToClassList("home-quick-link");
+            switchMode.AddToClassList("world-five-slice-switch");
+            switchMode.tooltip = "Development prototype · independent saved progress";
             if (active)
                 Text(panel, "Campaigns and Units can be explored while your battle is saved.",
                     "home-status").AddToClassList("game-lobby-assurance");
@@ -1136,6 +1145,26 @@ namespace Ninefold.Presentation
 
         private void Pick(Vector2 panelPosition)
         {
+            // The rescue prototype places a friendly field proxy at its own
+            // recovery marker. The objective must be tappable over that proxy;
+            // a normal unit pick would otherwise swallow the interaction.
+            if (worldFiveSlice && battleView != null &&
+                battleView.Battle.MissionId == WorldFivePlayableSlice.MissionIds[2])
+            {
+                var objective = catalog.Missions[battleView.Battle.MissionId].Objectives
+                    .FirstOrDefault(o => o.Interaction != null && input.ReadPlanning().Objectives
+                        .Any(p => p.Id == o.Id && p.CanInteract) &&
+                        Vector2.Distance(field.Project(PlaytestBattlefield.Vector(o.Interaction.Point),root),
+                            panelPosition) < 32f);
+                if (objective != null)
+                {
+                    var ready = input.TapObjective(objective.Id);
+                    if (ready.Outcome == InputOutcome.Previewed)
+                        ready = input.Confirm(input.Read().Pending.Id);
+                    Handle(ready);
+                    return;
+                }
+            }
             string id = field.PickUnit(panelPosition,root);
             if (id != null)
             {
@@ -1217,11 +1246,36 @@ namespace Ninefold.Presentation
 
         private void OpenProfile()
         {
+            if (worldFiveSlice)
+            {
+                // New campaign prototype NEVER reads or writes existing fixture
+                // battle/profile slots; both can be resumed independently.
+                catalog = WorldFivePlayableSlice.Create();
+                menu = WorldFivePlayableSlice.Open(catalog,
+                    new DirectoryBattleSaveFiles(savePath),new DirectoryProgressSaveFiles(savePath));
+                legacyProfile = false;
+                return;
+            }
             var profile = PlaytestProfile.Open(new DirectoryBattleSaveFiles(savePath),
                 new DirectoryBattleSaveFiles(Path.Combine(savePath,"Layouts-v2")),new DirectoryProgressSaveFiles(savePath),
                 new DirectoryBattleSaveFiles(Path.Combine(savePath,"Layouts-v3")));
             catalog = profile.Catalog; menu = profile.Menu; legacyProfile = profile.IsLegacy;
             if (legacyProfile) message = "Your saved battle is preserved. Finish it to use the new battlefield layouts.";
+        }
+        private void SwitchCampaignPrototype()
+        {
+            if (menu.Read().Phase != MissionFlowPhase.Selection)
+                throw new InvalidOperationException("Finish your active battle before changing playtest campaigns.");
+            worldFiveSlice = !worldFiveSlice;
+            savePath = Path.Combine(Application.persistentDataPath,
+                worldFiveSlice ? "WorldFiveSlice-v1" : "AbstractPlaytest-v1");
+            input = null; battleView = null; inBattle = false;
+            battleExitPrompt = false; inspectedUnit = null; selectedCampaign = null;
+            squadInspection = null; collectionDetailsExpanded = false;
+            page = Page.Home;
+            OpenProfile();
+            message = worldFiveSlice ? "World Five opening prototype · separate progress" :
+                "Original playtest · previous progress restored";
         }
         private void Reload()
         {
@@ -1493,6 +1547,15 @@ namespace Ninefold.Presentation
         private static string ResourceName(string id) => id.StartsWith("fragment-") ? UnitName(id.Substring(9)) + " fragments" : "Test supplies";
         private string Description(string id)
         {
+            if (worldFiveSlice)
+            {
+                if (id == WorldFivePlayableSlice.MissionIds[0])
+                    return "Approach the marked route point and stabilize it. Follow the gold objective.";
+                if (id == WorldFivePlayableSlice.MissionIds[1])
+                    return "Use the open or covered approach to stabilize the next route point.";
+                if (id == WorldFivePlayableSlice.MissionIds[2])
+                    return "Reach the stranded field proxy at the marked recovery zone and activate rescue.";
+            }
             if (catalog.Manifest.ContentRevision != "fixture-layouts-v3")
                 return id == "fixture-mixed" ? "Defeat the enemy. Use either side of the central cover island to approach."
                     : id == "fixture-opening" ? "Stabilize the marked objective. An open center with offset side cover."
@@ -1503,7 +1566,12 @@ namespace Ninefold.Presentation
                 : id == "fixture-finale" ? "Advance through staggered cover or the slow central route to stabilize."
                 : "Stabilize the marked objective beyond the asymmetric cover.";
         }
-        private static string MissionName(string id) => id == "fixture-opening" ? "Stabilization" : id == "fixture-mixed" ? "Quick combat" : id == "fixture-finale" ? "Campaign finale" : "Faction B: stabilization";
+        private static string MissionName(string id) =>
+            id == WorldFivePlayableSlice.MissionIds[0] ? "The Wrong Arrival" :
+            id == WorldFivePlayableSlice.MissionIds[1] ? "Hold the Passage" :
+            id == WorldFivePlayableSlice.MissionIds[2] ? "Return the Stranded" :
+            id == "fixture-opening" ? "Stabilization" : id == "fixture-mixed" ? "Quick combat" :
+            id == "fixture-finale" ? "Campaign finale" : "Faction B: stabilization";
         private void OnDestroy() { if (playback != null) StopCoroutine(playback); field?.Dispose(); }
     }
 }
