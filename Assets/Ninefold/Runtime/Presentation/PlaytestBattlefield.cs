@@ -188,7 +188,9 @@ namespace Ninefold.Presentation
             foreach (var pair in tokens)
             {
                 bool pending = intent?.Kind == IntentKind.Ability && intent.Target.TargetId==pair.Key;
-                pair.Value.TargetRing.SetActive(interaction.Targets.Any(t => t.TargetId == pair.Key && t.IsValid));
+                pair.Value.TargetRing.SetActive(
+                    interaction.SelectedUnitId == pair.Key ||
+                    interaction.Targets.Any(t => t.TargetId == pair.Key && t.IsValid));
                 pair.Value.TargetRing.transform.localScale = pending ? new Vector3(1.35f,.025f,1.35f) : new Vector3(.95f,.025f,.95f);
                 pair.Value.Bar.EnableInClassList("preview-health",pending);
                 if (pending && intent.Target.Effect.Health != null)
@@ -307,7 +309,12 @@ namespace Ninefold.Presentation
                     t.Scale=t.Body.transform.localScale;
                     t.TargetRing = Primitive("Valid target marker",PrimitiveType.Cylinder,Vector3.zero,new Vector3(.95f,.025f,.95f),gold);
                     t.TargetRing.SetActive(false);
-                    t.Bar = new VisualElement { pickingMode = PickingMode.Ignore }; t.Bar.AddToClassList("health-overlay");
+                    // Floating per-unit health bars obscure the field on
+                    // portrait phones. All HP lives in the lower HUD when
+                    // the player inspects a unit. Keep this non-rendered
+                    // legacy container only to avoid touching battle logic.
+                    t.Bar = new VisualElement { pickingMode = PickingMode.Ignore };
+                    t.Bar.style.display = DisplayStyle.None;
                     t.Bar.EnableInClassList("enemy-health",h.IsEnemyControlled);
                     t.Caption = new Label { pickingMode = PickingMode.Ignore }; t.Bar.Add(t.Caption);
                     var track = new VisualElement { pickingMode = PickingMode.Ignore }; track.AddToClassList("health-track"); t.Bar.Add(track);
@@ -332,7 +339,7 @@ namespace Ninefold.Presentation
             camera.pixelRect = new Rect(rect.x * sx, Screen.height - rect.yMax * sy, rect.width * sx, rect.height * sy);
             camera.transform.rotation = Quaternion.Euler(58, 0, 0);
             camera.transform.position = framing.center - camera.transform.forward * 30;
-            // Bounding box in camera space, with room for bars above bodies.
+            // Bounding box in camera space keeps bodies and objective markers in view.
             float needed = 4;
             for (int i = 0; i < 8; i++)
             {
@@ -358,33 +365,9 @@ namespace Ninefold.Presentation
                 item.Label.style.left=Mathf.Clamp(point.x-65,0,Mathf.Max(0,rect.width-130));
                 item.Label.style.top=Mathf.Clamp(point.y-24,0,Mathf.Max(0,rect.height-30));
             }
-            // Stable ID order + collision avoidance keeps adjacent units' numeric health readable.
-            foreach (var pair in tokens.OrderBy(p => p.Key, StringComparer.Ordinal))
-            {
-                var t = pair.Value;
-                var point = Project(t.Body.transform.position + Vector3.up * (t.Height / 2 + .25f), root) - rect.position;
-                // Small numeric strip for every unit; full identity and armor live in Info.
-                float width = 76, height = 28;
-                t.Bar.style.width = width; t.Bar.style.height = height;
-                t.Caption.style.fontSize = 15;
-                t.Caption.style.height = height - 12;
-                var bar = new Rect(Mathf.Clamp(point.x - width / 2, 0, Mathf.Max(0, rect.width - width)),
-                    Mathf.Clamp(point.y - height - 2, 0, Mathf.Max(0, rect.height - height)), width, height);
-                if (barRects.Any(other => other.Overlaps(bar)))
-                {
-                    // Search both axes; vertical-only shifts can stack bars at the viewport edge.
-                    var preferred = bar.position; float bestDistance = float.MaxValue;
-                    for (float y = 0; y <= Mathf.Max(0, rect.height - height); y += height + 2)
-                        for (float x = 0; x <= Mathf.Max(0, rect.width - width); x += width + 2)
-                        {
-                            var candidate = new Rect(x, y, width, height);
-                            float distance = (candidate.position - preferred).sqrMagnitude;
-                            if (distance < bestDistance && !barRects.Any(other => other.Overlaps(candidate)))
-                            { bar = candidate; bestDistance = distance; }
-                        }
-                }
-                barRects.Add(bar); t.Bar.style.left = bar.x; t.Bar.style.top = bar.y;
-            }
+            // Deliberately no health-label layout. The world view displays
+            // units, selection rings and brief combat-number feedback only;
+            // vital statistics are housed in the compact lower combat HUD.
         }
 
         public Vector2 Project(Vector3 position, VisualElement root)
@@ -403,7 +386,7 @@ namespace Ninefold.Presentation
                 var feet = Project(t.Body.transform.position - Vector3.up * t.Height / 2, root);
                 var body = new Rect(center.x - 18, Mathf.Min(head.y, feet.y) - 10, 36, Mathf.Abs(head.y - feet.y) + 20);
                 float distance = Vector2.SqrMagnitude(center - panel);
-                if ((body.Contains(panel) || t.Bar.worldBound.Contains(panel)) && distance < best) { best = distance; nearest = pair.Key; }
+                if (body.Contains(panel) && distance < best) { best = distance; nearest = pair.Key; }
             }
             return nearest;
         }
