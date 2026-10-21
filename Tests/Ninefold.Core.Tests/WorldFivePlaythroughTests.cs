@@ -9,7 +9,8 @@ internal static partial class Program
 {
     private static (string Name,Action Run)[] WorldFivePlaythroughTests() => new (string,Action)[] {
         ("World Five mission 001 reaches victory and unlocks mission 002", FiveFirstActualVictory),
-        ("World Five missions 001 and 002 complete consecutively and unlock 003", FiveTwoMissionJourney)
+        ("World Five missions 001 and 002 complete consecutively and unlock 003", FiveTwoMissionJourney),
+        ("World Five 003 rescue approach checkpoints and resumes safely", FiveRescuePickup)
     };
 
     private static void FiveFirstActualVictory()
@@ -70,7 +71,9 @@ internal static partial class Program
         Equal(true,menu.Read().Missions.Single(m=>m.Definition.Id==ids[1]).Available);
     }
 
-    private static void FiveTwoMissionJourney()
+    private static void FiveTwoMissionJourney() { FiveCompleteOpeningTwo(); }
+
+    private static (FakeSaveFiles Battles,ProgressFiles Progress) FiveCompleteOpeningTwo()
     {
         var battles=new FakeSaveFiles(); var progress=new ProgressFiles();
         var ids=WorldFiveOpeningTenPrototype.MissionIds;
@@ -129,5 +132,38 @@ internal static partial class Program
             Equal(true,menu.Read().Missions.Single(x=>x.Definition.Id==ids[missionIndex+1]).Available);
         }
         Equal(2,menu.Read().Progress.Claims.Count);
+        return (battles,progress);
+    }
+
+    private static void FiveRescuePickup()
+    {
+        var stores=FiveCompleteOpeningTwo();
+        var ids=WorldFiveOpeningTenPrototype.MissionIds;
+        var menu=WorldFiveOpeningTenPrototype.Open(stores.Battles,stores.Progress);
+        Equal(ids[2],menu.Read().NextCampaignMission.Definition.Id);
+        menu.SelectMission(ids[2]);
+        menu.SetSquad(new[]{"fixture-a-1"});
+        Equal(true,menu.Read().CanStart);
+        var play=menu.Start(menu.Read().PlanId);
+        var objective=WorldFiveOpeningTenPrototype.Create().Missions[ids[2]].Objectives[0];
+        Equal(Ninefold.Core.Missions.ObjectiveKind.RescueAndExtract,objective.Kind);
+        Equal(false,play.ReadPlanning().Objectives.Single(x=>x.Id=="primary").CanInteract);
+        var pickup=objective.Interaction.Point;
+        // Validate one legal approach move and checkpoint recovery. The
+        // complete pickup/extraction route is not yet certified by this test.
+        var planning=play.ReadPlanning();
+        Equal(false,planning.Objectives.Single(x=>x.Id=="primary").CanInteract);
+        var sample=planning.Movement.OrderBy(x=>
+            (x.Position.X-pickup.X)*(x.Position.X-pickup.X)+
+            (x.Position.Z-pickup.Z)*(x.Position.Z-pickup.Z))
+            .ThenBy(x=>x.Cost).First();
+        Equal(InputOutcome.Previewed,play.TapDestination(sample.Position).Outcome);
+        var moved=play.TapDestination(sample.Position);
+        Equal(InputOutcome.Committed,moved.Outcome);
+        if(moved.AnimationId!=null) play.CompleteAnimation(moved.AnimationId);
+        Equal(true,menu.Read().Results==null);
+        menu=WorldFiveOpeningTenPrototype.Open(stores.Battles,stores.Progress);
+        Equal(MissionFlowPhase.Battle,menu.Read().Phase);
+        Equal(ids[2],menu.Read().Resume.MissionId);
     }
 }
