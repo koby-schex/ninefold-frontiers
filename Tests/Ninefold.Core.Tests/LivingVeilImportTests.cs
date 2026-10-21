@@ -21,8 +21,12 @@ internal static partial class Program
             var mesh = GreatStriderSource.ReadMesh(File.ReadLines(Path.Combine(root, stem + ".obj")), materials);
             if (mesh.SourceVertices != 44848 || mesh.Triangles != 89208 || mesh.Parts != 122)
                 throw new Exception("Unexpected Living Veil study mesh.");
-            if (materials.Count != 12 || materials.Count(m => m.Texture != null) != 1)
-                throw new Exception("Expected one membrane alpha texture.");
+            if (materials.Count != 12 || materials.Count(m => m.Texture != null) != 7)
+                throw new Exception("Expected one Olyra alpha texture and six partner albedo maps.");
+            foreach (var surface in materials.Where(m => m.Texture != null && m.Name != "olyra_membrane"))
+                foreach (string suffix in new[] { "_Normal.png", "_Finish.png" })
+                    if (!File.Exists(Path.Combine(root, "Textures", surface.Name + suffix)))
+                        throw new Exception("Missing partner detail map: " + surface.Name);
             var transparent = materials.Where(m => m.Opacity < 1).Select(m => m.Name).ToHashSet();
             if (mesh.Sections.Count(s => transparent.Contains(s.Material)) != 6)
                 throw new Exception("Membrane shells combined or missing.");
@@ -75,7 +79,8 @@ internal static partial class Program
         {
             var a=rest.Sections[i];var b=shelter.Sections[i];
             if (a.Name!=b.Name || !a.Indices.SequenceEqual(b.Indices) || !a.SourceParts.SequenceEqual(b.SourceParts) ||
-                a.SourceParts.Count!=a.Vertices.Count || a.Vertices.Count!=b.Vertices.Count)
+                a.SourceParts.Count!=a.Vertices.Count || a.Vertices.Count!=b.Vertices.Count ||
+                !a.UVs.Zip(b.UVs, (u,v) => u.SequenceEqual(v)).All(equal => equal))
                 throw new Exception("Incompatible motion topology.");
             for (int j=0;j<a.Vertices.Count;j++)
             {

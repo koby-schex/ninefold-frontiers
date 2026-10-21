@@ -125,3 +125,11 @@ See `LivingVeilPartnerStudy.md` for the standing Avarin refinement, anatomy and
 harness mapping, review presets and validation limits. The prior surface-04
 section describes the preceding pass; current import paths use revision 05.
 Olyra geometry and motion curves are unchanged by partner 05.
+
+
+## Current surface revision — 06
+
+The geometry remains partner study 05; current generated Unity assets use surface
+study 06. See [LivingVeilMaterialsStudy.md](LivingVeilMaterialsStudy.md) for the
+six partner texture sets, revised prefab paths and actual-model comparison sheet.
+Earlier revision paths in this document are historical.
