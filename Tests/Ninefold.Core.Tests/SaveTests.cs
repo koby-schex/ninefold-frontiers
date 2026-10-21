@@ -23,6 +23,7 @@ internal static partial class Program
         ("Enemy planning and execution match after reload", SaveEnemy),
         ("Mission interaction progress and action survive", SaveObjective),
         ("Rescue flag survives without repeating rescue", SaveRescue),
+        ("Carried extraction actor and pickup state round trip in old save schema", SaveRescueCarried),
         ("Resolved and pending round checkpoints both survive", SaveRoundCheckpoint),
         ("Terminal result stays terminal and unchanged", SaveResult),
         ("Interrupted complete encounter matches uninterrupted result", SaveEncounter),
@@ -100,6 +101,24 @@ internal static partial class Program
         var b=MissionBattle(ObjectiveDefinition.Rescue("primary","c",Box(-1,7,1,9),InteractAt())); Interact(b,"primary"); var r=Reload(b);
         Equal(true,r.Mission.GetObjective("primary").Rescued); Equal(InteractionFailure.Unavailable,r.Mission.PreviewInteraction(1,"primary")); SameSave(b,r);
     }
+    private static void SaveRescueCarried()
+    {
+        var objective=ObjectiveDefinition.RescueCarried("primary","c",
+            Box(-1,7,1,9),InteractAt(),"a");
+        var b=MissionBattle(objective);
+        Interact(b,"primary");
+        var restored=Reload(b);
+        Equal(true,restored.Mission.GetObjective("primary").Rescued);
+        Equal("a",restored.Mission.Definition.Objectives[0].ExtractionCarrier);
+        Equal<BattleResult>(null,restored.Mission.Result);
+        SameSave(b,restored);
+        Move(restored,P(2,0),P(2,8),P(0,8));
+        Equal(MissionOutcome.Victory,restored.Mission.Result.Outcome);
+        var finished=Reload(restored);
+        Equal(MissionOutcome.Victory,finished.Mission.Result.Outcome);
+        SameSave(restored,finished);
+    }
+
     private static void SaveRoundCheckpoint()
     {
         var b=MissionBattle(ObjectiveDefinition.Survive("primary",3)); b.EndActivation(1); Drain(b); var pending=Reload(b);
