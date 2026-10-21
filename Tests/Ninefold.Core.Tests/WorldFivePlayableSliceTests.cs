@@ -90,11 +90,13 @@ internal static partial class Program
         var obj=m.Objectives[0]; var actor=m.Actors.Single();
         Equal(false,actor.IsHostile);
         Equal(actor.Id,obj.Subjects.Single());
-        Equal(true,obj.Zone.Contains(c.Units[actor.UnitId].Body.At(actor.Position)));
+        Equal(true,actor.Position.X >= obj.Zone.Min.X && actor.Position.X <= obj.Zone.Max.X &&
+            actor.Position.Z >= obj.Zone.Min.Z && actor.Position.Z <= obj.Zone.Max.Z);
         Equal(actor.Position,obj.Interaction.Point);
         Equal(true,m.Deployment.All(p=>p.Z<actor.Position.Z));
         Equal(true,obj.Interaction.AllowedActors.Contains("$squad"));
-        Equal(true,m.Deployment.All(p=>
-            FieldPoint.Distance(p,obj.Interaction.Point)>obj.Interaction.Reach));
+        Equal(true,m.Deployment.All(p =>
+            Math.Abs(p.X-obj.Interaction.Point.X) + Math.Abs(p.Z-obj.Interaction.Point.Z) >
+                obj.Interaction.Reach*2));
     }
 }
