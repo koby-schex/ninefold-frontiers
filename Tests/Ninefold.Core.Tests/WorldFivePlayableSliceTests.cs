@@ -13,7 +13,7 @@ internal static partial class Program
             ("World Five slice constructs three separate validated authored fields", SliceMaps),
             ("World Five slice isolates campaign progression and exposes proper mission prerequisites", SliceLocks),
             ("World Five slice saves independently of the original campaign profile", SliceCheckpoint),
-            ("World Five rescue has an actual eligible friendly proxy and reachable zone", SliceRescue)
+            ("World Five rescue has a distinct extraction zone and chosen carrier", SliceRescue)
         };
 
     private static void SliceMaps()
@@ -90,11 +90,15 @@ internal static partial class Program
         var obj=m.Objectives[0]; var actor=m.Actors.Single();
         Equal(false,actor.IsHostile);
         Equal(actor.Id,obj.Subjects.Single());
-        Equal(true,actor.Position.X >= obj.Zone.Min.X && actor.Position.X <= obj.Zone.Max.X &&
+        Equal(false,actor.Position.X >= obj.Zone.Min.X && actor.Position.X <= obj.Zone.Max.X &&
             actor.Position.Z >= obj.Zone.Min.Z && actor.Position.Z <= obj.Zone.Max.Z);
         Equal(actor.Position,obj.Interaction.Point);
         Equal(true,m.Deployment.All(p=>p.Z<actor.Position.Z));
-        Equal(true,obj.Interaction.AllowedActors.Contains("$squad"));
+        Equal(true,obj.Interaction.AllowedActors.Contains("$leader"));
+        Equal("$leader",obj.ExtractionCarrier);
+        Equal(true,m.Deployment.Any(p=>p.X >= obj.Zone.Min.X &&
+            p.X <= obj.Zone.Max.X && p.Z >= obj.Zone.Min.Z &&
+            p.Z <= obj.Zone.Max.Z));
         Equal(true,m.Deployment.All(p =>
             Math.Abs(p.X-obj.Interaction.Point.X) + Math.Abs(p.Z-obj.Interaction.Point.Z) >
                 obj.Interaction.Reach*2));
