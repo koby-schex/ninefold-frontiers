@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Reproducibility, topology and silhouette review of the actual Olyra study."""
 import argparse, collections, json, math, tempfile
+from functools import lru_cache
 from pathlib import Path
 from build_living_veil import make_model,write,ROOT,ALPHA,POSES,membrane_alpha,texture_bytes
 from build_great_strider import dot,cross,sub
@@ -71,14 +72,48 @@ def main(render_images=False):
     from PIL import Image,ImageDraw
     from build_living_veil import COLORS,ALPHA,FINISH
     sheet=Image.new('RGB',(1400,1200),'#eeede5');draw=ImageDraw.Draw(sheet)
-    draw.text((20,16),'LIVING VEIL / OLYRA — CANOPY STUDY 02',font=font(26),fill='#262c32')
+    draw.text((20,16),'LIVING VEIL / OLYRA — SURFACE STUDY 04',font=font(26),fill='#262c32')
     draw.text((20,52),'Actual source geometry • two static poses • provisional surfaces',font=font(18),fill='#596069')
     for row,pose in enumerate(POSES):
-        m=make_model(pose);data=dict(parts=m.parts,materials=COLORS,opacity=ALPHA,finish=FINISH)
+        m=make_model(pose);data=review_data(m)
         for i,(label,eye) in enumerate((('Front',(0,3,10)),('Three-quarter',(7,4,10)),('Tactical',(6,9,9)))):
             # Shared framing across poses makes scale comparisons meaningful.
             sheet.paste(render(data,eye,(460,490),7.1,(.3,1.7,0),False),(i*466,125+row*540))
             draw.text((i*466+15,95+row*540),pose.title()+' / '+label,font=font(18),fill='#262c32')
     sheet.save(out/'LivingVeil-Review.png')
+    details=Image.new('RGB',(1400,640),'#eeede5');labels=ImageDraw.Draw(details)
+    labels.text((20,12),'SURFACE 04 / ACTUAL MESH — DETAIL AND TACTICAL READ',font=font(23),fill='#262c32')
+    m=make_model('resting')
+    for i,(label,prefix,eye,target,extent) in enumerate((
+        ('Core and membrane roots','Olyra_',(3,3.6,6),(0,2.7,0),1.7),
+        ('Avarin and safety harness',('Avarin_','VeilHarness_'),(3,2,8),(1.95,.95,.45),2.3),
+        ('Protective / tactical scale',None,(6,9,9),(.3,1.7,0),7.1))):
+        import copy
+        chosen=copy.deepcopy(m if prefix else make_model('protective'))
+        if prefix:chosen.parts=[p for p in chosen.parts if p['name'].startswith(prefix)]
+        details.paste(render(review_data(chosen),eye,(460,540),extent,target,False),(i*466,85))
+        labels.text((i*466+12,55),label,font=font(18),fill='#262c32')
+    details.save(out/'LivingVeil-Detail04.png')
+
+@lru_cache(maxsize=1)
+def membrane_review_tint():
+    import io
+    import numpy as np
+    from PIL import Image
+    from build_living_veil import COLORS
+    tile=np.asarray(Image.open(io.BytesIO(texture_bytes())),dtype=float)[:,:,0]/255
+    linear=np.where(tile<=.04045,tile/12.92,((tile+.055)/1.055)**2.4)
+    return linear/COLORS['olyra_membrane'][0]*255
+
+def review_data(m):
+    """Read the authored PNG; renderer receives its decoded linear tint variation.
+
+    The shared software renderer supports scalar tint and vertex alpha, not URP
+    multilayer compositing. Alpha is sampled at mesh vertices by the generator.
+    """
+    from build_living_veil import COLORS,FINISH
+    parts=[{**p,'uv_faces':[list(f) for f in p['uv_faces']]} if 'uv_faces' in p else p for p in m.parts]
+    return dict(parts=parts,materials=COLORS,opacity=ALPHA,finish=FINISH,
+        textures={'olyra_membrane':membrane_review_tint()})
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--render',action='store_true');main(p.parse_args().render)

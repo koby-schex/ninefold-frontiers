@@ -1,22 +1,22 @@
 {
-  "status": "canopy study 02; not production ready",
+  "status": "surface study 04; not production ready",
   "units": "meters",
   "up": "Y",
   "forward": "Z",
   "parts": 97,
   "vertices": 33668,
   "triangles": 66948,
-  "height": 3.009909379719954,
+  "height": 3.009909388310124,
   "bounds": [
     [
-      -1.286930053738836,
+      -1.2849032550775161,
       0.0,
-      -1.2835073693492918
+      -1.2820582443852557
     ],
     [
       2.4322846241911975,
-      3.009909379719954,
-      1.2816838692436459
+      3.009909388310124,
+      1.2816848957380134
     ]
   ],
   "lobes": 5,

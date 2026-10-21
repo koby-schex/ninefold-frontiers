@@ -1,4 +1,4 @@
-# Living Veil / Olyra — canopy study 02
+# Living Veil / Olyra — surface study 04
 
 ## Authority and scope
 
@@ -40,14 +40,14 @@ materials. Five lobe shells plus the Avarin mantle remain separate transparent
 render sections. Meters, Y up, +Z forward; Avarin height approximately 1.82 m.
 The two source poses have matching topology and remain static assets. Motion study
 03 uses them in a separate transient editor viewport; see LivingVeilMotionStudy.md.
-Protective pose top is about 3.41 m; this review altitude is not a gameplay rule.
+Protective pose top is about 3.43 m; this review altitude is not a gameplay rule.
 
-The 256 × 256 RGBA texture contains the membrane tint and continuous alpha.
+The 512 × 512 RGBA texture contains the membrane tint and continuous alpha.
 MTL `d=0.55` marks the surface as transparent for the existing parser; the Unity
 review importer deliberately uses a base-color alpha multiplier of 1 for the
 mapped membrane. Other OBJ importers may multiply `d` again and look darker.
 Texture alpha is read from input; clamp, mipmaps and trilinear filtering are enabled.
-Remaining body, harness and rib materials are flat study surfaces.
+The map now includes low-contrast cloudy tissue and fibre variation, with the existing clear-edge alpha envelope retained. Core, cloth and harness surfaces have continuous geometric relief; production texture work remains pending.
 
 ## Unity review
 
@@ -55,7 +55,7 @@ Remaining body, harness and rib materials are flat study surfaces.
 2. Open **Ninefold > Art > Living Veil Review**.
 3. Choose **Show resting fold** or **Show protective canopy**. Each pose has a
    separate versioned scene/prefab. Unsaved scene changes receive the usual prompt.
-4. Confirm **Canopy study 02 / Unity review 02**. Use front, side, back, tactical
+4. Confirm **Surface study 04 / Unity review 04**. Use front, side, back, tactical
    and partner-detail presets. The two full views use the same camera distance.
 5. Run **Validate imported review assets** and inspect membrane overlap, core
    visibility and Avarin readability. Use a 540 × 960 portrait Game view.
@@ -93,3 +93,28 @@ and open scenes intact. Protective strand rings are cyclically reindexed (same
 surface geometry and counts) to avoid cross-section collapse during blending.
 This is source correspondence repair, not new anatomy. Source export validation
 continues to cover both poses. No production rig or runtime integration is added.
+
+## Surface study 04
+
+Rechecked the current v26 reconciliation, retained v25.3 Olyra anatomy/equipment,
+and the actual locked World Five image. The same five lobes, darker core, small
+sensory crest and separate consensual Avarin partnership remain controlling.
+No new anatomy, abilities, permanent glow or canon revisions are introduced.
+
+Changes: softly scalloped lobe surfaces, tapered organic ribs/veins, continuous
+core shaping, restrained 512 px membrane tint variation, cloth folds/draped tunic
+hem and shouldered harness fittings. Timings and motion curves are unchanged.
+The part/vertex/triangle counts are unchanged; both poses still match for motion.
+Fine surface relief is an implementation proposal pending visual acceptance.
+
+The static Unity window adds **Core / membrane-root detail** alongside the partner
+and tactical presets. Fresh imports use review-04 folders and preserve older
+review scenes, prefabs and GUIDs. Motion review automatically reads the new source.
+CI publishes `LivingVeil-Detail04.png` with core, partner and tactical views in
+addition to the same-camera resting/protective sheet and four motion GIFs.
+
+Software previews read the actual authored PNG, decode its tint to linear space
+and filter it through mipmaps. They approximate tint as a scalar and alpha at
+mesh vertices; they still show only the nearest transparent shell. Native URP
+layer sorting, close-up appearance and mobile performance remain unverified.
+Use native Unity review before accepting this as finished art.

@@ -71,6 +71,7 @@ def validate():
 
 def render():
     from render_great_strider import render as draw,font
+    from review_living_veil import review_data
     from PIL import Image,ImageDraw
     for clip in CLIPS:
         frames=[]
@@ -78,7 +79,7 @@ def render():
         # Include both transition endpoints; omit duplicate final frame in idle loops.
         times=np.linspace(0,1,count,endpoint='Idle' not in clip)
         for t in times:
-            m=model(clip,float(t));data=dict(parts=m.parts,materials=COLORS,opacity=ALPHA,finish=FINISH)
+            m=model(clip,float(t));data=review_data(m)
             img=draw(data,(7,5,12),(320,400),10,(.9,2.4,.15),False)
             ImageDraw.Draw(img).text((10,10),clip+'  '+f'{t:.2f}',font=font(16),fill='#22282d')
             frames.append(img)

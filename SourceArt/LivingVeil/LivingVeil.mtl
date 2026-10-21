@@ -30,12 +30,12 @@ d 1
 
 newmtl olyra_core
 Kd 0.16 0.125 0.18
-Ns 32
+Ns 42
 d 1
 
 newmtl olyra_membrane
 Kd 1 1 1
-Ns 32
+Ns 95
 d 0.55
 map_Kd Textures/OlyraMembrane.png
 
