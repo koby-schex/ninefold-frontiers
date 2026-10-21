@@ -18,6 +18,7 @@ namespace Ninefold.Editor
         internal sealed class Section
         {
             public string Name, Material;
+            public readonly List<string> SourceParts = new List<string>();
             public readonly List<float[]> Vertices = new List<float[]>();
             public readonly List<float[]> Normals = new List<float[]>();
             public readonly List<float[]> UVs = new List<float[]>();
@@ -154,6 +155,7 @@ namespace Ninefold.Editor
                         if (!remap.TryGetValue(key, out int index))
                         {
                             index = section.Vertices.Count; remap.Add(key, index);
+                            section.SourceParts.Add(f.Part);
                             section.Vertices.Add(vertices[key.Item1]); section.Normals.Add(normals[key.Item1]);
                             section.UVs.Add(key.Item2 < 0 ? new float[2] : uvs[key.Item2]);
                         }

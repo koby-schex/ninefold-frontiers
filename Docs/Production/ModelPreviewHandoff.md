@@ -15,12 +15,14 @@ Model PRs avoid `FrontiersPlaytest.cs`, shared UI styles and presentation script
 Explain any proposed overlap in preview interfaces or shared gameplay architecture
 to Koby before implementing it. Canon and locked visual masters remain controlling.
 
-The canopy pass incorporates `main` through PR #66. The UI preview-interface PR
-was described as planned #67, but did not exist when checked. GitHub then assigned
-#67 to this Olyra model pass. Identify the eventual UI PR by its actual title and
-branch, not that planned number. No assumptions about its API are implemented.
-Read its contract before runtime integration and document the agreed mapping here
-without renaming gameplay IDs.
+The motion pass starts from merged PRs #67 (Olyra canopy) and #68 (UI Visual
+Interface Foundation 02). The preview contract is now verified in
+`Assets/Ninefold/Runtime/Presentation/FrontiersVisualPrimitives.cs`:
+`IFrontiersPreviewSource.GetUnitPreview(string unitId)` and
+`GetCampaignPreview(string campaignId)` return a `Texture`. A separate provider
+registers through `FrontiersPreviewRegistry.Source` and owns/cleans up its camera,
+RenderTexture and model instances. UI reads it on the next normal screen refresh.
+No provider registration, ID mapping or UI change is implemented by this motion PR.
 
 ## Asset inventory
 
@@ -57,7 +59,8 @@ that integration. Keep source identifiers separate from display names and revisi
 - Transparent membranes require alpha blending, ZWrite off, back-face culling,
   input alpha texture, and native overlap review. Do not flatten them into opaque
   sections. Avoid transparency-shadow assumptions; review membrane shadows are off.
-- Olyra has no Animator, rig, clips or gameplay colliders yet. Support a static
+- Olyra has an editor-only procedural motion study, but no runtime Animator,
+  production rig, AnimationClip assets or gameplay colliders. Support a static
   model fallback and do not wait for animation events from this asset.
 - Current models are detail studies, not certified mobile budgets. LODs, draw-call
   and memory profiling, production packaging and native review precede integration.
