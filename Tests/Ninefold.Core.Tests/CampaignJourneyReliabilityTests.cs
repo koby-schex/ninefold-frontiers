@@ -42,13 +42,16 @@ internal static partial class Program
         var first=x.Menu.ClaimRewards(attempt);
         Equal(false,first.AlreadyClaimed);
         Equal(10L,first.After.Balance("fixture-resource"));
-        x.Reopen();
+        // Duplicate acknowledgement is legal only while Results displays
+        // this terminal attempt. Reopening a claimed result goes to Selection.
         var repeat=x.Menu.ClaimRewards(attempt);
         Equal(true,repeat.AlreadyClaimed);
         Equal(10L,repeat.After.Balance("fixture-resource"));
         Equal(1,x.Menu.Read().Progress.Claims.Count);
-        x.Menu.ReturnToSelection(attempt);
         x.Reopen();
+        Equal(MissionFlowPhase.Selection,x.Menu.Read().Phase);
+        Equal(10L,x.Menu.Read().Progress.Balance("fixture-resource"));
+        Equal(1,x.Menu.Read().Progress.Claims.Count);
         Equal("fixture-finale",x.Menu.Read().NextCampaignMission.Definition.Id);
     }
 }
