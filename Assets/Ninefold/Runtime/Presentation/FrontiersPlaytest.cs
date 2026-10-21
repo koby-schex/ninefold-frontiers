@@ -407,12 +407,21 @@ namespace Ninefold.Presentation
                     : () => SelectMission("fixture-mixed"));
             secondary.AddToClassList("home-quick-link");
             secondary.AddToClassList("game-lobby-secondary");
+            // Always leave this destination tappable. A saved-battle lock must
+            // explain itself instead of silently presenting a dead button.
+            // When selection is available, take the player DIRECTLY to the
+            // six-mission campaign path, not back to the same Home screen.
             var switchMode = Button(panel,
                 worldFiveSlice ? "RETURN TO ORIGINAL PLAYTEST  ›" : "TRY WORLD FIVE MISSIONS 001–006  ›",
-                SwitchCampaignPrototype, menuView.Phase == MissionFlowPhase.Selection);
+                OpenCampaignPrototypeFromHome);
             switchMode.AddToClassList("home-quick-link");
             switchMode.AddToClassList("world-five-slice-switch");
-            switchMode.tooltip = "Development prototype · independent saved progress";
+            switchMode.tooltip = menuView.Phase == MissionFlowPhase.Selection
+                ? "Open the six-mission prototype · independent saved progress"
+                : "Resolve your saved battle before changing prototypes";
+            if (menuView.Phase == MissionFlowPhase.Battle)
+                Text(panel, "To switch playtest campaigns, finish your saved encounter first.",
+                    "home-status").AddToClassList("game-lobby-assurance");
             if (active)
                 Text(panel, "Campaigns and Units can be explored while your battle is saved.",
                     "home-status").AddToClassList("game-lobby-assurance");
@@ -1282,20 +1291,70 @@ namespace Ninefold.Presentation
             catalog = profile.Catalog; menu = profile.Menu; legacyProfile = profile.IsLegacy;
             if (legacyProfile) message = "Your saved battle is preserved. Finish it to use the new battlefield layouts.";
         }
+        private void OpenCampaignPrototypeFromHome()
+        {
+            // Never let the shared Button wrapper silently swallow an
+            // unavailable prototype switch. Offer the existing explicit
+            // retreat confirmation, without forfeiting a battle on tap.
+            if (menu.Read().Phase == MissionFlowPhase.Battle)
+            {
+                battleExitPrompt = true;
+                message = "Your current battle is saved. Finish it or explicitly end it before switching campaigns.";
+                return;
+            }
+            if (menu.Read().Phase != MissionFlowPhase.Selection)
+            {
+                message = "Claim your battle result before changing campaigns.";
+                return;
+            }
+            SwitchCampaignPrototype();
+        }
+
         private void SwitchCampaignPrototype()
         {
             if (menu.Read().Phase != MissionFlowPhase.Selection)
                 throw new InvalidOperationException("Finish your active battle before changing playtest campaigns.");
-            worldFiveSlice = !worldFiveSlice;
-            savePath = Path.Combine(Application.persistentDataPath,
-                worldFiveSlice ? "WorldFiveSlice-v3" : "AbstractPlaytest-v1");
-            input = null; battleView = null; inBattle = false;
-            battleExitPrompt = false; inspectedUnit = null; selectedCampaign = null;
-            squadInspection = null; collectionDetailsExpanded = false;
-            page = Page.Home;
-            OpenProfile();
-            message = worldFiveSlice ? "World Five opening prototype · separate progress" :
-                "Original playtest · previous progress restored";
+            bool openWorldFive = !worldFiveSlice;
+            // A failure opening the optional prototype must not strand the
+            // entire app in an unusable fatal screen. Preserve the previously
+            // loaded profile, catalog and path, then display a visible error.
+            bool previousMode = worldFiveSlice;
+            string previousPath = savePath;
+            var previousMenu = menu;
+            var previousCatalog = catalog;
+            bool previousLegacy = legacyProfile;
+            try
+            {
+                worldFiveSlice = openWorldFive;
+                savePath = Path.Combine(Application.persistentDataPath,
+                    worldFiveSlice ? "WorldFiveSlice-v3" : "AbstractPlaytest-v1");
+                input = null; battleView = null; inBattle = false;
+                battleExitPrompt = false; inspectedUnit = null;
+                squadInspection = null; collectionDetailsExpanded = false;
+                OpenProfile();
+                if (openWorldFive && !menu.Read().Campaigns.Any(
+                    c => c.CampaignId == WorldFivePlayableSlice.CampaignId))
+                    throw new InvalidOperationException("The World Five mission path is missing from the prototype catalog.");
+                // Do not leave the player on Home after a successful switch.
+                // Display all six missions immediately; the first is unlocked.
+                selectedCampaign = openWorldFive ? WorldFivePlayableSlice.CampaignId : null;
+                page = openWorldFive ? Page.Missions : Page.Home;
+                message = openWorldFive
+                    ? "World Five missions 001–006 · Select a mission to view its briefing."
+                    : "Original playtest · previous progress restored";
+            }
+            catch (Exception e)
+            {
+                worldFiveSlice = previousMode;
+                savePath = previousPath;
+                menu = previousMenu;
+                catalog = previousCatalog;
+                legacyProfile = previousLegacy;
+                page = Page.Home;
+                selectedCampaign = null;
+                Debug.LogException(e, this);
+                message = "World Five could not open. See the Console; your original profile is unchanged.";
+            }
         }
         private void Reload()
         {
