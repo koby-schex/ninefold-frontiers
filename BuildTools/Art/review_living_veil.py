@@ -8,9 +8,9 @@ from build_great_strider import dot,cross,sub
 
 def validate(pose):
     m=make_model(pose);parts={p['name']:p for p in m.parts}
-    assert len(parts)==len(m.parts)==97
-    assert sum(len(p['faces']) for p in m.parts)==66948
-    assert sum(len(p['vertices']) for p in m.parts)==33668
+    assert len(parts)==len(m.parts)==122
+    assert sum(len(p['faces']) for p in m.parts)==89208
+    assert sum(len(p['vertices']) for p in m.parts)==44848
     for i in range(5):
         p=parts[f'Olyra_Lobe_{i}']
         assert len(p['uvs'])==len(p['vertices'])
@@ -21,6 +21,17 @@ def validate(pose):
     assert sum(n.startswith('Avarin_Arm_') for n in parts)==2
     assert sum(n.startswith('Avarin_Leg_') for n in parts)==2
     assert sum(n.startswith('Avarin_SensoryRibbon_') for n in parts)==6
+    assert sum(n.startswith('Avarin_FrontDrape_') for n in parts)==2
+    assert sum(n.startswith('Avarin_OuterDrape_') for n in parts)==2
+    assert sum(n.startswith('VeilHarness_ClipLoop_') for n in parts)==2
+    assert sum(n.startswith('VeilHarness_LineCoil_') for n in parts)==2
+    # Cloth never reaches the ground or masks the split between the feet.
+    for name,p in parts.items():
+        if name.startswith(('Avarin_FrontDrape_','Avarin_OuterDrape_')):
+            assert min(v[1] for v in p['vertices'])>.18,(name,'ground clearance')
+        if name.startswith('Avarin_FrontDrape_'):
+            center=1.95 if pose=='resting' else .25
+            assert all(abs(v[0]-center)>.025 for v in p['vertices']),(name,'split hem clearance')
     assert membrane_alpha(1,.5)<membrane_alpha(.5,.5)<membrane_alpha(0,.5)<1
     assert membrane_alpha(.5,0)<membrane_alpha(.5,.5)
     assert max(abs(membrane_alpha(k/255,.5)-membrane_alpha((k+1)/255,.5)) for k in range(255))<.002
@@ -60,7 +71,7 @@ def validate(pose):
         names=('LivingVeil.obj','manifest.json') if pose=='resting' else ('LivingVeilProtective.obj','protective-manifest.json')
         for n in (*names,'LivingVeil.mtl','Textures/OlyraMembrane.png'):
             assert (Path(d)/n).read_bytes()==(folder/n).read_bytes(),('stale',n)
-    return dict(pose=pose,parts=97,vertices=33668,triangles=66948,lobes=5,closed_parts=True,
+    return dict(pose=pose,parts=122,vertices=44848,triangles=89208,lobes=5,closed_parts=True,
         reproducible_export=True,grounded_partner=True,partner_clearance=True,
         limitations='Not a lobe self-intersection, rigging, mobile performance or native transparency certificate')
 
@@ -72,7 +83,7 @@ def main(render_images=False):
     from PIL import Image,ImageDraw
     from build_living_veil import COLORS,ALPHA,FINISH
     sheet=Image.new('RGB',(1400,1200),'#eeede5');draw=ImageDraw.Draw(sheet)
-    draw.text((20,16),'LIVING VEIL / OLYRA — SURFACE STUDY 04',font=font(26),fill='#262c32')
+    draw.text((20,16),'LIVING VEIL / OLYRA — PARTNER STUDY 05',font=font(26),fill='#262c32')
     draw.text((20,52),'Actual source geometry • two static poses • provisional surfaces',font=font(18),fill='#596069')
     for row,pose in enumerate(POSES):
         m=make_model(pose);data=review_data(m)
@@ -82,7 +93,7 @@ def main(render_images=False):
             draw.text((i*466+15,95+row*540),pose.title()+' / '+label,font=font(18),fill='#262c32')
     sheet.save(out/'LivingVeil-Review.png')
     details=Image.new('RGB',(1400,640),'#eeede5');labels=ImageDraw.Draw(details)
-    labels.text((20,12),'SURFACE 04 / ACTUAL MESH — DETAIL AND TACTICAL READ',font=font(23),fill='#262c32')
+    labels.text((20,12),'PARTNER 05 / ACTUAL MESH — DETAIL AND TACTICAL READ',font=font(23),fill='#262c32')
     m=make_model('resting')
     for i,(label,prefix,eye,target,extent) in enumerate((
         ('Core and membrane roots','Olyra_',(3,3.6,6),(0,2.7,0),1.7),
@@ -93,7 +104,23 @@ def main(render_images=False):
         if prefix:chosen.parts=[p for p in chosen.parts if p['name'].startswith(prefix)]
         details.paste(render(review_data(chosen),eye,(460,540),extent,target,False),(i*466,85))
         labels.text((i*466+12,55),label,font=font(18),fill='#262c32')
-    details.save(out/'LivingVeil-Detail04.png')
+    details.save(out/'LivingVeil-Detail05.png')
+    render_partner(out)
+
+def render_partner(out):
+    from render_great_strider import render,font
+    from PIL import Image,ImageDraw
+    m=make_model('resting');m.parts=[p for p in m.parts if not p['name'].startswith('Olyra_')]
+    sheet=Image.new('RGB',(1440,560),'#eeede5');labels=ImageDraw.Draw(sheet)
+    labels.text((16,10),'AVARIN PARTNER 05 / ACTUAL GEOMETRY / PROVISIONAL ART',font=font(20),fill='#262c32')
+    views=(('Front',(1.95,1.1,8),(1.95,.95,.43),2.2),
+           ('Side',(8,1.1,.43),(1.95,.95,.43),2.2),
+           ('Back',(1.95,1.1,-8),(1.95,.95,.43),2.2),
+           ('Face and living mantle',(2.3,1.75,6),(1.95,1.62,.43),.52))
+    for i,(label,eye,target,extent) in enumerate(views):
+        sheet.paste(render(review_data(m),eye,(360,490),extent,target,False),(360*i,65))
+        labels.text((360*i+12,40),label,font=font(16),fill='#262c32')
+    sheet.save(out/'Avarin-Partner05.png')
 
 @lru_cache(maxsize=1)
 def membrane_review_tint():

@@ -138,7 +138,7 @@ namespace Ninefold.Editor
             var surfaces = GreatStriderSource.ReadMaterials(File.ReadLines(Source+"LivingVeil.mtl"), Source);
             var rest = GreatStriderSource.ReadMesh(File.ReadLines(Source+"LivingVeil.obj"), surfaces);
             var shelter = GreatStriderSource.ReadMesh(File.ReadLines(Source+"LivingVeilProtective.obj"), surfaces);
-            if (rest.SourceVertices != 33668 || rest.Triangles != 66948 || shelter.Sections.Count != rest.Sections.Count)
+            if (rest.SourceVertices != 44848 || rest.Triangles != 89208 || shelter.Sections.Count != rest.Sections.Count)
                 throw new InvalidDataException("Unexpected source revision; review motion compatibility first.");
             var materials = surfaces.ToDictionary(s => s.Name, s => MakeMaterial(shader, s));
             preview = new PreviewRenderUtility();

@@ -1,4 +1,4 @@
-# Living Veil / Olyra — surface study 04
+# Living Veil / Olyra — partner study 05
 
 ## Authority and scope
 
@@ -35,7 +35,7 @@ visual acceptance against the master, especially membrane layering and core deta
 - Validation and six-view comparison: `BuildTools/Art/review_living_veil.py`
 - Unity review tool: `Assets/Ninefold/Editor/LivingVeilReview.cs`
 
-Each pose has 97 named parts, 33,668 source vertices, 66,948 triangles and 12
+Each pose has 122 named parts, 44,848 source vertices, 89,208 triangles and 12
 materials. Five lobe shells plus the Avarin mantle remain separate transparent
 render sections. Meters, Y up, +Z forward; Avarin height approximately 1.82 m.
 The two source poses have matching topology and remain static assets. Motion study
@@ -55,7 +55,7 @@ The map now includes low-contrast cloudy tissue and fibre variation, with the ex
 2. Open **Ninefold > Art > Living Veil Review**.
 3. Choose **Show resting fold** or **Show protective canopy**. Each pose has a
    separate versioned scene/prefab. Unsaved scene changes receive the usual prompt.
-4. Confirm **Surface study 04 / Unity review 04**. Use front, side, back, tactical
+4. Confirm **Partner study 05 / Unity review 05**. Use front, side, back, tactical
    and partner-detail presets. The two full views use the same camera distance.
 5. Run **Validate imported review assets** and inspect membrane overlap, core
    visibility and Avarin readability. Use a 540 × 960 portrait Game view.
@@ -118,3 +118,10 @@ and filter it through mipmaps. They approximate tint as a scalar and alpha at
 mesh vertices; they still show only the nearest transparent shell. Native URP
 layer sorting, close-up appearance and mobile performance remain unverified.
 Use native Unity review before accepting this as finished art.
+
+## Partner study 05
+
+See `LivingVeilPartnerStudy.md` for the standing Avarin refinement, anatomy and
+harness mapping, review presets and validation limits. The prior surface-04
+section describes the preceding pass; current import paths use revision 05.
+Olyra geometry and motion curves are unchanged by partner 05.

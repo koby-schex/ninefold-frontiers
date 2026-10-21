@@ -1,11 +1,11 @@
 {
-  "status": "surface study 04; not production ready",
+  "status": "partner study 05; not production ready",
   "units": "meters",
   "up": "Y",
   "forward": "Z",
-  "parts": 97,
-  "vertices": 33668,
-  "triangles": 66948,
+  "parts": 122,
+  "vertices": 44848,
+  "triangles": 89208,
   "height": 3.432240656452978,
   "bounds": [
     [
