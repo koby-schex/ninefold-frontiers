@@ -162,6 +162,54 @@ internal static partial class Program
         Equal(InputOutcome.Committed,moved.Outcome);
         if(moved.AnimationId!=null) play.CompleteAnimation(moved.AnimationId);
         Equal(true,menu.Read().Results==null);
+        // Rescue movement must remain possible beyond the initial approach.
+        // The map's central cover blocks direct paths; use legal sampled
+        // movement and a north-side waypoint instead of greedy straight-line
+        // pursuit that may repeatedly collide with the same obstacle.
+        var route=new[] { new FieldPoint(0,0,4), new FieldPoint(5,0,4), pickup };
+        int waypoint=0;
+        int committedMoves=0;
+        for(int step=0;step<140 && waypoint<route.Length;step++)
+        {
+            var battle=play.Read().Battle;
+            if(battle.Phase!=BattleSessionPhase.PlayerInput)
+            {
+                var advanced=play.Advance(new EnemyPerception(Array.Empty<string>(),Array.Empty<string>()));
+                if(advanced.AnimationId!=null) play.CompleteAnimation(advanced.AnimationId);
+                continue;
+            }
+            var options=play.ReadPlanning();
+            if(options.Objectives.Single(x=>x.Id=="primary").CanInteract)
+                break;
+            var current=route[waypoint];
+            var samples=options.Movement.OrderBy(x=>
+                (x.Position.X-current.X)*(x.Position.X-current.X)+
+                (x.Position.Z-current.Z)*(x.Position.Z-current.Z)).ToArray();
+            if(samples.Length==0)
+            {
+                var ended=play.EndTurn(battle.Activation.ActivationId);
+                if(ended.AnimationId!=null) play.CompleteAnimation(ended.AnimationId);
+                continue;
+            }
+            var best=samples[0];
+            if((best.Position.X-current.X)*(best.Position.X-current.X)+
+                (best.Position.Z-current.Z)*(best.Position.Z-current.Z)<2m &&
+                waypoint<route.Length-1) waypoint++;
+            var preview=play.TapDestination(best.Position);
+            Equal(InputOutcome.Previewed,preview.Outcome);
+            var committed=play.TapDestination(best.Position);
+            Equal(InputOutcome.Committed,committed.Outcome);
+            committedMoves++;
+            if(committed.AnimationId!=null) play.CompleteAnimation(committed.AnimationId);
+            var after=play.Read().Battle;
+            if(after.Phase==BattleSessionPhase.PlayerInput)
+            {
+                var ended=play.EndTurn(after.Activation.ActivationId);
+                if(ended.AnimationId!=null) play.CompleteAnimation(ended.AnimationId);
+            }
+        }
+        Equal(true,committedMoves>1);
+        Equal(true,menu.Read().Results==null);
         menu=WorldFiveOpeningTenPrototype.Open(stores.Battles,stores.Progress);
         Equal(MissionFlowPhase.Battle,menu.Read().Phase);
         Equal(ids[2],menu.Read().Resume.MissionId);
