@@ -49,7 +49,13 @@ namespace Ninefold.Core.Missions
             var interaction = state.Definition.Interaction;
             if (interaction == null || state.Status != ObjectiveStatus.Active || state.Rescued) return InteractionFailure.Unavailable;
             if (!interaction.AllowedActors.Contains(turn.UnitId) || !Alive(turn.UnitId)) return InteractionFailure.IneligibleActor;
-            if (state.Definition.Kind == ObjectiveKind.RescueAndExtract && !Alive(state.Definition.Subjects[0])) return InteractionFailure.Unavailable;
+            if (state.Definition.Kind == ObjectiveKind.RescueAndExtract)
+            {
+                if (!Alive(state.Definition.Subjects[0])) return InteractionFailure.Unavailable;
+                if (state.Definition.ExtractionCarrier != null &&
+                    turn.UnitId != state.Definition.ExtractionCarrier)
+                    return InteractionFailure.IneligibleActor;
+            }
             if (!turn.PrimaryActionAvailable) return InteractionFailure.ActionSpent;
             return turns.Battlefield.CheckInteraction(turn.UnitId,interaction.Point,interaction.Reach);
         }
@@ -118,7 +124,13 @@ namespace Ninefold.Core.Missions
                     case ObjectiveKind.RescueAndExtract:
                         if (!Alive(d.Subjects[0])) { state.Status = ObjectiveStatus.Failed; break; }
                         if (d.Kind == ObjectiveKind.Protect && roundEnd) state.Progress++;
-                        if (d.Kind == ObjectiveKind.RescueAndExtract && state.Rescued && turns.Battlefield.IsInside(d.Subjects[0],d.Zone)) state.Progress = 1;
+                        if (d.Kind == ObjectiveKind.RescueAndExtract)
+                        {
+                            string exitActor = d.ExtractionCarrier ?? d.Subjects[0];
+                            if (!Alive(exitActor)) { state.Status = ObjectiveStatus.Failed; break; }
+                            if (state.Rescued && turns.Battlefield.IsInside(exitActor,d.Zone))
+                                state.Progress = 1;
+                        }
                         break;
                     case ObjectiveKind.Secure:
                         if (roundEnd)
