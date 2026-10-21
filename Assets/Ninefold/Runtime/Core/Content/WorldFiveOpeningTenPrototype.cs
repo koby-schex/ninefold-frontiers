@@ -11,9 +11,9 @@ using Ninefold.Core.Views;
 namespace Ninefold.Core.Content
 {
     /// <summary>
-    /// Opt-in, noncanonical 10-mission CONTENT CANDIDATE. Not yet connected
-    /// to the Unity entry button, which intentionally retains the safe V3
-    /// six-mission profile until its currently open HUD PR is merged.
+    /// Opt-in, noncanonical 10-mission CONTENT CANDIDATE. The Unity Home
+    /// prototype entry selects this catalog under an independent V4 profile.
+    /// Older V1/V2/V3 progress remains intact and is not migrated.
     /// </summary>
     public static class WorldFiveOpeningTenPrototype
     {
