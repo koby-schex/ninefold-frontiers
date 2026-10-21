@@ -848,8 +848,23 @@ namespace Ninefold.Presentation
             // to its owner; avoid showing an unrelated generic 3D creature.
             FrontiersVisualPrimitives.UnitPreview(viewer, inspectedUnit,
                 selected.Unit.Definition.Roster.IsApex, selected.Unit.Owned);
-            Text(viewer, "Interactive model rotation and zoom are coming in the next viewer integration pass.",
-                "hint").AddToClassList("unit-profile-viewer-note");
+            var interactiveSource = FrontiersPreviewRegistry.Source as IFrontiersInteractivePreviewSource;
+            if (interactiveSource != null)
+            {
+                var controls = Row(viewer);
+                controls.AddToClassList("unit-profile-orbit-controls");
+                Button(controls, "↶ Rotate", () => interactiveSource.RotateUnitPreview(inspectedUnit, -22.5f));
+                Button(controls, "Rotate ↷", () => interactiveSource.RotateUnitPreview(inspectedUnit, 22.5f));
+                Button(controls, "− Zoom", () => interactiveSource.ZoomUnitPreview(inspectedUnit, -0.12f));
+                Button(controls, "+ Zoom", () => interactiveSource.ZoomUnitPreview(inspectedUnit, 0.12f));
+                Text(viewer, "Use the controls to inspect the in-game model.", "hint")
+                    .AddToClassList("unit-profile-viewer-note");
+            }
+            else
+            {
+                Text(viewer, "3D orbit controls will appear when a compatible model preview is connected.",
+                    "hint").AddToClassList("unit-profile-viewer-note");
+            }
 
             var detail = Card(parent, "unit-detail");
             detail.AddToClassList("collection-detail-card");
