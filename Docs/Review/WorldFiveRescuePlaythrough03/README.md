@@ -1,7 +1,7 @@
-# World Five Rescue Playthrough 03
+# World Five Rescue Approach & Resume Smoke Test
 
-Adds a chained integration test that completes World Five prototype missions 001 and 002 using the actual public battle interaction layer, starts mission 003, navigates via authoritative reachable movement samples, performs the rescue pickup, and reopens the active extraction-phase mission from persisted data.
+After completing World Five missions 001 and 002 through the real battle interface, this test starts mission 003, confirms that the pickup is not immediately available, performs one legal movement toward the rescue target, and reopens the active mission from its saved checkpoint.
 
-The test deliberately stops at the pickup and does not claim to validate reaching the extraction zone or unlocking mission 004. This is an incremental check of the two-stage carrier system, rather than a complete rescue playthrough. Future work: complete extraction, verify rewards and unlock mission 004.
+**Not yet verified:** Reaching the pickup, carrying the NPC, completing extraction, receiving mission 003 rewards, or unlocking mission 004. Attempts to automate pickup through greedy reachable-sample navigation did not complete on CI; this remains an open pathfinding/playthrough investigation, not a passing scenario.
 
-No production gameplay, saves, balance, UI or Work-owned 3D assets change.
+No runtime gameplay, save formats, visual styling or Work-owned 3D assets changed.
