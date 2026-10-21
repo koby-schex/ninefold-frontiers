@@ -118,6 +118,12 @@ namespace Ninefold.Core.Combat
                         decimal score = (effect.Health?.HealthChanged ?? 0)
                             + turns.Statuses.ApplicationUtility(id,effect.Status,allied,turns.Health.GetState(id).Armor,power,id == turn.UnitId);
                         if (score <= 0) continue;
+                        // When attacks are comparably effective, prefer opponents
+                        // with greater immediate offensive potential. The small,
+                        // capped tie-break never outweighs a full point of impact,
+                        // and cannot override BetterAction's lethal preference.
+                        if (!allied)
+                            score += Math.Min(power,100) / 200m;
                         var candidate = new EnemyPlan(activationId,turn.UnitId,route,id,slot,effect);
                         if (allied)
                         {
