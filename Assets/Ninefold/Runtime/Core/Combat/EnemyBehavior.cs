@@ -135,7 +135,14 @@ namespace Ninefold.Core.Combat
                             // Only boost a mission-designated opponent if it is
                             // already supplied by perception and legally attackable.
                             // Lethality and whole-point impact retain precedence.
-                            if (behavior.ObjectivePriorityTargets.Contains(id)) score += .25m;
+                            if (behavior.ObjectivePriorityTargets.Contains(id) ||
+                                (behavior.ObjectivePriorityTargets.Contains("$carrier") &&
+                                 turns.Mission != null &&
+                                 turns.Mission.Definition.Objectives.Any(o =>
+                                     o.Kind == Ninefold.Core.Missions.ObjectiveKind.RescueAndExtract &&
+                                     o.ExtractionCarrier == id &&
+                                     turns.Mission.GetObjective(o.Id).Status == Ninefold.Core.Missions.ObjectiveStatus.Active)))
+                                score += .25m;
                         }
                         var candidate = new EnemyPlan(activationId,turn.UnitId,route,id,slot,effect);
                         if (allied)

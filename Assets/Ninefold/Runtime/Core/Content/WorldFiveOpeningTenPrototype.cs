@@ -84,7 +84,10 @@ namespace Ninefold.Core.Content
                 new[] {
                     new ActorSpawn("w5-return-proxy","fixture-npc",P(6,5),false),
                     new ActorSpawn("w5-return-threat","fixture-npc",P(8,-2),true,
-                        new EnemyBehavior(EnemyStyle.Aggressive,3))
+                        // Late-training rescue threat: only a small, legal
+                        // targeting preference for the active rescue carrier.
+                        new EnemyBehavior(EnemyStyle.Aggressive,3,
+                            objectivePriorityTargets:new[] { "$carrier" }))
                 },
                 ObjectiveDefinition.RescueCarried("primary","w5-return-proxy",
                     B(-5,-4,-1,-2,3),
