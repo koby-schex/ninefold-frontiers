@@ -12,13 +12,20 @@ namespace Ninefold.Core.Combat
         public decimal PreferredDistance { get; }
         public FieldBox GuardArea { get; }
         public int PathNodeLimit { get; }
-        public EnemyBehavior(EnemyStyle style, decimal preferredDistance, FieldBox guardArea = null, int pathNodeLimit = 64)
+        // Explicit scenario-authoring hints; never infer unseen player positions.
+        public IReadOnlyList<string> ObjectivePriorityTargets { get; }
+        public EnemyBehavior(EnemyStyle style, decimal preferredDistance, FieldBox guardArea = null, int pathNodeLimit = 64, IEnumerable<string> objectivePriorityTargets = null)
         {
             if (!Enum.IsDefined(typeof(EnemyStyle),style)) throw new ArgumentOutOfRangeException(nameof(style));
             if (preferredDistance <= 0m || preferredDistance > 100m || decimal.Round(preferredDistance,6) != preferredDistance)
                 throw new ArgumentOutOfRangeException(nameof(preferredDistance));
             if (style == EnemyStyle.Defensive && guardArea == null) throw new ArgumentNullException(nameof(guardArea));
             if (pathNodeLimit < 2 || pathNodeLimit > 256) throw new ArgumentOutOfRangeException(nameof(pathNodeLimit));
+            var priority = (objectivePriorityTargets ?? Array.Empty<string>()).ToArray();
+            if (priority.Length > 8 || priority.Any(string.IsNullOrWhiteSpace) ||
+                priority.Distinct(StringComparer.Ordinal).Count() != priority.Length)
+                throw new ArgumentException("At most eight unique, nonblank priority targets.",nameof(objectivePriorityTargets));
+            ObjectivePriorityTargets = Array.AsReadOnly(priority);
             Style = style; PreferredDistance = preferredDistance; GuardArea = guardArea; PathNodeLimit = pathNodeLimit;
         }
     }
@@ -123,7 +130,13 @@ namespace Ninefold.Core.Combat
                         // capped tie-break never outweighs a full point of impact,
                         // and cannot override BetterAction's lethal preference.
                         if (!allied)
+                            {
                             score += Math.Min(power,100) / 200m;
+                            // Only boost a mission-designated opponent if it is
+                            // already supplied by perception and legally attackable.
+                            // Lethality and whole-point impact retain precedence.
+                            if (behavior.ObjectivePriorityTargets.Contains(id)) score += .25m;
+                        }
                         var candidate = new EnemyPlan(activationId,turn.UnitId,route,id,slot,effect);
                         if (allied)
                         {

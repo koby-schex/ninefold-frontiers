@@ -31,7 +31,7 @@ internal static partial class Program
     private static BattleTurnController EnemyBattle(EnemyStyle style = EnemyStyle.Aggressive, decimal movement = 5,
         decimal range = 2, int actorHp = 100, int targetHp = 500, FieldAbility[] abilities = null,
         SignatureReadiness readiness = SignatureReadiness.AfterNormalAttack, FieldObstacle[] walls = null,
-        FieldBox guard = null, int nodes = 64, bool start = true, MissionDefinition mission = null)
+        FieldBox guard = null, int nodes = 64, bool start = true, MissionDefinition mission = null, string[] objectivePriorityTargets = null)
     {
         var b = B(U("a",30,movement),U("b",20),U("c",10));
         foreach (string id in new[] { "a","b","c" })
@@ -42,7 +42,7 @@ internal static partial class Program
         var field = b.ConfigureBattlefield(new BattlefieldMap(Box(-20,-20,20,20,20),walls ?? Array.Empty<FieldObstacle>()));
         field.Register("a",P(0,0),Body(),abilities ?? new[] { new FieldAbility(AbilitySlot.NormalAttack,HealthEffectKind.Damage,40,range,true) },new[] { "a" });
         field.Register("b",P(6,0),Body(),Profiles()); field.Register("c",P(0,6),Body(),Profiles());
-        field.RegisterEnemy("a",new EnemyBehavior(style,1,guard ?? (style == EnemyStyle.Defensive ? Box(-2,-2,2,2) : null),nodes));
+        field.RegisterEnemy("a",new EnemyBehavior(style,1,guard ?? (style == EnemyStyle.Defensive ? Box(-2,-2,2,2) : null),nodes,objectivePriorityTargets));
         if (mission != null) b.ConfigureMission(mission);
         if (start) { b.StartNextRound(); b.BeginNextActivation(); }
         return b;
