@@ -11,16 +11,16 @@ using Ninefold.Core.Views;
 namespace Ninefold.Core.Content
 {
     /// <summary>
-    /// Opt-in, noncanonical 10-mission CONTENT CANDIDATE. Not yet connected
-    /// to the Unity entry button, which intentionally retains the safe V3
-    /// six-mission profile until its currently open HUD PR is merged.
+    /// Opt-in, noncanonical 10-mission CONTENT CANDIDATE. The Unity Home
+    /// prototype entry selects this catalog under an independent V4 profile.
+    /// Older V1/V2/V3 progress remains intact and is not migrated.
     /// </summary>
     public static class WorldFiveOpeningTenPrototype
     {
         public const string ProfileId = "w5-opening-ten-profile-v4";
         public const string Revision = "w5-opening-ten-layout-04";
         public const string CampaignId = WorldFivePlayableSlice.CampaignId;
-        public const string Status = "PROTOTYPE CONTENT - NOT CANON-LOCKED OR UI-RELEASED";
+        public const string Status = "PLAYABLE PROTOTYPE - NOT CANON-LOCKED OR RELEASE-APPROVED";
 
         public static IReadOnlyList<string> MissionIds { get; } = Array.AsReadOnly(
             Enumerable.Range(1,10).Select(n => "w5-draft-" +
