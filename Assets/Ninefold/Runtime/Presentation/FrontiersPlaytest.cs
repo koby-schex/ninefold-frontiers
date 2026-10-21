@@ -1480,7 +1480,13 @@ namespace Ninefold.Presentation
         }
         private void Navigate(Page destinationPage)
         {
-            menu.Collection.Cancel(); page = destinationPage; menuScroll = null;
+            // Re-selecting the active primary tab must not jump the user's
+            // scroll position back to the top. Explicit detail-to-list
+            // navigation still clears its own inspected-unit state upstream.
+            bool changingPage = page != destinationPage;
+            menu.Collection.Cancel();
+            page = destinationPage;
+            if (changingPage) menuScroll = null;
             battleExitPrompt = false;
             message = "Your progress saves automatically.";
         }
