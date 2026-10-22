@@ -166,10 +166,10 @@ internal static partial class Program
         // The map's central cover blocks direct paths; use legal sampled
         // movement and a north-side waypoint instead of greedy straight-line
         // pursuit that may repeatedly collide with the same obstacle.
-        var route=new[] { new FieldPoint(0,0,4), new FieldPoint(5,0,4), pickup };
+        var route=new[] { new FieldPoint(0,0,-3), new FieldPoint(5,0,-3), new FieldPoint(6,0,2), pickup };
         int waypoint=0;
         int committedMoves=0;
-        for(int step=0;step<140 && waypoint<route.Length;step++)
+        for(int step=0;step<300 && waypoint<route.Length;step++)
         {
             var battle=play.Read().Battle;
             if(battle.Phase!=BattleSessionPhase.PlayerInput)
@@ -182,7 +182,8 @@ internal static partial class Program
             if(options.Objectives.Single(x=>x.Id=="primary").CanInteract)
                 break;
             var current=route[waypoint];
-            var samples=options.Movement.OrderBy(x=>
+            var position=battle.Units.Single(u=>u.Id==battle.Activation.UnitId).Position.Value;
+            var samples=options.Movement.Where(x=>!x.Position.Equals(position)).OrderBy(x=>
                 (x.Position.X-current.X)*(x.Position.X-current.X)+
                 (x.Position.Z-current.Z)*(x.Position.Z-current.Z)).ToArray();
             if(samples.Length==0)
@@ -192,8 +193,8 @@ internal static partial class Program
                 continue;
             }
             var best=samples[0];
-            if((best.Position.X-current.X)*(best.Position.X-current.X)+
-                (best.Position.Z-current.Z)*(best.Position.Z-current.Z)<2m &&
+            if((position.X-current.X)*(position.X-current.X)+
+                (position.Z-current.Z)*(position.Z-current.Z)<4m &&
                 waypoint<route.Length-1) waypoint++;
             var preview=play.TapDestination(best.Position);
             Equal(InputOutcome.Previewed,preview.Outcome);
@@ -210,6 +211,47 @@ internal static partial class Program
         }
         Equal(true,committedMoves>1);
         Equal(true,menu.Read().Results==null);
+        // Explicit pickup after a legal, routed approach. Fail with a
+        // descriptive message if movement has not actually reached the NPC.
+        bool reached=false;
+        for(int step=0;step<180 && !reached;step++)
+        {
+            var phase=play.Read().Battle;
+            if(phase.Phase!=BattleSessionPhase.PlayerInput)
+            {
+                var advanced=play.Advance(new EnemyPerception(Array.Empty<string>(),Array.Empty<string>()));
+                if(advanced.AnimationId!=null) play.CompleteAnimation(advanced.AnimationId);
+                continue;
+            }
+            var plan=play.ReadPlanning();
+            if(plan.Objectives.Any(x=>x.Id=="primary" && x.CanInteract))
+            {
+                Equal(InputOutcome.Previewed,play.TapObjective("primary").Outcome);
+                var pickupAction=play.TapObjective("primary");
+                Equal(InputOutcome.Committed,pickupAction.Outcome);
+                if(pickupAction.AnimationId!=null) play.CompleteAnimation(pickupAction.AnimationId);
+                reached=true;
+                break;
+            }
+            var position=phase.Units.Single(u=>u.Id==phase.Activation.UnitId).Position.Value;
+            var nearby=plan.Movement.Where(x=>!x.Position.Equals(position)).OrderBy(x=>
+                (x.Position.X-pickup.X)*(x.Position.X-pickup.X)+
+                (x.Position.Z-pickup.Z)*(x.Position.Z-pickup.Z)).FirstOrDefault();
+            if(nearby!=null)
+            {
+                Equal(InputOutcome.Previewed,play.TapDestination(nearby.Position).Outcome);
+                var move=play.TapDestination(nearby.Position);
+                Equal(InputOutcome.Committed,move.Outcome);
+                if(move.AnimationId!=null) play.CompleteAnimation(move.AnimationId);
+            }
+            var current=play.Read().Battle;
+            if(current.Phase==BattleSessionPhase.PlayerInput)
+            {
+                var end=play.EndTurn(current.Activation.ActivationId);
+                if(end.AnimationId!=null) play.CompleteAnimation(end.AnimationId);
+            }
+        }
+        if(!reached) throw new Exception("Rescue pickup remains unreachable after legal waypoint traversal. Final phase: "+play.Read().Battle.Phase+"; position: "+play.Read().Battle.Units.Single(u=>u.Id=="fixture-a-1").Position?.X+","+play.Read().Battle.Units.Single(u=>u.Id=="fixture-a-1").Position?.Z+"; waypoint "+waypoint);
         menu=WorldFiveOpeningTenPrototype.Open(stores.Battles,stores.Progress);
         Equal(MissionFlowPhase.Battle,menu.Read().Phase);
         Equal(ids[2],menu.Read().Resume.MissionId);
