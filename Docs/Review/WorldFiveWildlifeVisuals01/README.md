@@ -1,0 +1,4 @@
+# World Five wildlife battlefield visuals — prototype
+The existing in-battle renderer now receives the current mission's creature templates, rather than guessing species by spawn ID. Native Sillrunners appear as green rounded abstract tokens and Seamstalkers as purple elongated abstract tokens. Both keep normalized standard-unit screen height. Shared spawn IDs in older missions do not inherit the wrong creature appearance; rendered tokens reset on a mission visual-kind switch.
+
+This is **not a finished 3D creature model**. It adds immediate in-Unity readability to wildlife tutorial missions 7–8 without modifying combat damage, hitboxes, physics, progression, saves, Ashbound story timing or the parallel playable models. Follow-up needs production animal anatomy, procedural/skeletal locomotion and unique attack sequences.

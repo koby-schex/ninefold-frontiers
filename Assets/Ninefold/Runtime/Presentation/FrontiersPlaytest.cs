@@ -1208,6 +1208,7 @@ namespace Ninefold.Presentation
                 if (tap && !dirty && playback == null && !suspended && !battleDetails) Guard(() => Pick((Vector2)e.position));
             });
             var mission = catalog.Missions[b.MissionId];
+            field.ConfigureWildlifeActors(mission.Actors);
             field.Show(battleView, input.ReadPlanning(), mission.Objectives, surface, mission.EnvironmentKey);
             // A read-only overhead schematic reinforces world-specific map
             // wayfinding without inventing collision routes or adding UI prose.
