@@ -15,6 +15,33 @@ internal static partial class Program
         ("World Five 004–010 stage playable objectives away from solid cover", FullCampaignObjectiveReachability)
     };
 
+    private static void WorldFiveStatusMechanics()
+    {
+        var source=WorldFivePlayableAbilityStudy.Create();
+        var study=WorldFiveCombatMechanicsV1.Create();
+        Equal(true,study.Manifest.SaveRevision!=source.Manifest.SaveRevision);
+        foreach(var id in new[]{WorldFiveCombatMechanicsV1.Shelter,
+            WorldFiveCombatMechanicsV1.Exposed,
+            WorldFiveCombatMechanicsV1.Disrupted,
+            WorldFiveCombatMechanicsV1.Afterecho})
+            Equal(true,study.Statuses.ContainsKey(id));
+        Equal(WorldFiveCombatMechanicsV1.Shelter,
+            study.Abilities[study.Kits[study.Units["fixture-a-2"].KitId].AbilityIds[2]].Effect.StatusId);
+        Equal(WorldFiveCombatMechanicsV1.Exposed,
+            study.Abilities[study.Kits[study.Units["fixture-a-3"].KitId].AbilityIds[2]].Effect.StatusId);
+        Equal(WorldFiveCombatMechanicsV1.Disrupted,
+            study.Abilities[study.Kits[study.Units[WorldFiveActOnePrototype.CastigatorId].KitId].AbilityIds[2]].Effect.StatusId);
+        foreach(var id in new[]{WorldFiveActOnePrototype.StrikerId,WorldFiveActOnePrototype.SeerId})
+        {
+            var passive=study.Abilities[study.Kits[study.Units[id].KitId].AbilityIds[0]].Passive;
+            Equal(PassiveTrigger.OwnerActivationStarted,passive.Trigger);
+            Equal(WorldFiveCombatMechanicsV1.Afterecho,passive.StatusId);
+            Equal(true,study.Units[id].Roster==null);
+        }
+        foreach(var id in WorldFiveActOnePrototype.EnemyTemplateIds)
+            Equal(false,study.StarterUnits.Contains(id));
+    }
+
     private static void BondedTraditionAbilityStudy()
     {
         var source=WorldFiveActOnePrototype.Create();
