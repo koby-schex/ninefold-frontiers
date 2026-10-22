@@ -663,6 +663,15 @@ namespace Ninefold.Presentation
                 Text(parent, "REPLAY · COMPLETED MISSION", "eyebrow")
                     .AddToClassList("mission-brief-context");
 
+            if (actOneStudy && definition.Id == WorldFiveStorySequence.FirstCampaignMissionId)
+            {
+                var narrative = Card(parent, "briefing-objective");
+                Text(narrative, "ACT ONE · FIRST CONTACT", "eyebrow");
+                Text(narrative, "The crossing failed from the wrong side. The damage was deliberate. " +
+                    "A Continuance team has sighted unfamiliar Avarin with empty companion harnesses. " +
+                    "Secure the crossing and identify the attackers.", "detail");
+                Text(narrative, "NEW THREAT · ASHBOUND", "hint");
+            }
             var objective = Card(parent, "briefing-objective");
             objective.AddToClassList("mission-brief-objective");
             Text(objective, "OBJECTIVE", "eyebrow").AddToClassList("mission-brief-overline");
@@ -1076,6 +1085,9 @@ namespace Ninefold.Presentation
             Text(summary, victory ? "Victory" : "Defeat", "display-title");
             Text(summary, MissionName(r.Result.MissionId) + " · Round " + r.Result.Round, "section");
             Text(summary, victory ? "Objective achieved." : "Regroup and try a new approach.", "detail");
+            if (actOneStudy && r.Result.MissionId == WorldFiveStorySequence.FirstCampaignMissionId && victory)
+                Text(summary, "The attackers are Ashbound. Their empty harnesses and damaged route " +
+                    "equipment point toward deliberate sabotage. The Continuance must investigate.", "detail");
             Text(summary, "Your units and progression are retained.", "result-assurance");
             Text(summary, r.Claimed ? "SAVED" : "READY TO SAVE", "result-status");
 
@@ -1908,6 +1920,9 @@ namespace Ninefold.Presentation
         {
             if (worldFiveSlice)
             {
+                if (actOneStudy && id == WorldFiveStorySequence.FirstCampaignMissionId)
+                    return "Defeat the two Ashbound attackers and reclaim the damaged crossing. " +
+                        "Inspect their unusual equipment after the encounter.";
                 if (id == WorldFiveOpeningTenPrototype.MissionIds[0])
                     return "Approach the marked route point and stabilize it. Follow the gold objective.";
                 if (id == WorldFiveOpeningTenPrototype.MissionIds[1])
