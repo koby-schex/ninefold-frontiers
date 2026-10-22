@@ -1,0 +1,4 @@
+# Ashbound encounter quality gate
+This adds runnable regression assertions for the existing World Five missions 11–14: all six ordinary Ashbound enemy archetypes must appear somewhere in the sequence, repeat appearances remain possible, enemy count and engagement distances vary, actor IDs remain unique, no NPC becomes playable, and every authored Ashbound has AI behavior.
+
+**Scope limitation:** this PR strengthens automated encounter coverage; it does **not** introduce new AI algorithms, new missions, animation assets, battle models, or save revisions. The next larger gameplay pass should author role-specific AI (ranged zoning, pressure, support coordination, terrain sabotage), richer mission objectives, and end-to-end playthrough tests against the same catalog without losing existing study profiles.
