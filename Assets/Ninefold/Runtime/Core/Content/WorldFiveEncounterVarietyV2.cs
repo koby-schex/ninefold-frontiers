@@ -11,8 +11,8 @@ namespace Ninefold.Core.Content
     /// Does not replace an in-progress saved V1 study.</summary>
     public static class WorldFiveEncounterVarietyV2
     {
-        public const string Revision="w5-encounter-variety-02";
-        public const string ProfileId="world-five-encounter-variety-v2";
+        public const string Revision="w5-encounter-variety-03";
+        public const string ProfileId="world-five-encounter-variety-v3";
         public static readonly string[] NewMissionIds={"w5-story-012","w5-story-013","w5-story-014"};
         public static ContentCatalog Create()
         {
@@ -33,7 +33,18 @@ namespace Ninefold.Core.Content
                 });
             ActorSpawn E(int mission,int index,string type,int x,int z,decimal preferred)=>
                 new ActorSpawn("ashbound-"+mission+"-"+index,type,P(x,z),true,
-                    new EnemyBehavior(EnemyStyle.Aggressive,preferred));
+                    new EnemyBehavior(
+                        type==WorldFiveActOnePrototype.WreckerId ||
+                        type==WorldFiveActOnePrototype.WitnessId ||
+                        type==WorldFiveActOnePrototype.CastigatorId ||
+                        type==WorldFiveActOnePrototype.SeerId
+                            ? EnemyStyle.Defensive : EnemyStyle.Aggressive,
+                        preferred,
+                        type==WorldFiveActOnePrototype.WreckerId ||
+                        type==WorldFiveActOnePrototype.WitnessId ||
+                        type==WorldFiveActOnePrototype.CastigatorId ||
+                        type==WorldFiveActOnePrototype.SeerId
+                            ? B(-9,-7,12,10) : null));
             MissionContent Mission(string id,int index,ActorSpawn[] enemies)=>
                 new MissionContent(id,"fixture-a",true,2,Map(index),
                     new[]{P(-5,-5),P(-4,-5),P(-3,-5)},enemies,
