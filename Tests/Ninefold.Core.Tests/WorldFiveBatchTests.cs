@@ -15,6 +15,30 @@ internal static partial class Program
         ("World Five 004–010 stage playable objectives away from solid cover", FullCampaignObjectiveReachability)
     };
 
+    private static void BondedTraditionAbilityStudy()
+    {
+        var source=WorldFiveActOnePrototype.Create();
+        var study=WorldFivePlayableAbilityStudy.Create();
+        Equal(4,WorldFivePlayableAbilityStudy.StandardIds.Length);
+        var mainIds=WorldFivePlayableAbilityStudy.StandardIds.Select(id=>
+            study.Kits[study.Units[id].KitId].AbilityIds[2]).ToArray();
+        Equal(4,mainIds.Distinct().Count());
+        foreach(var id in WorldFivePlayableAbilityStudy.StandardIds)
+        {
+            Equal(true,study.Units[id].Roster!=null);
+            Equal(true,study.Abilities[study.Kits[study.Units[id].KitId].AbilityIds[2]]
+                .Effect.HasHealthEffect);
+            Equal(source.Units[id].Health,study.Units[id].Health);
+        }
+        Equal(HealthEffectKind.Healing,study.Abilities[mainIds[1]].Effect.Kind);
+        Equal(HealthEffectKind.Damage,study.Abilities[mainIds[0]].Effect.Kind);
+        Equal(HealthEffectKind.Damage,study.Abilities[mainIds[2]].Effect.Kind);
+        Equal(HealthEffectKind.Damage,study.Abilities[mainIds[3]].Effect.Kind);
+        Equal(true,source.Manifest.SaveRevision!=study.Manifest.SaveRevision);
+        foreach(var id in WorldFiveActOnePrototype.EnemyTemplateIds)
+            Equal(source.Units[id].KitId,study.Units[id].KitId);
+    }
+
     private static void AshboundFullRoster()
     {
         var catalog=WorldFiveActOnePrototype.Create();
