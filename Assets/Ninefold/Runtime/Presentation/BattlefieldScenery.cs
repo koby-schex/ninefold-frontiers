@@ -192,6 +192,42 @@ namespace Ninefold.Presentation
                 mass.Rock(new Vector3(x1+2.5f,-.65f,z),
                     new Vector3(1.1f,height,.9f),i+1411);
             }
+            // World Five strata are more than a distant rock wall: fractured
+            // standing fins, fallen plates and narrow quartz shards distinguish
+            // survey and mineral-fracture environments. All pieces remain
+            // outside battlefield bounds and cannot block tactical movement.
+            var standing=new Batch(); var fragments=new Batch();
+            int count=style.FacetCount;
+            for(int i=0;i<count;i++)
+            {
+                float t=(i+.5f)/count;
+                float x=Mathf.Lerp(x0+1f,x1-1f,t);
+                float offset=Noise(i,81)*1.4f;
+                float z=z1+3.4f+offset;
+                float high=1.1f+Noise(i,97)*2.0f;
+                standing.Rock(new Vector3(x,-.15f,z),
+                    new Vector3(.28f+Noise(i,9)*.32f,high,.55f),i+1701);
+                if(i%2==0)
+                {
+                    fragments.Rock(new Vector3(x+.65f,-.62f,z-.5f),
+                        new Vector3(.8f,.34f,.72f),i+2101);
+                    fragments.Rock(new Vector3(x-.45f,-.48f,z+1f),
+                        new Vector3(.38f,.6f,.45f),i+2201);
+                }
+            }
+            // The more unstable study variant gains denser distal spires,
+            // without inventing hazards where the simulation has none.
+            if(style.FacetCount>10)
+            {
+                for(int i=0;i<6;i++)
+                {
+                    float z=Mathf.Lerp(z0+1f,z1-1f,(i+.5f)/6f);
+                    standing.Rock(new Vector3(x1+4.2f,-.3f,z),
+                        new Vector3(.34f,2.0f+Noise(i,111)*1.6f,.7f),i+2301);
+                }
+            }
+            Emit(parent,"W5 mineral standing fins",standing,fractureEdge);
+            Emit(parent,"W5 detached outer plates",fragments,fractureBase);
             Emit(parent,"W5 fractured outer mineral masses",mass,fractureBase);
             Emit(parent,"W5 faceted mineral rims",facets,fractureEdge);
             Emit(parent,"W5 noninteractive seam reflections",seams,fractureSeam);
