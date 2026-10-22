@@ -19,8 +19,32 @@ internal static partial class Program
         ("World Five Ashbound first contact follows tutorial", AshboundFirstEncounter),
         ("World Five Ashbound only reveal beyond ten tutorial missions", AshboundRevealBoundary),
         ("World Five integrated Act One catalog has full encounter and save isolation", IntegratedActOneReliability),
-        ("World Five missions 11-14 vary Ashbound counts and compositions", WorldFiveEncounterVariation)
+        ("World Five missions 11-14 vary Ashbound counts and compositions", WorldFiveEncounterVariation),
+        ("World Five encounters cover every Ashbound archetype with varied pressure", AshboundTacticalVariety)
     };
+
+    private static void AshboundTacticalVariety()
+    {
+        var c=WorldFiveEncounterVarietyV2.Create();
+        var ids=new[]{WorldFiveActOnePrototype.FirstMission}
+            .Concat(WorldFiveEncounterVarietyV2.NewMissionIds).ToArray();
+        var encounters=ids.Select(id=>c.Missions[id]).ToArray();
+        var types=encounters.SelectMany(m=>m.Actors.Select(a=>a.UnitId)).ToArray();
+        foreach(var type in WorldFiveActOnePrototype.EnemyTemplateIds)
+            Equal(true,types.Contains(type));
+        Equal(true,types.GroupBy(x=>x).Any(g=>g.Count()>1));
+        Equal(true,encounters.Select(m=>m.Actors.Count).Distinct().Count()>=3);
+        Equal(true,encounters.All(m=>m.Actors.Select(a=>a.Id).Distinct().Count()==m.Actors.Count));
+        foreach(var m in encounters)
+        {
+            Equal(true,m.Actors.All(a=>a.Behavior!=null));
+            Equal(true,m.Actors.All(a=>c.Units[a.UnitId].Roster==null));
+            Equal(true,m.Actors.All(a=>a.Behavior.PreferredDistance>0));
+            Equal(true,m.Actors.All(a=>a.Behavior.ObjectivePriorityTargets.Count==0));
+        }
+        Equal(true,encounters.SelectMany(m=>m.Actors)
+            .Select(a=>a.Behavior.PreferredDistance).Distinct().Count()>=4);
+    }
 
     private static void WorldFiveEncounterVariation()
     {
