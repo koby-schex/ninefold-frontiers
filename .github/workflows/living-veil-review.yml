@@ -28,10 +28,35 @@ jobs:
           python-version: '3.12'
       - run: python -m pip install -r BuildTools/Art/requirements-review.txt
       - run: python BuildTools/Art/review_living_veil.py --render
-      - run: python BuildTools/Art/review_living_veil_motion.py --render
+      - run: python BuildTools/Art/review_living_veil_motion.py
       - uses: actions/upload-artifact@v4
         with:
           name: living-veil-review-${{ github.sha }}
           retention-days: 30
           if-no-files-found: error
           path: SourceArt/LivingVeil/Review/
+
+  motion:
+    name: Olyra motion (${{ matrix.clip }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        clip: [RestingIdle, Deploy, ProtectiveIdle, Retract]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r BuildTools/Art/requirements-review.txt
+      - run: python BuildTools/Art/review_living_veil_motion.py --render --clip ${{ matrix.clip }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: living-veil-motion-${{ matrix.clip }}-${{ github.sha }}
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            SourceArt/LivingVeil/Review/${{ matrix.clip }}.gif
+            SourceArt/LivingVeil/Review/${{ matrix.clip }}-contact.png
+            SourceArt/LivingVeil/Review/motion-checks.json

@@ -17,7 +17,7 @@ namespace Ninefold.Editor
     {
         private const string Folder = "Assets/Ninefold/ArtReview";
         private static string ScenePath = "";
-        private const string Revision = "Color study 12 / Unity review 12";
+        private const string Revision = "Surface study 13 / Unity review 13";
         private string sourceVersion = "", importedVersion = "";
         private const string Source = "SourceArt/GreatStrider/";
         private float yaw = 145, pitch = 12, distance = 19;
@@ -42,11 +42,13 @@ namespace Ninefold.Editor
         private void OnGUI()
         {
             scroll = EditorGUILayout.BeginScrollView(scroll);
-            GUILayout.Label("Great Strider · Color study 12", EditorStyles.boldLabel);
-            EditorGUILayout.HelpBox("Textured source study — not final art or a canon revision. Unity review 12 uses neutral lighting and material inspection for the current mesh, eight textures and translucent membranes. Static review prefab; no production rig or battlefield replacement.", MessageType.Info);
+            GUILayout.Label("Great Strider · Surface study 13", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox("Textured source study — not final art or a canon revision. Unity review 13 uses neutral lighting and material inspection for the current mesh, eight albedo maps, sixteen normal/finish maps and translucent membranes. Static review prefab; no production rig or battlefield replacement.", MessageType.Info);
             EditorGUILayout.LabelField("Source revision", Revision);
             EditorGUILayout.LabelField("Source fingerprint", sourceVersion);
             EditorGUILayout.HelpBox("Imported scene: " + importedVersion, MessageType.None);
+            if (!importedVersion.Contains(Revision) || !importedVersion.Contains(sourceVersion))
+                EditorGUILayout.HelpBox("This scene does not match the current model source. Use Open / create latest review scene below to see the new materials. Raw OBJ imports do not configure the complete URP surface stack.", MessageType.Warning);
             if (GUILayout.Button("Refresh version status")) RefreshVersion();
             EditorGUILayout.LabelField("Scale", "Ilyth 6.0 m · Avarin reference 1.82 m");
             EditorGUILayout.HelpBox("The upright scale marker is a measuring aid, not an Avarin model. Locked lore and visual masters remain authoritative.", MessageType.None);
@@ -173,15 +175,15 @@ namespace Ninefold.Editor
             var shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null) throw new InvalidOperationException("URP Lit shader unavailable. Finish package import first.");
             string fingerprint = Fingerprint();
-            string destination = Folder + "/GreatStrider12_" + fingerprint.Substring(0, 12);
-            string expectedScene = destination + "/GreatStriderReview12.unity";
+            string destination = Folder + "/GreatStrider13_" + fingerprint.Substring(0, 12);
+            string expectedScene = destination + "/GreatStriderReview13.unity";
             if (!fresh && File.Exists(expectedScene))
             { ScenePath = expectedScene; EditorSceneManager.OpenScene(ScenePath); return true; }
             // Validate the entire source before creating assets or changing the scene.
             var surfaces = GreatStriderSource.ReadMaterials(File.ReadLines(Source + "GreatStrider.mtl"), Source);
             var data = GreatStriderSource.ReadMesh(File.ReadLines(Source + "GreatStrider.obj"), surfaces);
             var manifest = JsonUtility.FromJson<SourceManifest>(File.ReadAllText(Source + "manifest.json"));
-            if (manifest == null || manifest.status != "color study 12; not production ready" ||
+            if (manifest == null || manifest.status != "surface study 13; not production ready" ||
                 manifest.vertices != data.SourceVertices || manifest.triangles != data.Triangles || manifest.parts != data.Parts ||
                 manifest.height != 6 || manifest.up != "Y" || manifest.forward != "Z" || manifest.units != "meters" ||
                 surfaces.Count != 12 || surfaces.Count(m => m.Texture != null) != 8)
@@ -219,7 +221,7 @@ namespace Ninefold.Editor
                     if (surfaces.Find(m => m.Name == section.Material).Opacity < 1)
                         renderer.shadowCastingMode = ShadowCastingMode.Off;
                 }
-                prefab = PrefabUtility.SaveAsPrefabAsset(root, destination + "/GreatStriderStudy12.prefab");
+                prefab = PrefabUtility.SaveAsPrefabAsset(root, destination + "/GreatStriderStudy13.prefab");
                 if (prefab == null) throw new IOException("Could not create Great Strider prefab.");
                 File.WriteAllText(destination + "/source-version.txt", Revision + "\nSHA-256 " + fingerprint +
                     "\n" + data.SourceVertices + " source vertices / " + data.Triangles + " triangles / " +
@@ -249,7 +251,7 @@ namespace Ninefold.Editor
             var rotation = Quaternion.Euler(12, 145, 0);
             camera.transform.SetPositionAndRotation(new Vector3(0, 3, 0) - rotation * Vector3.forward * 19, rotation);
             AssetDatabase.SaveAssets();
-            ScenePath = destination + "/GreatStriderReview12.unity";
+            ScenePath = destination + "/GreatStriderReview13.unity";
             if (!EditorSceneManager.SaveScene(scene, ScenePath)) throw new IOException("Could not save review scene.");
             Selection.activeGameObject = model;
             Debug.Log(ValidateImported());
@@ -303,6 +305,18 @@ namespace Ninefold.Editor
                             importer.wrapMode != TextureWrapMode.Repeat || importer.filterMode != FilterMode.Trilinear)
                             throw new InvalidDataException("Unexpected texture import settings: " + path);
                         textures.Add(texture);
+                        if (mesh.tangents.Length != mesh.vertexCount || !material.IsKeywordEnabled("_NORMALMAP") ||
+                            !material.IsKeywordEnabled("_METALLICSPECGLOSSMAP"))
+                            throw new InvalidDataException("Missing detailed surface data: " + filter.name);
+                        foreach (string property in new[] { "_BumpMap", "_MetallicGlossMap" })
+                        {
+                            var detail = material.GetTexture(property);
+                            var settings = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(detail)) as TextureImporter;
+                            if (detail == null || settings == null || settings.sRGBTexture || !settings.mipmapEnabled ||
+                                settings.wrapMode != TextureWrapMode.Repeat ||
+                                settings.textureType != (property == "_BumpMap" ? TextureImporterType.NormalMap : TextureImporterType.Default))
+                                throw new InvalidDataException("Incorrect surface map: " + filter.name + property);
+                        }
                     }
                 }
                 if (material.GetFloat("_Surface") > .5f)
@@ -345,6 +359,23 @@ namespace Ninefold.Editor
                 return BitConverter.ToString(hash.Hash).Replace("-", "").ToLowerInvariant();
             }
         }
+        private static Texture2D ImportDetailMap(string filename, string destination, bool normal)
+        {
+            string target = destination + "/" + filename;
+            File.Copy(Source + "Textures/" + filename, target);
+            AssetDatabase.ImportAsset(target, ImportAssetOptions.ForceSynchronousImport);
+            var importer = AssetImporter.GetAtPath(target) as TextureImporter;
+            if (importer == null) throw new IOException("Could not import detail map: " + target);
+            importer.textureType = normal ? TextureImporterType.NormalMap : TextureImporterType.Default;
+            importer.convertToNormalmap = false;
+            importer.sRGBTexture = false; importer.mipmapEnabled = true;
+            importer.wrapMode = TextureWrapMode.Repeat; importer.filterMode = FilterMode.Trilinear;
+            importer.textureCompression = TextureImporterCompression.Uncompressed;
+            importer.alphaSource = TextureImporterAlphaSource.FromInput;
+            importer.alphaIsTransparency = false; importer.isReadable = false;
+            importer.SaveAndReimport();
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(target);
+        }
         private static Material ImportMaterial(Shader shader, GreatStriderSource.Surface surface, string destination)
         {
             // MTL Kd is linear; Unity's serialized color property is authored in sRGB.
@@ -367,6 +398,10 @@ namespace Ninefold.Editor
                 importer.alphaSource = TextureImporterAlphaSource.None; importer.isReadable = false;
                 importer.SaveAndReimport();
                 material.SetTexture("_BaseMap", AssetDatabase.LoadAssetAtPath<Texture2D>(target));
+                material.SetTexture("_BumpMap", ImportDetailMap(surface.Name + "_Normal.png", destination, true));
+                material.SetFloat("_BumpScale", 1); material.EnableKeyword("_NORMALMAP");
+                material.SetTexture("_MetallicGlossMap", ImportDetailMap(surface.Name + "_Finish.png", destination, false));
+                material.SetFloat("_Smoothness", 1); material.EnableKeyword("_METALLICSPECGLOSSMAP");
                 // The map contains the full baked tint; Kd is white for textured surfaces.
             }
             bool transparent = surface.Opacity < 1;

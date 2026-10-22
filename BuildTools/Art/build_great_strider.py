@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Editable Great Strider form study. Standard library only; no Blender required.
+"""Editable Great Strider form study. No Blender required; review dependencies generate surface maps.
 
 Authored lofts and membrane surfaces, not a final sculpt or rigged game asset.
 Coordinates: X right, Y up, Z forward; meters. Each part remains a named OBJ object.
@@ -7,13 +7,13 @@ Coordinates: X right, Y up, Z forward; meters. Each part remains a named OBJ obj
 import argparse
 import json
 import math
-from strider_materials import attach_uvs, tiles, png_albedo, SURFACES
+from strider_materials import attach_uvs, tiles, png_albedo, SURFACES, write_detail_maps
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 MATERIALS = {
     'living_pearl': (.54, .57, .58),
-    'limb_tissue': (.30, .32, .37),
+    'limb_tissue': (.20, .19, .28),
     'soft_charcoal': (.075, .08, .105),
     'grown_mineral': (.78, .80, .81),
     'sail_membrane': (.29, .23, .36),
@@ -405,7 +405,7 @@ def write(mesh, output):
     factor=6/(top-bottom)
     for p in mesh.parts: p['vertices']=[mul(sub(v,(0,bottom,0)),factor) for v in p['vertices']]
     attach_uvs(mesh.parts)
-    obj=['# Great Strider color study 12; meters; Y up; Z forward', 'mtllib GreatStrider.mtl']
+    obj=['# Great Strider surface study 13; meters; Y up; Z forward', 'mtllib GreatStrider.mtl']
     offset=1; uv_offset=1
     for p in mesh.parts:
         obj.extend(['o '+p['name'],'usemtl '+p['material'],'s 1'])
@@ -418,18 +418,21 @@ def write(mesh, output):
     (output/'GreatStrider.obj').write_text('\n'.join(obj)+'\n')
     texture_dir=output/'Textures'; texture_dir.mkdir(exist_ok=True)
     for name,values in tiles().items(): png_albedo(texture_dir/(name+'.png'),values,MATERIALS[name])
+    write_detail_maps(texture_dir, FINISH)
     catalog={name:dict(base_color_linear=rgb,albedo_texture=('Textures/'+name+'.png') if name in SURFACES else None,
-        albedo_color_space='sRGB',opacity=OPACITY.get(name,1),review_specular_exponent=FINISH[name][0],
+        normal_texture=('Textures/'+name+'_Normal.png') if name in SURFACES else None,
+        finish_texture=('Textures/'+name+'_Finish.png') if name in SURFACES else None,
+        detail_color_space='linear',albedo_color_space='sRGB',opacity=OPACITY.get(name,1),review_specular_exponent=FINISH[name][0],
         review_specular_strength=FINISH[name][1],surface_description=SURFACES[name][2] if name in SURFACES else 'unchanged study material')
         for name,rgb in MATERIALS.items()}
-    (output/'materials.json').write_text(json.dumps(dict(status='provisional color study 12',
+    (output/'materials.json').write_text(json.dumps(dict(status='provisional surface study 13',
         uv_mapping='rest-pose dominant-axis box projection, repeating textures',materials=catalog),indent=2)+'\n')
     mtl=[]
     for name,rgb in MATERIALS.items():
         mtl.extend(['newmtl '+name,'Kd '+' '.join(map(str,(1,1,1) if name in SURFACES else rgb)),'Ks '+' '.join([str(FINISH[name][1])]*3),'Ns '+str(FINISH[name][0]),'d '+str(OPACITY.get(name,1)),''])
         if name in SURFACES: mtl.extend(['map_Kd Textures/'+name+'.png',''])
     (output/'GreatStrider.mtl').write_text('\n'.join(mtl))
-    report=dict(status='color study 12; not production ready',units='meters',up='Y',forward='Z',
+    report=dict(status='surface study 13; not production ready',units='meters',up='Y',forward='Z',
         height=6,parts=len(mesh.parts),vertices=offset-1,
         triangles=sum(len(p['faces']) for p in mesh.parts),
         materials=list(MATERIALS),limbs=['L_Fore','R_Fore','L_Rear','R_Rear'],

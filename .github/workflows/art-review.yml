@@ -254,10 +254,13 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install -r BuildTools/Art/requirements-review.txt
+      - run: python BuildTools/Art/review_surface_detail.py
       - run: python BuildTools/Art/review_worldfive_color.py --render
       - uses: actions/upload-artifact@v4
         with:
           name: world-five-color-${{ github.sha }}
           retention-days: 30
           if-no-files-found: error
-          path: SourceArt/LivingVeil/Review/WorldFiveColor/
+          path: |
+            SourceArt/LivingVeil/Review/WorldFiveColor/
+            SourceArt/LivingVeil/Review/SurfaceDetail/
