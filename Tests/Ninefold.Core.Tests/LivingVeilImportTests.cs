@@ -21,8 +21,8 @@ internal static partial class Program
             var mesh = GreatStriderSource.ReadMesh(File.ReadLines(Path.Combine(root, stem + ".obj")), materials);
             if (mesh.SourceVertices != 47136 || mesh.Triangles != 93768 || mesh.Parts != 126)
                 throw new Exception("Unexpected Living Veil study mesh.");
-            if (materials.Count != 12 || materials.Count(m => m.Texture != null) != 7)
-                throw new Exception("Expected one Olyra alpha texture and six partner albedo maps.");
+            if (materials.Count != 12 || materials.Count(m => m.Texture != null) != 8)
+                throw new Exception("Expected one Olyra alpha texture and seven core/partner albedo maps.");
             foreach (var surface in materials.Where(m => m.Texture != null && m.Name != "olyra_membrane"))
                 foreach (string suffix in new[] { "_Normal.png", "_Finish.png" })
                     if (!File.Exists(Path.Combine(root, "Textures", surface.Name + suffix)))

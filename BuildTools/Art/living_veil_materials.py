@@ -11,6 +11,7 @@ from functools import lru_cache
 SIZE = 128
 # tile meters, albedo amplitude, normal strength, smoothness, metallic
 SURFACES = {
+    'olyra_core': (.32, .12, .055, .38, 0),
     'avar_skin': (.20, .055, .035, .32, 0),
     'cloth': (.16, .15, .14, .16, 0),
     'soft_charcoal': (.18, .08, .08, .22, 0),
@@ -24,6 +25,8 @@ def field(name, u, v):
     broad = .45*math.sin(u+.7*math.sin(v))+.30*math.cos(2*v+.4*math.sin(2*u))
     if name in ('cloth', 'soft_charcoal'):
         return .55*broad+.25*math.cos(24*u)*math.cos(24*v)+.15*math.sin(3*u+math.sin(v))
+    if name == 'olyra_core':
+        return .70*broad+.20*math.sin(5*u+math.sin(2*v))*math.cos(4*v)
     if name == 'sail_membrane':
         return .60*broad+.25*math.sin(8*u+1.4*math.sin(v))**3
     return .75*broad+.15*math.sin(9*u+math.sin(3*v))*math.cos(7*v)
