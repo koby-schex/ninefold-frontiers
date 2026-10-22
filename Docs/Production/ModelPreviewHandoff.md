@@ -108,3 +108,15 @@ Main through PR #114 also provides `IFrontiersInteractivePreviewSource`, extendi
 the existing preview contract for rotation/zoom. This art pass does not modify
 that interface or register a provider. Future runtime model integration must honor
 the current contract, including resource cleanup and full-model framing.
+
+## Living Veil glide study 08
+
+User Unity feedback led to slightly reduced protective reach and continuously
+overlapping deployment/retraction. Current review prefabs use
+`LivingVeil08_<fingerprint>/LivingVeilStudy08.prefab` and
+`LivingVeilProtective08_<fingerprint>/LivingVeilProtectiveStudy08.prefab` under
+`Assets/Ninefold/ArtReview/`; scene name `LivingVeilReview08.unity`.
+Prior paths and protective bounds above are historical; fit current Renderer bounds.
+Counts, IDs, GUIDs and partner materials remain unchanged. Editor retraction now
+lasts 4.1 s; deployment 3.6 s. This is not runtime animation registration or a
+change to gameplay timings. See [LivingVeilGlideStudy.md](LivingVeilGlideStudy.md).

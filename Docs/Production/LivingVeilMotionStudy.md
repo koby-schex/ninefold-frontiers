@@ -88,3 +88,11 @@ editor study is not a shipping animation implementation.
 
 The UI preview contract from merged PR #68 is documented in ModelPreviewHandoff.md;
 its implementation and all UI files remain untouched by this pass.
+
+## Superseding movement revision — glide 08
+
+The staged transition described above is historical. User Unity feedback requested
+continuous, less robotic motion and a slightly smaller protective canopy.
+[LivingVeilGlideStudy.md](LivingVeilGlideStudy.md) documents the overlapping glide,
+8% radial-reach reduction, unchanged idle curves, 4.1 s retraction and 308-frame
+validation. Native playback acceptance of the revised motion remains pending.

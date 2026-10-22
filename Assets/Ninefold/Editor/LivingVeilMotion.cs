@@ -12,7 +12,7 @@ namespace Ninefold.Editor
             public Frame(double blend, double lift, double shift, double wave)
             { Blend = blend; Lift = lift; Shift = shift; Wave = wave; }
         }
-        internal static double Duration(Clip clip) => clip == Clip.Deploy || clip == Clip.Retract ? 3.6 : 4;
+        internal static double Duration(Clip clip) => clip == Clip.Retract ? 4.1 : clip == Clip.Deploy ? 3.6 : 4;
         private static double Ease(double t)
         { t = Math.Max(0, Math.Min(1, t)); return t*t*t*(t*(t*6-15)+10); }
         internal static Frame Sample(Clip clip, double time)
@@ -23,12 +23,21 @@ namespace Ninefold.Editor
             {
                 case Clip.RestingIdle: return new Frame(0, 0, 0, Math.Sin(time*Math.PI*2));
                 case Clip.ProtectiveIdle: return new Frame(1, 0, 1, Math.Sin(time*Math.PI*2));
-                case Clip.Retract: time = 1-time; break;
+                case Clip.Retract:
+                    time = 1-time;
+                    time += .12*Math.Pow(Math.Sin(Math.PI*time),2);
+                    break;
                 case Clip.Deploy: break;
                 default: throw new ArgumentOutOfRangeException(nameof(clip));
             }
-            return new Frame(Ease((time-.20)/.45),
-                1.35*Ease(time/.20)*(1-Ease((time-.85)/.15)), Ease((time-.65)/.20), 0);
+            if (time <= 0) return new Frame(0, 0, 0, 0);
+            if (time >= 1) return new Frame(1, 0, 1, 0);
+            double travel = Ease(time);
+            double arch = 16*travel*travel*(1-travel)*(1-travel);
+            // Lift, unfolding and drift overlap instead of stopping between phases.
+            return new Frame(Ease((time-.22)/.70),
+                Ease(time/.42)*(1-Ease((time-.32)/.68)), travel,
+                .25*Math.Sin(time*Math.PI*2)*arch);
         }
         internal static void Vertex(bool organism, bool membrane, float[] rest, float[] shelter, Frame frame,
             out float x, out float y, out float z)

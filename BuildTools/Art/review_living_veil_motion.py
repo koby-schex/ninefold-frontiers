@@ -19,9 +19,9 @@ def fixture():
         for t in (0,.1,.2,.425,.65,.75,.85,.925,1):
             frame=sample(clip,t)
             samples.append(dict(clip=clip,time=t,frame=frame,vertices=[vertex(q['part'],q['rest'],q['shelter'],frame) for q in probes]))
-    return dict(revision='motion study 03',model_id='world05.living-veil.olyra',
+    return dict(revision='glide study 08',model_id='world05.living-veil.olyra',
         note='Provisional editor motion, not production rig or gameplay timings. Avarin stays fixed in resting location.',
-        duration_seconds=dict(RestingIdle=4,Deploy=3.6,ProtectiveIdle=4,Retract=3.6),probes=probes,samples=samples)
+        duration_seconds=dict(RestingIdle=4,Deploy=3.6,ProtectiveIdle=4,Retract=4.1),probes=probes,samples=samples)
 
 def validate():
     assert json.loads(FIXTURE.read_text())==json.loads(json.dumps(fixture())), 'Stale motion reference'
@@ -34,8 +34,8 @@ def validate():
         base=np.cross(av[faces[:,1]]-av[faces[:,0]],av[faces[:,2]]-av[faces[:,0]])
         prepared.append((a['name'],av,bv,faces,np.linalg.norm(base,axis=1)))
     min_ratio=math.inf
-    # Dense deployment sampling also covers the identical reverse path.
-    for clip,count in (('Deploy',121),('RestingIdle',33),('ProtectiveIdle',33)):
+    # Sample both timing profiles; retraction follows the same route at a different pace.
+    for clip,count in (('Deploy',121),('Retract',121),('RestingIdle',33),('ProtectiveIdle',33)):
         previous=None
         for t in np.linspace(0,1,count):
             blend,lift,shift,wave=sample(clip,float(t));points=[]
@@ -62,10 +62,15 @@ def validate():
             points=np.concatenate(points);envelope_lo=np.minimum(envelope_lo,points.min(axis=0));envelope_hi=np.maximum(envelope_hi,points.max(axis=0))
             if previous is not None:assert np.linalg.norm(points-previous,axis=1).max()<.16,(clip,'discontinuous step')
             previous=points
-    for t in np.linspace(0,1,101):assert np.allclose(sample('Deploy',float(t)),sample('Retract',1-float(t)),atol=1e-12)
+    for t in np.linspace(0,1,101):
+        u=1-float(t);u+=.12*math.sin(math.pi*u)**2
+        assert np.allclose(sample('Deploy',u),sample('Retract',float(t)),atol=1e-12)
+    for t in (.1,.25,.5,.75,.9):
+        blend,lift,shift,wave=sample('Deploy',t)
+        assert 0<shift<1 and 0<=lift<=1.01, 'Staged drift or excessive lift'
     for clip in ('RestingIdle','ProtectiveIdle'):assert np.allclose(sample(clip,0),sample(clip,1),atol=1e-12)
     assert sample('Deploy',0)==(0,0,0,0) and sample('Deploy',1)==(1,0,1,0)
-    return dict(revision='motion study 03',sampled_frames=187,reverse_path_verified=True,grounded_fixed_partner=True,
+    return dict(revision='glide study 08',sampled_frames=308,reverse_path_verified=True,grounded_fixed_partner=True,
         expanded_partner_clearance_m=.03,min_triangle_area_ratio=min_ratio,bounds=[envelope_lo.tolist(),envelope_hi.tolist()],
         limits='Sampled partner clearance and area/volume checks; not exhaustive lobe self-intersection, continuous collision, Unity or device certification.')
 
@@ -83,7 +88,7 @@ def render():
             img=draw(data,(7,5,12),(320,400),10,(.9,2.4,.15),False)
             ImageDraw.Draw(img).text((10,10),clip+'  '+f'{t:.2f}',font=font(16),fill='#22282d')
             frames.append(img)
-        ms=round((4000 if 'Idle' in clip else 3600)/count)
+        ms=round((4000 if 'Idle' in clip else 4100 if clip=='Retract' else 3600)/count)
         options=dict(save_all=True,append_images=frames[1:],duration=ms,disposal=2)
         if 'Idle' in clip:options['loop']=0
         frames[0].save(OUT/(clip+'.gif'),**options)
