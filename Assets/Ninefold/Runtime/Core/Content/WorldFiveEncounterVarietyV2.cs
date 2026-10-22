@@ -47,7 +47,7 @@ namespace Ninefold.Core.Content
                 }),
                 Mission(NewMissionIds[1],1,new[]{
                     E(13,1,WorldFiveActOnePrototype.StrikerId,7,3,2),
-                    E(13,2,WorldFiveActOnePrototype.WreckerId,8,7,4),
+                    E(13,2,WorldFiveActOnePrototype.WreckerId,9,8,4),
                     E(13,3,WorldFiveActOnePrototype.WitnessId,5,8,4),
                     E(13,4,WorldFiveActOnePrototype.ScoutId,10,-2,3)
                 }),
