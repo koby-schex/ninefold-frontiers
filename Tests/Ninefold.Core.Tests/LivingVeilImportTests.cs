@@ -68,6 +68,15 @@ internal static partial class Program
                     throw new Exception("Motion vertex drift: "+name);
             }
         }
+        // Regression: drift must overlap lift/unfold rather than wait for a late sideways stage.
+        foreach (double t in new[] { .1, .25, .5, .75, .9 })
+        {
+            var glide = LivingVeilMotion.Sample(LivingVeilMotion.Clip.Deploy,t);
+            if (glide.Shift <= 0 || glide.Shift >= 1 || glide.Lift < 0 || glide.Lift > 1.01)
+                throw new Exception("Staged or excessive deployment movement returned.");
+        }
+        if (LivingVeilMotion.Duration(LivingVeilMotion.Clip.Retract) <= LivingVeilMotion.Duration(LivingVeilMotion.Clip.Deploy))
+            throw new Exception("Retraction should settle more slowly than deployment.");
         bool rejected=false;
         try { LivingVeilMotion.Sample(LivingVeilMotion.Clip.Deploy,double.NaN); }
         catch (ArgumentOutOfRangeException) { rejected=true; }

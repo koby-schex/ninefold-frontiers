@@ -32,7 +32,7 @@ namespace Ninefold.Editor
         [MenuItem("Ninefold/Art/Living Veil Motion Review")]
         public static void Open()
         {
-            var window = GetWindow<LivingVeilMotionReview>("Olyra Motion 03");
+            var window = GetWindow<LivingVeilMotionReview>("Olyra Glide 08");
             window.minSize = new Vector2(420, 680);
         }
         private void OnEnable()
@@ -68,8 +68,8 @@ namespace Ninefold.Editor
         }
         private void OnGUI()
         {
-            GUILayout.Label("Living Veil / Olyra · Motion study 03", EditorStyles.boldLabel);
-            EditorGUILayout.HelpBox("Editor motion study: fixed Avarin, gentle idle, rise / unfold / shelter / return. Provisional motion timing; no gameplay or production rig.", MessageType.Info);
+            GUILayout.Label("Living Veil / Olyra · Glide study 08", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox("Editor motion study: fixed Avarin, gentle idle, continuous glide / unfold / shelter / return. Provisional motion timing; no gameplay or production rig.", MessageType.Info);
             using (new EditorGUI.DisabledScope(Busy))
             {
                 if (GUILayout.Button(preview == null ? "Load motion study" : "Reload source / reset preview"))

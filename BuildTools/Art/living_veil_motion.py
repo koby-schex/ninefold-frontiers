@@ -13,8 +13,14 @@ def sample(clip,t):
     t=max(0,min(1,t))
     if clip=='RestingIdle':return 0,0,0,math.sin(t*math.tau)
     if clip=='ProtectiveIdle':return 1,0,1,math.sin(t*math.tau)
-    if clip=='Retract':t=1-t
-    return ease((t-.20)/.45),1.35*ease(t/.20)*(1-ease((t-.85)/.15)),ease((t-.65)/.20),0
+    if clip=='Retract':
+        t=1-t
+        t+=.12*math.sin(math.pi*t)**2
+    if t<=0:return 0,0,0,0
+    if t>=1:return 1,0,1,0
+    travel=ease(t)
+    arch=16*travel*travel*(1-travel)*(1-travel)
+    return ease((t-.22)/.70),1.0*ease(t/.42)*(1-ease((t-.32)/.68)),travel,.25*math.sin(math.tau*t)*arch
 
 def vertex(name,a,b,frame):
     if not name.startswith('Olyra_'):return a
