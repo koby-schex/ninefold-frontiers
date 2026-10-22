@@ -45,7 +45,7 @@ namespace Ninefold.Presentation
         private enum Page { Home, Battles, Missions, Briefing, Squad, Collection, OtherModes, Settings }
         private Page page;
         private string selectedCampaign, squadInspection;
-        private bool dirty, fatal, suspended, reducedMotion, inBattle, legacyProfile, worldFiveSlice;
+        private bool dirty, fatal, suspended, reducedMotion, inBattle, legacyProfile, worldFiveSlice, actOneStudy;
         private bool showDiagnostics;
         private Coroutine playback;
         private int pointer = -1;
@@ -434,6 +434,13 @@ namespace Ninefold.Presentation
             var switchMode = Button(panel,
                 worldFiveSlice ? "RETURN TO ORIGINAL PLAYTEST  ›" : "TRY WORLD FIVE MISSIONS 001–010  ›",
                 OpenCampaignPrototypeFromHome);
+            if (worldFiveSlice && !actOneStudy)
+            {
+                var actOne = Button(panel,"TRY WORLD FIVE ACT ONE (SEPARATE SAVE)  ›",
+                    OpenActOneFromHome);
+                actOne.AddToClassList("home-quick-link");
+                actOne.tooltip="Opt-in Mission 11 test; uses a separate save profile and does not migrate V4 progress.";
+            }
             switchMode.AddToClassList("home-quick-link");
             switchMode.AddToClassList("world-five-slice-switch");
             switchMode.tooltip = menuView.Phase == MissionFlowPhase.Selection
@@ -1446,9 +1453,21 @@ namespace Ninefold.Presentation
                 // V4 never reads/writes the original playtest OR prior
                 // World Five V1/V2/V3 profiles. A new content revision gets
                 // an independent directory to protect all old checkpoints.
-                catalog = WorldFiveOpeningTenPrototype.Create();
-                menu = WorldFiveOpeningTenPrototype.Open(catalog,
-                    new DirectoryBattleSaveFiles(savePath),new DirectoryProgressSaveFiles(savePath));
+                if (actOneStudy)
+                {
+                    catalog = WorldFiveCombatMechanicsV1.Create();
+                    var battles=new DirectoryBattleSaveFiles(savePath);
+                    var progress=new DirectoryProgressSaveFiles(savePath);
+                    menu=new MissionPresentation(catalog,battles,progress,"world-five-act-one-study-01");
+                    if (progress.Read(0)!=null || progress.Read(1)!=null) menu.Open();
+                    else menu.CreateProfile();
+                }
+                else
+                {
+                    catalog = WorldFiveOpeningTenPrototype.Create();
+                    menu = WorldFiveOpeningTenPrototype.Open(catalog,
+                        new DirectoryBattleSaveFiles(savePath),new DirectoryProgressSaveFiles(savePath));
+                }
                 legacyProfile = false;
                 return;
             }
@@ -1477,6 +1496,35 @@ namespace Ninefold.Presentation
             SwitchCampaignPrototype();
         }
 
+        private void OpenActOneFromHome()
+        {
+            if (menu.Read().Phase != MissionFlowPhase.Selection)
+            {
+                message="Finish your saved battle or claim its result before switching.";
+                return;
+            }
+            var oldMenu=menu; var oldCatalog=catalog; var oldPath=savePath;
+            bool oldAct=actOneStudy, oldWorld=worldFiveSlice, oldLegacy=legacyProfile;
+            try
+            {
+                actOneStudy=true; worldFiveSlice=true;
+                savePath=Path.Combine(Application.persistentDataPath,"WorldFiveActOneStudy-v1");
+                input=null; battleView=null; inBattle=false;
+                OpenProfile();
+                selectedCampaign=WorldFiveOpeningTenPrototype.CampaignId;
+                page=Page.Missions;
+                message="World Five Act One study · Mission 11 follows the tutorial · independent progress.";
+                dirty=true;
+            }
+            catch(Exception error)
+            {
+                menu=oldMenu; catalog=oldCatalog; savePath=oldPath;
+                actOneStudy=oldAct; worldFiveSlice=oldWorld; legacyProfile=oldLegacy;
+                Debug.LogException(error,this);
+                message="Act One study could not open. Your earlier profile is unchanged.";
+            }
+        }
+
         private void SwitchCampaignPrototype()
         {
             if (menu.Read().Phase != MissionFlowPhase.Selection)
@@ -1486,6 +1534,7 @@ namespace Ninefold.Presentation
             // entire app in an unusable fatal screen. Preserve the previously
             // loaded profile, catalog and path, then display a visible error.
             bool previousMode = worldFiveSlice;
+            bool previousActOne = actOneStudy;
             string previousPath = savePath;
             var previousMenu = menu;
             var previousCatalog = catalog;
@@ -1493,6 +1542,7 @@ namespace Ninefold.Presentation
             try
             {
                 worldFiveSlice = openWorldFive;
+                actOneStudy = false;
                 savePath = Path.Combine(Application.persistentDataPath,
                     worldFiveSlice ? "WorldFiveOpeningTen-v4" : "AbstractPlaytest-v1");
                 input = null; battleView = null; inBattle = false;
@@ -1515,6 +1565,7 @@ namespace Ninefold.Presentation
             catch (Exception e)
             {
                 worldFiveSlice = previousMode;
+                actOneStudy = previousActOne;
                 savePath = previousPath;
                 menu = previousMenu;
                 catalog = previousCatalog;
@@ -1889,6 +1940,7 @@ namespace Ninefold.Presentation
                 : "Stabilize the marked objective beyond the asymmetric cover.";
         }
         private static string MissionName(string id) =>
+            id == WorldFiveStorySequence.FirstCampaignMissionId ? "Mission 11" :
             id == WorldFiveOpeningTenPrototype.MissionIds[0] ? "The Wrong Arrival" :
             id == WorldFiveOpeningTenPrototype.MissionIds[1] ? "Hold the Passage" :
             id == WorldFiveOpeningTenPrototype.MissionIds[2] ? "Return the Stranded" :
