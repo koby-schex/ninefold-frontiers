@@ -45,7 +45,7 @@ namespace Ninefold.Presentation
         private enum Page { Home, Battles, Missions, Briefing, Squad, Collection, OtherModes, Settings }
         private Page page;
         private string selectedCampaign, squadInspection;
-        private bool dirty, fatal, suspended, reducedMotion, inBattle, legacyProfile, worldFiveSlice, actOneStudy, varietyStudy;
+        private bool dirty, fatal, suspended, reducedMotion, inBattle, legacyProfile, worldFiveSlice, actOneStudy, varietyStudy, wildlifeStudy;
         private bool showDiagnostics;
         private Coroutine playback;
         private int pointer = -1;
@@ -434,6 +434,13 @@ namespace Ninefold.Presentation
             var switchMode = Button(panel,
                 worldFiveSlice ? "RETURN TO ORIGINAL PLAYTEST  ›" : "TRY WORLD FIVE MISSIONS 001–010  ›",
                 OpenCampaignPrototypeFromHome);
+            if (worldFiveSlice && !wildlifeStudy)
+            {
+                var wildlife=Button(panel,"TRY WORLD FIVE WILDLIFE TUTORIAL  ›",
+                    OpenWildlifeFromHome);
+                wildlife.AddToClassList("home-quick-link");
+                wildlife.tooltip="Separate study with native creature encounters in tutorial missions 7 and 8.";
+            }
             if (worldFiveSlice && !varietyStudy)
             {
                 var variety = Button(panel,"TRY WORLD FIVE MISSIONS 11–14  ›",
@@ -1474,10 +1481,12 @@ namespace Ninefold.Presentation
                 // an independent directory to protect all old checkpoints.
                 if (actOneStudy)
                 {
-                    catalog = varietyStudy ? WorldFiveEncounterVarietyV2.Create() : WorldFiveCombatMechanicsV1.Create();
+                    catalog = wildlifeStudy ? WorldFiveTutorialWildlifeV1.Create() :
+                        varietyStudy ? WorldFiveEncounterVarietyV2.Create() : WorldFiveCombatMechanicsV1.Create();
                     var battles=new DirectoryBattleSaveFiles(savePath);
                     var progress=new DirectoryProgressSaveFiles(savePath);
-                    menu=new MissionPresentation(catalog,battles,progress,varietyStudy ?
+                    menu=new MissionPresentation(catalog,battles,progress,wildlifeStudy ?
+                        WorldFiveTutorialWildlifeV1.ProfileId : varietyStudy ?
                         WorldFiveEncounterVarietyV2.ProfileId : "world-five-act-one-study-01");
                     if (progress.Read(0)!=null || progress.Read(1)!=null) menu.Open();
                     else menu.CreateProfile();
@@ -1516,6 +1525,37 @@ namespace Ninefold.Presentation
             SwitchCampaignPrototype();
         }
 
+        private void OpenWildlifeFromHome()
+        {
+            if (menu.Read().Phase != MissionFlowPhase.Selection)
+            {
+                message="Finish your saved battle or claim its result before switching.";
+                return;
+            }
+            var oldMenu=menu; var oldCatalog=catalog; var oldPath=savePath;
+            bool oldAct=actOneStudy, oldWorld=worldFiveSlice, oldLegacy=legacyProfile,
+                oldVariety=varietyStudy, oldWildlife=wildlifeStudy;
+            try
+            {
+                wildlifeStudy=true; varietyStudy=true; actOneStudy=true; worldFiveSlice=true;
+                savePath=Path.Combine(Application.persistentDataPath,"WorldFiveNativeEcology-v1");
+                input=null; battleView=null; inBattle=false;
+                OpenProfile();
+                selectedCampaign=WorldFiveOpeningTenPrototype.CampaignId;
+                page=Page.Missions;
+                message="World Five wildlife study · native creature encounters in tutorial missions 7 and 8.";
+                dirty=true;
+            }
+            catch(Exception error)
+            {
+                menu=oldMenu; catalog=oldCatalog; savePath=oldPath;
+                actOneStudy=oldAct; worldFiveSlice=oldWorld; legacyProfile=oldLegacy;
+                varietyStudy=oldVariety; wildlifeStudy=oldWildlife;
+                Debug.LogException(error,this);
+                message="Native wildlife study could not open; prior progress remains unchanged.";
+            }
+        }
+
         private void OpenEncounterVarietyFromHome()
         {
             if (menu.Read().Phase != MissionFlowPhase.Selection)
@@ -1528,7 +1568,7 @@ namespace Ninefold.Presentation
                 oldVariety=varietyStudy;
             try
             {
-                varietyStudy=true; actOneStudy=true; worldFiveSlice=true;
+                wildlifeStudy=false; varietyStudy=true; actOneStudy=true; worldFiveSlice=true;
                 savePath=Path.Combine(Application.persistentDataPath,"WorldFiveEncounterVariety-v2");
                 input=null; battleView=null; inBattle=false;
                 OpenProfile();
@@ -1558,7 +1598,7 @@ namespace Ninefold.Presentation
             bool oldAct=actOneStudy, oldWorld=worldFiveSlice, oldLegacy=legacyProfile;
             try
             {
-                actOneStudy=true; worldFiveSlice=true; varietyStudy=false;
+                actOneStudy=true; worldFiveSlice=true; varietyStudy=false; wildlifeStudy=false;
                 savePath=Path.Combine(Application.persistentDataPath,"WorldFiveActOneStudy-v1");
                 input=null; battleView=null; inBattle=false;
                 OpenProfile();
@@ -1587,6 +1627,7 @@ namespace Ninefold.Presentation
             bool previousMode = worldFiveSlice;
             bool previousActOne = actOneStudy;
             bool previousVariety = varietyStudy;
+            bool previousWildlife = wildlifeStudy;
             string previousPath = savePath;
             var previousMenu = menu;
             var previousCatalog = catalog;
@@ -1596,6 +1637,7 @@ namespace Ninefold.Presentation
                 worldFiveSlice = openWorldFive;
                 actOneStudy = false;
                 varietyStudy = false;
+                wildlifeStudy = false;
                 savePath = Path.Combine(Application.persistentDataPath,
                     worldFiveSlice ? "WorldFiveOpeningTen-v4" : "AbstractPlaytest-v1");
                 input = null; battleView = null; inBattle = false;
@@ -1620,6 +1662,7 @@ namespace Ninefold.Presentation
                 worldFiveSlice = previousMode;
                 actOneStudy = previousActOne;
                 varietyStudy = previousVariety;
+                wildlifeStudy = previousWildlife;
                 savePath = previousPath;
                 menu = previousMenu;
                 catalog = previousCatalog;

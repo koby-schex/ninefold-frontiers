@@ -21,8 +21,33 @@ internal static partial class Program
         ("World Five integrated Act One catalog has full encounter and save isolation", IntegratedActOneReliability),
         ("World Five missions 11-14 vary Ashbound counts and compositions", WorldFiveEncounterVariation),
         ("World Five encounters cover every Ashbound archetype with varied pressure", AshboundTacticalVariety),
-        ("World Five Ashbound NPC tactical roles differentiate defensive and aggressive behaviors", AshboundRoleBehavior)
+        ("World Five Ashbound NPC tactical roles differentiate defensive and aggressive behaviors", AshboundRoleBehavior),
+        ("World Five native wildlife appears sparingly in tutorial without Ashbound", NativeWildlifeBoundary)
     };
+
+    private static void NativeWildlifeBoundary()
+    {
+        var study=WorldFiveTutorialWildlifeV1.Create();
+        var intro=WorldFiveOpeningTenPrototype.MissionIds;
+        var changed=intro.Where(id=>study.Missions[id].Actors.Any(a=>
+            a.UnitId==WorldFiveTutorialWildlifeV1.SillrunnerId ||
+            a.UnitId==WorldFiveTutorialWildlifeV1.SeamstalkerId)).ToArray();
+        Equal(true,changed.SequenceEqual(new[]{intro[6],intro[7]}));
+        foreach(var id in intro)
+            Equal(true,study.Missions[id].Actors.All(a=>
+                !a.UnitId.StartsWith("ashbound-",StringComparison.Ordinal)));
+        foreach(var id in new[]{WorldFiveTutorialWildlifeV1.SillrunnerId,
+            WorldFiveTutorialWildlifeV1.SeamstalkerId})
+        {
+            Equal(true,study.Units.ContainsKey(id));
+            Equal(null,study.Units[id].Roster);
+            Equal(false,study.StarterUnits.Contains(id));
+        }
+        Equal(true,study.Missions.ContainsKey(WorldFiveStorySequence.FirstCampaignMissionId));
+        Equal(false,study.Manifest.SaveRevision==
+            WorldFiveEncounterVarietyV2.Create().Manifest.SaveRevision);
+        Equal(14,study.Campaigns.Single().Missions.Count);
+    }
 
     private static void AshboundRoleBehavior()
     {

@@ -1,0 +1,6 @@
+# World Five tutorial ecology study
+Adds two situational native wildlife opponents to the ten-mission tutorial in a distinct, opt-in Unity profile: **Seamstalker** creatures replace the abstract hostile proxies in Mission 7; one **Sillrunner** replaces the opponent in Mission 8's zone-control exercise. Both are NPC-only, not collectible or Apex units. Missions 1–6 and 9–10 retain their original enemies and objectives; **Ashbound remain wholly absent from Missions 1–10**, with the first Ashbound encounter in Mission 11.
+
+The new profile includes the existing fourteen-mission campaign chain, independently saved in `WorldFiveNativeEcology-v1`, without overwriting V4 or other Act One study saves. Mechanics currently reuse abstract bodies, placeholder attack abilities, and baseline enemy AI. Creature names and behaviors remain prototype candidate content subject to lore/world art approval. This is not a completed wildlife 3D/modeling pass, ecology AI, or story narration. The native wildlife are not inherently evil; the combat scenarios represent local threats or defensive behavior.
+
+Starting-campaign rule remains World Five only with the sole tutorial; other worlds must unlock later and must not repeat the tutorial. Uniform gameplay size for standard units remains the project standard, with controlled special/Apex exceptions.
