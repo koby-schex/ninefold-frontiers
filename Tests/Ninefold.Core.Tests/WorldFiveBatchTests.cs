@@ -20,8 +20,28 @@ internal static partial class Program
         ("World Five Ashbound only reveal beyond ten tutorial missions", AshboundRevealBoundary),
         ("World Five integrated Act One catalog has full encounter and save isolation", IntegratedActOneReliability),
         ("World Five missions 11-14 vary Ashbound counts and compositions", WorldFiveEncounterVariation),
-        ("World Five encounters cover every Ashbound archetype with varied pressure", AshboundTacticalVariety)
+        ("World Five encounters cover every Ashbound archetype with varied pressure", AshboundTacticalVariety),
+        ("World Five Ashbound NPC tactical roles differentiate defensive and aggressive behaviors", AshboundRoleBehavior)
     };
+
+    private static void AshboundRoleBehavior()
+    {
+        var catalog=WorldFiveEncounterVarietyV2.Create();
+        var actors=WorldFiveEncounterVarietyV2.NewMissionIds
+            .SelectMany(id=>catalog.Missions[id].Actors).ToArray();
+        foreach(var actor in actors)
+        {
+            bool defensive=actor.UnitId==WorldFiveActOnePrototype.WreckerId ||
+                actor.UnitId==WorldFiveActOnePrototype.WitnessId ||
+                actor.UnitId==WorldFiveActOnePrototype.CastigatorId ||
+                actor.UnitId==WorldFiveActOnePrototype.SeerId;
+            Equal(defensive?EnemyStyle.Defensive:EnemyStyle.Aggressive,actor.Behavior.Style);
+            Equal(defensive,actor.Behavior.GuardArea!=null);
+            Equal(true,actor.Behavior.PreferredDistance>0);
+        }
+        Equal(true,actors.Any(a=>a.Behavior.Style==EnemyStyle.Aggressive));
+        Equal(true,actors.Any(a=>a.Behavior.Style==EnemyStyle.Defensive));
+    }
 
     private static void AshboundTacticalVariety()
     {
