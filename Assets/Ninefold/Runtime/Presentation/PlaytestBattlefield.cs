@@ -15,6 +15,9 @@ namespace Ninefold.Presentation
     /// <summary>Disposable fixture renderer. It never owns simulation state or changes health.</summary>
     internal sealed class PlaytestBattlefield : IDisposable
     {
+        // Tactical silhouettes share a consistent visual height regardless of lore-scale.
+        // Collision and pathfinding still use the authoritative Core body dimensions.
+        private const float StandardTokenHeight = 1.45f;
         private sealed class Token
         {
             public GameObject Body, TargetRing;
@@ -302,12 +305,12 @@ namespace Ninefold.Presentation
                 {
                     t = new Token(); tokens.Add(h.UnitId, t);
                     t.Body = Primitive(h.UnitId, h.IsEnemyControlled ? PrimitiveType.Cube : PrimitiveType.Capsule, Vector3.zero,
-                        h.IsEnemyControlled ? new Vector3(.5f, (float)h.Height, .5f) : new Vector3(.5f, (float)h.Height / 2, .5f), h.IsEnemyControlled ? enemy : friendly);
+                        h.IsEnemyControlled ? new Vector3(.5f, StandardTokenHeight, .5f) : new Vector3(.5f, StandardTokenHeight / 2, .5f), h.IsEnemyControlled ? enemy : friendly);
                     // Abstract tactical tokens: high contrast footing and a readable upper collar.
                     var footing = Primitive("Unit footing", h.IsEnemyControlled ? PrimitiveType.Cube : PrimitiveType.Cylinder,
-                        Vector3.down * ((float)h.Height/2-.09f), new Vector3(.65f,.07f,.65f), grid);
+                        Vector3.down * (StandardTokenHeight/2-.09f), new Vector3(.65f,.07f,.65f), grid);
                     footing.transform.SetParent(t.Body.transform,true);
-                    var collar = Primitive("Unit ID collar",PrimitiveType.Cube,new Vector3(0,(float)h.Height*.22f,-.02f),new Vector3(.54f,.12f,.54f),active);
+                    var collar = Primitive("Unit ID collar",PrimitiveType.Cube,new Vector3(0,StandardTokenHeight*.22f,-.02f),new Vector3(.54f,.12f,.54f),active);
                     collar.transform.SetParent(t.Body.transform,true);
                     t.Scale=t.Body.transform.localScale;
                     t.TargetRing = Primitive("Valid target marker",PrimitiveType.Cylinder,Vector3.zero,new Vector3(.95f,.025f,.95f),gold);
@@ -324,7 +327,7 @@ namespace Ninefold.Presentation
                     t.Fill = new VisualElement { pickingMode = PickingMode.Ignore }; t.Fill.AddToClassList("health-fill");
                     t.Fill.style.backgroundColor = h.IsEnemyControlled ? new Color(.96f, .43f, .32f) : new Color(.25f, .87f, .83f); track.Add(t.Fill);
                 }
-                t.Height = (float)h.Height;
+                t.Height = StandardTokenHeight;
                 t.Bar.EnableInClassList("active-health",h.UnitId == view.Activation?.UnitId);
                 t.Position = Vector(h.Position) + Vector3.up * t.Height / 2;
                 t.TargetRing.transform.position = Vector(h.Position)+Vector3.up*.055f;
