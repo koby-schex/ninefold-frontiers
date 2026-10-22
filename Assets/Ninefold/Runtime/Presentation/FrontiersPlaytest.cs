@@ -241,7 +241,7 @@ namespace Ninefold.Presentation
                 (menuView.Phase == MissionFlowPhase.Selection && page == Page.Squad));
             root.EnableInClassList("briefing-mode", campaignScreen && page == Page.Briefing);
             root.EnableInClassList("home-mode", home);
-            // Home, Campaigns, Units roster and Settings are sibling tabs in
+            // Home, Campaigns, Missions and Units are sibling tabs in
             // one game. The backdrop is shared atmospheric chrome, not
             // campaign-specific artwork or a claimed canonical unit preview.
             bool mainTab = !resultsScreen && !home &&
@@ -251,7 +251,7 @@ namespace Ninefold.Presentation
             root.EnableInClassList("primary-tab-mode", mainTab);
             bool ambientMenu = !resultsScreen && !home &&
                 !(menuView.Phase == MissionFlowPhase.Battle && inBattle) &&
-                (page == Page.Battles || page == Page.Missions ||
+                (page == Page.Battles || page == Page.OtherModes || page == Page.Missions ||
                     page == Page.Briefing || page == Page.Squad ||
                     page == Page.Collection || page == Page.Settings);
             root.EnableInClassList("ambient-menu-mode", ambientMenu);
@@ -1657,7 +1657,7 @@ namespace Ninefold.Presentation
                 });
                 button.AddToClassList("nav-button");
                 button.AddToClassList("unified-nav-button");
-                HomeIcon(button, target == Page.Home ? "home" : target == Page.Collection ? "units" : target == Page.OtherModes ? "missions" : "routes");
+                HomeIcon(button, target == Page.Home ? "home" : target == Page.Collection ? "units" : target == Page.OtherModes ? "routes" : "routes");
                 Text(button, label, "nav-label"); button.tooltip = label;
                 button.EnableInClassList("selected",
                     page == target || (target == Page.Battles &&
