@@ -1706,10 +1706,22 @@ namespace Ninefold.Presentation
         private static string AbilityName(AbilitySlot slot) => slot == AbilitySlot.NormalAttack ? "Attack" : slot == AbilitySlot.Main ? "Main ability" : slot == AbilitySlot.Passive ? "Passive" : "Signature";
         private static string TargetSummary(TargetPreview preview)
         {
+            if (preview?.Effect == null)
+                return "No legal target preview";
             var health = preview.Effect.Health;
-            if (health == null) return UnitName(preview.TargetId) + " · Apply status " + preview.Effect.Status?.StatusId;
+            var status = preview.Effect.Status;
+            string target = UnitName(preview.TargetId);
+            string statusLine = status == null ? "" : (status.Applies
+                ? " · " + status.StatusId + " (" + status.StacksAfter + " stack" +
+                    (status.StacksAfter == 1 ? "" : "s") + ")"
+                : " · " + status.StatusId + " resisted");
+            if (health == null) return target + " · " +
+                (status == null ? "No effect" : (status.Applies ? "Apply status" : "Status unchanged")) + statusLine;
             int change = health.HealthAfter-health.HealthBefore;
-            return UnitName(preview.TargetId) + " · " + (change < 0 ? -change + " damage" : change > 0 ? change + " healing" : "No health change") + "\nHP " + health.HealthBefore + " → " + health.HealthAfter + (health.HealthAfter == 0 ? " · Defeated" : "");
+            return target + " · " + (change < 0 ? -change + " damage" :
+                change > 0 ? change + " healing" : "No health change") + statusLine +
+                "\nHP " + health.HealthBefore + " → " + health.HealthAfter +
+                (health.HealthAfter == 0 && health.HealthBefore > 0 ? " · Defeated" : "");
         }
         public static string ObjectiveReadiness(InteractionFailure failure)
         {
