@@ -15,6 +15,31 @@ internal static partial class Program
         ("World Five 004–010 stage playable objectives away from solid cover", FullCampaignObjectiveReachability)
     };
 
+    private static void AshboundFirstEncounter()
+    {
+        var tutorial=WorldFiveOpeningTenPrototype.Create();
+        var act=WorldFiveActOnePrototype.Create();
+        var id=WorldFiveStorySequence.FirstCampaignMissionId;
+        Equal(false,tutorial.Missions.ContainsKey(id));
+        Equal(11,act.Campaigns.Single().Missions.Count);
+        Equal(id,act.Campaigns.Single().Missions.Last().MissionId);
+        Equal(true,act.Campaigns.Single().Missions.Last().Prerequisites
+            .SequenceEqual(new[]{WorldFiveOpeningTenPrototype.MissionIds[9]}));
+        Equal(true,act.Missions[id].Actors.All(x=>x.IsHostile));
+        Equal(2,act.Missions[id].Actors.Count);
+        Equal(true,act.Missions[id].Actors.All(x=>
+            x.UnitId==WorldFiveActOnePrototype.ScoutId ||
+            x.UnitId==WorldFiveActOnePrototype.StrikerId));
+        Equal(true,act.Units[WorldFiveActOnePrototype.ScoutId].Roster==null);
+        Equal(true,act.Units[WorldFiveActOnePrototype.StrikerId].Roster==null);
+        Equal(false,act.StarterUnits.Contains(WorldFiveActOnePrototype.ScoutId));
+        Equal(false,act.StarterUnits.Contains(WorldFiveActOnePrototype.StrikerId));
+        Equal(true,act.Rewards.ContainsKey(id));
+        Equal(true,act.Manifest.SaveRevision!=tutorial.Manifest.SaveRevision);
+        foreach(var old in WorldFiveOpeningTenPrototype.MissionIds)
+            Equal(true,act.Missions[old].Actors.All(x=>!x.UnitId.StartsWith("ashbound-",StringComparison.Ordinal)));
+    }
+
     private static void AshboundRevealBoundary()
     {
         WorldFiveStorySequence.Validate();
