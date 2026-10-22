@@ -9,8 +9,8 @@ namespace Ninefold.Core.Content
     /// during training. Existing V4 and encounter study saves stay isolated.</summary>
     public static class WorldFiveTutorialWildlifeV1
     {
-        public const string Revision="w5-native-ecology-01";
-        public const string ProfileId="world-five-native-ecology-v1";
+        public const string Revision="w5-native-ecology-02";
+        public const string ProfileId="world-five-native-ecology-v2";
         public const string SillrunnerId="w5-wild-sillrunner";
         public const string SeamstalkerId="w5-wild-seamstalker";
         public static ContentCatalog Create()
@@ -40,7 +40,9 @@ namespace Ninefold.Core.Content
                 if(m.Id!=seven && m.Id!=eight)return m;
                 var actors=m.Actors.Select(a=>new ActorSpawn(a.Id,
                     m.Id==seven?SeamstalkerId:SillrunnerId,
-                    a.Position,a.IsHostile,a.Behavior)).ToArray();
+                    a.Position,a.IsHostile,
+                    m.Id==eight ? new EnemyBehavior(EnemyStyle.Defensive,3m,
+                        m.Map.Bounds) : new EnemyBehavior(EnemyStyle.Aggressive,2m))).ToArray();
                 return new MissionContent(m.Id,m.FactionId,m.IsCampaign,m.MinimumSquad,
                     m.Map,m.Deployment,actors,m.Objectives[0],m.Priority,
                     m.Objectives.Skip(1),m.Encounter,m.EnvironmentKey);
