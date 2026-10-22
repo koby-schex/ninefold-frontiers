@@ -428,8 +428,29 @@ namespace Ninefold.Presentation
                     }
                     token.Body.transform.position = position + Vector3.up * token.Height / 2;
                     if (before.Id==update.Before.Activation?.UnitId) selection.transform.position=position+Vector3.up*.04f;
-                    if (pulse?.UnitId == before.Id) token.Body.transform.localRotation = Quaternion.Euler(0, 0, Mathf.Sin(strike * Mathf.PI) * 12);
-                    if (pulse?.TargetId == before.Id) token.Body.transform.position += Vector3.up * Mathf.Sin(strike * Mathf.PI) * .18f;
+                    if (pulse?.UnitId == before.Id && tokens.TryGetValue(pulse.TargetId,out var strikeTarget))
+                    {
+                        // Anticipation, strike and recovery: move toward the actual target,
+                        // then return. Never leave residual transform offsets after playback.
+                        var facing = strikeTarget.Body.transform.position - token.Body.transform.position;
+                        facing.y = 0;
+                        if (facing.sqrMagnitude > .0001f)
+                        {
+                            var direction = facing.normalized;
+                            float windup = Mathf.Sin(Mathf.Clamp01(t/.55f)*Mathf.PI);
+                            float thrust = Mathf.Sin(Mathf.Clamp01((t-.55f)/.45f)*Mathf.PI);
+                            token.Body.transform.position += direction * (-.11f*windup+.24f*thrust);
+                            token.Body.transform.localRotation = Quaternion.Euler(0,
+                                Mathf.Atan2(direction.x,direction.z)*Mathf.Rad2Deg,
+                                Mathf.Sin(strike*Mathf.PI)*8f);
+                        }
+                    }
+                    if (pulse?.TargetId == before.Id)
+                    {
+                        float reaction = Mathf.Sin(strike*Mathf.PI);
+                        token.Body.transform.position += Vector3.up * reaction * .11f;
+                        token.Body.transform.localScale = token.Scale*(1f+.07f*reaction);
+                    }
                     if (after?.Health?.IsDefeated == true)
                     {
                         token.Body.transform.localScale=token.Scale*(1-strike*.85f);
