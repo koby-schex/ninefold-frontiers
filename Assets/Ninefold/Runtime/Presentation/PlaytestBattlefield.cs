@@ -321,6 +321,51 @@ namespace Ninefold.Presentation
             foreach (var pair in next) wildlifeActors.Add(pair.Key,pair.Value);
         }
 
+        // Lightweight primitive assembly, not an approved anatomical sculpt.
+        // Each child is owned by its token root and is destroyed with it.
+        private void AddWildlifeForm(GameObject root, bool stalker)
+        {
+            GameObject Part(string name, PrimitiveType shape, Vector3 offset, Vector3 scale, Material material)
+            {
+                var part = Primitive(name, shape, Vector3.zero, Vector3.one, material);
+                part.transform.SetParent(root.transform, false);
+                part.transform.localPosition = offset;
+                part.transform.localScale = scale;
+                return part;
+            }
+            var hide = stalker ? seamstalker : sillrunner;
+            // Forward is positive Z. The low body and separate limbs make
+            // wildlife read as animals, not standing humanoid tokens.
+            Part("Dorsal shell", PrimitiveType.Sphere, new Vector3(0,.20f,-.05f),
+                new Vector3(.86f,.34f,.9f), hide);
+            Part("Head", PrimitiveType.Sphere, new Vector3(0,.12f,.60f),
+                new Vector3(.55f,.42f,.56f), hide);
+            foreach (float side in new[] { -1f,1f })
+            {
+                for (int i=0;i<2;i++)
+                {
+                    Part("Walking limb", PrimitiveType.Capsule,
+                        new Vector3(side*.47f,-.38f,i==0?.34f:-.38f),
+                        new Vector3(.18f,.58f,.18f), hide);
+                }
+                Part("Sensory ridge", PrimitiveType.Cube,
+                    new Vector3(side*.24f,.39f,.60f),
+                    new Vector3(.11f,.21f,.43f), trim);
+            }
+            if (stalker)
+            {
+                Part("Tapered tail", PrimitiveType.Capsule,
+                    new Vector3(0,-.08f,-.75f),new Vector3(.22f,.22f,.83f),hide);
+                Part("Shoulder spine",PrimitiveType.Cube,
+                    new Vector3(0,.48f,-.14f),new Vector3(.14f,.28f,.43f),markings);
+            }
+            else
+            {
+                Part("Balance fan",PrimitiveType.Sphere,
+                    new Vector3(0,.08f,-.67f),new Vector3(.6f,.24f,.35f),trim);
+            }
+        }
+
         private void Reconcile(BattleView view)
         {
             var living = new HashSet<string>(view.HealthOverlays.Select(h => h.UnitId), StringComparer.Ordinal);
@@ -345,6 +390,8 @@ namespace Ninefold.Presentation
                         new Vector3(.5f,StandardTokenHeight/2,.5f),
                         isSillrunner ? sillrunner : isSeamstalker ? seamstalker :
                         h.IsEnemyControlled ? enemy : friendly);
+                    if (isSillrunner || isSeamstalker)
+                        AddWildlifeForm(t.Body, isSeamstalker);
                     // Abstract tactical tokens: high contrast footing and a readable upper collar.
                     var footing = Primitive("Unit footing", h.IsEnemyControlled ? PrimitiveType.Cube : PrimitiveType.Cylinder,
                         Vector3.down * (StandardTokenHeight/2-.09f), new Vector3(.65f,.07f,.65f), grid);
