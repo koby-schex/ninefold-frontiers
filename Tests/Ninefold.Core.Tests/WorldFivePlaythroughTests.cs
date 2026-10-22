@@ -10,7 +10,8 @@ internal static partial class Program
     private static (string Name,Action Run)[] WorldFivePlaythroughTests() => new (string,Action)[] {
         ("World Five mission 001 reaches victory and unlocks mission 002", FiveFirstActualVictory),
         ("World Five missions 001 and 002 complete consecutively and unlock 003", FiveTwoMissionJourney),
-        ("World Five 003 rescue approach checkpoints and resumes safely", FiveRescuePickup)
+        ("World Five 003 rescue approach checkpoints and resumes safely", FiveRescuePickup),
+        ("World Five mission 004 secure objective starts after rescue victory", FiveSecureMissionStart)
     };
 
     private static void FiveFirstActualVictory()
@@ -135,7 +136,9 @@ internal static partial class Program
         return (battles,progress);
     }
 
-    private static void FiveRescuePickup()
+    private static void FiveRescuePickup() { FiveCompleteRescue(); }
+
+    private static (FakeSaveFiles Battles,ProgressFiles Progress) FiveCompleteRescue()
     {
         var stores=FiveCompleteOpeningTwo();
         var ids=WorldFiveOpeningTenPrototype.MissionIds;
@@ -307,5 +310,32 @@ internal static partial class Program
         menu=WorldFiveOpeningTenPrototype.Open(stores.Battles,stores.Progress);
         Equal(ids[3],menu.Read().NextCampaignMission.Definition.Id);
         Equal(true,menu.Read().Missions.Single(x=>x.Definition.Id==ids[3]).Available);
+        return stores;
+    }
+
+    private static void FiveSecureMissionStart()
+    {
+        var stores=FiveCompleteRescue();
+        var ids=WorldFiveOpeningTenPrototype.MissionIds;
+        var menu=WorldFiveOpeningTenPrototype.Open(stores.Battles,stores.Progress);
+        Equal(ids[3],menu.Read().NextCampaignMission.Definition.Id);
+        menu.SelectMission(ids[3]);
+        menu.SetSquad(new[]{"fixture-a-1"});
+        Equal(true,menu.Read().CanStart);
+        var play=menu.Start(menu.Read().PlanId);
+        var objective=play.Read().Battle.Objectives.Single(x=>x.Id=="primary");
+        Equal(Ninefold.Core.Missions.ObjectiveKind.Secure,objective.Kind);
+        Equal(Ninefold.Core.Missions.ObjectiveStatus.Active,objective.Status);
+        Equal(true,play.Read().Battle.Units.Any(u=>u.IsEnemyControlled && u.IsEligible));
+        var planning=play.ReadPlanning();
+        Equal(true,planning.Movement.Count>0);
+        var sample=planning.Movement.First();
+        Equal(InputOutcome.Previewed,play.TapDestination(sample.Position).Outcome);
+        var movement=play.TapDestination(sample.Position);
+        Equal(InputOutcome.Committed,movement.Outcome);
+        if(movement.AnimationId!=null) play.CompleteAnimation(movement.AnimationId);
+        menu=WorldFiveOpeningTenPrototype.Open(stores.Battles,stores.Progress);
+        Equal(MissionFlowPhase.Battle,menu.Read().Phase);
+        Equal(ids[3],menu.Read().Resume.MissionId);
     }
 }
