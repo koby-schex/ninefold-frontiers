@@ -45,7 +45,7 @@ namespace Ninefold.Presentation
         private enum Page { Home, Battles, Missions, Briefing, Squad, Collection, OtherModes, Settings }
         private Page page;
         private string selectedCampaign, squadInspection;
-        private bool dirty, fatal, suspended, reducedMotion, inBattle, legacyProfile, worldFiveSlice, actOneStudy;
+        private bool dirty, fatal, suspended, reducedMotion, inBattle, legacyProfile, worldFiveSlice, actOneStudy, varietyStudy;
         private bool showDiagnostics;
         private Coroutine playback;
         private int pointer = -1;
@@ -434,6 +434,13 @@ namespace Ninefold.Presentation
             var switchMode = Button(panel,
                 worldFiveSlice ? "RETURN TO ORIGINAL PLAYTEST  ›" : "TRY WORLD FIVE MISSIONS 001–010  ›",
                 OpenCampaignPrototypeFromHome);
+            if (worldFiveSlice && !varietyStudy)
+            {
+                var variety = Button(panel,"TRY WORLD FIVE MISSIONS 11–14  ›",
+                    OpenEncounterVarietyFromHome);
+                variety.AddToClassList("home-quick-link");
+                variety.tooltip="Separate encounter-variety study profile; existing saves remain untouched.";
+            }
             if (worldFiveSlice && !actOneStudy)
             {
                 var actOne = Button(panel,"TRY WORLD FIVE ACT ONE (SEPARATE SAVE)  ›",
@@ -1467,10 +1474,11 @@ namespace Ninefold.Presentation
                 // an independent directory to protect all old checkpoints.
                 if (actOneStudy)
                 {
-                    catalog = WorldFiveCombatMechanicsV1.Create();
+                    catalog = varietyStudy ? WorldFiveEncounterVarietyV2.Create() : WorldFiveCombatMechanicsV1.Create();
                     var battles=new DirectoryBattleSaveFiles(savePath);
                     var progress=new DirectoryProgressSaveFiles(savePath);
-                    menu=new MissionPresentation(catalog,battles,progress,"world-five-act-one-study-01");
+                    menu=new MissionPresentation(catalog,battles,progress,varietyStudy ?
+                        WorldFiveEncounterVarietyV2.ProfileId : "world-five-act-one-study-01");
                     if (progress.Read(0)!=null || progress.Read(1)!=null) menu.Open();
                     else menu.CreateProfile();
                 }
@@ -1508,6 +1516,37 @@ namespace Ninefold.Presentation
             SwitchCampaignPrototype();
         }
 
+        private void OpenEncounterVarietyFromHome()
+        {
+            if (menu.Read().Phase != MissionFlowPhase.Selection)
+            {
+                message="Finish your saved battle or claim its result before switching.";
+                return;
+            }
+            var oldMenu=menu; var oldCatalog=catalog; var oldPath=savePath;
+            bool oldAct=actOneStudy, oldWorld=worldFiveSlice, oldLegacy=legacyProfile,
+                oldVariety=varietyStudy;
+            try
+            {
+                varietyStudy=true; actOneStudy=true; worldFiveSlice=true;
+                savePath=Path.Combine(Application.persistentDataPath,"WorldFiveEncounterVariety-v2");
+                input=null; battleView=null; inBattle=false;
+                OpenProfile();
+                selectedCampaign=WorldFiveOpeningTenPrototype.CampaignId;
+                page=Page.Missions;
+                message="World Five encounter study · Missions 11–14 after tutorial · separate progress.";
+                dirty=true;
+            }
+            catch(Exception error)
+            {
+                menu=oldMenu; catalog=oldCatalog; savePath=oldPath;
+                actOneStudy=oldAct; worldFiveSlice=oldWorld; legacyProfile=oldLegacy;
+                varietyStudy=oldVariety;
+                Debug.LogException(error,this);
+                message="Encounter variety study could not open. Prior saves remain unchanged.";
+            }
+        }
+
         private void OpenActOneFromHome()
         {
             if (menu.Read().Phase != MissionFlowPhase.Selection)
@@ -1519,7 +1558,7 @@ namespace Ninefold.Presentation
             bool oldAct=actOneStudy, oldWorld=worldFiveSlice, oldLegacy=legacyProfile;
             try
             {
-                actOneStudy=true; worldFiveSlice=true;
+                actOneStudy=true; worldFiveSlice=true; varietyStudy=false;
                 savePath=Path.Combine(Application.persistentDataPath,"WorldFiveActOneStudy-v1");
                 input=null; battleView=null; inBattle=false;
                 OpenProfile();
@@ -1547,6 +1586,7 @@ namespace Ninefold.Presentation
             // loaded profile, catalog and path, then display a visible error.
             bool previousMode = worldFiveSlice;
             bool previousActOne = actOneStudy;
+            bool previousVariety = varietyStudy;
             string previousPath = savePath;
             var previousMenu = menu;
             var previousCatalog = catalog;
@@ -1555,6 +1595,7 @@ namespace Ninefold.Presentation
             {
                 worldFiveSlice = openWorldFive;
                 actOneStudy = false;
+                varietyStudy = false;
                 savePath = Path.Combine(Application.persistentDataPath,
                     worldFiveSlice ? "WorldFiveOpeningTen-v4" : "AbstractPlaytest-v1");
                 input = null; battleView = null; inBattle = false;
@@ -1578,6 +1619,7 @@ namespace Ninefold.Presentation
             {
                 worldFiveSlice = previousMode;
                 actOneStudy = previousActOne;
+                varietyStudy = previousVariety;
                 savePath = previousPath;
                 menu = previousMenu;
                 catalog = previousCatalog;
@@ -1920,6 +1962,8 @@ namespace Ninefold.Presentation
         {
             if (worldFiveSlice)
             {
+                if (varietyStudy && WorldFiveEncounterVarietyV2.NewMissionIds.Contains(id))
+                    return "Defeat the Ashbound defenders. Their numbers, roles and positioning differ from the last encounter.";
                 if (actOneStudy && id == WorldFiveStorySequence.FirstCampaignMissionId)
                     return "Defeat the two Ashbound attackers and reclaim the damaged crossing. " +
                         "Inspect their unusual equipment after the encounter.";
@@ -1956,6 +2000,9 @@ namespace Ninefold.Presentation
         }
         private static string MissionName(string id) =>
             id == WorldFiveStorySequence.FirstCampaignMissionId ? "Mission 11" :
+            id == WorldFiveEncounterVarietyV2.NewMissionIds[0] ? "Mission 12" :
+            id == WorldFiveEncounterVarietyV2.NewMissionIds[1] ? "Mission 13" :
+            id == WorldFiveEncounterVarietyV2.NewMissionIds[2] ? "Mission 14" :
             id == WorldFiveOpeningTenPrototype.MissionIds[0] ? "The Wrong Arrival" :
             id == WorldFiveOpeningTenPrototype.MissionIds[1] ? "Hold the Passage" :
             id == WorldFiveOpeningTenPrototype.MissionIds[2] ? "Return the Stranded" :
