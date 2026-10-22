@@ -301,11 +301,24 @@ namespace Ninefold.Presentation
         // spawn IDs from older studies never imply a particular creature type.
         public void ConfigureWildlifeActors(IEnumerable<ActorSpawn> actors)
         {
+            var next = actors.Where(actor =>
+                actor.UnitId == WorldFiveTutorialWildlifeV1.SillrunnerId ||
+                actor.UnitId == WorldFiveTutorialWildlifeV1.SeamstalkerId)
+                .ToDictionary(actor => actor.Id, actor => actor.UnitId, StringComparer.Ordinal);
+            if (next.Count == wildlifeActors.Count && next.All(pair =>
+                wildlifeActors.TryGetValue(pair.Key,out var prior) && prior == pair.Value))
+                return;
+            // Recreate visuals when switching mission studies that reuse actor
+            // spawn IDs; never let a prior creature skin leak into a new battle.
+            foreach (var token in tokens.Values)
+            {
+                Object.Destroy(token.Body);
+                Object.Destroy(token.TargetRing);
+                token.Bar.RemoveFromHierarchy();
+            }
+            tokens.Clear();
             wildlifeActors.Clear();
-            foreach (var actor in actors)
-                if (actor.UnitId == WorldFiveTutorialWildlifeV1.SillrunnerId ||
-                    actor.UnitId == WorldFiveTutorialWildlifeV1.SeamstalkerId)
-                    wildlifeActors[actor.Id] = actor.UnitId;
+            foreach (var pair in next) wildlifeActors.Add(pair.Key,pair.Value);
         }
 
         private void Reconcile(BattleView view)
