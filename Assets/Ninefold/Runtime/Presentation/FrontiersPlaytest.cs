@@ -439,7 +439,7 @@ namespace Ninefold.Presentation
                 var wildlife=Button(panel,"TRY WORLD FIVE WILDLIFE TUTORIAL  ›",
                     OpenWildlifeFromHome);
                 wildlife.AddToClassList("home-quick-link");
-                wildlife.tooltip="Separate study with native creature encounters in tutorial missions 7 and 8.";
+                wildlife.tooltip="Separate study with cautious Sillrunners and pursuing Seamstalkers in tutorial missions 7 and 8.";
             }
             if (worldFiveSlice && !varietyStudy)
             {
@@ -1538,7 +1538,7 @@ namespace Ninefold.Presentation
             try
             {
                 wildlifeStudy=true; varietyStudy=true; actOneStudy=true; worldFiveSlice=true;
-                savePath=Path.Combine(Application.persistentDataPath,"WorldFiveNativeEcology-v1");
+                savePath=Path.Combine(Application.persistentDataPath,"WorldFiveNativeEcology-v2");
                 input=null; battleView=null; inBattle=false;
                 OpenProfile();
                 selectedCampaign=WorldFiveOpeningTenPrototype.CampaignId;
