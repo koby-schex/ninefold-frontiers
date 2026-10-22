@@ -22,8 +22,25 @@ internal static partial class Program
         ("World Five missions 11-14 vary Ashbound counts and compositions", WorldFiveEncounterVariation),
         ("World Five encounters cover every Ashbound archetype with varied pressure", AshboundTacticalVariety),
         ("World Five Ashbound NPC tactical roles differentiate defensive and aggressive behaviors", AshboundRoleBehavior),
-        ("World Five native wildlife appears sparingly in tutorial without Ashbound", NativeWildlifeBoundary)
+        ("World Five native wildlife appears sparingly in tutorial without Ashbound", NativeWildlifeBoundary),
+        ("World Five native creatures have distinct cautious and pursuit behaviors", WildlifeBehaviorContrast)
     };
+
+    private static void WildlifeBehaviorContrast()
+    {
+        var c=WorldFiveTutorialWildlifeV1.Create();
+        var ids=WorldFiveOpeningTenPrototype.MissionIds;
+        var seven=c.Missions[ids[6]];
+        var eight=c.Missions[ids[7]];
+        Equal(2,seven.Actors.Count);
+        Equal(1,eight.Actors.Count);
+        Equal(true,seven.Actors.All(a=>a.UnitId==WorldFiveTutorialWildlifeV1.SeamstalkerId
+            && a.Behavior.Style==EnemyStyle.Aggressive && a.Behavior.GuardArea==null));
+        Equal(true,eight.Actors.All(a=>a.UnitId==WorldFiveTutorialWildlifeV1.SillrunnerId
+            && a.Behavior.Style==EnemyStyle.Defensive && a.Behavior.GuardArea!=null));
+        Equal(true,c.Units[WorldFiveTutorialWildlifeV1.SillrunnerId].Initiative >
+            c.Units[WorldFiveTutorialWildlifeV1.SeamstalkerId].Initiative);
+    }
 
     private static void NativeWildlifeBoundary()
     {
