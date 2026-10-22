@@ -320,7 +320,8 @@ internal static partial class Program
         var menu=WorldFiveOpeningTenPrototype.Open(stores.Battles,stores.Progress);
         Equal(ids[3],menu.Read().NextCampaignMission.Definition.Id);
         menu.SelectMission(ids[3]);
-        menu.SetSquad(new[]{"fixture-a-1"});
+        // Mission 004 requires two squad members, unlike rescue mission 003.
+        menu.SetSquad(new[]{"fixture-a-1","fixture-a-2"});
         Equal(true,menu.Read().CanStart);
         var play=menu.Start(menu.Read().PlanId);
         var objective=play.Read().Battle.Objectives.Single(x=>x.Id=="primary");
