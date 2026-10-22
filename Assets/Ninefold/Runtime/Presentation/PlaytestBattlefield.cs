@@ -48,7 +48,7 @@ namespace Ninefold.Presentation
             "study 03 | " + drawnSceneStudy + " | meshes: " + scenery.MeshCount +
             " | visible: " + world.activeInHierarchy;
         private string drawnAttempt;
-        private readonly GameObject destination, selection, inspection, impact;
+        private readonly GameObject destination, selection, inspection, impact, statusPulse;
         private VisualElement surface;
         private Bounds framing;
         private readonly List<Rect> barRects = new List<Rect>();
@@ -74,6 +74,9 @@ namespace Ninefold.Presentation
             var white = Make(new Color(.9f,.96f,1f));
             inspection = Primitive("Inspected unit marker",PrimitiveType.Cube,Vector3.zero,new Vector3(1.15f,.015f,1.15f),white);
             impact = Primitive("Action impact",PrimitiveType.Sphere,Vector3.zero,Vector3.one*.2f,gold); impact.SetActive(false);
+            statusPulse = Primitive("Status effect pulse", PrimitiveType.Cylinder, Vector3.zero,
+                new Vector3(.5f,.015f,.5f), Make(new Color(.69f,.43f,.95f)));
+            statusPulse.SetActive(false);
             var lineObject = new GameObject("Movement preview"); lineObject.transform.SetParent(world.transform, false);
             path = lineObject.AddComponent<LineRenderer>(); path.sharedMaterial = gold;
             path.startWidth = path.endWidth = .045f; path.useWorldSpace = true;
@@ -403,7 +406,7 @@ namespace Ninefold.Presentation
         public IEnumerator Play(BattleUpdate update, float duration)
         {
             path.positionCount = 0; range.positionCount = 0; destination.SetActive(false);
-            inspection.SetActive(false); impact.SetActive(false);
+            inspection.SetActive(false); impact.SetActive(false); statusPulse.SetActive(false);
             foreach (var t in tokens.Values) t.TargetRing.SetActive(false);
             // Keep before-state bars visible during playback; reconcile authoritative after-state once finished.
             float elapsed = 0;
@@ -462,12 +465,27 @@ namespace Ninefold.Presentation
                     path.positionCount=2; path.SetPositions(new[] { source.Body.transform.position,target.Body.transform.position });
                     impact.SetActive(true); impact.transform.position=target.Body.transform.position;
                     impact.transform.localScale=Vector3.one*(.15f+Mathf.Sin(strike*Mathf.PI)*.6f);
-                    impact.GetComponent<Renderer>().sharedMaterial=pulse.AbilityEffect.Health != null && pulse.AbilityEffect.Health.HealthAfter>pulse.AbilityEffect.Health.HealthBefore ? friendly : gold;
+                    bool healing = pulse.AbilityEffect?.Health != null &&
+                        pulse.AbilityEffect.Health.HealthAfter > pulse.AbilityEffect.Health.HealthBefore;
+                    bool hasStatus = pulse.AbilityEffect?.Status?.Applies == true;
+                    // Read the authoritative effect, never guess based on a unit name
+                    // or author new damage/status outcomes in the renderer.
+                    impact.GetComponent<Renderer>().sharedMaterial = healing ? friendly :
+                        hasStatus && pulse.AbilityEffect.Health == null ? markings : gold;
+                    if (hasStatus)
+                    {
+                        statusPulse.SetActive(true);
+                        statusPulse.transform.position = target.Body.transform.position -
+                            Vector3.up * (target.Height*.5f-.04f);
+                        float radius = .5f + strike*.9f;
+                        statusPulse.transform.localScale = new Vector3(radius,.018f,radius);
+                    }
+                    else statusPulse.SetActive(false);
                 }
                 yield return null;
             }
             if (!shown) AddFeedback(update,false);
-            path.positionCount=0; impact.SetActive(false);
+            path.positionCount=0; impact.SetActive(false); statusPulse.SetActive(false);
             Reconcile(update.After);
         }
         private static Vector3 AlongRoute(FieldPoint[] route, float fraction)
