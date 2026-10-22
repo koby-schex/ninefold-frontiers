@@ -8,9 +8,9 @@ from build_great_strider import dot,cross,sub
 
 def validate(pose):
     m=make_model(pose);parts={p['name']:p for p in m.parts}
-    assert len(parts)==len(m.parts)==122
-    assert sum(len(p['faces']) for p in m.parts)==89208
-    assert sum(len(p['vertices']) for p in m.parts)==44848
+    assert len(parts)==len(m.parts)==126
+    assert sum(len(p['faces']) for p in m.parts)==93768
+    assert sum(len(p['vertices']) for p in m.parts)==47136
     for i in range(5):
         p=parts[f'Olyra_Lobe_{i}']
         assert len(p['uvs'])==len(p['vertices'])
@@ -25,9 +25,11 @@ def validate(pose):
     assert sum(n.startswith('Avarin_OuterDrape_') for n in parts)==2
     assert sum(n.startswith('VeilHarness_ClipLoop_') for n in parts)==2
     assert sum(n.startswith('VeilHarness_LineCoil_') for n in parts)==2
+    assert sum(n.startswith('Avarin_ShoulderDrape_') for n in parts)==2
+    assert sum(n.startswith('Avarin_RearDrape_') for n in parts)==2
     # Cloth never reaches the ground or masks the split between the feet.
     for name,p in parts.items():
-        if name.startswith(('Avarin_FrontDrape_','Avarin_OuterDrape_')):
+        if name.startswith(('Avarin_FrontDrape_','Avarin_OuterDrape_','Avarin_RearDrape_')):
             assert min(v[1] for v in p['vertices'])>.18,(name,'ground clearance')
         if name.startswith('Avarin_FrontDrape_'):
             center=1.95 if pose=='resting' else .25
@@ -71,7 +73,7 @@ def validate(pose):
         names=('LivingVeil.obj','manifest.json') if pose=='resting' else ('LivingVeilProtective.obj','protective-manifest.json')
         for n in (*names,'LivingVeil.mtl',*(str(f.relative_to(folder)) for f in sorted((folder/'Textures').glob('*.png')))):
             assert (Path(d)/n).read_bytes()==(folder/n).read_bytes(),('stale',n)
-    return dict(pose=pose,parts=122,vertices=44848,triangles=89208,lobes=5,closed_parts=True,
+    return dict(pose=pose,parts=126,vertices=47136,triangles=93768,lobes=5,closed_parts=True,
         reproducible_export=True,grounded_partner=True,partner_clearance=True,
         limitations='Not a lobe self-intersection, rigging, mobile performance or native transparency certificate')
 
@@ -114,7 +116,7 @@ def main(render_images=False):
     from PIL import Image,ImageDraw
     from build_living_veil import COLORS,ALPHA,FINISH
     sheet=Image.new('RGB',(1400,1200),'#eeede5');draw=ImageDraw.Draw(sheet)
-    draw.text((20,16),'LIVING VEIL / OLYRA — SURFACE STUDY 06',font=font(26),fill='#262c32')
+    draw.text((20,16),'LIVING VEIL / OLYRA — SILHOUETTE STUDY 07',font=font(26),fill='#262c32')
     draw.text((20,52),'Actual source geometry • two static poses • provisional surfaces',font=font(18),fill='#596069')
     for row,pose in enumerate(POSES):
         m=make_model(pose);data=review_data(m)
@@ -124,7 +126,7 @@ def main(render_images=False):
             draw.text((i*466+15,95+row*540),pose.title()+' / '+label,font=font(18),fill='#262c32')
     sheet.save(out/'LivingVeil-Review.png')
     details=Image.new('RGB',(1400,640),'#eeede5');labels=ImageDraw.Draw(details)
-    labels.text((20,12),'SURFACE 06 / ACTUAL MESH — DETAIL AND TACTICAL READ',font=font(23),fill='#262c32')
+    labels.text((20,12),'SILHOUETTE 07 / ACTUAL MESH — DETAIL AND TACTICAL READ',font=font(23),fill='#262c32')
     m=make_model('resting')
     for i,(label,prefix,eye,target,extent) in enumerate((
         ('Core and membrane roots','Olyra_',(3,3.6,6),(0,2.7,0),1.7),
@@ -135,7 +137,7 @@ def main(render_images=False):
         if prefix:chosen.parts=[p for p in chosen.parts if p['name'].startswith(prefix)]
         details.paste(render(review_data(chosen),eye,(460,540),extent,target,False),(i*466,85))
         labels.text((i*466+12,55),label,font=font(18),fill='#262c32')
-    details.save(out/'LivingVeil-Detail06.png')
+    details.save(out/'LivingVeil-Detail07.png')
     render_partner(out)
     render_material_comparison(out)
 
@@ -144,7 +146,7 @@ def render_partner(out):
     from PIL import Image,ImageDraw
     m=make_model('resting');m.parts=[p for p in m.parts if not p['name'].startswith('Olyra_')]
     sheet=Image.new('RGB',(1440,560),'#eeede5');labels=ImageDraw.Draw(sheet)
-    labels.text((16,10),'AVARIN SURFACE 06 / ACTUAL GEOMETRY / PROVISIONAL ART',font=font(20),fill='#262c32')
+    labels.text((16,10),'AVARIN SILHOUETTE 07 / ACTUAL GEOMETRY / PROVISIONAL ART',font=font(20),fill='#262c32')
     views=(('Front',(1.95,1.1,8),(1.95,.95,.43),2.2),
            ('Side',(8,1.1,.43),(1.95,.95,.43),2.2),
            ('Back',(1.95,1.1,-8),(1.95,.95,.43),2.2),
@@ -152,7 +154,7 @@ def render_partner(out):
     for i,(label,eye,target,extent) in enumerate(views):
         sheet.paste(render(review_data(m),eye,(360,490),extent,target,False),(360*i,65))
         labels.text((360*i+12,40),label,font=font(16),fill='#262c32')
-    sheet.save(out/'Avarin-Partner06.png')
+    sheet.save(out/'Avarin-Partner07.png')
 
 @lru_cache(maxsize=1)
 def partner_review_tints():
@@ -176,14 +178,14 @@ def render_material_comparison(out):
     current=review_data(m);previous=copy.deepcopy(current)
     previous['textures']={};previous['finish']=previous_finish
     sheet=Image.new('RGB',(1200,850),'#eeede5');labels=ImageDraw.Draw(sheet)
-    labels.text((18,12),'AVARIN SURFACES 06 / ACTUAL MODEL COMPARISON',font=font(22),fill='#262c32')
+    labels.text((18,12),'AVARIN SURFACES / GEOMETRY 07 / ACTUAL MODEL COMPARISON',font=font(22),fill='#262c32')
     labels.text((18,44),'Same geometry, camera and light. Software albedo/average finish; normal maps require Unity.',font=font(16),fill='#596069')
-    for row,(title,data) in enumerate((('05 / flat surfaces',previous),('06 / textured surfaces',current))):
+    for row,(title,data) in enumerate((('Flat surfaces',previous),('Textured surfaces',current))):
         y=100+row*365
         labels.text((18,y-28),title,font=font(18),fill='#262c32')
         for i,(eye,target,extent) in enumerate((((3,2,8),(1.95,.95,.43),2.15),((2.3,1.75,6),(1.95,1.62,.43),.52),((3,2,8),(1.95,1,.45),1.1))):
             sheet.paste(render(data,eye,(350,335),extent,target,False),(i*400,y))
-    sheet.save(out/'Avarin-Materials06-Comparison.png')
+    sheet.save(out/'Avarin-Materials07-Comparison.png')
 
 @lru_cache(maxsize=1)
 def membrane_review_tint():

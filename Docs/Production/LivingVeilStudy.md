@@ -133,3 +133,9 @@ The geometry remains partner study 05; current generated Unity assets use surfac
 study 06. See [LivingVeilMaterialsStudy.md](LivingVeilMaterialsStudy.md) for the
 six partner texture sets, revised prefab paths and actual-model comparison sheet.
 Earlier revision paths in this document are historical.
+
+## Current geometry revision — 07
+
+See [LivingVeilSilhouetteStudy.md](LivingVeilSilhouetteStudy.md) for shoulder/rear
+clothing layers, refined garment contours, current geometry counts and review-07
+prefab paths. Earlier counts and paths above describe historical revisions.

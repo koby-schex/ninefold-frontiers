@@ -94,3 +94,17 @@ validation limits and current generated prefab paths. Current review outputs are
 Previous 05 paths above are historical. Source ID, geometry and preview contract
 are unchanged. No runtime provider or authoritative gameplay-ID mapping is added.
 Native material acceptance and mobile budgets remain outstanding.
+
+## Living Veil silhouette study 07
+
+Current generated paths are `LivingVeil07_<fingerprint>/LivingVeilStudy07.prefab`
+and `LivingVeilProtective07_<fingerprint>/LivingVeilProtectiveStudy07.prefab` under
+`Assets/Ninefold/ArtReview/`, with `LivingVeilReview07.unity` in each directory.
+The 05/06 paths above are historical. Current counts: 126 parts, 47,136 source
+vertices and 93,768 triangles. Surface-study-06 materials remain unchanged.
+See [LivingVeilSilhouetteStudy.md](LivingVeilSilhouetteStudy.md).
+
+Main through PR #114 also provides `IFrontiersInteractivePreviewSource`, extending
+the existing preview contract for rotation/zoom. This art pass does not modify
+that interface or register a provider. Future runtime model integration must honor
+the current contract, including resource cleanup and full-model framing.
