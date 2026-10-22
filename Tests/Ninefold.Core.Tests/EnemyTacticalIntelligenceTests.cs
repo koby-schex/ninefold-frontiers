@@ -7,7 +7,8 @@ internal static partial class Program
         new (string,Action)[] {
             ("AI prefers greater offensive threat when attacks deal equal impact", EnemyThreatPriority),
             ("AI lethal opportunity overrides threat tie-break", EnemyLethalBeforeThreat),
-            ("Threat-aware planning remains pure", EnemyThreatPreviewPure)
+            ("Threat-aware planning remains pure", EnemyThreatPreviewPure),
+            ("Enemy does not attack invisible or unsupplied opponents", EnemyRequiresPerceivedTarget)
         };
 
     private static BattleTurnController ThreatFixture(int vulnerableHealth)
@@ -49,6 +50,22 @@ internal static partial class Program
         var result=RunEnemy(battle,"high","low");
         Equal("low",result.Effect.TargetId);
         Equal(true,battle.Health.GetState("low").IsDefeated);
+        Equal(100,battle.Health.GetState("high").CurrentHealth);
+    }
+
+    private static void EnemyRequiresPerceivedTarget()
+    {
+        var battle=ThreatFixture(100);
+        var turn=battle.CurrentActivation;
+        Equal(true,battle.Battlefield.TryPlanEnemyTurn(
+            turn.ActivationId,Array.Empty<string>(),out var hidden,out var failure));
+        Equal(EnemyTurnFailure.None,failure);
+        Equal(null,hidden.TargetId);
+        Equal(true,battle.Battlefield.TryPlanEnemyTurn(
+            turn.ActivationId,new[]{"low"},out var visible,out failure));
+        Equal(EnemyTurnFailure.None,failure);
+        Equal("low",visible.TargetId);
+        Equal(100,battle.Health.GetState("low").CurrentHealth);
         Equal(100,battle.Health.GetState("high").CurrentHealth);
     }
 
