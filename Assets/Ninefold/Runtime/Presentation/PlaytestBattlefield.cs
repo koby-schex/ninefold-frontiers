@@ -366,6 +366,44 @@ namespace Ninefold.Presentation
             }
         }
 
+        // Procedural motion on the child pieces only. The authoritative root,
+        // placement, footprint, targeting and combat outcome never change.
+        private void PoseWildlife(Token token, string species, float phase,
+            bool moving, bool attacking, float strike)
+        {
+            if (species != WorldFiveTutorialWildlifeV1.SillrunnerId &&
+                species != WorldFiveTutorialWildlifeV1.SeamstalkerId) return;
+            bool stalker = species == WorldFiveTutorialWildlifeV1.SeamstalkerId;
+            int legIndex = 0;
+            foreach (Transform part in token.Body.transform)
+            {
+                if (part.name == "Walking limb")
+                {
+                    int pair = legIndex / 2;
+                    int side = legIndex % 2 == 0 ? -1 : 1;
+                    float amplitude = stalker ? 24f : 13f;
+                    float stride = moving ? Mathf.Sin(phase * (stalker ? 21f : 17f)
+                        + pair * Mathf.PI + (side > 0 ? Mathf.PI : 0)) : 0f;
+                    part.localRotation = Quaternion.Euler(amplitude * stride,0,0);
+                    legIndex++;
+                }
+                else if (part.name == "Head")
+                {
+                    float lean = attacking ? Mathf.Sin(strike * Mathf.PI) * (stalker ? -27f : -12f) : 0f;
+                    part.localRotation = Quaternion.Euler(lean,0,0);
+                }
+                else if (part.name == "Tapered tail")
+                    part.localRotation = Quaternion.Euler(0,
+                        (moving || attacking) ? Mathf.Sin(phase * 12f)*18f : 0f,0);
+                else if (part.name == "Balance fan")
+                    part.localRotation = Quaternion.Euler(0,
+                        moving ? Mathf.Sin(phase * 10f)*11f : 0f,0);
+                else if (part.name == "Dorsal shell")
+                    part.localRotation = Quaternion.Euler(
+                        moving ? Mathf.Sin(phase * (stalker ? 21f : 17f)) * 4f : 0f,0,0);
+            }
+        }
+
         private void Reconcile(BattleView view)
         {
             var living = new HashSet<string>(view.HealthOverlays.Select(h => h.UnitId), StringComparer.Ordinal);
@@ -413,6 +451,9 @@ namespace Ninefold.Presentation
                     t.Fill = new VisualElement { pickingMode = PickingMode.Ignore }; t.Fill.AddToClassList("health-fill");
                     t.Fill.style.backgroundColor = h.IsEnemyControlled ? new Color(.96f, .43f, .32f) : new Color(.25f, .87f, .83f); track.Add(t.Fill);
                 }
+                // Restore neutral poses after animation and on reduced-motion frames.
+                if (wildlifeActors.TryGetValue(h.UnitId,out var species))
+                    PoseWildlife(t,species,0f,false,false,0f);
                 t.Height = StandardTokenHeight;
                 t.Bar.EnableInClassList("active-health",h.UnitId == view.Activation?.UnitId);
                 t.Position = Vector(h.Position) + Vector3.up * t.Height / 2;
@@ -543,6 +584,10 @@ namespace Ninefold.Presentation
                         token.Body.transform.position += Vector3.up * reaction * .11f;
                         token.Body.transform.localScale = token.Scale*(1f+.07f*reaction);
                     }
+                    if (wildlifeActors.TryGetValue(before.Id,out var wildlifeSpecies))
+                        PoseWildlife(token,wildlifeSpecies,t,
+                            movement?.UnitId == before.Id,
+                            pulse?.UnitId == before.Id,strike);
                     if (after?.Health?.IsDefeated == true)
                     {
                         token.Body.transform.localScale=token.Scale*(1-strike*.85f);
