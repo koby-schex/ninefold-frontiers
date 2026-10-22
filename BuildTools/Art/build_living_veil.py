@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Living Veil surface study 06; actual editable geometry, meters/Y-up/+Z.
+"""Living Veil silhouette study 07; actual editable geometry, meters/Y-up/+Z.
 Uses shared loft/sheet primitives and the established Avarin face study.
 Two static poses; no production rig, animation, or final canon acceptance implied.
 """
@@ -186,7 +186,7 @@ def refine_surfaces(m):
             p['vertices']=[tuple(center[k]+radius[k]*math.copysign(abs((q[k]-center[k])/radius[k])**.82,q[k]-center[k]) for k in range(3)) for q in v]
 
 def write(m,out,pose='resting'):
-    out.mkdir(parents=True,exist_ok=True);stem='LivingVeil' if pose=='resting' else 'LivingVeilProtective';obj=['# Living Veil surface study 06; meters; Y up; +Z forward','mtllib LivingVeil.mtl'];offset=1;uv_offset=1
+    out.mkdir(parents=True,exist_ok=True);stem='LivingVeil' if pose=='resting' else 'LivingVeilProtective';obj=['# Living Veil silhouette study 07; meters; Y up; +Z forward','mtllib LivingVeil.mtl'];offset=1;uv_offset=1
     used=sorted({p['material'] for p in m.parts})
     for p in m.parts:
         obj+=['o '+p['name'],'usemtl '+p['material'],'s 1']
@@ -205,7 +205,7 @@ def write(m,out,pose='resting'):
 
     vertices=[v for p in m.parts for v in p['vertices']]
     bounds=[[min(v[k] for v in vertices) for k in range(3)],[max(v[k] for v in vertices) for k in range(3)]]
-    report=dict(status='surface study 06; not production ready',units='meters',up='Y',forward='Z',parts=len(m.parts),vertices=len(vertices),triangles=sum(len(p['faces']) for p in m.parts),height=bounds[1][1],bounds=bounds,lobes=5,materials=used,
+    report=dict(status='silhouette study 07; not production ready',units='meters',up='Y',forward='Z',parts=len(m.parts),vertices=len(vertices),triangles=sum(len(p['faces']) for p in m.parts),height=bounds[1][1],bounds=bounds,lobes=5,materials=used,
         pose=pose,model_id='world05.living-veil.olyra',membrane_alpha='RGBA texture; MTL d is transparency classification, importer uses alpha multiplier 1',limitations=['Provisional static pose and surfaces; not locked visual acceptance','No gliding pose, production rig, animation or LODs','Layered transparency sorting needs native review','Exact curvature, harness detail and three tiny visual organs are implementation proposals'])
     (out/('manifest.json' if pose=='resting' else 'protective-manifest.json')).write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps(report,indent=2))

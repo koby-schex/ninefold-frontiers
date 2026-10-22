@@ -1,4 +1,4 @@
-"""Living Veil partner study 05. Local art proposals, not new species canon.
+"""Living Veil silhouette study 07. Local art proposals, not new species canon.
 
 Standing partner geometry only; never changes Ilyth's seated partner generator.
 All additions use existing materials and retain stable descriptive part names.
@@ -11,9 +11,10 @@ def refine_partner(model):
     replacement=Mesh();extra=Mesh();cx=1.95
 
     def mantle(t,v):
-        a=.05+(math.pi-.10)*t;r=.23+.24*v
+        a=.05+(math.pi-.10)*t
+        r=.23+.24*v-.016*v*v*math.sin(5*a)**2
         return (cx+r*math.cos(a),1.37+r*.91*math.sin(a),
-                .19-.065*v+.10*math.cos(a)**2-.018*math.sin(3*a)*math.sin(math.pi*v))
+                .19-.065*v+.10*math.cos(a)**2-.028*math.sin(3*a)*math.sin(math.pi*v))
     replacement.panel('Avarin_CrescentMantle','sail_membrane',mantle,33,11,.005)
     replacement.strand('Avarin_MantleRim','sail_vein',[mantle(k/24,1) for k in range(25)],.010)
     for side in (-1,1):
@@ -31,8 +32,8 @@ def refine_partner(model):
                 [add(mantle(t,.12+.82*j/10),(0,0,.007)) for j in range(11)],.005)
 
         replacement.loft('Avarin_Arm_'+suffix,'cloth',[
-            ((cx+side*.21,1.35,.40),.082,.078),
-            ((cx+side*.25,1.25,.41),.078,.073),
+            ((cx+side*.205,1.37,.40),.088,.079),
+            ((cx+side*.245,1.26,.41),.082,.072),
             ((cx+side*.29,1.10,.43),.060,.058),
             ((cx+side*.305,1.02,.47),.060,.052),
             ((cx+side*.32,.90,.51),.036,.036)],20)
@@ -50,23 +51,36 @@ def refine_partner(model):
             ((cx+side*.16,.13,.48),.044,.054)],20)
         # Layered split front panels leave both feet and the leg division visible.
         def tabard(t,v):
-            return (cx+side*(.030+.140*v+.095*t),
-                    1.00-.78*t+.045*t*(2*v-1)**2,
-                    .58-.11*v*v+.10*t+.016*math.sin(4*math.pi*v+.5*t)*math.sin(math.pi*t))
+            return (cx+side*(.030+.155*v+.072*t+.032*math.sin(math.pi*t)*v),
+                    1.02-.78*t+.055*t*(2*v-1)**2+.018*t*t*math.sin(math.pi*v),
+                    .58-.11*v*v+.085*t+.024*math.sin(4*math.pi*v+.75*t)*math.sin(math.pi*t))
         extra.panel('Avarin_FrontDrape_'+suffix,'cloth',tabard,24,13,.006)
         for edge in (0,1):
             extra.strand('Avarin_DrapeSeam_'+suffix+str(edge),'soft_charcoal',
                 [add(tabard(j/18,edge),(0,0,.008)) for j in range(19)],.004)
         def outer(t,v):
             angle=-1+2*v
-            return (cx+side*(.19+.08*t)*math.cos(angle),
-                    1.05-.73*t+.10*t*v,
-                    .42+(.15+.03*t)*math.sin(angle)-.06*t+.012*math.sin(v*math.pi*3)*math.sin(t*math.pi))
+            return (cx+side*(.19+.12*t+.025*math.sin(math.pi*t))*math.cos(angle),
+                    1.05-.78*t+.10*t*v,
+                    .42+(.15+.03*t)*math.sin(angle)-.06*t+.020*math.sin(v*math.pi*3+.5*t)*math.sin(t*math.pi))
         extra.panel('Avarin_OuterDrape_'+suffix,'soft_charcoal',outer,22,13,.006,normal=(side,0,0))
+        # Soft shoulder layers wrap into the torso and over the sleeve roots.
+        def shoulder(t,v):
+            angle=-1.35+2.8*t;r=.105+.235*v
+            return (cx+side*r*math.cos(angle),
+                    1.515-.16*v-.025*math.cos(angle)+.009*math.sin(3*angle)*math.sin(math.pi*v),
+                    .40+.70*r*math.sin(angle))
+        extra.panel('Avarin_ShoulderDrape_'+suffix,'cloth',shoulder,19,13,.005)
+        # Rear layers begin inside the tunic and flare gently clear of the calves.
+        def rear(t,v):
+            return (cx+side*(.012+.205*v+.085*t*v),
+                    1.12-.84*t+.05*t*v+.025*t*t*math.sin(math.pi*v),
+                    .29-.11*t+.045*v*v+.021*math.sin(3*math.pi*v+.3*t)*math.sin(math.pi*t))
+        extra.panel('Avarin_RearDrape_'+suffix,'soft_charcoal',rear,25,13,.006)
         # Light fabric collar and cuffs; not enlarged combat armor.
         extra.loft('Avarin_Collar_'+suffix,'cloth',[
-            ((cx+side*.05,1.48,.36),.035,.025),
-            ((cx+side*.14,1.43,.40),.040,.027),
+            ((cx+side*.055,1.50,.405),.036,.037),
+            ((cx+side*.13,1.445,.44),.044,.032),
             ((cx+side*.22,1.36,.42),.035,.025)],16)
         extra.loft('Avarin_Cuff_'+suffix,'soft_charcoal',[
             ((cx+side*.316,.94,.493),.043,.041),
@@ -93,6 +107,25 @@ def refine_partner(model):
         if p['name']=='Avarin_Head':
             # Quiet jaw shaping below the mouth; eyes and temple bands stay seated.
             p['vertices']=[(cx+(x-cx)*(1-.08*max(0,(1.60-y)/.10)),y,z) for x,y,z in p['vertices']]
+    # Subtle sleeve compression around the elbows, fading at all attachments.
+    for p in replacement.parts:
+        if p['name'].startswith('Avarin_Arm_'):
+            side=-1 if p['name'].endswith('_L') else 1
+            verts=[]
+            for x,y,z in p['vertices']:
+                fade=math.exp(-((y-1.10)/.105)**2)
+                z+=.006*fade*math.sin((y-1.10)*82)*max(0,min(1,(z-.40)/.12))
+                verts.append((x,y,z))
+            p['vertices']=verts
+    # Keep eyes and facial bands seated while relaxing the oval jaw contour.
+    facial=('Avarin_Head','Avarin_Mouth','Avarin_Eye','Avarin_Temple','Avarin_UpperLid','Avarin_LowerLid','Avarin_Forehead')
+    for p in model.parts:
+        if p['name'].startswith(facial):
+            p['vertices']=[(cx+(x-cx)*(1-.09*math.exp(-((y-1.565)/.055)**2)),y,z)
+                           for x,y,z in p['vertices']]
+        if p['name']=='Avarin_Neck':
+            p['vertices']=[(cx+(x-cx)*(1+.18*max(0,(1.50-y)/.08)),y,z)
+                           for x,y,z in p['vertices']]
     replacements={p['name']:p for p in replacement.parts}
     assert replacements.keys() <= {p['name'] for p in model.parts}
     model.parts=[replacements.get(p['name'],p) for p in model.parts]+extra.parts

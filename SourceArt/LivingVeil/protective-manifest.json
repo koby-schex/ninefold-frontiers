@@ -1,11 +1,11 @@
 {
-  "status": "surface study 06; not production ready",
+  "status": "silhouette study 07; not production ready",
   "units": "meters",
   "up": "Y",
   "forward": "Z",
-  "parts": 122,
-  "vertices": 44848,
-  "triangles": 89208,
+  "parts": 126,
+  "vertices": 47136,
+  "triangles": 93768,
   "height": 3.432240656452978,
   "bounds": [
     [

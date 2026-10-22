@@ -19,7 +19,7 @@ internal static partial class Program
         foreach (string stem in new[] { "LivingVeil", "LivingVeilProtective" })
         {
             var mesh = GreatStriderSource.ReadMesh(File.ReadLines(Path.Combine(root, stem + ".obj")), materials);
-            if (mesh.SourceVertices != 44848 || mesh.Triangles != 89208 || mesh.Parts != 122)
+            if (mesh.SourceVertices != 47136 || mesh.Triangles != 93768 || mesh.Parts != 126)
                 throw new Exception("Unexpected Living Veil study mesh.");
             if (materials.Count != 12 || materials.Count(m => m.Texture != null) != 7)
                 throw new Exception("Expected one Olyra alpha texture and six partner albedo maps.");
@@ -37,7 +37,7 @@ internal static partial class Program
                 if (lobe.UVs.Any(uv => uv.Any(v => v < 0 || v > 1)) ||
                     lobe.UVs.Min(uv => uv[1]) != 0 || lobe.UVs.Max(uv => uv[1]) != 1)
                     throw new Exception("Missing continuous membrane UV domain.");
-            if (mesh.Sections.Sum(s => s.Indices.Count) != 89208 * 3)
+            if (mesh.Sections.Sum(s => s.Indices.Count) != 93768 * 3)
                 throw new Exception("Triangles lost during import.");
             foreach (var section in mesh.Sections)
                 foreach (var n in section.Normals)
