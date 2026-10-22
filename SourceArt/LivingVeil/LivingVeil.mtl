@@ -28,14 +28,15 @@ Ns 28
 d 1
 
 newmtl grown_mineral
-Kd 0.84 0.86 0.85
+Kd 0.78 0.8 0.81
 Ns 82
 d 1
 
 newmtl olyra_core
-Kd 0.16 0.125 0.18
-Ns 42
+Kd 1 1 1
+Ns 11.535155129119968
 d 1
+map_Kd Textures/olyra_core.png
 
 newmtl olyra_membrane
 Kd 1 1 1
@@ -50,7 +51,7 @@ d 0.68
 map_Kd Textures/sail_membrane.png
 
 newmtl sail_vein
-Kd 0.64 0.59 0.76
+Kd 0.55 0.51 0.66
 Ns 28
 d 1
 
@@ -61,6 +62,6 @@ d 1
 map_Kd Textures/soft_charcoal.png
 
 newmtl survey_light
-Kd 0.47 0.68 0.79
+Kd 0.4 0.59 0.7
 Ns 72
 d 1

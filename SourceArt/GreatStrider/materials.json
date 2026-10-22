@@ -1,12 +1,12 @@
 {
-  "status": "provisional detail study 11",
+  "status": "provisional color study 12",
   "uv_mapping": "rest-pose dominant-axis box projection, repeating textures",
   "materials": {
     "living_pearl": {
       "base_color_linear": [
-        0.62,
-        0.65,
-        0.63
+        0.54,
+        0.57,
+        0.58
       ],
       "albedo_texture": "Textures/living_pearl.png",
       "albedo_color_space": "sRGB",
@@ -17,9 +17,9 @@
     },
     "limb_tissue": {
       "base_color_linear": [
-        0.38,
-        0.4,
-        0.42
+        0.3,
+        0.32,
+        0.37
       ],
       "albedo_texture": "Textures/limb_tissue.png",
       "albedo_color_space": "sRGB",
@@ -30,9 +30,9 @@
     },
     "soft_charcoal": {
       "base_color_linear": [
-        0.12,
-        0.13,
-        0.16
+        0.075,
+        0.08,
+        0.105
       ],
       "albedo_texture": "Textures/soft_charcoal.png",
       "albedo_color_space": "sRGB",
@@ -43,9 +43,9 @@
     },
     "grown_mineral": {
       "base_color_linear": [
-        0.84,
-        0.86,
-        0.85
+        0.78,
+        0.8,
+        0.81
       ],
       "albedo_texture": "Textures/grown_mineral.png",
       "albedo_color_space": "sRGB",
@@ -56,9 +56,9 @@
     },
     "sail_membrane": {
       "base_color_linear": [
-        0.32,
-        0.28,
-        0.43
+        0.29,
+        0.23,
+        0.36
       ],
       "albedo_texture": null,
       "albedo_color_space": "sRGB",
@@ -69,9 +69,9 @@
     },
     "sail_vein": {
       "base_color_linear": [
-        0.64,
-        0.59,
-        0.76
+        0.55,
+        0.51,
+        0.66
       ],
       "albedo_texture": null,
       "albedo_color_space": "sRGB",
@@ -82,9 +82,9 @@
     },
     "continuance_frame": {
       "base_color_linear": [
-        0.36,
-        0.38,
-        0.4
+        0.26,
+        0.28,
+        0.32
       ],
       "albedo_texture": "Textures/continuance_frame.png",
       "albedo_color_space": "sRGB",
@@ -95,9 +95,9 @@
     },
     "ceramic": {
       "base_color_linear": [
-        0.65,
-        0.66,
-        0.6
+        0.6,
+        0.62,
+        0.61
       ],
       "albedo_texture": "Textures/ceramic.png",
       "albedo_color_space": "sRGB",
@@ -108,9 +108,9 @@
     },
     "avar_skin": {
       "base_color_linear": [
-        0.32,
-        0.245,
-        0.33
+        0.29,
+        0.205,
+        0.32
       ],
       "albedo_texture": "Textures/avar_skin.png",
       "albedo_color_space": "sRGB",
@@ -121,9 +121,9 @@
     },
     "cloth": {
       "base_color_linear": [
-        0.115,
-        0.12,
-        0.155
+        0.075,
+        0.08,
+        0.12
       ],
       "albedo_texture": "Textures/cloth.png",
       "albedo_color_space": "sRGB",
@@ -134,9 +134,9 @@
     },
     "survey_light": {
       "base_color_linear": [
-        0.47,
-        0.68,
-        0.79
+        0.4,
+        0.59,
+        0.7
       ],
       "albedo_texture": null,
       "albedo_color_space": "sRGB",

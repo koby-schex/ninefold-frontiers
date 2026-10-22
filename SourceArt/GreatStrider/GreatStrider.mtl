@@ -31,13 +31,13 @@ d 1
 map_Kd Textures/grown_mineral.png
 
 newmtl sail_membrane
-Kd 0.32 0.28 0.43
+Kd 0.29 0.23 0.36
 Ks 0.18 0.18 0.18
 Ns 64
 d 0.68
 
 newmtl sail_vein
-Kd 0.64 0.59 0.76
+Kd 0.55 0.51 0.66
 Ks 0.12 0.12 0.12
 Ns 28
 d 1
@@ -75,7 +75,7 @@ d 1
 map_Kd Textures/cloth.png
 
 newmtl survey_light
-Kd 0.47 0.68 0.79
+Kd 0.4 0.59 0.7
 Ks 0.18 0.18 0.18
 Ns 72
 d 1

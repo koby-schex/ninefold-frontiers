@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Living Veil glide study 08; actual editable geometry, meters/Y-up/+Z.
+"""Living Veil color study 09; actual editable geometry, meters/Y-up/+Z.
 Uses shared loft/sheet primitives and the established Avarin face study.
 Two static poses; no production rig, animation, or final canon acceptance implied.
 """
@@ -10,10 +10,10 @@ from living_veil_materials import SURFACES, attach_uvs, write_maps
 from pathlib import Path
 from build_great_strider import Mesh, make_model as strider_model, MATERIALS, FINISH as STRIDER_FINISH, add, sub, cross, unit, mul
 ROOT=Path(__file__).resolve().parents[2]
-COLORS={**MATERIALS,'olyra_core':(.16,.125,.18),'olyra_membrane':(.53,.54,.55)}
+COLORS={**MATERIALS,'olyra_core':(.13,.09,.15),'olyra_membrane':(.56,.55,.60)}
 ALPHA={'olyra_membrane':.55,'sail_membrane':.68}
 FINISH={**STRIDER_FINISH,'olyra_core':(42,.10),'olyra_membrane':(95,.14)}
-FINISH.update({name:(2/(1-values[3])**4-2, STRIDER_FINISH[name][1]) for name,values in SURFACES.items()})
+FINISH.update({name:(2/(1-values[3])**4-2, STRIDER_FINISH.get(name,(42,.10))[1]) for name,values in SURFACES.items()})
 POSES=('resting','protective')
 
 def membrane_variation(t,v):
@@ -21,7 +21,7 @@ def membrane_variation(t,v):
     fade=math.sin(math.pi*t)**2*math.sin(math.pi*v)**2
     cloud=math.sin(13*t+2*math.sin(7*v))*math.sin(17*v-3*t)
     fibre=math.sin(105*v+4*math.sin(11*t))**6
-    return 1+fade*(.10*cloud+.065*fibre-.035)
+    return 1+fade*(.13*cloud+.075*fibre-.040)
 
 def membrane_alpha(t,v):
     # Continuous distal and lateral clarity; no detached opacity-band shells.
@@ -95,10 +95,6 @@ def make_model(pose='resting'):
             for k,t0 in enumerate((.28,.49,.68)):
                 m.strand('Olyra_Vein_'+str(i)+'_'+str(side)+'_'+str(k),'grown_mineral',
                     [add(surface(t0+.18*u/8,.5+side*.34*u/8),(0,.005,0)) for u in range(9)],.004)
-    if pose=='protective':
-        for p in m.parts:
-            if p['name'].startswith(('Olyra_Core','Olyra_SensoryCrest','Olyra_RecessedOrgan')):
-                p['vertices']=[(x,y+.4,z) for x,y,z in p['vertices']]
     # Preserve established face and mantle anatomy, repositioned on a standing body.
     include=('Avarin_Head','Avarin_Neck','Avarin_Torso','Avarin_Forehead','Avarin_Chest',
              'Avarin_Crescent','Avarin_Mantle','Avarin_Mouth','Avarin_Eye','Avarin_Temple',
@@ -120,7 +116,11 @@ def make_model(pose='resting'):
     m.oval('VeilHarness_Monitor','survey_light',(1.95,1.15,.639),(.025,.03,.005))
     refine_surfaces(m)
     refine_partner(m)
-    attach_uvs([p for p in m.parts if not p['name'].startswith('Olyra_')])
+    attach_uvs([p for p in m.parts if not p['name'].startswith('Olyra_') or p['name']=='Olyra_Core'])
+    if pose=='protective':
+        for p in m.parts:
+            if p['name'].startswith(('Olyra_Core','Olyra_SensoryCrest','Olyra_RecessedOrgan')):
+                p['vertices']=[(x,y+.4,z) for x,y,z in p['vertices']]
     # Ground the partner feet only, never rescale the organism to rider height.
     for p in m.parts:
         if p['name'].startswith('Avarin_Foot_'):
@@ -186,7 +186,7 @@ def refine_surfaces(m):
             p['vertices']=[tuple(center[k]+radius[k]*math.copysign(abs((q[k]-center[k])/radius[k])**.82,q[k]-center[k]) for k in range(3)) for q in v]
 
 def write(m,out,pose='resting'):
-    out.mkdir(parents=True,exist_ok=True);stem='LivingVeil' if pose=='resting' else 'LivingVeilProtective';obj=['# Living Veil glide study 08; meters; Y up; +Z forward','mtllib LivingVeil.mtl'];offset=1;uv_offset=1
+    out.mkdir(parents=True,exist_ok=True);stem='LivingVeil' if pose=='resting' else 'LivingVeilProtective';obj=['# Living Veil color study 09; meters; Y up; +Z forward','mtllib LivingVeil.mtl'];offset=1;uv_offset=1
     used=sorted({p['material'] for p in m.parts})
     for p in m.parts:
         obj+=['o '+p['name'],'usemtl '+p['material'],'s 1']
@@ -205,7 +205,7 @@ def write(m,out,pose='resting'):
 
     vertices=[v for p in m.parts for v in p['vertices']]
     bounds=[[min(v[k] for v in vertices) for k in range(3)],[max(v[k] for v in vertices) for k in range(3)]]
-    report=dict(status='glide study 08; not production ready',units='meters',up='Y',forward='Z',parts=len(m.parts),vertices=len(vertices),triangles=sum(len(p['faces']) for p in m.parts),height=bounds[1][1],bounds=bounds,lobes=5,materials=used,
+    report=dict(status='color study 09; not production ready',units='meters',up='Y',forward='Z',parts=len(m.parts),vertices=len(vertices),triangles=sum(len(p['faces']) for p in m.parts),height=bounds[1][1],bounds=bounds,lobes=5,materials=used,
         pose=pose,model_id='world05.living-veil.olyra',membrane_alpha='RGBA texture; MTL d is transparency classification, importer uses alpha multiplier 1',limitations=['Provisional static pose and surfaces; not locked visual acceptance','No gliding pose, production rig, animation or LODs','Layered transparency sorting needs native review','Exact curvature, harness detail and three tiny visual organs are implementation proposals'])
     (out/('manifest.json' if pose=='resting' else 'protective-manifest.json')).write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps(report,indent=2))

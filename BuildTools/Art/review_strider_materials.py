@@ -5,7 +5,7 @@ import tempfile
 from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw
-from build_great_strider import ROOT, write, make_model
+from build_great_strider import ROOT, write, make_model, MATERIALS
 from review_strider_surface import load_meshes
 from render_great_strider import render, font, mipmaps, sample_tile
 from strider_materials import tiles, SURFACES, albedo_pixels
@@ -34,7 +34,7 @@ def checks(before,after):
         for name,values in tiles().items():
             file=Path('Textures')/(name+'.png')
             assert (Path(temp)/file).read_bytes()==(source/file).read_bytes()
-            assert np.array_equal(np.array(Image.open(source/file)),albedo_pixels(values,after['materials'][name]))
+            assert np.array_equal(np.array(Image.open(source/file)),albedo_pixels(values,MATERIALS[name]))
             amplitude=SURFACES[name][0]
             assert min(map(min,values))>=255*(1-amplitude)-1 and max(map(max,values))<=255
             # Distant filtering must converge to the mean, independent of UV or camera.

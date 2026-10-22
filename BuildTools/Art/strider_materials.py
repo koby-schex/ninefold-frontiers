@@ -9,16 +9,16 @@ from functools import lru_cache
 
 # (variation amplitude, tile width in meters, finish description)
 SURFACES = {
-    'living_pearl': (.065, .65, 'soft satin organic tissue'),
-    'limb_tissue': (.075, .45, 'matte flexible tissue'),
+    'living_pearl': (.10, .65, 'soft satin organic tissue'),
+    'limb_tissue': (.11, .45, 'matte flexible tissue'),
     'soft_charcoal': (.045, .25, 'matte contact tissue'),
     'grown_mineral': (.11, .32, 'pale natural mineral'),
     'avar_skin': (.045, .18, 'smoky plum organic skin'),
-    'cloth': (.10, .12, 'matte fine fabric'),
+    'cloth': (.14, .12, 'matte fine fabric'),
     'continuance_frame': (.025, .30, 'restrained engineered satin'),
     'ceramic': (.035, .28, 'smooth ceramic'),
 }
-SIZE = 64
+SIZE = 128
 
 @lru_cache(maxsize=1)
 def tiles():
@@ -31,7 +31,11 @@ def tiles():
                 u, v = 2*math.pi*x/SIZE, 2*math.pi*y/SIZE
                 broad = .48*math.sin(u+1.3*math.sin(v)) + .32*math.cos(2*v+.8*math.sin(3*u))
                 fine = .20*math.sin(7*u+2*math.sin(5*v))*math.cos(9*v)
-                if name == 'cloth':
+                if name == 'living_pearl':
+                    fine = .20*math.sin(5*u+.7*math.sin(3*v))*math.cos(4*v)
+                elif name == 'grown_mineral':
+                    fine = .20*math.sin(8*u+1.1*math.sin(v))**3
+                elif name == 'cloth':
                     fine = .20*math.cos(16*u)*math.cos(16*v)
                 # Linear multiplier, bounded [1-amplitude, 1]. No painted highlights.
                 row.append(round(255*(1-amplitude*(.5+.5*(broad+fine)))))
