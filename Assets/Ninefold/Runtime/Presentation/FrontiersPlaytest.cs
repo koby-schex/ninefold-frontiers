@@ -42,7 +42,7 @@ namespace Ninefold.Presentation
         private CollectionFilter collectionFilter = CollectionFilter.All;
         private bool collectionDetailsExpanded;
         private bool battleExitPrompt;
-        private enum Page { Home, Battles, Missions, Briefing, Squad, Collection, Settings }
+        private enum Page { Home, Battles, Missions, Briefing, Squad, Collection, OtherModes, Settings }
         private Page page;
         private string selectedCampaign, squadInspection;
         private bool dirty, fatal, suspended, reducedMotion, inBattle, legacyProfile, worldFiveSlice;
@@ -218,7 +218,7 @@ namespace Ninefold.Presentation
             bool browsing = menuView.Phase == MissionFlowPhase.Selection ||
                 (menuView.Phase == MissionFlowPhase.Battle && !inBattle);
             bool campaignScreen = resultsScreen || page == Page.Settings ||
-                (browsing && (page == Page.Battles || page == Page.Missions ||
+                (browsing && (page == Page.Battles || page == Page.OtherModes || page == Page.Missions ||
                     page == Page.Briefing || page == Page.Squad || page == Page.Collection));
             root.EnableInClassList("campaign-mode", campaignScreen);
             // Campaign overview has its own restrained hierarchy; mission briefing
@@ -246,7 +246,7 @@ namespace Ninefold.Presentation
             // campaign-specific artwork or a claimed canonical unit preview.
             bool mainTab = !resultsScreen && !home &&
                 !(menuView.Phase == MissionFlowPhase.Battle && inBattle) &&
-                (page == Page.Battles || page == Page.Settings ||
+                (page == Page.Battles || page == Page.OtherModes || page == Page.Settings ||
                     (page == Page.Collection && inspectedUnit == null));
             root.EnableInClassList("primary-tab-mode", mainTab);
             bool ambientMenu = !resultsScreen && !home &&
@@ -287,6 +287,7 @@ namespace Ninefold.Presentation
                 content.Add(scroll);
                 if (menuView.Phase == MissionFlowPhase.Results) BuildResults(scroll);
                 else if (page == Page.Settings) BuildSettings(scroll);
+                else if (page == Page.OtherModes) BuildOtherModes(scroll);
                 else if (page == Page.Collection) BuildCollection(scroll);
                 else if (page == Page.Briefing) BuildBriefing(scroll);
                 else if (page == Page.Squad) BuildSquad(scroll);
@@ -317,6 +318,11 @@ namespace Ninefold.Presentation
             masthead.AddToClassList("home-masthead");
             masthead.AddToClassList("game-lobby-masthead");
             content.Add(masthead);
+            var settingsShortcut = Button(masthead, "", () => Navigate(Page.Settings));
+            settingsShortcut.AddToClassList("home-settings-shortcut");
+            HomeIcon(settingsShortcut, "settings");
+            Text(settingsShortcut, "Settings", "home-settings-label");
+            settingsShortcut.tooltip = "Settings";
             var hud = Row(masthead);
             hud.AddToClassList("game-lobby-hud");
             Text(hud, "WORLD 05 · SANCTUARY", "game-lobby-hud-world");
@@ -1588,10 +1594,10 @@ namespace Ninefold.Presentation
                 Text(copy, worldFiveSlice ? "WORLD FIVE · OPENING STUDY" :
                     "NINEFOLD · FRONTIERS", "shell-tab-eyebrow").pickingMode = PickingMode.Ignore;
                 string title = page == Page.Battles ? "Campaigns" :
-                    page == Page.Collection ? "Units" : "Settings";
+                    page == Page.Collection ? "Units" : page == Page.OtherModes ? "Missions" : "Settings";
                 Text(copy, title, "shell-tab-title").pickingMode = PickingMode.Ignore;
                 string sub = page == Page.Battles ? "YOUR JOURNEY THROUGH THE NINE WORLDS" :
-                    page == Page.Collection ? "YOUR TACTICAL ROSTER" : "PREFERENCES & PLAYTEST TOOLS";
+                    page == Page.Collection ? "YOUR TACTICAL ROSTER" : page == Page.OtherModes ? "ADDITIONAL GAME MODES" : "PREFERENCES & PLAYTEST TOOLS";
                 Text(copy, sub, "shell-tab-subtitle").pickingMode = PickingMode.Ignore;
                 return;
             }
@@ -1635,9 +1641,7 @@ namespace Ninefold.Presentation
         {
             var nav = Row(parent); nav.AddToClassList("navigation");
             nav.AddToClassList("unified-navigation");
-            bool homeNavigation = root.ClassListContains("home-mode");
-            if (homeNavigation) nav.AddToClassList("nf-nav");
-            foreach (var target in new[] { Page.Home, Page.Battles, Page.Collection, Page.Settings })
+            foreach (var target in new[] { Page.Home, Page.Battles, Page.OtherModes, Page.Collection })
             {
                 var destinationPage = target;
                 var label = target == Page.Battles ? "Campaigns" : target == Page.Collection ? "Units" : target.ToString();
@@ -1653,14 +1657,21 @@ namespace Ninefold.Presentation
                 });
                 button.AddToClassList("nav-button");
                 button.AddToClassList("unified-nav-button");
-                if (homeNavigation) button.AddToClassList("nf-nav-item");
-                HomeIcon(button, target == Page.Home ? "home" : target == Page.Settings ? "settings" : target == Page.Collection ? "units" : "routes");
+                HomeIcon(button, target == Page.Home ? "home" : target == Page.Collection ? "units" : "routes");
                 Text(button, label, "nav-label"); button.tooltip = label;
                 button.EnableInClassList("selected",
                     page == target || (target == Page.Battles &&
                     (page == Page.Missions || page == Page.Briefing || page == Page.Squad)));
             }
         }
+        private void BuildOtherModes(VisualElement parent)
+        {
+            var intro = Card(parent, "other-modes-overview");
+            Text(intro, "More ways to explore the Nine Worlds", "section");
+            Text(intro, "Additional modes will appear here as they are developed and tested.", "detail");
+            Text(intro, "Campaigns remain accessible in the Campaigns tab.", "hint");
+        }
+
         private void BuildSettings(VisualElement parent)
         {
             var motion = Card(parent);
