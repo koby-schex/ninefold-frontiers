@@ -15,6 +15,20 @@ internal static partial class Program
         ("World Five 004–010 stage playable objectives away from solid cover", FullCampaignObjectiveReachability)
     };
 
+    private static void AshboundRevealBoundary()
+    {
+        WorldFiveStorySequence.Validate();
+        foreach(var id in WorldFiveOpeningTenPrototype.MissionIds)
+        {
+            Equal(true,WorldFiveStorySequence.IsTutorial(id));
+            Equal(false,WorldFiveStorySequence.MayRevealAshbound(id));
+            Equal("Prologue",WorldFiveStorySequence.StoryAct(id));
+        }
+        Equal(false,WorldFiveStorySequence.IsTutorial(WorldFiveStorySequence.FirstCampaignMissionId));
+        Equal(true,WorldFiveStorySequence.MayRevealAshbound(WorldFiveStorySequence.FirstCampaignMissionId));
+        Equal("Act One",WorldFiveStorySequence.StoryAct(WorldFiveStorySequence.FirstCampaignMissionId));
+    }
+
     private static void FullCampaignDefinitions()
     {
         var catalog=WorldFiveOpeningTenPrototype.Create();
