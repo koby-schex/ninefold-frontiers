@@ -379,8 +379,8 @@ namespace Ninefold.Presentation
             {
                 if (part.name == "Walking limb")
                 {
-                    int pair = legIndex / 2;
-                    int side = legIndex % 2 == 0 ? -1 : 1;
+                    int pair = legIndex % 2; // front or rear on the same side
+                    int side = legIndex < 2 ? -1 : 1;
                     float amplitude = stalker ? 24f : 13f;
                     float stride = moving ? Mathf.Sin(phase * (stalker ? 21f : 17f)
                         + pair * Mathf.PI + (side > 0 ? Mathf.PI : 0)) : 0f;
