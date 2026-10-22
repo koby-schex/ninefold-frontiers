@@ -252,8 +252,60 @@ internal static partial class Program
             }
         }
         if(!reached) throw new Exception("Rescue pickup remains unreachable after legal waypoint traversal. Final phase: "+play.Read().Battle.Phase+"; position: "+play.Read().Battle.Units.Single(u=>u.Id=="fixture-a-1").Position?.X+","+play.Read().Battle.Units.Single(u=>u.Id=="fixture-a-1").Position?.Z+"; waypoint "+waypoint);
+        // Resume after actual pickup, then carry the recovered target back
+        // through the authored southern corridor to the extraction zone.
+        Equal(true,play.Read().Battle.Objectives.Single(x=>x.Id=="primary").Rescued);
         menu=WorldFiveOpeningTenPrototype.Open(stores.Battles,stores.Progress);
         Equal(MissionFlowPhase.Battle,menu.Read().Phase);
         Equal(ids[2],menu.Read().Resume.MissionId);
+        play=menu.ResumeBattle();
+        Equal(true,play.Read().Battle.Objectives.Single(x=>x.Id=="primary").Rescued);
+        var returnWaypoints=new[] {
+            new FieldPoint(6,0,-3),new FieldPoint(0,0,-3),
+            new FieldPoint(-2,0,-3)
+        };
+        int returnIndex=0;
+        for(int step=0;step<240 && menu.Read().Results==null;step++)
+        {
+            var battle=play.Read().Battle;
+            if(battle.Phase!=BattleSessionPhase.PlayerInput)
+            {
+                var update=play.Advance(new EnemyPerception(Array.Empty<string>(),Array.Empty<string>()));
+                if(update.AnimationId!=null) play.CompleteAnimation(update.AnimationId);
+                continue;
+            }
+            var actor=battle.Units.Single(x=>x.Id==battle.Activation.UnitId);
+            if(returnIndex<returnWaypoints.Length-1 &&
+                (actor.Position.Value.X-returnWaypoints[returnIndex].X)*(actor.Position.Value.X-returnWaypoints[returnIndex].X)+
+                (actor.Position.Value.Z-returnWaypoints[returnIndex].Z)*(actor.Position.Value.Z-returnWaypoints[returnIndex].Z)<4m)
+                returnIndex++;
+            var target=returnWaypoints[returnIndex];
+            var extractionStep=play.ReadPlanning().Movement
+                .Where(x=>!x.Position.Equals(actor.Position.Value))
+                .OrderBy(x=>(x.Position.X-target.X)*(x.Position.X-target.X)+
+                    (x.Position.Z-target.Z)*(x.Position.Z-target.Z)).FirstOrDefault();
+            if(extractionStep!=null)
+            {
+                Equal(InputOutcome.Previewed,play.TapDestination(extractionStep.Position).Outcome);
+                var result=play.TapDestination(extractionStep.Position);
+                Equal(InputOutcome.Committed,result.Outcome);
+                if(result.AnimationId!=null) play.CompleteAnimation(result.AnimationId);
+            }
+            var after=play.Read().Battle;
+            if(after.Phase==BattleSessionPhase.PlayerInput)
+            {
+                var ended=play.EndTurn(after.Activation.ActivationId);
+                if(ended.AnimationId!=null) play.CompleteAnimation(ended.AnimationId);
+            }
+        }
+        if(menu.Read().Results==null)
+            throw new Exception("Rescue extraction did not reach victory after legal return movement.");
+        Equal(Ninefold.Core.Missions.MissionOutcome.Victory,menu.Read().Results.Result.Outcome);
+        var attempt=menu.Read().Results.Result.AttemptId;
+        menu.ClaimRewards(attempt);
+        menu.ReturnToSelection(attempt);
+        menu=WorldFiveOpeningTenPrototype.Open(stores.Battles,stores.Progress);
+        Equal(ids[3],menu.Read().NextCampaignMission.Definition.Id);
+        Equal(true,menu.Read().Missions.Single(x=>x.Definition.Id==ids[3]).Available);
     }
 }
