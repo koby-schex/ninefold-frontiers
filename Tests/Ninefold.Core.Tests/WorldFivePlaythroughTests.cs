@@ -280,14 +280,14 @@ internal static partial class Program
                 (actor.Position.Value.Z-returnWaypoints[returnIndex].Z)*(actor.Position.Value.Z-returnWaypoints[returnIndex].Z)<4m)
                 returnIndex++;
             var target=returnWaypoints[returnIndex];
-            var sample=play.ReadPlanning().Movement
+            var extractionStep=play.ReadPlanning().Movement
                 .Where(x=>!x.Position.Equals(actor.Position.Value))
                 .OrderBy(x=>(x.Position.X-target.X)*(x.Position.X-target.X)+
                     (x.Position.Z-target.Z)*(x.Position.Z-target.Z)).FirstOrDefault();
-            if(sample!=null)
+            if(extractionStep!=null)
             {
-                Equal(InputOutcome.Previewed,play.TapDestination(sample.Position).Outcome);
-                var result=play.TapDestination(sample.Position);
+                Equal(InputOutcome.Previewed,play.TapDestination(extractionStep.Position).Outcome);
+                var result=play.TapDestination(extractionStep.Position);
                 Equal(InputOutcome.Committed,result.Outcome);
                 if(result.AnimationId!=null) play.CompleteAnimation(result.AnimationId);
             }
