@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Ninefold.Core.Combat;
+using Ninefold.Core.Content;
 using Ninefold.Core.Flow;
 using Ninefold.Core.Views;
 using Ninefold.Core.Missions;
@@ -37,12 +38,13 @@ namespace Ninefold.Presentation
         private readonly GameObject world;
         private readonly Camera camera;
         private readonly Dictionary<string, Token> tokens = new Dictionary<string, Token>();
+        private readonly Dictionary<string, string> wildlifeActors = new Dictionary<string, string>(StringComparer.Ordinal);
         private readonly List<Material> materials = new List<Material>();
         private readonly Dictionary<string, Label> objectiveLabels = new Dictionary<string, Label>();
         private readonly Dictionary<string, Vector3> objectivePositions = new Dictionary<string, Vector3>();
         private readonly Dictionary<string, GameObject> objectiveVisuals = new Dictionary<string, GameObject>();
         private readonly List<FloatingFeedback> feedback = new List<FloatingFeedback>();
-        private readonly Material friendly, enemy, active, floor, grid, gold, cover, trim, markings;
+        private readonly Material friendly, enemy, active, floor, grid, gold, cover, trim, markings, sillrunner, seamstalker;
         private readonly LineRenderer path, range;
         private GameObject terrain;
         private readonly BattlefieldScenery scenery;
@@ -65,6 +67,7 @@ namespace Ninefold.Presentation
                 var m = new Material(template) { color = color }; materials.Add(m); return m;
             }
             friendly = Make(new Color(.14f, .72f, .8f)); enemy = Make(new Color(.94f, .34f, .27f));
+            sillrunner = Make(new Color(.56f,.74f,.56f)); seamstalker = Make(new Color(.63f,.40f,.77f));
             active = Make(new Color(.94f, .85f, .52f)); floor = Make(new Color(.075f, .12f, .17f));
             grid = Make(new Color(.16f, .23f, .29f)); gold = Make(new Color(.9f, .65f, .25f));
             cover = Make(new Color(.26f, .35f, .42f)); trim = Make(new Color(.42f, .52f, .57f));
@@ -294,6 +297,17 @@ namespace Ninefold.Presentation
             }
         }
 
+        // Only the active mission catalog may assign a wildlife visual. Shared
+        // spawn IDs from older studies never imply a particular creature type.
+        public void ConfigureWildlifeActors(IEnumerable<ActorSpawn> actors)
+        {
+            wildlifeActors.Clear();
+            foreach (var actor in actors)
+                if (actor.UnitId == WorldFiveTutorialWildlifeV1.SillrunnerId ||
+                    actor.UnitId == WorldFiveTutorialWildlifeV1.SeamstalkerId)
+                    wildlifeActors[actor.Id] = actor.UnitId;
+        }
+
         private void Reconcile(BattleView view)
         {
             var living = new HashSet<string>(view.HealthOverlays.Select(h => h.UnitId), StringComparer.Ordinal);
@@ -304,8 +318,20 @@ namespace Ninefold.Presentation
                 if (!tokens.TryGetValue(h.UnitId, out var t))
                 {
                     t = new Token(); tokens.Add(h.UnitId, t);
-                    t.Body = Primitive(h.UnitId, h.IsEnemyControlled ? PrimitiveType.Cube : PrimitiveType.Capsule, Vector3.zero,
-                        h.IsEnemyControlled ? new Vector3(.5f, StandardTokenHeight, .5f) : new Vector3(.5f, StandardTokenHeight / 2, .5f), h.IsEnemyControlled ? enemy : friendly);
+                    wildlifeActors.TryGetValue(h.UnitId, out var creature);
+                    bool isSillrunner = creature == WorldFiveTutorialWildlifeV1.SillrunnerId;
+                    bool isSeamstalker = creature == WorldFiveTutorialWildlifeV1.SeamstalkerId;
+                    t.Body = Primitive(h.UnitId,
+                        isSillrunner ? PrimitiveType.Sphere :
+                        isSeamstalker ? PrimitiveType.Capsule :
+                        h.IsEnemyControlled ? PrimitiveType.Cube : PrimitiveType.Capsule,
+                        Vector3.zero,
+                        isSillrunner ? new Vector3(.8f,.7f,.75f) :
+                        isSeamstalker ? new Vector3(.64f,StandardTokenHeight/2,.85f) :
+                        h.IsEnemyControlled ? new Vector3(.5f,StandardTokenHeight,.5f) :
+                        new Vector3(.5f,StandardTokenHeight/2,.5f),
+                        isSillrunner ? sillrunner : isSeamstalker ? seamstalker :
+                        h.IsEnemyControlled ? enemy : friendly);
                     // Abstract tactical tokens: high contrast footing and a readable upper collar.
                     var footing = Primitive("Unit footing", h.IsEnemyControlled ? PrimitiveType.Cube : PrimitiveType.Cylinder,
                         Vector3.down * (StandardTokenHeight/2-.09f), new Vector3(.65f,.07f,.65f), grid);
