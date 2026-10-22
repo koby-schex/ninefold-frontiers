@@ -11,7 +11,8 @@ internal static partial class Program
     private static (string Name, Action Run)[] WorldFiveBatchTests() => new (string, Action)[] {
         ("World Five 001–010 each author a legal objective and 3-unit deployment", FullCampaignDefinitions),
         ("World Five 001–010 preserve chained unlocks and reward policies", FullCampaignProgression),
-        ("World Five 001–010 validate distinct battlefield bounds and legal spawns", FullCampaignMaps)
+        ("World Five 001–010 validate distinct battlefield bounds and legal spawns", FullCampaignMaps),
+        ("World Five 004–010 stage playable objectives away from solid cover", FullCampaignObjectiveReachability)
     };
 
     private static void FullCampaignDefinitions()
@@ -71,4 +72,38 @@ internal static partial class Program
                 actor.Position.Z<=m.Map.Bounds.Max.Z));
         }
     }
+    private static void FullCampaignObjectiveReachability()
+    {
+        var catalog=WorldFiveOpeningTenPrototype.Create();
+        var ids=WorldFiveOpeningTenPrototype.MissionIds;
+        for(int index=3;index<ids.Count;index++)
+        {
+            var mission=catalog.Missions[ids[index]];
+            var map=mission.Map;
+            foreach(var objective in mission.Objectives)
+            {
+                if(objective.Interaction!=null)
+                {
+                    var at=objective.Interaction.Point;
+                    Equal(true,at.X>=map.Bounds.Min.X && at.X<=map.Bounds.Max.X);
+                    Equal(true,at.Z>=map.Bounds.Min.Z && at.Z<=map.Bounds.Max.Z);
+                    Equal(false,map.Obstacles.Any(o=>o.BlocksMovement &&
+                        at.X>o.Bounds.Min.X && at.X<o.Bounds.Max.X &&
+                        at.Z>o.Bounds.Min.Z && at.Z<o.Bounds.Max.Z));
+                }
+                if(objective.Zone!=null)
+                {
+                    var zone=objective.Zone;
+                    Equal(true,zone.Min.X>=map.Bounds.Min.X && zone.Max.X<=map.Bounds.Max.X);
+                    Equal(true,zone.Min.Z>=map.Bounds.Min.Z && zone.Max.Z<=map.Bounds.Max.Z);
+                    Equal(true,zone.Max.X>zone.Min.X && zone.Max.Z>zone.Min.Z);
+                }
+            }
+            foreach(var point in mission.Deployment)
+                Equal(false,map.Obstacles.Any(o=>o.BlocksMovement &&
+                    point.X>o.Bounds.Min.X && point.X<o.Bounds.Max.X &&
+                    point.Z>o.Bounds.Min.Z && point.Z<o.Bounds.Max.Z));
+        }
+    }
+
 }
