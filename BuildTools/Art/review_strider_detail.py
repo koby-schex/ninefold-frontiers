@@ -10,6 +10,7 @@ from review_strider_connections import inside, cap_points
 from render_great_strider import render, font
 
 BASELINE='85525b330055ff03cf35f8d977140eb4a7b9706f'  # merged review 10; source material study 08
+AFTER='82741eef61caca9debc9becf58fa46ace505556f'  # study 11 before the paired color pass
 OUTPUT=ROOT/'SourceArt/GreatStrider/DetailReview'
 
 
@@ -41,14 +42,14 @@ def checks(before,after):
     assert before['materials']==after['materials'] and before['opacity']==after['opacity']
     assert before['textures']==after['textures'], 'Palette/texture pattern not revised'
     assert after['finish']['cloth'][0]<after['finish']['living_pearl'][0]<after['finish']['grown_mineral'][0]
-    return dict(baseline=BASELINE,changed_parts=changed,parts=len(new),triangles=sum(len(p['faces']) for p in new.values()),
+    return dict(baseline=BASELINE,after=AFTER,changed_parts=changed,parts=len(new),triangles=sum(len(p['faces']) for p in new.values()),
         unchanged_envelope=True,unchanged_topology=True,buried_root_caps=True,
         unchanged_palette_and_membrane_opacity=True,
         limitations='Separate overlapping source meshes; not welded topology, final sculpt, native Unity verification or canon approval')
 
 
 def main(check_only=False):
-    before,after=load_meshes(BASELINE,None)
+    before,after=load_meshes(BASELINE,AFTER)
     report=checks(before,after); OUTPUT.mkdir(parents=True,exist_ok=True)
     (OUTPUT/'checks.json').write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps(report,indent=2),flush=True)
