@@ -15,6 +15,26 @@ internal static partial class Program
         ("World Five 004–010 stage playable objectives away from solid cover", FullCampaignObjectiveReachability)
     };
 
+    private static void AshboundFullRoster()
+    {
+        var catalog=WorldFiveActOnePrototype.Create();
+        Equal(6,WorldFiveActOnePrototype.EnemyTemplateIds.Length);
+        Equal(6,WorldFiveActOnePrototype.EnemyTemplateIds.Distinct().Count());
+        foreach(var id in WorldFiveActOnePrototype.EnemyTemplateIds)
+        {
+            var unit=catalog.Units[id];
+            Equal(true,unit.Roster==null);
+            Equal(false,catalog.StarterUnits.Contains(id));
+            var kit=catalog.Kits[unit.KitId];
+            Equal(4,kit.AbilityIds.Count);
+            Equal(true,kit.AbilityIds.All(ability=>catalog.Abilities.ContainsKey(ability)));
+            Equal(true,catalog.Abilities[kit.AbilityIds[1]].Effect.HasHealthEffect);
+            Equal(true,catalog.Abilities[kit.AbilityIds[2]].Effect.HasHealthEffect);
+        }
+        Equal(6,WorldFiveActOnePrototype.EnemyTemplateIds.Select(id=>
+            catalog.Units[id].Initiative).Distinct().Count());
+    }
+
     private static void AshboundFirstEncounter()
     {
         var tutorial=WorldFiveOpeningTenPrototype.Create();
