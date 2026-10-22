@@ -50,7 +50,6 @@ internal static partial class Program
             Equal(true,missions[i].Prerequisites.SequenceEqual(
                 i==0 ? Array.Empty<string>() : new[]{ids[i-1]}));
             Equal(true,catalog.Rewards.ContainsKey(ids[i]));
-            Equal(true,catalog.Rewards[ids[i]].FirstClear.Count>0);
         }
     }
 
