@@ -23,8 +23,38 @@ internal static partial class Program
         ("World Five encounters cover every Ashbound archetype with varied pressure", AshboundTacticalVariety),
         ("World Five Ashbound NPC tactical roles differentiate defensive and aggressive behaviors", AshboundRoleBehavior),
         ("World Five native wildlife appears sparingly in tutorial without Ashbound", NativeWildlifeBoundary),
-        ("World Five native creatures have distinct cautious and pursuit behaviors", WildlifeBehaviorContrast)
+        ("World Five native creatures have distinct cautious and pursuit behaviors", WildlifeBehaviorContrast),
+        ("World Five integrated opening protects 14 sequential missions and wildlife narrative boundary", OpeningCampaignAudit)
     };
+
+    private static void OpeningCampaignAudit()
+    {
+        var current=WorldFiveTutorialWildlifeV1.Create();
+        var campaign=current.Campaigns.Single();
+        Equal(WorldFiveOpeningTenPrototype.CampaignId,campaign.Id);
+        Equal(14,campaign.Missions.Count);
+        Equal(true,campaign.Missions.First().Prerequisites.Count==0);
+        var ids=WorldFiveOpeningTenPrototype.MissionIds
+            .Concat(new[]{WorldFiveStorySequence.FirstCampaignMissionId})
+            .Concat(WorldFiveEncounterVarietyV2.NewMissionIds).ToArray();
+        Equal(true,campaign.Missions.Select(m=>m.MissionId).SequenceEqual(ids));
+        for(int i=1;i<ids.Length;i++)
+            Equal(true,campaign.Missions[i].Prerequisites.SequenceEqual(new[]{ids[i-1]}));
+        Equal(true,current.StarterUnits.All(id=>current.Units[id].Roster!=null));
+        Equal(true,current.StarterUnits.All(id=>!id.StartsWith("ashbound-",StringComparison.Ordinal)));
+        for(int i=0;i<10;i++)
+        {
+            var actors=current.Missions[ids[i]].Actors;
+            Equal(true,actors.All(a=>!a.UnitId.StartsWith("ashbound-",StringComparison.Ordinal)));
+            if(i!=6 && i!=7)
+                Equal(true,actors.All(a=>a.UnitId!=WorldFiveTutorialWildlifeV1.SillrunnerId &&
+                    a.UnitId!=WorldFiveTutorialWildlifeV1.SeamstalkerId));
+        }
+        Equal(2,current.Missions[ids[6]].Actors.Count);
+        Equal(1,current.Missions[ids[7]].Actors.Count);
+        Equal(true,current.Missions[ids[10]].Actors.All(a=>
+            a.UnitId.StartsWith("ashbound-",StringComparison.Ordinal)));
+    }
 
     private static void WildlifeBehaviorContrast()
     {
