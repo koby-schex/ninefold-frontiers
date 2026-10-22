@@ -166,7 +166,7 @@ internal static partial class Program
         // The map's central cover blocks direct paths; use legal sampled
         // movement and a north-side waypoint instead of greedy straight-line
         // pursuit that may repeatedly collide with the same obstacle.
-        var route=new[] { new FieldPoint(0,0,4), new FieldPoint(5,0,4), pickup };
+        var route=new[] { new FieldPoint(0,0,-3), new FieldPoint(5,0,-3), new FieldPoint(6,0,2), pickup };
         int waypoint=0;
         int committedMoves=0;
         for(int step=0;step<140 && waypoint<route.Length;step++)
@@ -182,7 +182,8 @@ internal static partial class Program
             if(options.Objectives.Single(x=>x.Id=="primary").CanInteract)
                 break;
             var current=route[waypoint];
-            var samples=options.Movement.OrderBy(x=>
+            var position=battle.Units.Single(u=>u.Id==battle.Activation.UnitId).Position.Value;
+            var samples=options.Movement.Where(x=>!x.Position.Equals(position)).OrderBy(x=>
                 (x.Position.X-current.X)*(x.Position.X-current.X)+
                 (x.Position.Z-current.Z)*(x.Position.Z-current.Z)).ToArray();
             if(samples.Length==0)
@@ -232,7 +233,8 @@ internal static partial class Program
                 reached=true;
                 break;
             }
-            var nearby=plan.Movement.OrderBy(x=>
+            var position=phase.Units.Single(u=>u.Id==phase.Activation.UnitId).Position.Value;
+            var nearby=plan.Movement.Where(x=>!x.Position.Equals(position)).OrderBy(x=>
                 (x.Position.X-pickup.X)*(x.Position.X-pickup.X)+
                 (x.Position.Z-pickup.Z)*(x.Position.Z-pickup.Z)).FirstOrDefault();
             if(nearby!=null)
@@ -249,7 +251,7 @@ internal static partial class Program
                 if(end.AnimationId!=null) play.CompleteAnimation(end.AnimationId);
             }
         }
-        if(!reached) throw new Exception("Rescue pickup remains unreachable after legal waypoint traversal.");
+        if(!reached) throw new Exception("Rescue pickup remains unreachable after legal waypoint traversal. Final phase: "+play.Read().Battle.Phase+"; position: "+play.Read().Battle.Units.Single(u=>u.Id=="fixture-a-1").Position);
         menu=WorldFiveOpeningTenPrototype.Open(stores.Battles,stores.Progress);
         Equal(MissionFlowPhase.Battle,menu.Read().Phase);
         Equal(ids[2],menu.Read().Resume.MissionId);
