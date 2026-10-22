@@ -379,12 +379,16 @@ namespace Ninefold.Presentation
             {
                 if (part.name == "Walking limb")
                 {
-                    int pair = legIndex / 2;
-                    int side = legIndex % 2 == 0 ? -1 : 1;
+                    int pair = legIndex % 2; // front or rear on the same side
+                    int side = legIndex < 2 ? -1 : 1;
                     float amplitude = stalker ? 24f : 13f;
                     float stride = moving ? Mathf.Sin(phase * (stalker ? 21f : 17f)
                         + pair * Mathf.PI + (side > 0 ? Mathf.PI : 0)) : 0f;
                     part.localRotation = Quaternion.Euler(amplitude * stride,0,0);
+                    // Lift the advancing foot; child offsets return to their authored
+                    // location when the creature stops or reduced motion is selected.
+                    float lift = moving ? Mathf.Max(0f,stride) * (stalker ? .12f : .075f) : 0f;
+                    part.localPosition = new Vector3(side*.47f,-.38f+lift,pair==0?.34f:-.38f);
                     legIndex++;
                 }
                 else if (part.name == "Head")
@@ -585,9 +589,22 @@ namespace Ninefold.Presentation
                         token.Body.transform.localScale = token.Scale*(1f+.07f*reaction);
                     }
                     if (wildlifeActors.TryGetValue(before.Id,out var wildlifeSpecies))
-                        PoseWildlife(token,wildlifeSpecies,t,
-                            movement?.UnitId == before.Id,
+                    {
+                        bool travelling = movement?.UnitId == before.Id;
+                        if (travelling)
+                        {
+                            // Orient the visual animal along its actual traversed path.
+                            // Never rotate the authoritative collision body in Core.
+                            var heading = AlongRoute(
+                                new[]{before.Position.Value}.Concat(movement.Movement.Path).ToArray(),
+                                Mathf.Min(1f,moveTime+.025f)) - position;
+                            heading.y = 0;
+                            if (heading.sqrMagnitude > .0001f)
+                                token.Body.transform.localRotation = Quaternion.LookRotation(heading);
+                        }
+                        PoseWildlife(token,wildlifeSpecies,t,travelling,
                             pulse?.UnitId == before.Id,strike);
+                    }
                     if (after?.Health?.IsDefeated == true)
                     {
                         token.Body.transform.localScale=token.Scale*(1-strike*.85f);
