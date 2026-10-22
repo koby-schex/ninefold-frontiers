@@ -1644,7 +1644,7 @@ namespace Ninefold.Presentation
             foreach (var target in new[] { Page.Home, Page.Battles, Page.OtherModes, Page.Collection })
             {
                 var destinationPage = target;
-                var label = target == Page.Battles ? "Campaigns" : target == Page.Collection ? "Units" : target.ToString();
+                var label = target == Page.Battles ? "Campaigns" : target == Page.Collection ? "Units" : target == Page.OtherModes ? "Missions" : "Home";
                 // Browsing is permitted during a saved battle; progression and
                 // new deployments remain guarded until it has been resolved.
                 var button = Button(nav, "", () => {
@@ -1657,7 +1657,7 @@ namespace Ninefold.Presentation
                 });
                 button.AddToClassList("nav-button");
                 button.AddToClassList("unified-nav-button");
-                HomeIcon(button, target == Page.Home ? "home" : target == Page.Collection ? "units" : "routes");
+                HomeIcon(button, target == Page.Home ? "home" : target == Page.Collection ? "units" : target == Page.OtherModes ? "missions" : "routes");
                 Text(button, label, "nav-label"); button.tooltip = label;
                 button.EnableInClassList("selected",
                     page == target || (target == Page.Battles &&
