@@ -12,8 +12,36 @@ internal static partial class Program
         ("World Five 001–010 each author a legal objective and 3-unit deployment", FullCampaignDefinitions),
         ("World Five 001–010 preserve chained unlocks and reward policies", FullCampaignProgression),
         ("World Five 001–010 validate distinct battlefield bounds and legal spawns", FullCampaignMaps),
-        ("World Five 004–010 stage playable objectives away from solid cover", FullCampaignObjectiveReachability)
+        ("World Five 004–010 stage playable objectives away from solid cover", FullCampaignObjectiveReachability),
+        ("World Five four bonded traditions have distinct prototype abilities", BondedTraditionAbilityStudy),
+        ("World Five Ashbound six enemy profiles stay noncollectible", AshboundFullRoster),
+        ("World Five status-based powers and Afterecho link correctly", WorldFiveStatusMechanics),
+        ("World Five Ashbound first contact follows tutorial", AshboundFirstEncounter),
+        ("World Five Ashbound only reveal beyond ten tutorial missions", AshboundRevealBoundary),
+        ("World Five integrated Act One catalog has full encounter and save isolation", IntegratedActOneReliability)
     };
+
+    private static void IntegratedActOneReliability()
+    {
+        var old=WorldFiveOpeningTenPrototype.Create();
+        var candidate=WorldFiveCombatMechanicsV1.Create();
+        var first=WorldFiveStorySequence.FirstCampaignMissionId;
+        Equal(11,candidate.Campaigns.Single().Missions.Count);
+        Equal(true,candidate.Missions.ContainsKey(first));
+        Equal(false,old.Missions.ContainsKey(first));
+        Equal(false,old.Manifest.SaveRevision==candidate.Manifest.SaveRevision);
+        var mission=candidate.Missions[first];
+        Equal(ObjectiveKind.Defeat,mission.Objectives[0].Kind);
+        Equal(2,mission.Objectives[0].Subjects.Count);
+        Equal(true,mission.Objectives[0].Subjects.All(id=>mission.Actors.Any(a=>a.Id==id && a.IsHostile)));
+        Equal(true,mission.Actors.All(a=>candidate.Units[a.UnitId].Roster==null));
+        foreach(var id in WorldFiveOpeningTenPrototype.MissionIds)
+            Equal(true,candidate.Missions[id].Actors.All(a=>!a.UnitId.StartsWith("ashbound-",StringComparison.Ordinal)));
+        Equal(true,candidate.Campaigns.Single().Missions.Last().Prerequisites
+            .SequenceEqual(new[]{WorldFiveOpeningTenPrototype.MissionIds[9]}));
+        foreach(var id in WorldFiveActOnePrototype.EnemyTemplateIds)
+            Equal(false,candidate.StarterUnits.Contains(id));
+    }
 
     private static void WorldFiveStatusMechanics()
     {
