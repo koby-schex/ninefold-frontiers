@@ -18,8 +18,40 @@ internal static partial class Program
         ("World Five status-based powers and Afterecho link correctly", WorldFiveStatusMechanics),
         ("World Five Ashbound first contact follows tutorial", AshboundFirstEncounter),
         ("World Five Ashbound only reveal beyond ten tutorial missions", AshboundRevealBoundary),
-        ("World Five integrated Act One catalog has full encounter and save isolation", IntegratedActOneReliability)
+        ("World Five integrated Act One catalog has full encounter and save isolation", IntegratedActOneReliability),
+        ("World Five missions 11-14 vary Ashbound counts and compositions", WorldFiveEncounterVariation)
     };
+
+    private static void WorldFiveEncounterVariation()
+    {
+        var catalog=WorldFiveEncounterVarietyV2.Create();
+        var ids=new[]{WorldFiveActOnePrototype.FirstMission}
+            .Concat(WorldFiveEncounterVarietyV2.NewMissionIds).ToArray();
+        Equal(14,catalog.Campaigns.Single().Missions.Count);
+        Equal(true,ids.Select(id=>catalog.Missions[id].Actors.Count)
+            .SequenceEqual(new[]{2,3,4,2}));
+        Equal(4,ids.Select(id=>string.Join("|",
+            catalog.Missions[id].Actors.Select(a=>a.UnitId).OrderBy(x=>x)))
+            .Distinct().Count());
+        foreach(var id in ids)
+        {
+            var mission=catalog.Missions[id];
+            Equal(true,mission.Actors.All(a=>a.IsHostile &&
+                a.UnitId.StartsWith("ashbound-",StringComparison.Ordinal)));
+            Equal(true,mission.Objectives[0].Subjects.All(target=>
+                mission.Actors.Any(a=>a.Id==target)));
+        }
+        for(int i=0;i<WorldFiveEncounterVarietyV2.NewMissionIds.Length;i++)
+            Equal(true,catalog.Campaigns.Single().Missions
+                .Single(m=>m.MissionId==WorldFiveEncounterVarietyV2.NewMissionIds[i])
+                .Prerequisites.SequenceEqual(new[]{i==0 ?
+                    WorldFiveActOnePrototype.FirstMission : WorldFiveEncounterVarietyV2.NewMissionIds[i-1]}));
+        Equal(false,catalog.Manifest.SaveRevision==
+            WorldFiveCombatMechanicsV1.Create().Manifest.SaveRevision);
+        foreach(var tutorialId in WorldFiveOpeningTenPrototype.MissionIds)
+            Equal(true,catalog.Missions[tutorialId].Actors.All(actor=>
+                !actor.UnitId.StartsWith("ashbound-",StringComparison.Ordinal)));
+    }
 
     private static void IntegratedActOneReliability()
     {
