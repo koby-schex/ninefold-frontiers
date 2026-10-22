@@ -339,7 +339,7 @@ namespace Ninefold.Presentation
                         isSeamstalker ? PrimitiveType.Capsule :
                         h.IsEnemyControlled ? PrimitiveType.Cube : PrimitiveType.Capsule,
                         Vector3.zero,
-                        isSillrunner ? new Vector3(.8f,.7f,.75f) :
+                        isSillrunner ? new Vector3(.8f,StandardTokenHeight,.75f) :
                         isSeamstalker ? new Vector3(.64f,StandardTokenHeight/2,.85f) :
                         h.IsEnemyControlled ? new Vector3(.5f,StandardTokenHeight,.5f) :
                         new Vector3(.5f,StandardTokenHeight/2,.5f),
