@@ -152,7 +152,7 @@ internal static partial class Program
             menu.ReturnToSelection(attempt);
             menu=Open(stores.Battles,stores.Progress);
             Equal(ids[stage+1],menu.Read().NextCampaignMission.Definition.Id);
-            Equal(stage+2,menu.Read().Progress.Claims.Count);
+            Equal(stage+1,menu.Read().Progress.Claims.Count);
         }
         Equal(ids[8],menu.Read().NextCampaignMission.Definition.Id);
         Equal(false,menu.Read().Missions.Single(m=>
