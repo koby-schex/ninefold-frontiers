@@ -52,7 +52,7 @@ internal static partial class Program
             {
                 var view=play.Read().Battle;
                 BattleInputResult action;
-                bool moved=false;
+                bool moved=false, attacked=false;
                 if(view.Phase!=BattleSessionPhase.PlayerInput)
                 {
                     if(view.Phase==BattleSessionPhase.EnemyInput)enemyTurns++;
@@ -80,6 +80,7 @@ internal static partial class Program
                             Equal(InputOutcome.Committed,action.Outcome);
                             attacks++;
                             didAttack=true;
+                            attacked=true;
                             break;
                         }
                     }
@@ -102,7 +103,7 @@ internal static partial class Program
                             else
                                 destination=actor.Position.Value.X<3m && actor.Position.Value.Z<1m
                                     ? new FieldPoint(3,0,-3)
-                                    : new FieldPoint(6.5m,0,2m);
+                                    : new FieldPoint(5.75m,0,2m);
                             var current=actor.Position.Value;
                             var sample=play.ReadPlanning().Movement
                                 .Where(m=>!m.Position.Equals(current))
@@ -129,7 +130,7 @@ internal static partial class Program
                     play=menu.ResumeBattle();
                     resumed=true;
                 }
-                if(menu.Read().Results==null && (moved || action.Outcome==InputOutcome.Committed) &&
+                if(menu.Read().Results==null && (moved || attacked) &&
                     play.Read().Battle.Phase==BattleSessionPhase.PlayerInput)
                 {
                     var now=play.Read().Battle;
