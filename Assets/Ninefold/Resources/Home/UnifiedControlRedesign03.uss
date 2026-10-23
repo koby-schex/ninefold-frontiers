@@ -1,0 +1,247 @@
+/*
+ * Ninefold Frontiers — Shared control redesign 03.
+ * Loaded last. A unified mineral/bronze design language across menus and battle.
+ * All styles are scoped to the existing UI Toolkit screen tree.
+ */
+.root #safe-area Button.game-button {
+    min-height: 43px;
+    padding: 9px 13px;
+    border-radius: 11px;
+    border-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 3px;
+    border-color: rgb(92, 121, 115);
+    border-top-color: rgb(156, 181, 158);
+    border-bottom-color: rgb(23, 45, 43);
+    background-color: rgb(28, 53, 51);
+    color: rgb(246, 241, 222);
+    -unity-font-style: bold;
+    letter-spacing: 0.6px;
+}
+.root #safe-area Button.game-button:hover {
+    background-color: rgb(43, 76, 72);
+    border-color: rgb(202, 183, 139);
+    border-top-color: rgb(232, 206, 157);
+}
+.root #safe-area Button.game-button:active {
+    background-color: rgb(24, 43, 43);
+    border-bottom-width: 1px;
+}
+.root #safe-area Button.game-button:focus {
+    border-color: rgb(240, 207, 151);
+}
+.root #safe-area Button.game-button:disabled {
+    background-color: rgb(30, 40, 41);
+    border-color: rgb(61, 78, 76);
+    border-bottom-color: rgb(36, 46, 47);
+    color: rgb(139, 155, 151);
+}
+.root #safe-area Button.game-button.primary {
+    background-color: rgb(125, 94, 52);
+    border-color: rgb(208, 165, 105);
+    border-top-color: rgb(244, 213, 160);
+    border-bottom-color: rgb(74, 48, 28);
+    color: rgb(255, 245, 225);
+}
+.root #safe-area Button.game-button.primary:hover { background-color: rgb(158, 118, 65); }
+.root #safe-area Button.game-button.primary:disabled {
+    background-color: rgb(57, 52, 45);
+    border-color: rgb(92, 87, 76);
+    color: rgb(149, 146, 138);
+}
+
+/* Nav tabs preserve their existing 64-pixel row and tactile hit areas. */
+.root #safe-area .navigation.unified-navigation > Button.game-button.unified-nav-button {
+    height: 56px;
+    min-height: 56px;
+    max-height: 56px;
+    padding: 2px 3px 3px 3px;
+    border-radius: 9px;
+    border-width: 1px;
+    border-bottom-width: 2px;
+    border-color: transparent;
+    border-bottom-color: transparent;
+    background-color: transparent;
+}
+.root #safe-area .navigation.unified-navigation > Button.game-button.unified-nav-button.selected {
+    border-color: rgba(223, 191, 138, .48);
+    border-bottom-color: rgb(239, 201, 135);
+    background-color: rgba(194, 156, 92, .17);
+}
+.root #safe-area .navigation.unified-navigation > Button.game-button.unified-nav-button:hover {
+    background-color: rgba(199, 173, 132, .16);
+}
+
+/* Home Settings: a single visually balanced icon and text, no low-res glyph image. */
+.root.home-mode #safe-area Button.game-button.home-settings-shortcut {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    width: 60px;
+    height: 62px;
+    min-height: 62px;
+    padding: 2px 3px 3px 3px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 15px;
+    border-width: 1px;
+    border-bottom-width: 3px;
+    border-color: rgba(221, 188, 131, .66);
+    border-top-color: rgba(242, 218, 176, .89);
+    border-bottom-color: rgb(68, 57, 42);
+    background-color: rgba(17, 34, 32, .96);
+}
+.root.home-mode #safe-area Button.game-button.home-settings-shortcut:hover {
+    background-color: rgba(50, 71, 60, .98);
+}
+.root.home-mode .home-settings-glyph {
+    font-size: 27px;
+    height: 31px;
+    color: rgb(247, 222, 176);
+    -unity-text-align: middle-center;
+}
+.root.home-mode .home-settings-label {
+    font-size: 9px;
+    letter-spacing: .7px;
+    color: rgb(249, 241, 226);
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+
+/* Heroic but restrained End Turn CTA: fully readable and easy to tap. */
+.root.visual-hud-mode #safe-area .battle-title-row > Button.game-button.mobile-battle-end {
+    width: 109px;
+    min-width: 109px;
+    height: 47px;
+    min-height: 47px;
+    margin-left: 5px;
+    padding: 7px 6px;
+    border-radius: 11px;
+    border-width: 1px;
+    border-bottom-width: 3px;
+    border-color: rgb(232, 194, 124);
+    border-top-color: rgb(255, 226, 172);
+    border-bottom-color: rgb(83, 56, 32);
+    background-color: rgb(130, 91, 47);
+    color: rgb(255, 245, 221);
+    font-size: 12px;
+    letter-spacing: .4px;
+    -unity-font-style: bold;
+}
+.root.visual-hud-mode #safe-area .battle-title-row > Button.game-button.mobile-battle-end:hover {
+    background-color: rgb(159, 112, 57);
+}
+.root.visual-hud-mode #safe-area .battle-title-row > Button.game-button.mobile-battle-end:disabled {
+    background-color: rgb(45, 49, 45);
+    color: rgb(137, 144, 134);
+    border-color: rgb(90, 96, 89);
+}
+.root.visual-hud-mode #safe-area .battle-title-row > Button.game-button.mobile-battle-back {
+    width: 46px;
+    min-width: 46px;
+    height: 47px;
+    min-height: 47px;
+    border-radius: 11px;
+    background-color: rgb(23, 49, 46);
+}
+
+/* Ability cards share the new input language but retain meaningful states. */
+.root.visual-hud-mode #safe-area .mobile-ability-strip > Button.game-button.mobile-ability-button {
+    height: 52px;
+    min-height: 52px;
+    border-radius: 12px;
+    border-color: rgb(123, 164, 152);
+    border-top-color: rgb(185, 207, 181);
+    border-bottom-color: rgb(26, 55, 52);
+    background-color: rgb(35, 73, 70);
+    color: rgb(253, 246, 231);
+    font-size: 13px;
+}
+.root.visual-hud-mode #safe-area .mobile-ability-strip > Button.game-button.mobile-ability-button.selected {
+    background-color: rgb(103, 87, 59);
+    border-color: rgb(244, 210, 150);
+    border-bottom-color: rgb(109, 72, 35);
+}
+.root.visual-hud-mode #safe-area .mobile-ability-strip > Button.game-button.mobile-passive-button {
+    width: 42px;
+    min-width: 42px;
+    height: 42px;
+    min-height: 42px;
+    flex-basis: 42px;
+    border-radius: 22px;
+    background-color: rgb(48, 51, 81);
+    border-color: rgb(158, 143, 191);
+    color: rgb(244, 238, 255);
+}
+.root.visual-hud-mode #safe-area .mobile-ability-strip > Button.game-button.mobile-confirm {
+    background-color: rgb(135, 102, 60);
+    border-color: rgb(229, 186, 127);
+}
+.root.visual-hud-mode #safe-area .mobile-ability-strip > Button.game-button.mobile-cancel {
+    background-color: rgb(40, 58, 58);
+    border-color: rgb(119, 146, 143);
+}
+
+/* Rescue experience: persistent, contextual step messaging + an actionable route. */
+.root.visual-hud-mode.rescue-objective-mode .battle-dock {
+    height: 205px;
+    min-height: 205px;
+    max-height: 205px;
+}
+.root.visual-hud-mode.rescue-extraction-mode .battle-dock {
+    height: 265px;
+    min-height: 265px;
+    max-height: 265px;
+}
+.root.visual-hud-mode .battle-rescue-guidance {
+    margin: 3px 3px 2px 3px;
+    padding: 5px 8px;
+    border-left-width: 3px;
+    border-left-color: rgb(189, 148, 83);
+    border-radius: 6px;
+    background-color: rgba(47, 56, 48, .98);
+    color: rgb(243, 225, 186);
+    font-size: 10px;
+    -unity-font-style: bold;
+    white-space: normal;
+}
+.root.visual-hud-mode .battle-rescue-guidance.rescue-ready {
+    background-color: rgba(46, 68, 56, .98);
+    border-left-color: rgb(119, 205, 158);
+    color: rgb(232, 249, 232);
+}
+.root.visual-hud-mode .battle-rescue-hint {
+    padding: 0 9px 3px 9px;
+    color: rgb(209, 219, 210);
+    font-size: 9px;
+    white-space: normal;
+}
+.root.visual-hud-mode #safe-area Button.game-button.battle-rescue-exit-action {
+    width: 100%;
+    min-height: 39px;
+    height: 39px;
+    margin-top: 4px;
+    padding: 6px;
+    border-radius: 9px;
+    background-color: rgb(100, 83, 51);
+    border-color: rgb(231, 186, 111);
+    border-bottom-color: rgb(82, 55, 29);
+    color: rgb(254, 243, 214);
+    font-size: 12px;
+}
+.root.compact-home.visual-hud-mode.rescue-objective-mode .battle-dock {
+    height: 204px;
+    min-height: 204px;
+    max-height: 204px;
+}
+.root.compact-home.visual-hud-mode.rescue-extraction-mode .battle-dock {
+    height: 255px;
+    min-height: 255px;
+    max-height: 255px;
+}
+.root.short-home.visual-hud-mode.rescue-extraction-mode .battle-dock {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+}
