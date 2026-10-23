@@ -11,7 +11,8 @@ internal static partial class Program
         ("World Five mission 001 reaches victory and unlocks mission 002", FiveFirstActualVictory),
         ("World Five missions 001 and 002 complete consecutively and unlock 003", FiveTwoMissionJourney),
         ("World Five 003 rescue approach checkpoints and resumes safely", FiveRescuePickup),
-        ("World Five mission 004 secure objective starts after rescue victory", FiveSecureMissionStart)
+        ("World Five mission 004 secure objective starts after rescue victory", FiveSecureMissionStart),
+        ("World Five rescue assigns controllable leader carrier independent of unit sort", FiveRescueLeaderIdentity)
     };
 
     private static void FiveFirstActualVictory()
@@ -136,6 +137,24 @@ internal static partial class Program
         return (battles,progress);
     }
 
+    private static void FiveRescueLeaderIdentity()
+    {
+        var stores=FiveCompleteOpeningTwo();
+        var menu=WorldFiveOpeningTenPrototype.Open(stores.Battles,stores.Progress);
+        var missionId=WorldFiveOpeningTenPrototype.MissionIds[2];
+        menu.SelectMission(missionId);
+        // Use a different first squad member to prove the carrier comes from
+        // the actual deployed order rather than unit IDs or initiative.
+        menu.SetSquad(new[]{"fixture-a-2","fixture-a-1"});
+        Equal(true,menu.Read().CanStart);
+        var battle=menu.Start(menu.Read().PlanId).Read().Battle;
+        Equal("fixture-a-2",battle.RescueCarrierId);
+        Equal(false,battle.Objectives.Single(o=>o.Id=="primary").Rescued);
+        menu=WorldFiveOpeningTenPrototype.Open(stores.Battles,stores.Progress);
+        Equal(MissionFlowPhase.Battle,menu.Read().Phase);
+        Equal("fixture-a-2",menu.ResumeBattle().Read().Battle.RescueCarrierId);
+    }
+
     private static void FiveRescuePickup() { FiveCompleteRescue(); }
 
     private static (FakeSaveFiles Battles,ProgressFiles Progress) FiveCompleteRescue()
@@ -258,6 +277,7 @@ internal static partial class Program
         // Resume after actual pickup, then carry the recovered target back
         // through the authored southern corridor to the extraction zone.
         Equal(true,play.Read().Battle.Objectives.Single(x=>x.Id=="primary").Rescued);
+        Equal("fixture-a-1",play.Read().Battle.RescueCarrierId);
         menu=WorldFiveOpeningTenPrototype.Open(stores.Battles,stores.Progress);
         Equal(MissionFlowPhase.Battle,menu.Read().Phase);
         Equal(ids[2],menu.Read().Resume.MissionId);

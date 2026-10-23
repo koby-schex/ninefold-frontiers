@@ -54,11 +54,16 @@ namespace Ninefold.Core.Views
         public IReadOnlyList<BattleActionView> Actions { get; }
         public IReadOnlyList<ObjectiveView> Objectives { get; }
         public BattleResult Result { get; }
+        // Resolved from the saved mission definition, not the catalog placeholder $leader.
+        // UI can now identify the controllable carrier after a rescue pickup.
+        public string RescueCarrierId { get; }
         internal BattleView(BattleTurnController b, BattleSessionPhase phase, object version)
         {
             Version = version;
             Phase = phase; Round = b?.RoundNumber ?? 0; Activation = b?.CurrentActivation; Map = b?.Battlefield?.Map; Result = b?.Mission?.Result;
             AttemptId = b?.Mission?.Definition.AttemptId; MissionId = b?.Mission?.Definition.MissionId;
+            RescueCarrierId = b?.Mission?.Definition.Objectives
+                .FirstOrDefault(o => o.Kind == ObjectiveKind.RescueAndExtract)?.ExtractionCarrier;
             UpcomingTurns = Array.AsReadOnly(b?.InspectUpcoming() ?? Array.Empty<string>());
             Units = Array.AsReadOnly(b == null ? Array.Empty<BattleUnitView>() : b.InspectUnitIds().Select(id => new BattleUnitView(b,id)).ToArray());
             HealthOverlays = Array.AsReadOnly(Units.Where(u => u.IsEligible && u.Position.HasValue && u.Health != null && !u.Health.IsDefeated).Select(u => new UnitHealthOverlay(u)).ToArray());

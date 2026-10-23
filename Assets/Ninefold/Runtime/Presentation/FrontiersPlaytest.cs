@@ -156,6 +156,11 @@ namespace Ninefold.Presentation
             var layoutStyles = Resources.Load<StyleSheet>("Home/GameWideConsistency02");
             if (layoutStyles != null) root.styleSheets.Add(layoutStyles);
             else Debug.LogWarning("Game-wide layout styles are missing. Check project import.", this);
+            // Latest cross-screen controls: the home gear and battle controls
+            // intentionally override previous styles without touching mechanics.
+            var controlRedesign = Resources.Load<StyleSheet>("Home/UnifiedControlRedesign03");
+            if (controlRedesign != null) root.styleSheets.Add(controlRedesign);
+            else Debug.LogWarning("Shared control redesign styles are missing.",this);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
@@ -320,7 +325,8 @@ namespace Ninefold.Presentation
             content.Add(masthead);
             var settingsShortcut = Button(masthead, "", () => Navigate(Page.Settings));
             settingsShortcut.AddToClassList("home-settings-shortcut");
-            HomeIcon(settingsShortcut, "settings");
+            // Replace the low-resolution settings texture with a crisp, scalable glyph.
+            Text(settingsShortcut, "\u2699", "home-settings-glyph").pickingMode = PickingMode.Ignore;
             Text(settingsShortcut, "Settings", "home-settings-label");
             settingsShortcut.tooltip = "Settings";
             var hud = Row(masthead);
@@ -1175,6 +1181,11 @@ namespace Ninefold.Presentation
         private void BuildBattle()
         {
             var b = battleView.Battle;
+            bool extraction = b.RescueCarrierId != null &&
+                b.Objectives.Any(o => o.Kind == ObjectiveKind.RescueAndExtract &&
+                    o.Rescued && o.Status == ObjectiveStatus.Active);
+            root.EnableInClassList("rescue-extraction-mode",extraction);
+            root.EnableInClassList("rescue-objective-mode",b.RescueCarrierId != null);
             if (b.Phase != BattleSessionPhase.PlayerInput) lastTapUnitId = null;
             var top = Card(content, "battle-header");
             var line = Row(top); line.AddToClassList("battle-title-row");
@@ -1185,7 +1196,7 @@ namespace Ninefold.Presentation
             // bonus goals remain a small secondary progress counter.
             BattleObjectiveGuidance.Header(line, b.Objectives);
             long turnId = b.Activation?.ActivationId ?? 0;
-            var end = Button(line, "END", () => Handle(input.EndTurn(turnId)),
+            var end = Button(line, "END TURN  \u2192", () => Handle(input.EndTurn(turnId)),
                 !battleView.IsAnimating && b.Phase == BattleSessionPhase.PlayerInput &&
                 battleView.Pending == null);
             end.AddToClassList("mobile-battle-end"); end.tooltip = "End this unit's turn";
@@ -1255,6 +1266,10 @@ namespace Ninefold.Presentation
                 }
                 foreach (var objective in input.ReadPlanning().Objectives)
                     Text(details, "Stabilize · " + ObjectiveReadiness(objective.Failure), "detail");
+                if (b.RescueCarrierId != null)
+                    Text(details,"RESCUE: The traveler is carried by " +
+                        UnitName(b.RescueCarrierId) + ". You do NOT control the rescued NPC. " +
+                        "After picking them up, move the carrier into the marked gold EXIT zone.", "detail");
                 Text(details, "Tap a unit once to inspect health, armor and attacks. Double-tap an enemy for a normal attack. Choose Ability or Ult to target special actions. Tap ground to move and objectives to interact.", "detail");
                 Button(details, "Back to battle", () => battleDetails = false);
             }
@@ -1271,6 +1286,20 @@ namespace Ninefold.Presentation
             // visible above abilities. Tapping any other unit adds its own
             // inspect-only line, without granting control or spending actions.
             var status = new VisualElement(); status.AddToClassList("mobile-combat-status"); controls.Add(status);
+            var rescue = b.Objectives.FirstOrDefault(o=>o.Kind == ObjectiveKind.RescueAndExtract);
+            if (rescue != null && rescue.Status == ObjectiveStatus.Active)
+            {
+                var label = Text(controls, rescue.Rescued
+                    ? "CARRYING RESCUED TRAVELER  \u00b7  MOVE " + UnitName(b.RescueCarrierId) + " TO GOLD EXIT"
+                    : "RESCUE  \u00b7  USE YOUR FIRST DEPLOYED UNIT TO PICK UP THE TRAVELER",
+                    "battle-rescue-guidance");
+                label.EnableInClassList("rescue-ready",rescue.Rescued);
+                if (rescue.Rescued)
+                    Text(controls,b.Activation?.UnitId == b.RescueCarrierId
+                        ? "CARRIER ACTIVE  \u00b7  TAP THE GOLD EXIT TO MOVE THERE"
+                        : "TRAVELER IS CARRIED AUTOMATICALLY  \u00b7  WAIT FOR THE CARRIER'S TURN",
+                        "battle-rescue-hint");
+            }
             var current = Row(status); current.AddToClassList("mobile-active-unit");
             Text(current, "ACTIVE  " + UnitName(active?.Id), "mobile-actor-name");
             Text(current, (b.Activation?.MovementRemaining.ToString("0.#") ?? "0") + " MOVE",
@@ -1340,6 +1369,26 @@ namespace Ninefold.Presentation
                 var passive = Button(row, "ⓘ", () => battleDetails = !battleDetails);
                 passive.AddToClassList("mobile-passive-button");
                 passive.tooltip = AbilityName(AbilitySlot.Passive) + " · Passive and unit details";
+            }
+            if (rescue?.Rescued == true && b.Activation?.UnitId == b.RescueCarrierId &&
+                ready && battleView.Pending == null && b.Activation.MovementRemaining > 0)
+            {
+                // A direct actionable control supplements the world-space exit
+                // marker; path legality and saves still go through BattleInteraction.
+                var exit = catalog.Missions[b.MissionId].Objectives
+                    .FirstOrDefault(o=>o.Kind == ObjectiveKind.RescueAndExtract)?.Zone;
+                if (exit != null)
+                {
+                    var button = Button(controls,"GUIDE CARRIER TO EXIT  \u2192",()=>{
+                        var center = new FieldPoint((exit.Min.X+exit.Max.X)/2,0,
+                            (exit.Min.Z+exit.Max.Z)/2);
+                        var preview = input.TapDestination(center);
+                        if (preview.Outcome == InputOutcome.Previewed)
+                            preview = input.Confirm(input.Read().Pending.Id);
+                        Handle(preview);
+                    });
+                    button.AddToClassList("battle-rescue-exit-action");
+                }
             }
             if (battleRejection != null)
                 Text(controls, battleRejection, "mobile-battle-feedback");
