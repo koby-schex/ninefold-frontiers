@@ -50,8 +50,10 @@ internal static partial class Program
         return new ContentCatalog(
             new ContentManifest("w5-m11-test","m11-test-v1","balance-v1",ContentClassification.AbstractFixture),
             source.Resources,source.Abilities.Values,source.Kits.Values,source.Units.Values,
-            source.Missions.Values,source.Rewards.Values,new[]{campaign},
-            source.StarterUnits,source.Statuses.Values);
+            source.Missions.Values.Where(m=>!m.IsCampaign || m.Id==missionId),
+            source.Rewards.Values.Where(policy=>!source.Missions[policy.MissionId].IsCampaign ||
+                policy.MissionId==missionId),
+            new[]{campaign},source.StarterUnits,source.Statuses.Values);
     }
 
     private static void MissionElevenCombatVictory()
