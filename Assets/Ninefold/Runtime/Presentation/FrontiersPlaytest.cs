@@ -156,6 +156,11 @@ namespace Ninefold.Presentation
             var layoutStyles = Resources.Load<StyleSheet>("Home/GameWideConsistency02");
             if (layoutStyles != null) root.styleSheets.Add(layoutStyles);
             else Debug.LogWarning("Game-wide layout styles are missing. Check project import.", this);
+            // Latest cross-screen controls: the home gear and battle controls
+            // intentionally override previous styles without touching mechanics.
+            var controlRedesign = Resources.Load<StyleSheet>("Home/UnifiedControlRedesign03");
+            if (controlRedesign != null) root.styleSheets.Add(controlRedesign);
+            else Debug.LogWarning("Shared control redesign styles are missing.",this);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
@@ -1180,6 +1185,7 @@ namespace Ninefold.Presentation
                 b.Objectives.Any(o => o.Kind == ObjectiveKind.RescueAndExtract &&
                     o.Rescued && o.Status == ObjectiveStatus.Active);
             root.EnableInClassList("rescue-extraction-mode",extraction);
+            root.EnableInClassList("rescue-objective-mode",b.RescueCarrierId != null);
             if (b.Phase != BattleSessionPhase.PlayerInput) lastTapUnitId = null;
             var top = Card(content, "battle-header");
             var line = Row(top); line.AddToClassList("battle-title-row");
