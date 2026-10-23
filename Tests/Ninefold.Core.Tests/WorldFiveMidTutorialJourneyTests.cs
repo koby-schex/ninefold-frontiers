@@ -14,6 +14,10 @@ internal static partial class Program
             ("World Five Mission 004 zone control stays locked before Mission 003 rescue", WorldFiveMidTutorialCannotSkipRescue)
         };
 
+    private static bool InsideZone(FieldPoint point,FieldBox zone)
+        => point.X>=zone.Min.X && point.X<=zone.Max.X &&
+           point.Z>=zone.Min.Z && point.Z<=zone.Max.Z;
+
     private static void WorldFiveMidTutorialCannotSkipRescue()
     {
         var battles=new FakeSaveFiles();
@@ -62,9 +66,9 @@ internal static partial class Program
                 BattleInputResult command;
                 if(battle.Phase!=BattleSessionPhase.PlayerInput)
                     command=play.Advance(new EnemyPerception(Array.Empty<string>(),Array.Empty<string>()));
-                else if(stage==3 && !objective.Zone.Contains(
-                    battle.Units.Single(u=>u.Id==battle.Activation.UnitId).Body.At(
-                    battle.Units.Single(u=>u.Id==battle.Activation.UnitId).Position.Value)))
+                else if(stage==3 && !InsideZone(
+                    battle.Units.Single(u=>u.Id==battle.Activation.UnitId).Position.Value,
+                    objective.Zone))
                 {
                     var actor=battle.Units.Single(u=>u.Id==battle.Activation.UnitId);
                     var from=actor.Position.Value;
