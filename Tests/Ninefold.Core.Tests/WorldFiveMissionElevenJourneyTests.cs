@@ -13,7 +13,8 @@ internal static partial class Program
     private static (string Name, Action Run)[] WorldFiveMissionElevenJourneyTests() =>
         new (string, Action)[] {
             ("World Five real 14-mission profile locks Ashbound debut until tutorial completion", RealWorldFiveElevenGate),
-            ("World Five Mission 11 plays through a real battle and claims rewards exactly once", MissionElevenCombatVictory)
+            ("World Five Mission 11 plays through a real battle and claims rewards exactly once", MissionElevenCombatVictory),
+            ("World Five Mission 11 live Ashbound attacks persist and defeat can be retried", MissionElevenHostileDefeatRetry)
         };
 
     private static void RealWorldFiveElevenGate()
@@ -153,6 +154,92 @@ internal static partial class Program
         Equal(MissionFlowPhase.Selection,menu.Read().Phase);
         Equal(1,menu.Read().Progress.Claims.Count);
         Equal(true,menu.Read().Missions.Single(m=>m.Definition.Id==id).IsReplay);
+    }
+
+    private static void MissionElevenHostileDefeatRetry()
+    {
+        var catalog=ElevenBattleHarness();
+        var battles=new FakeSaveFiles();
+        var profiles=new ProgressFiles();
+        const string profile="m11-hostile-retry-regression";
+        var menu=new MissionPresentation(catalog,battles,profiles,profile);
+        menu.CreateProfile();
+        var id=WorldFiveStorySequence.FirstCampaignMissionId;
+        menu.SelectMission(id);
+        menu.SetSquad(new[]{"fixture-a-1","fixture-a-2"});
+        Equal(true,menu.Read().CanStart);
+        var play=menu.Start(menu.Read().PlanId);
+        bool enemyAttacked=false, resumed=false, enemyMoved=false;
+        int enemyActivations=0;
+        var startHealth=play.Read().Battle.Units
+            .Where(u=>u.IsPlayerSquad).Sum(u=>u.Health.CurrentHealth);
+        for(int step=0;step<550 && menu.Read().Results==null;step++)
+        {
+            var view=play.Read().Battle;
+            BattleInputResult result;
+            if(view.Phase==BattleSessionPhase.PlayerInput)
+                result=play.EndTurn(view.Activation.ActivationId);
+            else if(view.Phase==BattleSessionPhase.EnemyInput)
+            {
+                // Model an authoritative visibility sensor that perceives the
+                // entire surviving player squad. Unlike the quiet victory
+                // regression, the actual authored Ashbound AI gets opponents.
+                var visible=view.Units
+                    .Where(u=>u.IsPlayerSquad && u.IsEligible)
+                    .Select(u=>u.Id).ToArray();
+                var allies=view.Units
+                    .Where(u=>u.IsEnemyControlled && u.IsEligible)
+                    .Select(u=>u.Id).ToArray();
+                result=play.Advance(new EnemyPerception(visible,allies));
+                enemyActivations++;
+                enemyMoved |= result.Update?.Events.Any(e=>
+                    e.Kind==BattleEventKind.Movement && e.UnitId==view.Activation.UnitId)==true;
+                enemyAttacked |= result.Update?.Events.Any(e=>
+                    e.Kind==BattleEventKind.AbilityUsed && e.UnitId==view.Activation.UnitId)==true;
+            }
+            else result=play.Advance();
+            if(result.AnimationId!=null)
+                Equal(true,play.CompleteAnimation(result.AnimationId));
+            if(!resumed && enemyAttacked && menu.Read().Results==null)
+            {
+                menu=new MissionPresentation(catalog,battles,profiles,profile);
+                menu.Open();
+                Equal(MissionFlowPhase.Battle,menu.Read().Phase);
+                Equal(id,menu.Read().Resume.MissionId);
+                play=menu.ResumeBattle();
+                resumed=true;
+            }
+        }
+        Equal(true,enemyActivations>0);
+        Equal(true,enemyAttacked);
+        Equal(true,enemyMoved);
+        Equal(true,resumed);
+        var endHealth=play.Read().Battle.Units
+            .Where(u=>u.IsPlayerSquad).Sum(u=>u.Health.CurrentHealth);
+        Equal(true,endHealth<startHealth);
+        if(menu.Read().Results==null)
+            throw new Exception("Mission 11 Ashbound failed to defeat an idle two-unit squad within 550 turns.");
+        Equal(MissionOutcome.Defeat,menu.Read().Results.Result.Outcome);
+        Equal(0,menu.Read().Results.Grants.Count);
+        var attempt=menu.Read().Results.Result.AttemptId;
+        Equal(false,menu.ClaimRewards(attempt).AlreadyClaimed);
+        Equal(true,menu.ClaimRewards(attempt).AlreadyClaimed);
+        menu.ReturnToSelection(attempt);
+        menu=new MissionPresentation(catalog,battles,profiles,profile);
+        menu.Open();
+        Equal(MissionFlowPhase.Selection,menu.Read().Phase);
+        Equal(0L,menu.Read().Progress.Balance("fixture-resource"));
+        Equal(true,menu.Read().Missions.Single(m=>m.Definition.Id==id).Available);
+        menu.SelectMission(id);
+        menu.SetSquad(new[]{"fixture-a-1","fixture-a-2","fixture-a-3"});
+        Equal(true,menu.Read().CanStart);
+        var retry=menu.Start(menu.Read().PlanId);
+        Equal(id,retry.Read().Battle.MissionId);
+        Equal(true,retry.Read().Battle.AttemptId!=attempt);
+        menu=new MissionPresentation(catalog,battles,profiles,profile);
+        menu.Open();
+        Equal(MissionFlowPhase.Battle,menu.Read().Phase);
+        Equal(id,menu.Read().Resume.MissionId);
     }
 
     private static decimal DistanceSquared(FieldPoint a,FieldPoint b)
