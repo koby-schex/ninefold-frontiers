@@ -52,6 +52,7 @@ namespace Ninefold.Presentation
         private Vector2 pointerStart;
         private bool battleDetails;
         private bool sharedControlsLoaded;
+        private Texture2D settingsGearTexture;
         private string battleRejection;
         private string lastTapUnitId;
         private float lastTapUnitTime;
@@ -326,7 +327,15 @@ namespace Ninefold.Presentation
             var settingsShortcut = Button(masthead, "", () => Navigate(Page.Settings));
             settingsShortcut.AddToClassList("home-settings-shortcut");
             // Replace the low-resolution settings texture with a crisp, scalable glyph.
-            Text(settingsShortcut, "\u2699", "home-settings-glyph").pickingMode = PickingMode.Ignore;
+            if (settingsGearTexture == null)
+                settingsGearTexture = FrontiersVisualPrimitives.CreateSettingsGear();
+            var gearImage = new Image {
+                image = settingsGearTexture,
+                scaleMode = ScaleMode.ScaleToFit,
+                pickingMode = PickingMode.Ignore
+            };
+            gearImage.AddToClassList("home-settings-graphic");
+            settingsShortcut.Add(gearImage);
             Text(settingsShortcut, "Settings", "home-settings-label");
             settingsShortcut.tooltip = "Settings";
             var hud = Row(masthead);
@@ -2102,6 +2111,6 @@ namespace Ninefold.Presentation
                 id=="fixture-mixed"?"Quick combat":
                 id=="fixture-finale"?"Campaign finale":"Faction B: stabilization";
         }
-        private void OnDestroy() { if (playback != null) StopCoroutine(playback); field?.Dispose(); }
+        private void OnDestroy() { if (playback != null) StopCoroutine(playback); field?.Dispose(); if (settingsGearTexture != null) Destroy(settingsGearTexture); }
     }
 }
