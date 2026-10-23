@@ -1,6 +1,6 @@
 """Deterministic, low-contrast study textures and rest-space box UVs.
 
-Standard library only. No geometry displacement or new anatomical markings.
+No geometry displacement or new anatomical markings. Detail maps use NumPy.
 """
 import math
 import struct
@@ -9,12 +9,12 @@ from functools import lru_cache
 
 # (variation amplitude, tile width in meters, finish description)
 SURFACES = {
-    'living_pearl': (.10, .65, 'soft satin organic tissue'),
-    'limb_tissue': (.11, .45, 'matte flexible tissue'),
+    'living_pearl': (.24, .65, 'soft satin organic tissue'),
+    'limb_tissue': (.26, .45, 'matte flexible tissue'),
     'soft_charcoal': (.045, .25, 'matte contact tissue'),
-    'grown_mineral': (.11, .32, 'pale natural mineral'),
-    'avar_skin': (.045, .18, 'smoky plum organic skin'),
-    'cloth': (.14, .12, 'matte fine fabric'),
+    'grown_mineral': (.20, .32, 'pale natural mineral'),
+    'avar_skin': (.12, .18, 'smoky plum organic skin'),
+    'cloth': (.22, .12, 'matte fine fabric'),
     'continuance_frame': (.025, .30, 'restrained engineered satin'),
     'ceramic': (.035, .28, 'smooth ceramic'),
 }
@@ -85,3 +85,34 @@ not a production unwrap. UVs are calculated once in rest pose and travel with it
                 ids.append(cache[key])
             uv_faces.append(ids)
         p['uvs'],p['uv_faces']=coords,uv_faces
+
+
+def detail_maps(finish):
+    """Tangent normals and metallic/smoothness masks from the same tissue field.
+
+    RGB albedo stays sRGB; normals/masks are linear data, never baked lighting.
+    Strength is a study parameter; production UV baking remains outstanding.
+    """
+    import numpy as np
+    result = {}
+    for name, values in tiles().items():
+        amplitude = SURFACES[name][0]
+        h = (1-np.asarray(values,dtype=float)/255)/amplitude
+        strength = .9 if name in ('living_pearl','limb_tissue','grown_mineral') else .55
+        dx = (np.roll(h,-1,axis=1)-np.roll(h,1,axis=1))*strength
+        dy = (np.roll(h,1,axis=0)-np.roll(h,-1,axis=0))*strength
+        n = np.stack((-dx,-dy,np.ones_like(h)),axis=-1)
+        n /= np.linalg.norm(n,axis=-1,keepdims=True)
+        normal = np.rint(255*(.5+.5*n)).astype('uint8')
+        smoothness = 1-(2/(finish[name][0]+2))**.25
+        mask = np.zeros((SIZE,SIZE,4),dtype='uint8')
+        mask[:,:,3] = np.rint(255*np.clip(smoothness+.09*(h-.5),0,1))
+        result[name] = (normal,mask)
+    return result
+
+
+def write_detail_maps(folder, finish):
+    from living_veil_materials import png
+    for name,(normal,mask) in detail_maps(finish).items():
+        png(folder/(name+'_Normal.png'),normal.tolist(),3)
+        png(folder/(name+'_Finish.png'),mask.tolist(),4)

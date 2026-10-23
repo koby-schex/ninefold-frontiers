@@ -11,11 +11,11 @@ from functools import lru_cache
 SIZE = 128
 # tile meters, albedo amplitude, normal strength, smoothness, metallic
 SURFACES = {
-    'olyra_core': (.32, .12, .055, .38, 0),
-    'avar_skin': (.20, .055, .035, .32, 0),
-    'cloth': (.16, .15, .14, .16, 0),
-    'soft_charcoal': (.18, .08, .08, .22, 0),
-    'sail_membrane': (.32, .09, .045, .47, 0),
+    'olyra_core': (.32, .25, .65, .38, 0),
+    'avar_skin': (.20, .12, .35, .32, 0),
+    'cloth': (.16, .24, .40, .16, 0),
+    'soft_charcoal': (.18, .12, .35, .22, 0),
+    'sail_membrane': (.32, .17, .35, .47, 0),
     'continuance_frame': (.24, .045, .025, .55, .25),
     'ceramic': (.24, .035, .018, .62, 0),
 }
@@ -47,7 +47,7 @@ def maps():
                 dy=(heights[(y-1)%SIZE][x]-heights[(y+1)%SIZE][x])*strength
                 length=math.sqrt(1+dx*dx+dy*dy)
                 nr.append(tuple(round(255*(.5+.5*q/length)) for q in (-dx,-dy,1)))
-                mr.append((round(255*metallic),0,0,round(255*(smoothness+.025*h))))
+                mr.append((round(255*metallic),0,0,round(255*(smoothness+.065*h))))
             albedo.append(ar);normal.append(nr);mask.append(mr)
         result[name]=(albedo,normal,mask)
     return result

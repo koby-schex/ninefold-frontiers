@@ -1,5 +1,5 @@
 {
-  "status": "provisional color study 12",
+  "status": "provisional surface study 13",
   "uv_mapping": "rest-pose dominant-axis box projection, repeating textures",
   "materials": {
     "living_pearl": {
@@ -9,6 +9,9 @@
         0.58
       ],
       "albedo_texture": "Textures/living_pearl.png",
+      "normal_texture": "Textures/living_pearl_Normal.png",
+      "finish_texture": "Textures/living_pearl_Finish.png",
+      "detail_color_space": "linear",
       "albedo_color_space": "sRGB",
       "opacity": 1,
       "review_specular_exponent": 22,
@@ -17,11 +20,14 @@
     },
     "limb_tissue": {
       "base_color_linear": [
-        0.3,
-        0.32,
-        0.37
+        0.2,
+        0.19,
+        0.28
       ],
       "albedo_texture": "Textures/limb_tissue.png",
+      "normal_texture": "Textures/limb_tissue_Normal.png",
+      "finish_texture": "Textures/limb_tissue_Finish.png",
+      "detail_color_space": "linear",
       "albedo_color_space": "sRGB",
       "opacity": 1,
       "review_specular_exponent": 18,
@@ -35,6 +41,9 @@
         0.105
       ],
       "albedo_texture": "Textures/soft_charcoal.png",
+      "normal_texture": "Textures/soft_charcoal_Normal.png",
+      "finish_texture": "Textures/soft_charcoal_Finish.png",
+      "detail_color_space": "linear",
       "albedo_color_space": "sRGB",
       "opacity": 1,
       "review_specular_exponent": 16,
@@ -48,6 +57,9 @@
         0.81
       ],
       "albedo_texture": "Textures/grown_mineral.png",
+      "normal_texture": "Textures/grown_mineral_Normal.png",
+      "finish_texture": "Textures/grown_mineral_Finish.png",
+      "detail_color_space": "linear",
       "albedo_color_space": "sRGB",
       "opacity": 1,
       "review_specular_exponent": 82,
@@ -61,6 +73,9 @@
         0.36
       ],
       "albedo_texture": null,
+      "normal_texture": null,
+      "finish_texture": null,
+      "detail_color_space": "linear",
       "albedo_color_space": "sRGB",
       "opacity": 0.68,
       "review_specular_exponent": 64,
@@ -74,6 +89,9 @@
         0.66
       ],
       "albedo_texture": null,
+      "normal_texture": null,
+      "finish_texture": null,
+      "detail_color_space": "linear",
       "albedo_color_space": "sRGB",
       "opacity": 1,
       "review_specular_exponent": 28,
@@ -87,6 +105,9 @@
         0.32
       ],
       "albedo_texture": "Textures/continuance_frame.png",
+      "normal_texture": "Textures/continuance_frame_Normal.png",
+      "finish_texture": "Textures/continuance_frame_Finish.png",
+      "detail_color_space": "linear",
       "albedo_color_space": "sRGB",
       "opacity": 1,
       "review_specular_exponent": 100,
@@ -100,6 +121,9 @@
         0.61
       ],
       "albedo_texture": "Textures/ceramic.png",
+      "normal_texture": "Textures/ceramic_Normal.png",
+      "finish_texture": "Textures/ceramic_Finish.png",
+      "detail_color_space": "linear",
       "albedo_color_space": "sRGB",
       "opacity": 1,
       "review_specular_exponent": 100,
@@ -113,6 +137,9 @@
         0.32
       ],
       "albedo_texture": "Textures/avar_skin.png",
+      "normal_texture": "Textures/avar_skin_Normal.png",
+      "finish_texture": "Textures/avar_skin_Finish.png",
+      "detail_color_space": "linear",
       "albedo_color_space": "sRGB",
       "opacity": 1,
       "review_specular_exponent": 24,
@@ -126,6 +153,9 @@
         0.12
       ],
       "albedo_texture": "Textures/cloth.png",
+      "normal_texture": "Textures/cloth_Normal.png",
+      "finish_texture": "Textures/cloth_Finish.png",
+      "detail_color_space": "linear",
       "albedo_color_space": "sRGB",
       "opacity": 1,
       "review_specular_exponent": 4,
@@ -139,6 +169,9 @@
         0.7
       ],
       "albedo_texture": null,
+      "normal_texture": null,
+      "finish_texture": null,
+      "detail_color_space": "linear",
       "albedo_color_space": "sRGB",
       "opacity": 1,
       "review_specular_exponent": 72,
@@ -152,6 +185,9 @@
         0.07
       ],
       "albedo_texture": null,
+      "normal_texture": null,
+      "finish_texture": null,
+      "detail_color_space": "linear",
       "albedo_color_space": "sRGB",
       "opacity": 1,
       "review_specular_exponent": 28,

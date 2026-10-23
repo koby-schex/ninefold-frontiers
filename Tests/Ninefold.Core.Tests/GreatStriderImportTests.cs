@@ -32,7 +32,12 @@ internal static partial class Program
         if (materials.Count != 12 || materials.Count(m => m.Texture != null) != 8) throw new Exception("Missing source materials/textures.");
         if (Math.Abs(materials.Single(m => m.Name == "sail_membrane").Opacity - .68f) > .00001) throw new Exception("Opacity lost.");
         foreach (var m in materials.Where(m => m.Texture != null))
+        {
             if (m.Color.Any(c => c != 1)) throw new Exception("Textured tint would be applied twice.");
+            foreach (string suffix in new[] { "_Normal.png", "_Finish.png" })
+                if (!File.Exists(Path.Combine(root, "Textures", m.Name + suffix)))
+                    throw new Exception("Missing detailed Strider surface map: " + m.Name + suffix);
+        }
         if (mesh.Sections.Count(s => s.Material == "sail_membrane") < 3) throw new Exception("Transparent shells combined.");
         foreach (var s in mesh.Sections)
         {

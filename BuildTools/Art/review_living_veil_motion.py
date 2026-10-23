@@ -74,11 +74,12 @@ def validate():
         expanded_partner_clearance_m=.03,min_triangle_area_ratio=min_ratio,bounds=[envelope_lo.tolist(),envelope_hi.tolist()],
         limits='Sampled partner clearance and area/volume checks; not exhaustive lobe self-intersection, continuous collision, Unity or device certification.')
 
-def render():
+def render(clip_filter=None):
     from render_great_strider import render as draw,font
     from review_living_veil import review_data
     from PIL import Image,ImageDraw
     for clip in CLIPS:
+        if clip_filter is not None and clip != clip_filter:continue
         frames=[]
         count=24
         # Include both transition endpoints; omit duplicate final frame in idle loops.
@@ -97,7 +98,7 @@ def render():
         sheet.save(OUT/(clip+'-contact.png'))
 
 if __name__=='__main__':
-    parser=argparse.ArgumentParser();parser.add_argument('--write-reference',action='store_true');parser.add_argument('--render',action='store_true');args=parser.parse_args()
+    parser=argparse.ArgumentParser();parser.add_argument('--write-reference',action='store_true');parser.add_argument('--render',action='store_true');parser.add_argument('--clip',choices=CLIPS);args=parser.parse_args()
     if args.write_reference:FIXTURE.write_text(json.dumps(fixture(),indent=2)+'\n')
     result=validate();OUT.mkdir(exist_ok=True,parents=True);(OUT/'motion-checks.json').write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result,indent=2))
-    if args.render:render()
+    if args.render:render(args.clip)

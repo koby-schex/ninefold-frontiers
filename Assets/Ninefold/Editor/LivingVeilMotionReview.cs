@@ -158,7 +158,7 @@ namespace Ninefold.Editor
                 var mesh=Own(new Mesh { name=a.Name, indexFormat=IndexFormat.UInt32 }); mesh.MarkDynamic();
                 var points=a.Vertices.Select(v=>new Vector3(v[0],v[1],v[2])).ToArray();
                 mesh.vertices=points; mesh.SetUVs(0,a.UVs.Select(v=>new Vector2(v[0],v[1])).ToList());
-                mesh.SetTriangles(a.Indices,0); mesh.RecalculateNormals(); mesh.RecalculateBounds();
+                mesh.SetTriangles(a.Indices,0); mesh.RecalculateNormals(); mesh.RecalculateBounds(); mesh.RecalculateTangents();
                 var go=new GameObject(a.Name) { hideFlags=HideFlags.HideAndDontSave }; go.transform.SetParent(root.transform,false);
                 go.AddComponent<MeshFilter>().sharedMesh=mesh;
                 var renderer=go.AddComponent<MeshRenderer>(); renderer.sharedMaterial=materials[a.Material];
@@ -169,11 +169,19 @@ namespace Ninefold.Editor
             }
             time=0; dirty=true;
         }
+        private Texture2D LoadDetail(string filename)
+        {
+            var texture=Own(new Texture2D(2,2,TextureFormat.RGBA32,true,true));
+            if (!texture.LoadImage(File.ReadAllBytes(Source+"Textures/"+filename)))
+                throw new InvalidDataException("Surface map could not be loaded: " + filename);
+            texture.wrapMode=TextureWrapMode.Repeat; texture.filterMode=FilterMode.Trilinear;
+            return texture;
+        }
         private Material MakeMaterial(Shader shader, GreatStriderSource.Surface surface)
         {
             var m=Own(new Material(shader) { name=surface.Name });
             var color=new Color(surface.Color[0],surface.Color[1],surface.Color[2]).gamma;
-            color.a=surface.Texture == null ? surface.Opacity : 1;
+            color.a=surface.Name == "olyra_membrane" ? 1 : surface.Opacity;
             m.SetColor("_BaseColor",color); m.SetFloat("_Metallic",0);
             m.SetFloat("_Smoothness",1-Mathf.Pow(2/(surface.Exponent+2),.25f));
             if (surface.Texture != null)
@@ -181,8 +189,15 @@ namespace Ninefold.Editor
                 var texture=Own(new Texture2D(2,2,TextureFormat.RGBA32,true,false));
                 if (!texture.LoadImage(File.ReadAllBytes(GreatStriderSource.TexturePath(Source,surface.Texture))))
                     throw new InvalidDataException("Membrane texture could not be loaded.");
-                texture.wrapMode=TextureWrapMode.Clamp; texture.filterMode=FilterMode.Trilinear;
+                texture.wrapMode=surface.Name == "olyra_membrane" ? TextureWrapMode.Clamp : TextureWrapMode.Repeat; texture.filterMode=FilterMode.Trilinear;
                 m.SetTexture("_BaseMap",texture);
+                if (surface.Name != "olyra_membrane")
+                {
+                    m.SetTexture("_BumpMap", LoadDetail(surface.Name + "_Normal.png"));
+                    m.SetFloat("_BumpScale",1); m.EnableKeyword("_NORMALMAP");
+                    m.SetTexture("_MetallicGlossMap", LoadDetail(surface.Name + "_Finish.png"));
+                    m.SetFloat("_Smoothness",1); m.EnableKeyword("_METALLICSPECGLOSSMAP");
+                }
             }
             bool transparent=surface.Opacity<1;
             m.SetFloat("_Surface",transparent?1:0); m.SetFloat("_Blend",0); m.SetFloat("_AlphaClip",0);
@@ -208,7 +223,7 @@ namespace Ninefold.Editor
                     LivingVeilMotion.Vertex(s.Organism[i],s.Membrane[i],s.Rest.Vertices[i],s.Shelter.Vertices[i],frame,out float x,out float y,out float z);
                     s.Positions[i]=new Vector3(x,y,z);
                 }
-                s.Mesh.vertices=s.Positions; s.Mesh.RecalculateNormals(); s.Mesh.RecalculateBounds();
+                s.Mesh.vertices=s.Positions; s.Mesh.RecalculateNormals(); s.Mesh.RecalculateTangents(); s.Mesh.RecalculateBounds();
             }
         }
         private void Release()
