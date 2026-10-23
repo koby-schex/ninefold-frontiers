@@ -15,8 +15,8 @@ internal static partial class Program
         };
 
     private static bool InsideZone(FieldPoint point,FieldBox zone)
-        => point.X>=zone.Min.X && point.X<=zone.Max.X &&
-           point.Z>=zone.Min.Z && point.Z<=zone.Max.Z;
+        => point.X>=zone.Min.X+.75m && point.X<=zone.Max.X-.75m &&
+           point.Z>=zone.Min.Z+.75m && point.Z<=zone.Max.Z-.75m;
 
     private static void WorldFiveMidTutorialCannotSkipRescue()
     {
@@ -72,7 +72,7 @@ internal static partial class Program
                 {
                     var actor=battle.Units.Single(u=>u.Id==battle.Activation.UnitId);
                     var from=actor.Position.Value;
-                    var goal=new FieldPoint(3,0,4);
+                    var goal=new FieldPoint(3.5m,0,4);
                     var waypoint=from.X<2m && from.Z<1m
                         ? new FieldPoint(3,0,-2)
                         : goal;
@@ -114,7 +114,11 @@ internal static partial class Program
                 }
             }
             if(menu.Read().Results==null)
-                throw new Exception("World Five "+id+" failed to reach an objective result after 500 legal steps.");
+                throw new Exception("World Five "+id+" failed to complete after 500 steps; round "+
+                    play.Read().Battle.Round+", objective progress "+
+                    play.Read().Battle.Objectives[0].Progress+", units "+
+                    string.Join("; ",play.Read().Battle.Units.Where(u=>u.IsPlayerSquad)
+                        .Select(u=>u.Id+":"+u.Position))+", movements "+movements+".");
             Equal(MissionOutcome.Victory,menu.Read().Results.Result.Outcome);
             if(stage==3) { Equal(true,movements>0); Equal(true,resumed); }
             var attempt=menu.Read().Results.Result.AttemptId;
