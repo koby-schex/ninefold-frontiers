@@ -21,7 +21,7 @@ namespace Ninefold.Presentation
         private const float StandardTokenHeight = 1.45f;
         private sealed class Token
         {
-            public GameObject Body, TargetRing;
+            public GameObject Body, TargetRing, CarryIcon;
             public VisualElement Bar, Fill;
             public Label Caption;
             public Vector3 Position;
@@ -53,6 +53,7 @@ namespace Ninefold.Presentation
             "study 03 | " + drawnSceneStudy + " | meshes: " + scenery.MeshCount +
             " | visible: " + world.activeInHierarchy;
         private string drawnAttempt;
+        private string rescueSubjectId;
         private readonly GameObject destination, selection, inspection, impact, statusPulse;
         private VisualElement surface;
         private Bounds framing;
@@ -117,6 +118,7 @@ namespace Ninefold.Presentation
         {
             var view = interaction.Battle; var intent = interaction.Pending;
             surface = target; world.SetActive(true); camera.enabled = true;
+            rescueSubjectId = objectives.FirstOrDefault(o=>o.Kind == ObjectiveKind.RescueAndExtract)?.Subjects.FirstOrDefault();
             if (drawnAttempt != view.AttemptId)
             {
                 BuildMap(view.Map,objectives,view.MissionId,environmentKey);
@@ -458,6 +460,24 @@ namespace Ninefold.Presentation
                 // Restore neutral poses after animation and on reduced-motion frames.
                 if (wildlifeActors.TryGetValue(h.UnitId,out var species))
                     PoseWildlife(t,species,0f,false,false,0f);
+                bool carried = view.Objectives.Any(o=>o.Kind == ObjectiveKind.RescueAndExtract && o.Rescued &&
+                    o.Status == ObjectiveStatus.Active);
+                bool pickedUp = carried && h.UnitId == rescueSubjectId;
+                // The carried traveler no longer appears to be an independently
+                // selectable/stranded NPC at the old pickup site.
+                t.Body.SetActive(!pickedUp);
+                if (carried && h.UnitId == view.RescueCarrierId && t.CarryIcon == null)
+                {
+                    t.CarryIcon = Primitive("Rescued traveler carried", PrimitiveType.Sphere,
+                        Vector3.zero,new Vector3(.56f,.56f,.56f),gold);
+                    t.CarryIcon.transform.SetParent(t.Body.transform,false);
+                    t.CarryIcon.transform.localPosition = new Vector3(.67f,-.18f,0);
+                }
+                if ((!carried || h.UnitId != view.RescueCarrierId) && t.CarryIcon != null)
+                {
+                    Object.Destroy(t.CarryIcon);
+                    t.CarryIcon = null;
+                }
                 t.Height = StandardTokenHeight;
                 t.Bar.EnableInClassList("active-health",h.UnitId == view.Activation?.UnitId);
                 t.Position = Vector(h.Position) + Vector3.up * t.Height / 2;
@@ -518,7 +538,8 @@ namespace Ninefold.Presentation
             string nearest = null; float best = float.MaxValue;
             foreach (var pair in tokens)
             {
-                var t = pair.Value; var center = Project(t.Body.transform.position, root);
+                var t = pair.Value;
+                if (!t.Body.activeSelf) continue; var center = Project(t.Body.transform.position, root);
                 var head = Project(t.Body.transform.position + Vector3.up * t.Height / 2, root);
                 var feet = Project(t.Body.transform.position - Vector3.up * t.Height / 2, root);
                 var body = new Rect(center.x - 18, Mathf.Min(head.y, feet.y) - 10, 36, Mathf.Abs(head.y - feet.y) + 20);
