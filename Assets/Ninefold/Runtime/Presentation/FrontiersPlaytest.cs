@@ -1570,7 +1570,7 @@ namespace Ninefold.Presentation
             try
             {
                 wildlifeStudy=false; varietyStudy=true; actOneStudy=true; worldFiveSlice=true;
-                savePath=Path.Combine(Application.persistentDataPath,"WorldFiveEncounterVariety-v2");
+                savePath=Path.Combine(Application.persistentDataPath,"WorldFiveEncounterVariety-v3");
                 input=null; battleView=null; inBattle=false;
                 OpenProfile();
                 selectedCampaign=WorldFiveOpeningTenPrototype.CampaignId;
@@ -2042,23 +2042,17 @@ namespace Ninefold.Presentation
                 : id == "fixture-finale" ? "Advance through staggered cover or the slow central route to stabilize."
                 : "Stabilize the marked objective beyond the asymmetric cover.";
         }
-        private static string MissionName(string id) =>
-            id == WorldFiveStorySequence.FirstCampaignMissionId ? "Mission 11" :
-            id == WorldFiveEncounterVarietyV2.NewMissionIds[0] ? "Mission 12" :
-            id == WorldFiveEncounterVarietyV2.NewMissionIds[1] ? "Mission 13" :
-            id == WorldFiveEncounterVarietyV2.NewMissionIds[2] ? "Mission 14" :
-            id == WorldFiveOpeningTenPrototype.MissionIds[0] ? "The Wrong Arrival" :
-            id == WorldFiveOpeningTenPrototype.MissionIds[1] ? "Hold the Passage" :
-            id == WorldFiveOpeningTenPrototype.MissionIds[2] ? "Return the Stranded" :
-            id == WorldFiveOpeningTenPrototype.MissionIds[3] ? "The Safe Boundary" :
-            id == WorldFiveOpeningTenPrototype.MissionIds[4] ? "Shelter First" :
-            id == WorldFiveOpeningTenPrototype.MissionIds[5] ? "Wait for the Window" :
-            id == WorldFiveOpeningTenPrototype.MissionIds[6] ? "Clear the Approach" :
-            id == WorldFiveOpeningTenPrototype.MissionIds[7] ? "The Divided Route" :
-            id == WorldFiveOpeningTenPrototype.MissionIds[8] ? "Keep the Bond" :
-            id == WorldFiveOpeningTenPrototype.MissionIds[9] ? "A Line That Holds" :
-            id == "fixture-opening" ? "Stabilization" : id == "fixture-mixed" ? "Quick combat" :
-            id == "fixture-finale" ? "Campaign finale" : "Faction B: stabilization";
+        private static string MissionName(string id)
+        {
+            for (int i=0;i<WorldFiveOpeningTenPrototype.MissionIds.Count;i++)
+                if (id==WorldFiveOpeningTenPrototype.MissionIds[i]) return "Mission " + (i+1);
+            if (id==WorldFiveStorySequence.FirstCampaignMissionId) return "Mission 11";
+            for (int i=0;i<WorldFiveEncounterVarietyV2.NewMissionIds.Length;i++)
+                if (id==WorldFiveEncounterVarietyV2.NewMissionIds[i]) return "Mission " + (i+12);
+            return id=="fixture-opening"?"Stabilization":
+                id=="fixture-mixed"?"Quick combat":
+                id=="fixture-finale"?"Campaign finale":"Faction B: stabilization";
+        }
         private void OnDestroy() { if (playback != null) StopCoroutine(playback); field?.Dispose(); }
     }
 }
