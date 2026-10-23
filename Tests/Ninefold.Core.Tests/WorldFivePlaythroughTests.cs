@@ -75,12 +75,14 @@ internal static partial class Program
 
     private static void FiveTwoMissionJourney() { FiveCompleteOpeningTwo(); }
 
-    private static (FakeSaveFiles Battles,ProgressFiles Progress) FiveCompleteOpeningTwo()
+    private static (FakeSaveFiles Battles,ProgressFiles Progress) FiveCompleteOpeningTwo(Func<FakeSaveFiles,ProgressFiles,MissionPresentation> open=null,
+        ContentCatalog source=null)
     {
         var battles=new FakeSaveFiles(); var progress=new ProgressFiles();
         var ids=WorldFiveOpeningTenPrototype.MissionIds;
-        var catalog=WorldFiveOpeningTenPrototype.Create();
-        var menu=WorldFiveOpeningTenPrototype.Open(battles,progress);
+        var catalog=source ?? WorldFiveOpeningTenPrototype.Create();
+        open ??= (b,p)=>WorldFiveOpeningTenPrototype.Open(b,p);
+        var menu=open(battles,progress);
         for(int missionIndex=0;missionIndex<2;missionIndex++)
         {
             string missionId=ids[missionIndex];
@@ -129,7 +131,7 @@ internal static partial class Program
             var attempt=menu.Read().Results.Result.AttemptId;
             menu.ClaimRewards(attempt);
             menu.ReturnToSelection(attempt);
-            menu=WorldFiveOpeningTenPrototype.Open(battles,progress);
+            menu=open(battles,progress);
             Equal(ids[missionIndex+1],menu.Read().NextCampaignMission.Definition.Id);
             Equal(true,menu.Read().Missions.Single(x=>x.Definition.Id==ids[missionIndex+1]).Available);
         }
@@ -157,17 +159,20 @@ internal static partial class Program
 
     private static void FiveRescuePickup() { FiveCompleteRescue(); }
 
-    private static (FakeSaveFiles Battles,ProgressFiles Progress) FiveCompleteRescue()
+    private static (FakeSaveFiles Battles,ProgressFiles Progress) FiveCompleteRescue(Func<FakeSaveFiles,ProgressFiles,MissionPresentation> open=null,
+        ContentCatalog source=null)
     {
-        var stores=FiveCompleteOpeningTwo();
+        open ??= (b,p)=>WorldFiveOpeningTenPrototype.Open(b,p);
+        var catalog=source ?? WorldFiveOpeningTenPrototype.Create();
+        var stores=FiveCompleteOpeningTwo(open,catalog);
         var ids=WorldFiveOpeningTenPrototype.MissionIds;
-        var menu=WorldFiveOpeningTenPrototype.Open(stores.Battles,stores.Progress);
+        var menu=open(stores.Battles,stores.Progress);
         Equal(ids[2],menu.Read().NextCampaignMission.Definition.Id);
         menu.SelectMission(ids[2]);
         menu.SetSquad(new[]{"fixture-a-1"});
         Equal(true,menu.Read().CanStart);
         var play=menu.Start(menu.Read().PlanId);
-        var objective=WorldFiveOpeningTenPrototype.Create().Missions[ids[2]].Objectives[0];
+        var objective=catalog.Missions[ids[2]].Objectives[0];
         Equal(Ninefold.Core.Missions.ObjectiveKind.RescueAndExtract,objective.Kind);
         Equal(false,play.ReadPlanning().Objectives.Single(x=>x.Id=="primary").CanInteract);
         var pickup=objective.Interaction.Point;
@@ -278,7 +283,7 @@ internal static partial class Program
         // through the authored southern corridor to the extraction zone.
         Equal(true,play.Read().Battle.Objectives.Single(x=>x.Id=="primary").Rescued);
         Equal("fixture-a-1",play.Read().Battle.RescueCarrierId);
-        menu=WorldFiveOpeningTenPrototype.Open(stores.Battles,stores.Progress);
+        menu=open(stores.Battles,stores.Progress);
         Equal(MissionFlowPhase.Battle,menu.Read().Phase);
         Equal(ids[2],menu.Read().Resume.MissionId);
         play=menu.ResumeBattle();
@@ -327,7 +332,7 @@ internal static partial class Program
         var attempt=menu.Read().Results.Result.AttemptId;
         menu.ClaimRewards(attempt);
         menu.ReturnToSelection(attempt);
-        menu=WorldFiveOpeningTenPrototype.Open(stores.Battles,stores.Progress);
+        menu=open(stores.Battles,stores.Progress);
         Equal(ids[3],menu.Read().NextCampaignMission.Definition.Id);
         Equal(true,menu.Read().Missions.Single(x=>x.Definition.Id==ids[3]).Available);
         return stores;

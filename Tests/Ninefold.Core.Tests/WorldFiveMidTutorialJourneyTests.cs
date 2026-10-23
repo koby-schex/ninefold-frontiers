@@ -32,14 +32,18 @@ internal static partial class Program
         Equal(false,menu.Read().Missions.Single(m=>m.Definition.Id==four).Available);
     }
 
-    private static void WorldFiveMidTutorialJourney()
+    private static void WorldFiveMidTutorialJourney() { FiveCompleteOpeningSix(); }
+
+    private static (FakeSaveFiles Battles,ProgressFiles Progress) FiveCompleteOpeningSix(
+        Func<FakeSaveFiles,ProgressFiles,MissionPresentation> open=null,ContentCatalog source=null)
     {
+        open ??= (b,p)=>WorldFiveOpeningTenPrototype.Open(b,p);
+        var catalog=source ?? WorldFiveOpeningTenPrototype.Create();
         // Reuse the independently certified 001–003 player journey. This
         // test must not mark progress with a fake claim or bypass Mission 003.
-        var stores=FiveCompleteRescue();
+        var stores=FiveCompleteRescue(open,catalog);
         var ids=WorldFiveOpeningTenPrototype.MissionIds;
-        var catalog=WorldFiveOpeningTenPrototype.Create();
-        var menu=WorldFiveOpeningTenPrototype.Open(stores.Battles,stores.Progress);
+        var menu=open(stores.Battles,stores.Progress);
         Equal(ids[3],menu.Read().NextCampaignMission.Definition.Id);
         int claimsBefore=menu.Read().Progress.Claims.Count;
         Equal(3,claimsBefore);
@@ -96,7 +100,7 @@ internal static partial class Program
                     Equal(true,play.CompleteAnimation(command.AnimationId));
                 if(!resumed && stage==3 && movements>0 && menu.Read().Results==null)
                 {
-                    menu=WorldFiveOpeningTenPrototype.Open(stores.Battles,stores.Progress);
+                    menu=open(stores.Battles,stores.Progress);
                     Equal(MissionFlowPhase.Battle,menu.Read().Phase);
                     Equal(id,menu.Read().Resume.MissionId);
                     play=menu.ResumeBattle();
@@ -126,12 +130,13 @@ internal static partial class Program
             Equal(false,menu.ClaimRewards(attempt).AlreadyClaimed);
             Equal(true,menu.ClaimRewards(attempt).AlreadyClaimed);
             menu.ReturnToSelection(attempt);
-            menu=WorldFiveOpeningTenPrototype.Open(stores.Battles,stores.Progress);
+            menu=open(stores.Battles,stores.Progress);
             Equal(ids[stage+1],menu.Read().NextCampaignMission.Definition.Id);
             Equal(true,menu.Read().Missions.Single(x=>x.Definition.Id==ids[stage+1]).Available);
             Equal(claimsBefore+(stage-2),menu.Read().Progress.Claims.Count);
         }
         Equal(ids[6],menu.Read().NextCampaignMission.Definition.Id);
         Equal(false,menu.Read().Missions.Single(x=>x.Definition.Id==ids[9]).Available);
+        return stores;
     }
 }
