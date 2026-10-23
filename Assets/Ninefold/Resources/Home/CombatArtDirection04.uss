@@ -1,0 +1,126 @@
+/*
+ * Frontiers combat art direction 04.
+ * A richer active-unit card with production-model preview support,
+ * a non-font dependent settings symbol, and cohesive tactility.
+ * This file loads after all older game-wide/battle sheets.
+ */
+.root.home-mode #safe-area .home-settings-shortcut .home-settings-graphic {
+    width: 29px;
+    height: 29px;
+    flex-grow: 0;
+    flex-shrink: 0;
+    margin: 0 0 1px 0;
+    -unity-image-tint-color: rgb(249, 226, 178);
+}
+.root.visual-hud-mode .battle-dock {
+    height: 191px;
+    min-height: 191px;
+    max-height: 191px;
+}
+.root.visual-hud-mode .mobile-combat-status {
+    min-height: 77px;
+    margin: 1px 1px 4px 1px;
+    padding: 2px 4px 4px 4px;
+}
+.root.visual-hud-mode .mobile-active-unit {
+    min-height: 43px;
+    align-items: center;
+    flex-wrap: nowrap;
+    padding: 0;
+}
+.root.visual-hud-mode .mobile-active-unit .battle-active-portrait {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    min-height: 38px;
+    flex-shrink: 0;
+    margin: 0 8px 0 0;
+    overflow: hidden;
+    border-radius: 7px;
+    border-width: 1px;
+    border-color: rgba(211, 180, 123, 0.65);
+    background-color: rgb(26, 48, 47);
+    align-items: center;
+    justify-content: center;
+}
+.root.visual-hud-mode .battle-active-portrait-image {
+    width: 100%;
+    height: 100%;
+    -unity-image-tint-color: rgb(255, 255, 255);
+}
+.root.visual-hud-mode .battle-active-portrait-fallback {
+    font-size: 8px;
+    -unity-font-style: bold;
+    letter-spacing: .3px;
+    color: rgb(228, 191, 131);
+    -unity-text-align: middle-center;
+}
+.root.visual-hud-mode .mobile-actor-name {
+    font-size: 12px;
+    color: rgb(252, 241, 219);
+}
+.root.visual-hud-mode .mobile-actor-move,
+.root.visual-hud-mode .mobile-actor-action {
+    padding: 3px 5px;
+    border-radius: 5px;
+    background-color: rgba(54, 78, 68, .55);
+    margin-left: 4px;
+    font-size: 9px;
+    color: rgb(217, 234, 215);
+}
+.root.visual-hud-mode .mobile-inspected-unit {
+    border-radius: 7px;
+    background-color: rgb(35, 51, 49);
+}
+.root.visual-hud-mode #safe-area .battle-title-row > Button.game-button.mobile-battle-end {
+    border-radius: 10px;
+    border-bottom-width: 3px;
+    background-color: rgb(125, 87, 44);
+    border-color: rgb(214, 172, 115);
+    border-top-color: rgb(251, 222, 164);
+    color: rgb(255, 248, 229);
+    font-size: 12px;
+}
+.root.visual-hud-mode #safe-area .battle-title-row > Button.game-button.mobile-battle-end:hover {
+    background-color: rgb(164, 114, 56);
+}
+.root.visual-hud-mode #safe-area .mobile-ability-strip > Button.game-button.mobile-ability-button {
+    border-radius: 10px;
+    border-top-width: 2px;
+    border-bottom-width: 3px;
+    background-color: rgb(39, 75, 72);
+}
+.root.visual-hud-mode #safe-area .mobile-ability-strip > Button.game-button.mobile-ability-button.selected {
+    background-color: rgb(116, 91, 58);
+    border-top-color: rgb(253, 219, 154);
+}
+.root.visual-hud-mode.rescue-objective-mode .battle-dock {
+    height: 226px;
+    min-height: 226px;
+    max-height: 226px;
+}
+.root.visual-hud-mode.rescue-extraction-mode .battle-dock {
+    height: 288px;
+    min-height: 288px;
+    max-height: 288px;
+}
+.root.compact-home.visual-hud-mode .battle-dock {
+    height: 185px;
+    min-height: 185px;
+    max-height: 185px;
+}
+.root.compact-home.visual-hud-mode.rescue-objective-mode .battle-dock {
+    height: 225px;
+    min-height: 225px;
+    max-height: 225px;
+}
+.root.compact-home.visual-hud-mode.rescue-extraction-mode .battle-dock {
+    height: 278px;
+    min-height: 278px;
+    max-height: 278px;
+}
+.root.short-home.visual-hud-mode .battle-dock {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+}
