@@ -13,7 +13,9 @@ internal static partial class Program
             ("World Five wildlife profile completes Missions 1–8, fights Seamstalkers and unlocks 009", WildlifeMissionSevenEightJourney)
         };
 
-    private static void WildlifeMissionSevenEightJourney()
+    private static void WildlifeMissionSevenEightJourney() { FiveCompleteWildlifeEight(); }
+
+    private static (FakeSaveFiles Battles,ProgressFiles Progress) FiveCompleteWildlifeEight()
     {
         var catalog=WorldFiveTutorialWildlifeV1.Create();
         MissionPresentation Open(FakeSaveFiles battle,ProgressFiles progress)
@@ -157,5 +159,6 @@ internal static partial class Program
         Equal(ids[8],menu.Read().NextCampaignMission.Definition.Id);
         Equal(false,menu.Read().Missions.Single(m=>
             m.Definition.Id==WorldFiveStorySequence.FirstCampaignMissionId).Available);
+        return stores;
     }
 }
