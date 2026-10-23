@@ -52,6 +52,7 @@ namespace Ninefold.Presentation
         private Vector2 pointerStart;
         private bool battleDetails;
         private bool sharedControlsLoaded;
+        private Texture2D settingsGearTexture;
         private string battleRejection;
         private string lastTapUnitId;
         private float lastTapUnitTime;
@@ -161,6 +162,9 @@ namespace Ninefold.Presentation
             var controlRedesign = Resources.Load<StyleSheet>("Home/UnifiedControlRedesign03");
             if (controlRedesign != null) root.styleSheets.Add(controlRedesign);
             else Debug.LogWarning("Shared control redesign styles are missing.",this);
+            var combatArt = Resources.Load<StyleSheet>("Home/CombatArtDirection04");
+            if (combatArt != null) root.styleSheets.Add(combatArt);
+            else Debug.LogWarning("Combat art direction styles are missing.",this);
             homeBackdrop = new VisualElement { name = "home-backdrop", pickingMode = PickingMode.Ignore };
             root.Add(homeBackdrop);
             safe = new VisualElement { name = "safe-area" }; root.Add(safe);
@@ -326,7 +330,15 @@ namespace Ninefold.Presentation
             var settingsShortcut = Button(masthead, "", () => Navigate(Page.Settings));
             settingsShortcut.AddToClassList("home-settings-shortcut");
             // Replace the low-resolution settings texture with a crisp, scalable glyph.
-            Text(settingsShortcut, "\u2699", "home-settings-glyph").pickingMode = PickingMode.Ignore;
+            if (settingsGearTexture == null)
+                settingsGearTexture = FrontiersVisualPrimitives.CreateSettingsGear();
+            var gearImage = new Image {
+                image = settingsGearTexture,
+                scaleMode = ScaleMode.ScaleToFit,
+                pickingMode = PickingMode.Ignore
+            };
+            gearImage.AddToClassList("home-settings-graphic");
+            settingsShortcut.Add(gearImage);
             Text(settingsShortcut, "Settings", "home-settings-label");
             settingsShortcut.tooltip = "Settings";
             var hud = Row(masthead);
@@ -1301,6 +1313,23 @@ namespace Ninefold.Presentation
                         "battle-rescue-hint");
             }
             var current = Row(status); current.AddToClassList("mobile-active-unit");
+            // Show production model portraits when the parallel asset team has
+            // registered one; never instantiate a model or steal its texture.
+            var portrait = new VisualElement { pickingMode = PickingMode.Ignore };
+            portrait.AddToClassList("battle-active-portrait");
+            current.Add(portrait);
+            Texture preview = active?.Id == null ? null :
+                FrontiersPreviewRegistry.Source?.GetUnitPreview(active.Id);
+            if (preview != null)
+            {
+                var modelImage = new Image { image=preview, scaleMode=ScaleMode.ScaleToFit,
+                    pickingMode=PickingMode.Ignore };
+                modelImage.AddToClassList("battle-active-portrait-image");
+                portrait.Add(modelImage);
+            }
+            else
+                Text(portrait,active?.IsEnemyControlled == true ? "ENEMY" : "UNIT",
+                    "battle-active-portrait-fallback").pickingMode = PickingMode.Ignore;
             Text(current, "ACTIVE  " + UnitName(active?.Id), "mobile-actor-name");
             Text(current, (b.Activation?.MovementRemaining.ToString("0.#") ?? "0") + " MOVE",
                 "mobile-actor-move");
@@ -2102,6 +2131,6 @@ namespace Ninefold.Presentation
                 id=="fixture-mixed"?"Quick combat":
                 id=="fixture-finale"?"Campaign finale":"Faction B: stabilization";
         }
-        private void OnDestroy() { if (playback != null) StopCoroutine(playback); field?.Dispose(); }
+        private void OnDestroy() { if (playback != null) StopCoroutine(playback); field?.Dispose(); if (settingsGearTexture != null) Destroy(settingsGearTexture); }
     }
 }

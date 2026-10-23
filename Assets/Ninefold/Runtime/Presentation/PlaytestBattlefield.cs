@@ -55,6 +55,8 @@ namespace Ninefold.Presentation
         private string drawnAttempt;
         private string rescueSubjectId;
         private readonly GameObject destination, selection, inspection, impact, statusPulse;
+        private readonly GameObject impactBurst;
+        private readonly Transform[] impactShards = new Transform[8];
         private VisualElement surface;
         private Bounds framing;
         private readonly List<Rect> barRects = new List<Rect>();
@@ -81,6 +83,18 @@ namespace Ninefold.Presentation
             var white = Make(new Color(.9f,.96f,1f));
             inspection = Primitive("Inspected unit marker",PrimitiveType.Cube,Vector3.zero,new Vector3(1.15f,.015f,1.15f),white);
             impact = Primitive("Action impact",PrimitiveType.Sphere,Vector3.zero,Vector3.one*.2f,gold); impact.SetActive(false);
+            // Pooled, reusable radial strike shards: zero per-frame allocations,
+            // no colliders, no scene-object creation when an ability fires.
+            impactBurst = new GameObject("Battle impact · eight radial mineral shards");
+            impactBurst.transform.SetParent(world.transform,false);
+            for(int i=0;i<impactShards.Length;i++)
+            {
+                var shard=Primitive("Arcana / impact shard "+i,PrimitiveType.Cube,
+                    Vector3.zero,new Vector3(.06f,.06f,.22f),gold);
+                shard.transform.SetParent(impactBurst.transform,false);
+                impactShards[i]=shard.transform;
+            }
+            impactBurst.SetActive(false);
             statusPulse = Primitive("Status effect pulse", PrimitiveType.Cylinder, Vector3.zero,
                 new Vector3(.5f,.015f,.5f), Make(new Color(.69f,.43f,.95f)));
             statusPulse.SetActive(false);
@@ -561,7 +575,7 @@ namespace Ninefold.Presentation
         public IEnumerator Play(BattleUpdate update, float duration)
         {
             path.positionCount = 0; range.positionCount = 0; destination.SetActive(false);
-            inspection.SetActive(false); impact.SetActive(false); statusPulse.SetActive(false);
+            inspection.SetActive(false); impact.SetActive(false); statusPulse.SetActive(false); impactBurst.SetActive(false);
             foreach (var t in tokens.Values) t.TargetRing.SetActive(false);
             // Keep before-state bars visible during playback; reconcile authoritative after-state once finished.
             float elapsed = 0;
@@ -644,6 +658,24 @@ namespace Ninefold.Presentation
                     // or author new damage/status outcomes in the renderer.
                     impact.GetComponent<Renderer>().sharedMaterial = healing ? friendly :
                         hasStatus && pulse.AbilityEffect.Health == null ? markings : gold;
+                    // The shock burst reads the same authoritative hit/heal/status
+                    // event as floating damage feedback, without affecting rules.
+                    var burstMaterial = healing ? friendly :
+                        hasStatus && pulse.AbilityEffect.Health == null ? markings : gold;
+                    impactBurst.SetActive(true);
+                    impactBurst.transform.position = target.Body.transform.position;
+                    float bloom = Mathf.Sin(strike*Mathf.PI);
+                    for(int i=0;i<impactShards.Length;i++)
+                    {
+                        float angle = i*Mathf.PI*2f/impactShards.Length;
+                        var direction = new Vector3(Mathf.Cos(angle),.12f,
+                            Mathf.Sin(angle)).normalized;
+                        var shard=impactShards[i];
+                        shard.localPosition = direction*(.18f+.6f*strike);
+                        shard.localRotation = Quaternion.LookRotation(direction);
+                        shard.localScale = new Vector3(.045f,.05f,.14f+.38f*bloom);
+                        shard.GetComponent<Renderer>().sharedMaterial = burstMaterial;
+                    }
                     if (hasStatus)
                     {
                         statusPulse.SetActive(true);
@@ -657,7 +689,7 @@ namespace Ninefold.Presentation
                 yield return null;
             }
             if (!shown) AddFeedback(update,false);
-            path.positionCount=0; impact.SetActive(false); statusPulse.SetActive(false);
+            path.positionCount=0; impact.SetActive(false); statusPulse.SetActive(false); impactBurst.SetActive(false);
             Reconcile(update.After);
         }
         private static Vector3 AlongRoute(FieldPoint[] route, float fraction)
@@ -694,6 +726,7 @@ namespace Ninefold.Presentation
         public void Hide()
         {
             foreach (var item in feedback) item.Label.RemoveFromHierarchy(); feedback.Clear();
+            impactBurst.SetActive(false);
             world.SetActive(false); camera.enabled = true; camera.rect = new Rect(0, 0, 1, 1);
         }
         public static Vector3 Vector(FieldPoint p) => new Vector3((float)p.X, (float)p.Y, (float)p.Z);

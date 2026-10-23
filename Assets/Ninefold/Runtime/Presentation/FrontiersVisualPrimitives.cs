@@ -148,6 +148,47 @@ namespace Ninefold.Presentation
             Label(status, owned ? "UNLOCKED" : "LOCKED", "vif-preview-state");
         }
 
+        /// <summary>
+        /// Generate a sharp, antialiased Settings icon for every pixel density.
+        /// Do not depend on platform glyph coverage or a low-resolution resource.
+        /// The caller owns and destroys this texture.
+        /// </summary>
+        public static Texture2D CreateSettingsGear()
+        {
+            const int size = 96;
+            var texture = new Texture2D(size,size,TextureFormat.RGBA32,false)
+            {
+                name = "Ninefold settings · vector-derived gear",
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp
+            };
+            var pixels = new Color[size*size];
+            var ink = new Color(.96f,.85f,.63f,1f);
+            // Four analytic coverage samples give a soft, crisp edge at phone scale.
+            for (int y=0;y<size;y++)
+                for (int x=0;x<size;x++)
+                {
+                    float coverage = 0;
+                    for(int yy=0;yy<2;yy++)
+                        for(int xx=0;xx<2;xx++)
+                        {
+                            float px = (x+(xx+.5f)/2f-size*.5f)/(size*.5f);
+                            float py = (y+(yy+.5f)/2f-size*.5f)/(size*.5f);
+                            float radius = Mathf.Sqrt(px*px+py*py);
+                            float angle = Mathf.Atan2(py,px);
+                            const float teeth = 10f;
+                            float toothAngle = angle*teeth/(2f*Mathf.PI);
+                            float toothFraction = toothAngle-Mathf.Floor(toothAngle);
+                            float outer = toothFraction<.30f || toothFraction>.70f ? .78f : .65f;
+                            if(radius >= .23f && radius <= outer) coverage += .25f;
+                        }
+                    pixels[y*size+x] = new Color(ink.r,ink.g,ink.b,coverage);
+                }
+            texture.SetPixels(pixels);
+            texture.Apply(false,true);
+            return texture;
+        }
+
         public static void HudChip(VisualElement parent, string value, string caption)
         {
             var chip = new VisualElement { pickingMode = PickingMode.Ignore };

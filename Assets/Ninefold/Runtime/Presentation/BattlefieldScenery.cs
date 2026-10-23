@@ -11,7 +11,7 @@ namespace Ninefold.Presentation
     {
         public int MeshCount => meshes.Count;
         private readonly Material stone, pale, distant, vegetation, farHaze;
-        private readonly Material fractureBase, fractureEdge, fractureSeam;
+        private readonly Material fractureBase, fractureEdge, fractureSeam, fractureFloorTrace, fractureFloorChip;
         private readonly Material floorSurface, coverSurface;
         private readonly Material[] paving = new Material[3];
         private readonly Texture2D mineral, worldFiveMineral;
@@ -35,6 +35,8 @@ namespace Ninefold.Presentation
             fractureBase = Make("World Five geological facets", new Color(.38f,.33f,.45f));
             fractureEdge = Make("World Five quartz edges", new Color(.66f,.57f,.71f));
             fractureSeam = Make("World Five fracture seams", new Color(.63f,.54f,.83f));
+            fractureFloorTrace = Make("World Five subtle mineral threads", new Color(.43f,.37f,.53f));
+            fractureFloorChip = Make("World Five polished fissure flecks", new Color(.51f,.45f,.57f));
             worldFiveMineral = WorldFiveSceneryKit.CreateMineralSurface();
             mineral = new Texture2D(128,128,TextureFormat.RGBA32,true) { name = "Procedural mineral grain", wrapMode = TextureWrapMode.Repeat, filterMode = FilterMode.Trilinear };
             var pixels = new Color[128*128];
@@ -85,6 +87,8 @@ namespace Ninefold.Presentation
                 fractureBase.color = style.RiftStone;
                 fractureEdge.color = style.MineralHighlights;
                 fractureSeam.color = style.SeamAccent;
+                fractureFloorTrace.color = Color.Lerp(direction.Floor,style.SeamAccent,.39f);
+                fractureFloorChip.color = Color.Lerp(direction.Floor,style.MineralHighlights,.54f);
             }
             for (int i=0; i<paving.Length; i++)
                 paving[i].color = Color.Lerp(direction.Floor, direction.Ceramic, .10f + i*.10f);
@@ -92,6 +96,7 @@ namespace Ninefold.Presentation
             float z0=(float)map.Bounds.Min.Z, z1=(float)map.Bounds.Max.Z;
             floor.mainTextureScale = new Vector2((x1-x0)/3,(z1-z0)/3);
             BuildSurface(parent,x0,x1,z0,z1);
+            if(isWorldFive) BuildWorldFiveSurfaceDetails(parent,x0,x1,z0,z1,style);
             var far=new Batch(); var coverFaces=new Batch(); var coverCaps=new Batch();
             foreach(var obstacle in map.Obstacles)
             {
@@ -231,6 +236,53 @@ namespace Ninefold.Presentation
             Emit(parent,"W5 fractured outer mineral masses",mass,fractureBase);
             Emit(parent,"W5 faceted mineral rims",facets,fractureEdge);
             Emit(parent,"W5 noninteractive seam reflections",seams,fractureSeam);
+        }
+
+        /// <summary>
+        /// Narrow geological grain at floor level. Decorative shading only:
+        /// no collider, height step, navigation change or implied chasm.
+        /// Reuses two batched meshes instead of spawning per-fragment objects.
+        /// </summary>
+        private void BuildWorldFiveSurfaceDetails(Transform parent,
+            float x0,float x1,float z0,float z1,WorldFiveSceneryKit.Style style)
+        {
+            var threads=new Batch();
+            var flecks=new Batch();
+            float width=x1-x0, depth=z1-z0;
+            if(width<3f || depth<3f) return;
+            int density=style.FacetCount>10?58:37;
+            for(int i=0;i<density;i++)
+            {
+                float x=Mathf.Lerp(x0+1f,x1-1f,Noise(i,401));
+                float z=Mathf.Lerp(z0+1f,z1-1f,Noise(i,402));
+                float angle=Noise(i,403)*Mathf.PI*2f;
+                float length=.25f+Noise(i,404)*.85f;
+                var axis=new Vector3(Mathf.Cos(angle),0,Mathf.Sin(angle));
+                var across=new Vector3(-axis.z,0,axis.x);
+                var center=new Vector3(x,.018f,z);
+                // Clip to an inset rectangle, ensuring every bright facet stays
+                // inside actual floor bounds and never reads as an exit route.
+                var tip=center+axis*length;
+                if(tip.x<x0+.5f || tip.x>x1-.5f ||
+                   tip.z<z0+.5f || tip.z>z1-.5f) continue;
+                float thick=.018f+Noise(i,405)*.027f;
+                var l=center+across*thick;
+                var rr=center-across*thick;
+                var tl=tip+across*(thick*.35f);
+                var tr=tip-across*(thick*.35f);
+                threads.Face(l,tl,tr); threads.Face(l,tr,rr);
+                if(i%3==0)
+                {
+                    float c=.11f+Noise(i,406)*.12f;
+                    var at=center+axis*(length*.55f);
+                    var back=at-axis*c;
+                    var front=at+axis*c;
+                    var wing=at+across*c*.50f;
+                    flecks.Face(back,front,wing);
+                }
+            }
+            Emit(parent,"W5 floor · narrow mineral threads",threads,fractureFloorTrace);
+            Emit(parent,"W5 floor · flecked quartz reflections",flecks,fractureFloorChip);
         }
 
         private void BuildSurface(Transform parent,float x0,float x1,float z0,float z1)
