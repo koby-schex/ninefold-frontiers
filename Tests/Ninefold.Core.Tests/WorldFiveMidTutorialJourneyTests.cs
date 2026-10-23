@@ -64,6 +64,7 @@ internal static partial class Program
             {
                 var battle=play.Read().Battle;
                 BattleInputResult command;
+                bool movedThisStep=false;
                 if(battle.Phase!=BattleSessionPhase.PlayerInput)
                     command=play.Advance(new EnemyPerception(Array.Empty<string>(),Array.Empty<string>()));
                 else if(stage==3 && !InsideZone(
@@ -87,6 +88,7 @@ internal static partial class Program
                         command=play.TapDestination(move.Position);
                         Equal(InputOutcome.Committed,command.Outcome);
                         movements++;
+                        movedThisStep=true;
                     }
                 }
                 else command=play.EndTurn(battle.Activation.ActivationId);
@@ -103,9 +105,8 @@ internal static partial class Program
                 // A player may move and then spend the remainder of the same
                 // activation. Waiting until the next turn is also legal, but
                 // deterministic advancement must never create a soft lock.
-                if(menu.Read().Results==null &&
-                    play.Read().Battle.Phase==BattleSessionPhase.PlayerInput &&
-                    (stage!=3 || movements>0))
+                if(menu.Read().Results==null && movedThisStep &&
+                    play.Read().Battle.Phase==BattleSessionPhase.PlayerInput)
                 {
                     var current=play.Read().Battle;
                     var finish=play.EndTurn(current.Activation.ActivationId);
