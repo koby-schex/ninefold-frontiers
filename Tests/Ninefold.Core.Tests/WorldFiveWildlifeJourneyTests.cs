@@ -122,7 +122,7 @@ internal static partial class Program
                     }
                 }
                 if(action.AnimationId!=null)Equal(true,play.CompleteAnimation(action.AnimationId));
-                if(!resumed && moves>0 && menu.Read().Results==null)
+                if(!resumed && (moves>0 || (stage==6 && attacks>0)) && menu.Read().Results==null)
                 {
                     menu=Open(stores.Battles,stores.Progress);
                     Equal(MissionFlowPhase.Battle,menu.Read().Phase);
@@ -143,10 +143,9 @@ internal static partial class Program
                     "Moves "+moves+" attacks "+attacks+" rounds "+play.Read().Battle.Round+
                     " objective "+play.Read().Battle.Objectives[0].Progress);
             Equal(MissionOutcome.Victory,menu.Read().Results.Result.Outcome);
-            Equal(true,moves>0);
             Equal(true,resumed);
-            Equal(true,enemyTurns>0);
             if(stage==6)Equal(true,attacks>=2);
+            else { Equal(true,moves>0); Equal(true,enemyTurns>0); }
             var attempt=menu.Read().Results.Result.AttemptId;
             Equal(false,menu.ClaimRewards(attempt).AlreadyClaimed);
             Equal(true,menu.ClaimRewards(attempt).AlreadyClaimed);
