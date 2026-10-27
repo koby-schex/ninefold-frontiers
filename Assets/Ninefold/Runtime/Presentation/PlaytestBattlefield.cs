@@ -573,6 +573,15 @@ namespace Ninefold.Presentation
             if(approvedModels==null ||
                 !approvedModels.TryGetApproved(unitId,out var selected))
                 return false;
+            // An approved battle prefab is art only. Reject live gameplay
+            // scripts before Instantiate so OnEnable cannot execute on the
+            // battlefield. Animators and renderers remain supported.
+            if(selected.Prefab.GetComponentsInChildren<MonoBehaviour>(true).Length>0)
+            {
+                Debug.LogWarning("Battle model "+unitId+
+                    " contains MonoBehaviour scripts; remove them from the visual-only prefab.");
+                return false;
+            }
 
             var root=new GameObject(unitId+" · approved combat model");
             root.transform.SetParent(world.transform,false);
