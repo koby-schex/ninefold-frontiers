@@ -90,10 +90,11 @@ namespace Ninefold.Presentation
             if (shadowShader == null) shadowShader = Shader.Find("Unlit/Transparent");
             // A stripped shader must never leave opaque black quads on the map.
             translucentContactShadows = shadowShader != null;
-            contactShadowMaterial = new Material(shadowShader != null ? shadowShader : template) {
-                name = "Mobile grounded unit contact shadows",
-                color = Color.white, mainTexture = contactShadowTexture
-            };
+            contactShadowMaterial = shadowShader != null
+                ? new Material(shadowShader) : new Material(template);
+            contactShadowMaterial.name = "Mobile grounded unit contact shadows";
+            contactShadowMaterial.color = Color.white;
+            contactShadowMaterial.mainTexture = contactShadowTexture;
             materials.Add(contactShadowMaterial);
             var keyObject = new GameObject("Battlefield art key · presentation only");
             keyObject.transform.SetParent(world.transform,false);
