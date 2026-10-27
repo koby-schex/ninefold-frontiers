@@ -21,7 +21,7 @@ namespace Ninefold.Presentation
         private const float StandardTokenHeight = 1.45f;
         private sealed class Token
         {
-            public GameObject Body, TargetRing, CarryIcon;
+            public GameObject Body, TargetRing, CarryIcon, ContactShadow;
             public VisualElement Bar, Fill;
             public Label Caption;
             public Vector3 Position;
@@ -57,6 +57,11 @@ namespace Ninefold.Presentation
         private readonly GameObject destination, selection, inspection, impact, statusPulse;
         private readonly GameObject impactBurst;
         private readonly Transform[] impactShards = new Transform[8];
+        private readonly Mesh markerRingMesh;
+        private readonly Texture2D contactShadowTexture;
+        private readonly Material contactShadowMaterial;
+        private readonly Light battlefieldKey, impactLight;
+        private Vector2 cameraImpulse;
         private VisualElement surface;
         private Bounds framing;
         private readonly List<Rect> barRects = new List<Rect>();
@@ -78,10 +83,34 @@ namespace Ninefold.Presentation
             trim.color = new Color(.64f,.60f,.58f);
             grid.color = new Color(.23f,.21f,.27f);
             scenery = new BattlefieldScenery(template, floor, cover);
-            destination = Primitive("Destination preview", PrimitiveType.Cylinder, Vector3.zero, new Vector3(.7f, .025f, .7f), gold);
-            selection = Primitive("Active unit marker", PrimitiveType.Cylinder, Vector3.zero, new Vector3(.95f, .015f, .95f), active);
+            markerRingMesh = BuildMarkerRingMesh();
+            contactShadowTexture = BuildContactShadowTexture();
+            var shadowShader = Shader.Find("Sprites/Default");
+            if (shadowShader == null) shadowShader = Shader.Find("Unlit/Transparent");
+            contactShadowMaterial = new Material(shadowShader != null ? shadowShader : template) {
+                name = "Mobile grounded unit contact shadows",
+                color = Color.white, mainTexture = contactShadowTexture
+            };
+            materials.Add(contactShadowMaterial);
+            var keyObject = new GameObject("Battlefield art key · presentation only");
+            keyObject.transform.SetParent(world.transform,false);
+            battlefieldKey = keyObject.AddComponent<Light>();
+            battlefieldKey.type = LightType.Directional;
+            battlefieldKey.shadows = LightShadows.None;
+            battlefieldKey.intensity = 1.05f;
+            battlefieldKey.transform.localRotation = Quaternion.Euler(48f,-38f,0f);
+            var hitLightObject = new GameObject("Pooled ability impact light");
+            hitLightObject.transform.SetParent(world.transform,false);
+            impactLight = hitLightObject.AddComponent<Light>();
+            impactLight.type = LightType.Point;
+            impactLight.shadows = LightShadows.None;
+            impactLight.range = 3.8f;
+            impactLight.intensity = 0f;
+            impactLight.enabled = false;
+            destination = MarkerRing("Destination preview · open center",gold,.70f);
+            selection = MarkerRing("Active unit halo · open center",active,.95f);
             var white = Make(new Color(.9f,.96f,1f));
-            inspection = Primitive("Inspected unit marker",PrimitiveType.Cube,Vector3.zero,new Vector3(1.15f,.015f,1.15f),white);
+            inspection = MarkerRing("Inspected unit halo · open center",white,1.15f);
             impact = Primitive("Action impact",PrimitiveType.Sphere,Vector3.zero,Vector3.one*.2f,gold); impact.SetActive(false);
             // Pooled, reusable radial strike shards: zero per-frame allocations,
             // no colliders, no scene-object creation when an ability fires.
