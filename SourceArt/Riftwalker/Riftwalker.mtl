@@ -4,24 +4,28 @@ Ns 24
 d 1
 
 newmtl avar_skin
-Kd 0.29 0.205 0.32
+Kd 1 1 1
 Ns 24
 d 1
+map_Kd Textures/avar_skin.png
 
 newmtl ceramic
-Kd 0.6 0.62 0.61
+Kd 1 1 1
 Ns 100
 d 1
+map_Kd Textures/ceramic.png
 
 newmtl cloth
-Kd 0.075 0.08 0.12
+Kd 1 1 1
 Ns 4
 d 1
+map_Kd Textures/cloth.png
 
 newmtl continuance_frame
-Kd 0.26 0.28 0.32
+Kd 1 1 1
 Ns 100
 d 1
+map_Kd Textures/continuance_frame.png
 
 newmtl eye
 Kd 0.055 0.065 0.07
@@ -29,9 +33,10 @@ Ns 28
 d 1
 
 newmtl grown_mineral
-Kd 0.78 0.8 0.81
+Kd 1 1 1
 Ns 82
 d 1
+map_Kd Textures/grown_mineral.png
 
 newmtl sail_membrane
 Kd 0.29 0.23 0.36
@@ -49,6 +54,7 @@ Ns 16
 d 1
 
 newmtl vaskel_tissue
-Kd 0.09 0.055 0.11
+Kd 1 1 1
 Ns 24
 d 1
+map_Kd Textures/vaskel_tissue.png
