@@ -63,8 +63,8 @@ internal static partial class Program
         foreach(bool striker in new[]{false,true})
         {
             float x=.154f;
-            float lz=.091f+(striker?.17f:.07f)*-.26f;
-            float rz=.091f+(striker?.17f:.07f);
+            float lz=.091f+(striker ? .17f : .07f)*-.26f;
+            float rz=.091f+(striker ? .17f : .07f);
             var left=Point(-x,.063f,lz);
             var right=Point(x,.063f,rz);
             var a=Pose("Avarin_Foot_L",left,AshboundMotion.Clip.Advance,.25,striker);
