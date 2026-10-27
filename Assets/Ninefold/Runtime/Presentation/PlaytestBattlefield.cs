@@ -27,6 +27,7 @@ namespace Ninefold.Presentation
             public Vector3 Position;
             public Vector3 Scale;
             public float Height;
+            public FrontiersBattleModelMotion ModelMotion;
         }
         private sealed class FloatingFeedback
         {
@@ -666,7 +667,10 @@ namespace Ninefold.Presentation
                     bool isSeamstalker = creature == WorldFiveTutorialWildlifeV1.SeamstalkerId;
                     bool hasApprovedPrefab = TryCreateApprovedVisual(h.UnitId,out var modelBody);
                     if(hasApprovedPrefab)
+                    {
                         t.Body=modelBody;
+                        t.ModelMotion=new FrontiersBattleModelMotion(modelBody);
+                    }
                     else
                     {
                         t.Body = Primitive(h.UnitId,
@@ -838,11 +842,38 @@ namespace Ninefold.Presentation
             float elapsed = 0;
             var movement = update.Events.FirstOrDefault(e => e.Kind == BattleEventKind.Movement && e.Movement != null);
             var pulse = update.Events.FirstOrDefault(e => e.Kind == BattleEventKind.AbilityUsed);
+            if(duration>0 && movement != null &&
+                tokens.TryGetValue(movement.UnitId,out var movingToken))
+                movingToken.ModelMotion?.BeginMovement();
+            bool modelActionSignalled = false;
             bool shown = false;
             while (elapsed < duration)
             {
                 elapsed += Time.unscaledDeltaTime; float t = Mathf.Clamp01(elapsed / duration);
                 if (!shown && t>=.55f) { AddFeedback(update,true); shown=true; }
+                if(!modelActionSignalled && pulse!=null && t>=.55f)
+                {
+                    // Animation never authors the hit. Core already committed the
+                    // action before Play starts; these are optional visual cues.
+                    if(tokens.TryGetValue(pulse.UnitId,out var sourceToken))
+                        sourceToken.ModelMotion?.AttackTarget();
+                    if(!string.IsNullOrEmpty(pulse.TargetId) &&
+                        tokens.TryGetValue(pulse.TargetId,out var targetToken))
+                    {
+                        var effect=pulse.AbilityEffect;
+                        bool recovered=effect?.Health!=null &&
+                            effect.Health.HealthAfter>effect.Health.HealthBefore;
+                        bool damaged=effect?.Health!=null &&
+                            effect.Health.HealthAfter<effect.Health.HealthBefore;
+                        if(recovered)targetToken.ModelMotion?.ReceiveHeal();
+                        else if(damaged || effect?.Status?.Applies==true)
+                            targetToken.ModelMotion?.ReceiveHit();
+                        var defeated=update.After.Units.FirstOrDefault(u=>u.Id==pulse.TargetId);
+                        if(defeated?.Health?.IsDefeated==true)
+                            targetToken.ModelMotion?.Fall();
+                    }
+                    modelActionSignalled=true;
+                }
                 float moveTime = pulse == null ? t : Mathf.Clamp01(t/.55f);
                 float strike = Mathf.Clamp01((t-.55f)/.45f);
                 float impactEnvelope = Mathf.Sin(strike*Mathf.PI);
@@ -958,6 +989,8 @@ namespace Ninefold.Presentation
                 yield return null;
             }
             if (!shown) AddFeedback(update,false);
+            if(movement!=null && tokens.TryGetValue(movement.UnitId,out var finishedToken))
+                finishedToken.ModelMotion?.EndMovement();
             path.positionCount=0; impact.SetActive(false); statusPulse.SetActive(false); impactBurst.SetActive(false);
             impactLight.enabled=false; cameraImpulse=Vector2.zero;
             Reconcile(update.After);
@@ -995,6 +1028,7 @@ namespace Ninefold.Presentation
         }
         public void Hide()
         {
+            foreach(var token in tokens.Values)token.ModelMotion?.EndMovement();
             foreach (var item in feedback) item.Label.RemoveFromHierarchy(); feedback.Clear();
             impactBurst.SetActive(false); impactLight.enabled=false; cameraImpulse=Vector2.zero;
             world.SetActive(false); camera.enabled = true; camera.rect = new Rect(0, 0, 1, 1);
