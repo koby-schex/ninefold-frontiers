@@ -364,6 +364,12 @@ namespace Ninefold.Presentation
             var direction = BattlefieldSceneDirection.ForMission(missionId,environmentKey);
             drawnSceneStudy = direction.Study;
             camera.backgroundColor = direction.Sky;
+            // Presentation-only environment lighting. Does not alter encounter
+            // data, navigation, model prefabs or shared RenderSettings.
+            battlefieldKey.color = Color.Lerp(direction.Fill,Color.white,.25f);
+            battlefieldKey.intensity = direction.Study.StartsWith("W5",StringComparison.Ordinal) ? 1.15f : .95f;
+            battlefieldKey.transform.localRotation = Quaternion.Euler(52f,
+                direction.Study.Contains("fracture") ? -25f : -43f,0f);
             foreach (var label in objectiveLabels.Values) label.RemoveFromHierarchy();
             objectiveLabels.Clear(); objectivePositions.Clear(); objectiveVisuals.Clear();
             if (terrain != null) { terrain.SetActive(false); Object.Destroy(terrain); }
@@ -434,6 +440,7 @@ namespace Ninefold.Presentation
             {
                 Object.Destroy(token.Body);
                 Object.Destroy(token.TargetRing);
+                Object.Destroy(token.ContactShadow);
                 token.Bar.RemoveFromHierarchy();
             }
             tokens.Clear();
@@ -532,7 +539,9 @@ namespace Ninefold.Presentation
         {
             var living = new HashSet<string>(view.HealthOverlays.Select(h => h.UnitId), StringComparer.Ordinal);
             foreach (string id in tokens.Keys.Where(id => !living.Contains(id)).ToArray())
-            { Object.Destroy(tokens[id].Body); Object.Destroy(tokens[id].TargetRing); tokens[id].Bar.RemoveFromHierarchy(); tokens.Remove(id); }
+            { Object.Destroy(tokens[id].Body); Object.Destroy(tokens[id].TargetRing);
+                Object.Destroy(tokens[id].ContactShadow);
+                tokens[id].Bar.RemoveFromHierarchy(); tokens.Remove(id); }
             foreach (var h in view.HealthOverlays)
             {
                 if (!tokens.TryGetValue(h.UnitId, out var t))
@@ -561,8 +570,9 @@ namespace Ninefold.Presentation
                     var collar = Primitive("Unit ID collar",PrimitiveType.Cube,new Vector3(0,StandardTokenHeight*.22f,-.02f),new Vector3(.54f,.12f,.54f),active);
                     collar.transform.SetParent(t.Body.transform,true);
                     t.Scale=t.Body.transform.localScale;
-                    t.TargetRing = Primitive("Valid target marker",PrimitiveType.Cylinder,Vector3.zero,new Vector3(.95f,.025f,.95f),gold);
+                    t.TargetRing = MarkerRing("Valid target halo · open center",gold,.95f);
                     t.TargetRing.SetActive(false);
+                    t.ContactShadow = ContactShadow(h.UnitId);
                     // Floating per-unit health bars obscure the field on
                     // portrait phones. All HP lives in the lower HUD when
                     // the player inspects a unit. Keep this non-rendered
@@ -584,6 +594,7 @@ namespace Ninefold.Presentation
                 // The carried traveler no longer appears to be an independently
                 // selectable/stranded NPC at the old pickup site.
                 t.Body.SetActive(!pickedUp);
+                t.ContactShadow.SetActive(!pickedUp);
                 if (carried && h.UnitId == view.RescueCarrierId && t.CarryIcon == null)
                 {
                     t.CarryIcon = Primitive("Rescued traveler carried", PrimitiveType.Sphere,
@@ -600,6 +611,7 @@ namespace Ninefold.Presentation
                 t.Bar.EnableInClassList("active-health",h.UnitId == view.Activation?.UnitId);
                 t.Position = Vector(h.Position) + Vector3.up * t.Height / 2;
                 t.TargetRing.transform.position = Vector(h.Position)+Vector3.up*.055f;
+                t.ContactShadow.transform.position = Vector(h.Position)+Vector3.up*.019f;
                 t.Body.transform.position = t.Position; t.Body.transform.localRotation = Quaternion.identity; t.Body.transform.localScale=t.Scale;
                 t.Caption.text = h.CurrentHealth + "/" + h.MaximumHealth;
                 t.Fill.style.width = Length.Percent((float)h.Fraction * 100);
@@ -614,6 +626,9 @@ namespace Ninefold.Presentation
             camera.pixelRect = new Rect(rect.x * sx, Screen.height - rect.yMax * sy, rect.width * sx, rect.height * sy);
             camera.transform.rotation = Quaternion.Euler(58, 0, 0);
             camera.transform.position = framing.center - camera.transform.forward * 30;
+            // Tiny bounded art-only recoil, automatically zero outside hits.
+            camera.transform.position += camera.transform.right * cameraImpulse.x +
+                camera.transform.up * cameraImpulse.y;
             // Bounding box in camera space keeps bodies and objective markers in view.
             float needed = 4;
             for (int i = 0; i < 8; i++)
@@ -834,6 +849,8 @@ namespace Ninefold.Presentation
             world.SetActive(false); camera.enabled = true; camera.rect = new Rect(0, 0, 1, 1);
         }
         public static Vector3 Vector(FieldPoint p) => new Vector3((float)p.X, (float)p.Y, (float)p.Z);
-        public void Dispose() { scenery.Dispose(); Object.Destroy(world); foreach (var material in materials) Object.Destroy(material); }
+        public void Dispose() { scenery.Dispose(); Object.Destroy(world);
+            Object.Destroy(markerRingMesh); Object.Destroy(contactShadowTexture);
+            foreach (var material in materials) Object.Destroy(material); }
     }
 }
