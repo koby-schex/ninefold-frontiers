@@ -99,6 +99,39 @@ const DATA={
       ]
     }
   }
+,
+  "SeamCastigator": {
+    "id":"ashbound-seam-castigator",
+    "role":"ranged fracture-line disruption",
+    "bulk":0.83,
+    "stride":0.085,
+    "colors":{
+      "skin":[0.43,0.48,0.50],
+      "mantle":[0.30,0.42,0.45],
+      "garment":[0.17,0.23,0.29],
+      "salvage":[0.35,0.41,0.45],
+      "hardware":[0.72,0.46,0.31],
+      "seam":[0.68,0.68,0.61],
+      "dark":[0.12,0.16,0.19],
+      "eye":[0.72,0.78,0.72]
+    }
+  },
+  "AnchorWrecker": {
+    "id":"ashbound-anchor-wrecker",
+    "role":"slow armored defensive-position disruption",
+    "bulk":1.43,
+    "stride":0.035,
+    "colors":{
+      "skin":[0.43,0.48,0.50],
+      "mantle":[0.32,0.43,0.47],
+      "garment":[0.25,0.24,0.26],
+      "salvage":[0.46,0.40,0.37],
+      "hardware":[0.76,0.36,0.27],
+      "seam":[0.61,0.58,0.55],
+      "dark":[0.15,0.17,0.19],
+      "eye":[0.74,0.76,0.69]
+    }
+  }
 };
 function add(a,b){return a.map((x,i)=>x+b[i])}
 
@@ -152,7 +185,7 @@ function makeUnit(key){
  oval("Wake_EngineeredCaptureHousing","salvage",[heavy?.15:-.15,1.16,-.134],[.082,.119,.052],24);
  for(let k=0;k<3;k++){let x=heavy?.15:-.15,y=1.10+.066*k;wire("Wake_Conduit_"+k,"hardware",[[x-.075,y,-.183],[x,y+.01,-.20],[x+.075,y,-.183]],.008)}
  wire("Wake_ReturnFeed","dark",[[heavy?.15:-.15,1.07,-.18],[heavy?.23:-.20,.94,-.176],[heavy?.15:-.12,.82,.023]],.011);
- if(!heavy){
+ if(key==="RiftForager"){
   loft("Forager_OffsetShoulder","salvage",[[.184,1.435,-.021,.052,.025],[.265,1.36,.012,.096,.058],[.278,1.25,.056,.052,.032]],30);
   oval("Forager_LowRouteSatchel","salvage",[-.220,1.002,-.07],[.102,.156,.082],28);
   loft("Forager_SatchelTie","dark",[[-.28,1.10,-.121,.023,.015],[-.161,1.324,-.137,.019,.012],[-.035,1.41,.001,.023,.011]],14);
@@ -160,7 +193,7 @@ function makeUnit(key){
   oval("Forager_SensorEnd","hardware",[.350,1.241,.453],[.029,.036,.026],18);
   for(let k=0;k<5;k++){let x=-.32-.024*k;wire("Forager_TrailTags_"+k,"seam",[[x,.94,-.119],[x-.018,.82-k*.018,-.112],[x+.014,.78-k*.018,-.103]],.005)}
   for(let k=0;k<6;k++){let x=-.132+.048*k;wire("Forager_FieldRepairs_"+k,"seam",[[x,.940,.109],[x+.006,.814,.151],[x-.018,.71,.178]],.0027)}
- }else{
+ }else if(key==="PartedStriker"){
   loft("Striker_OverbuiltRightShoulder","salvage",[[.18,1.47,-.033,.054,.035],[.288,1.383,-.029,.145,.076],[.315,1.252,.052,.077,.041]],32);
   loft("Striker_RightForearmPlate","salvage",[[.30,1.115,.072,.057,.046],[.324,1.024,.105,.091,.082],[.318,.912,.133,.058,.049]],30);
   loft("Striker_ImpactRidge","seam",[[.345,1.118,.13,.020,.013],[.348,1.004,.176,.031,.023],[.316,.914,.190,.015,.012]],18);
@@ -170,6 +203,108 @@ function makeUnit(key){
   for(let k=0;k<4;k++){let z=-.14-k*.014;wire("Striker_StabilizerVane_"+k,"hardware",[[.059+k*.030,1.243,z],[.071+k*.025,1.156,z-.037],[.081+k*.019,1.06,z]],.006)}
   oval("Striker_ImpactNode","hardware",[.345,1.01,.169],[.028,.045,.028],22);
   for(let k=0;k<6;k++){let x=-.131+k*.051;wire("Striker_ApronSeam_"+k,"seam",[[x,.943,.118],[x+.013,.831,.162],[x-.014,.70,.178]],.003)}
+
+ }else if(key==="SeamCastigator"){
+  // Thin ranged specialist. External capture lattice is NOT a staff, gun or body organ.
+  // Distinctive split high shoulder-shawl, asymmetric shoulder mast, and exposed coils.
+  const fold=(t,v)=>[-.26+.47*v+.019*Math.sin(4*v+t),1.38-.31*t,-.053+.07*Math.sin(Math.PI*t)+.027*v];
+  sheet("Castigator_BrokenFieldShawl","salvage",fold,26,13,.010);
+  for(let q of [.02,.25,.5,.75,.98]){
+    wire("Castigator_ShawlSeam_"+Math.round(q*100),"seam",
+      Array.from({length:13},(_,i)=>fold(i/12,q)),.0045);
+  }
+  loft("Castigator_HighRightShoulder","salvage",[
+    [.15,1.455,-.044,.040,.025],[.250,1.40,-.067,.075,.045],
+    [.296,1.294,-.027,.042,.035]],26);
+  oval("Castigator_BackFractureSpool","salvage",[-.12,1.145,-.158],[.099,.133,.053],26);
+  for(let i=0;i<7;i++){
+    const a=i*Math.PI*2/7;
+    wire("Castigator_SpoolChannel_"+i,"hardware",[
+      [-.12+.081*Math.cos(a),1.145+.09*Math.sin(a),-.205],
+      [-.12+.069*Math.cos(a),1.145+.071*Math.sin(a),-.221],
+      [-.12+.046*Math.cos(a),1.145+.045*Math.sin(a),-.232]],.005);
+  }
+  loft("Castigator_ArmCaptureBrace","salvage",[
+    [.250,1.15,.063,.053,.034],[.300,1.053,.119,.080,.056],
+    [.314,.947,.164,.067,.043]],28);
+  loft("Castigator_OpenArcFrame","hardware",[
+    [.308,.976,.135,.042,.028],[.320,1.083,.214,.057,.044],
+    [.317,1.171,.265,.042,.021]],20);
+  for(let i=0;i<7;i++){
+    const y=.977+i*.025;
+    wire("Castigator_FieldLattice_"+i,"seam",[
+      [.283,y,.181],[.341,y+.014,.221],[.361,y+.026,.182]],.004);
+  }
+  for(let i=0;i<4;i++){
+    wire("Castigator_TraceLead_"+i,"hardware",[
+      [-.21+i*.012,1.32,-.157],[-.19+i*.008,1.15,-.220],
+      [-.17+i*.018,1.012,-.192]],.008);
+  }
+  // Offset counterweight keeps profile recognizably equipment-based at phone scale.
+  oval("Castigator_LeftBalanceWeight","salvage",[-.263,.875,-.088],[.100,.117,.080],26);
+  loft("Castigator_CounterweightWeb","dark",[
+    [-.223,1.21,-.100,.019,.015],[-.270,1.04,-.123,.027,.021],
+    [-.283,.854,-.119,.017,.011]],16);
+  for(let i=0;i<5;i++){
+    const t=i/4;
+    wire("Castigator_FieldRepair_"+i,"seam",[
+      [-.157+t*.314,.895,.148],[-.166+t*.315,.832,.155],
+      [-.145+t*.307,.735,.171]],.0033);
+  }
+ }else if(key==="AnchorWrecker"){
+  // Dense breaker: massive salvage bracing over an ordinary 1.82m Avarin.
+  // The wide impact pad is a contact tool for unstable anchors, not a firearm.
+  loft("Wrecker_LeftLoadShoulder","salvage",[
+    [-.19,1.49,-.026,.053,.039],[-.308,1.39,-.036,.157,.086],
+    [-.366,1.265,-.019,.092,.056]],36);
+  loft("Wrecker_RightCounterShoulder","salvage",[
+    [.187,1.468,-.066,.045,.025],[.288,1.37,-.089,.092,.056],
+    [.286,1.28,-.050,.060,.034]],30);
+  loft("Wrecker_BroadTorsoHarness","dark",[
+    [0,1.07,.103,.209,.029],[0,1.24,.108,.248,.053],
+    [0,1.382,.089,.226,.036]],36);
+  for(let s of [-1,1]){
+    const side=s<0?"L":"R";
+    for(let i=0;i<4;i++){
+      const y=1.10+i*.07;
+      loft("Wrecker_RibPlate_"+side+"_"+i,"salvage",[
+        [s*.105,y,.136,.084,.027],[s*.201,y+.026,.078,.094,.032],
+        [s*.265,y+.044,.005,.040,.021]],20);
+      wire("Wrecker_RibCrack_"+side+"_"+i,"seam",[
+        [s*.091,y+.015,.161],[s*.168,y+.032,.131],
+        [s*.241,y+.057,.057]],.005);
+    }
+    loft("Wrecker_LegBrace_"+side,"salvage",[
+      [s*.135,.725,.012,.066,.040],[s*.162,.489,.061,.092,.071],
+      [s*.167,.276,.072,.074,.046],[s*.173,.128,.082,.045,.027]],28);
+  }
+  // A left-mounted short, broad ram delivers close pressure without a rifle profile.
+  loft("Wrecker_LeftContactBrace","salvage",[
+    [-.288,1.13,.095,.070,.059],[-.315,.985,.171,.127,.097],
+    [-.327,.878,.208,.135,.105]],34);
+  loft("Wrecker_BluntAnchorPad","hardware",[
+    [-.333,.889,.203,.142,.081],[-.333,.845,.283,.157,.093],
+    [-.333,.795,.294,.140,.075]],36);
+  for(let i=0;i<5;i++){
+    const x=-.45+i*.059;
+    wire("Wrecker_RamReinforcement_"+i,"seam",[
+      [x,.923,.293],[x,.853,.362],[x,.786,.313]],.0075);
+  }
+  // Weighted cassettes are engineered Arcana containment, not sacrificial souls.
+  oval("Wrecker_LeftBallastCassette","salvage",[-.270,.946,-.155],[.155,.186,.095],30);
+  oval("Wrecker_RightBallastCassette","salvage",[.230,1.037,-.157],[.105,.145,.077],28);
+  for(let i=0;i<6;i++){
+    const y=.838+i*.049;
+    wire("Wrecker_CaptureVent_"+i,"hardware",[
+      [-.378,y,-.176],[-.320,y+.016,-.240],
+      [-.202,y,-.232]],.008);
+  }
+  for(let i=0;i<4;i++){
+    const x=-.11+i*.066;
+    loft("Wrecker_WaistLatch_"+i,"seam",[
+      [x,.88,.083,.014,.010],[x,.934,.163,.018,.012],
+      [x,.994,.127,.014,.012]],14);
+  }
  }
  const pts=parts.flatMap(p=>p.verts);
  const bounds=[[0,1,2].map(k=>Math.min(...pts.map(p=>p[k]))),[0,1,2].map(k=>Math.max(...pts.map(p=>p[k])))];
