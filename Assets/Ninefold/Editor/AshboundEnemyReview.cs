@@ -12,7 +12,7 @@ using UnityEngine.SceneManagement;
 namespace Ninefold.Editor
 {
     /// <summary>
-    /// Read-only canonical-boundary review of two anonymous Ashbound art candidates.
+    /// Read-only canonical-boundary review of four anonymous Ashbound art candidates.
     /// Imported assets are generated in ArtReview, NEVER registered for battle.
     /// No source assets or gameplay IDs are modified.
     /// </summary>
@@ -21,7 +21,7 @@ namespace Ninefold.Editor
         private const string SourceRoot = "SourceArt/Ashbound/";
         private const string ReviewRoot = "Assets/Ninefold/ArtReview";
         private string message = "";
-        private static readonly string[] Models = { "RiftForager", "PartedStriker" };
+        private static readonly string[] Models = { "RiftForager", "PartedStriker", "SeamCastigator", "AnchorWrecker" };
 
         [MenuItem("Ninefold/Art/Ashbound Enemy Review")]
         public static void Open() => GetWindow<AshboundEnemyReview>("Ashbound Review");
@@ -30,7 +30,8 @@ namespace Ninefold.Editor
         {
             EditorGUILayout.LabelField("WORLD FIVE / ASHBOUND", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
-                "Two nonplayable, anonymous Avarin enemy studies: Rift Forager and Parted Striker. " +
+                "Four nonplayable Ashbound studies: Rift Forager, Parted Striker, " +
+                "Seam Castigator and Anchor Wrecker. " +
                 "Study 01, not final canon, not rigged, and NOT approved for mobile battles. " +
                 "Their living crescent mantles are sensory anatomy, NOT bonding organs. " +
                 "All attached hardware is provisional engineered equipment.",
@@ -64,8 +65,17 @@ namespace Ninefold.Editor
                 MessageType.Warning);
         }
 
-        private static string SplitName(string n) =>
-            n == "RiftForager" ? "Rift Forager" : "Parted Striker";
+        private static string SplitName(string n)
+        {
+            switch (n)
+            {
+                case "RiftForager": return "Rift Forager";
+                case "PartedStriker": return "Parted Striker";
+                case "SeamCastigator": return "Seam Castigator";
+                case "AnchorWrecker": return "Anchor Wrecker";
+                default: throw new ArgumentException("Unknown Ashbound study.", nameof(n));
+            }
+        }
 
         private static void Build(string model)
         {
