@@ -1,0 +1,37 @@
+{
+  "id": "ashbound-afterecho-seer",
+  "model": "AfterechoSeer",
+  "revision": "ashbound-enemy-art-study-01",
+  "canon_source": "Docs/Canon/WorldFiveAshboundCanonAddendum01.md",
+  "status": "provisional static 3D source; not approved for runtime",
+  "units": "meters",
+  "up": "Y",
+  "forward": "Z",
+  "bipedal_avarin": true,
+  "living_crescent_mantle": true,
+  "bonded_creature_count": 0,
+  "role": "fragile long-range distortion and sensory pressure",
+  "parts": 72,
+  "vertices": 25506,
+  "triangles": 50724,
+  "bounds": [
+    [
+      -0.33798327867356687,
+      0.002019061507182139,
+      -0.25086406253145516
+    ],
+    [
+      0.44599758966544345,
+      1.8219525024739067,
+      0.346
+    ]
+  ],
+  "rigged": false,
+  "mobile_certified": false,
+  "limitations": [
+    "No rig, authored motion, production UVs, texture maps or LODs",
+    "Review the anatomy against locked Avarin World Five showcase",
+    "Afterecho equipment / salvage silhouettes are proposals, not new biological lore",
+    "Not registered to any playable mission or gameplay visual catalog"
+  ]
+}
