@@ -228,7 +228,8 @@ namespace Ninefold.Presentation
         {
             var shadow=Primitive(id+" · grounded contact shadow",PrimitiveType.Quad,
                 Vector3.zero,new Vector3(1.65f,1.65f,1f),contactShadowMaterial);
-            shadow.transform.rotation=Quaternion.Euler(90f,0f,0f);
+            // Unity Quad faces +Z; -90 X points it upward toward the camera.
+            shadow.transform.rotation=Quaternion.Euler(-90f,0f,0f);
             var renderer=shadow.GetComponent<Renderer>();
             renderer.shadowCastingMode=UnityEngine.Rendering.ShadowCastingMode.Off;
             renderer.receiveShadows=false;
