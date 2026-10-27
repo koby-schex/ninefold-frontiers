@@ -857,7 +857,8 @@ namespace Ninefold.Presentation
                     // action before Play starts; these are optional visual cues.
                     if(tokens.TryGetValue(pulse.UnitId,out var sourceToken))
                         sourceToken.ModelMotion?.AttackTarget();
-                    if(tokens.TryGetValue(pulse.TargetId,out var targetToken))
+                    if(!string.IsNullOrEmpty(pulse.TargetId) &&
+                        tokens.TryGetValue(pulse.TargetId,out var targetToken))
                     {
                         var effect=pulse.AbilityEffect;
                         bool recovered=effect?.Health!=null &&
