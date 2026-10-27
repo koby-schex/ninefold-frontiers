@@ -54,6 +54,7 @@ namespace Ninefold.Editor
 
             for(int i=0;i<entries.arraySize;i++)
             {
+                int errorsBefore=errors;
                 var e=entries.GetArrayElementAtIndex(i);
                 string id=e.FindPropertyRelative("UnitId").stringValue;
                 var prefab=e.FindPropertyRelative("Prefab").objectReferenceValue as GameObject;
@@ -179,8 +180,8 @@ namespace Ninefold.Editor
                     if(!moving || !attack || !hit)
                         Warning(name+": Animator lacks one or more optional Moving(bool), Attack/Hit(trigger) cues.");
                 }
-                if(approved && triangleCount>0 && liveScripts==0 &&
-                    !path.StartsWith("Assets/Ninefold/ArtReview/",StringComparison.OrdinalIgnoreCase) &&
+                if(approved && errors==errorsBefore && triangleCount>0 &&
+                    liveScripts==0 && renderers.Length>0 &&
                     reviewDependencies.Length==0)
                     ready++;
             }
