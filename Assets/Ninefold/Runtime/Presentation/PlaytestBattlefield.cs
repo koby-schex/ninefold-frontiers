@@ -543,6 +543,27 @@ namespace Ninefold.Presentation
             }
         }
 
+        private static Bounds MeasureLocalVisualBounds(Transform origin,Renderer[] renderers)
+        {
+            bool started=false;
+            Bounds result=default;
+            foreach(var renderer in renderers)
+            {
+                var r=renderer.bounds;
+                for(int i=0;i<8;i++)
+                {
+                    var corner=new Vector3(
+                        (i&1)==0?r.min.x:r.max.x,
+                        (i&2)==0?r.min.y:r.max.y,
+                        (i&4)==0?r.min.z:r.max.z);
+                    var point=origin.InverseTransformPoint(corner);
+                    if(!started) { result=new Bounds(point,Vector3.zero); started=true; }
+                    else result.Encapsulate(point);
+                }
+            }
+            return result;
+        }
+
         // Battlefield visual handoff: game state and target picking continue to
         // use the actual Core UnitId and the normal token anchor. Only its
         // rendered body is replaced; no prefab component owns gameplay rules.
@@ -583,10 +604,13 @@ namespace Ninefold.Presentation
                     .ToArray();
                 if(renderers.Length==0)
                     throw new InvalidOperationException("Prefab has no active visible renderer.");
-                var bounds=renderers[0].bounds;
-                for(int i=1;i<renderers.Length;i++)bounds.Encapsulate(renderers[i].bounds);
-                if(bounds.size.y<=.001f || bounds.size.x<=.001f ||
-                    bounds.size.z<=.001f || float.IsNaN(bounds.size.y))
+                // Renderer bounds are world-space, but fitting takes place in
+                // the token's local space. Convert every AABB corner first so
+                // review-prefab roots and non-identity scene transforms work.
+                var bounds=MeasureLocalVisualBounds(fitting.transform,renderers);
+                if(bounds.size.y<=.001f ||
+                    Mathf.Max(bounds.size.x,bounds.size.z)<=.001f ||
+                    float.IsNaN(bounds.size.y) || float.IsInfinity(bounds.size.y))
                     throw new InvalidOperationException("Prefab has invalid visual bounds.");
 
                 // Preserve the proportions and authored material stack. Both
@@ -610,6 +634,7 @@ namespace Ninefold.Presentation
             {
                 Debug.LogWarning("Battle prefab unavailable for "+unitId+
                     "; keeping abstract token. "+error.Message);
+                root.SetActive(false);
                 Object.Destroy(root);
                 return false;
             }
