@@ -156,6 +156,81 @@ namespace Ninefold.Presentation
             Object.Destroy(g.GetComponent<Collider>()); return g;
         }
 
+        // One shared open-center mesh replaces opaque cylinders for tactical
+        // selection, destination, inspection and target indications.
+        private static Mesh BuildMarkerRingMesh()
+        {
+            const int count=48;
+            var vertices=new Vector3[count*2];
+            var normals=new Vector3[count*2];
+            var uv=new Vector2[count*2];
+            var triangles=new int[count*6];
+            for(int i=0;i<count;i++)
+            {
+                float angle=i*Mathf.PI*2f/count;
+                var direction=new Vector3(Mathf.Cos(angle),0,Mathf.Sin(angle));
+                vertices[i*2]=direction*.5f;
+                vertices[i*2+1]=direction*.425f;
+                normals[i*2]=normals[i*2+1]=Vector3.up;
+                uv[i*2]=uv[i*2+1]=new Vector2((direction.x+1f)*.5f,(direction.z+1f)*.5f);
+                int outside=i*2, inside=outside+1;
+                int next=((i+1)%count)*2;
+                int t=i*6;
+                triangles[t]=outside; triangles[t+1]=next+1; triangles[t+2]=next;
+                triangles[t+3]=outside; triangles[t+4]=inside; triangles[t+5]=next+1;
+            }
+            var mesh=new Mesh {
+                name="Ninefold shared open-center tactical ring",
+                vertices=vertices,normals=normals,uv=uv,triangles=triangles
+            };
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+
+        private GameObject MarkerRing(string name,Material material,float diameter)
+        {
+            var ring=new GameObject(name);
+            ring.transform.SetParent(world.transform,false);
+            ring.transform.localScale=new Vector3(diameter,1f,diameter);
+            ring.AddComponent<MeshFilter>().sharedMesh=markerRingMesh;
+            ring.AddComponent<MeshRenderer>().sharedMaterial=material;
+            return ring;
+        }
+
+        private static Texture2D BuildContactShadowTexture()
+        {
+            const int dimension=64;
+            var texture=new Texture2D(dimension,dimension,TextureFormat.RGBA32,false)
+            {
+                name="Mobile soft contact shadow · shared",
+                filterMode=FilterMode.Bilinear,
+                wrapMode=TextureWrapMode.Clamp
+            };
+            var pixels=new Color[dimension*dimension];
+            for(int y=0;y<dimension;y++) for(int x=0;x<dimension;x++)
+            {
+                float px=(x+.5f-dimension*.5f)/(dimension*.5f);
+                float py=(y+.5f-dimension*.5f)/(dimension*.5f);
+                float radius=Mathf.Sqrt(px*px+py*py);
+                float falloff=Mathf.Pow(Mathf.Clamp01(1f-radius),2f);
+                pixels[y*dimension+x]=new Color(0f,0f,0f,.31f*falloff);
+            }
+            texture.SetPixels(pixels);
+            texture.Apply(false,true);
+            return texture;
+        }
+
+        private GameObject ContactShadow(string id)
+        {
+            var shadow=Primitive(id+" · grounded contact shadow",PrimitiveType.Quad,
+                Vector3.zero,new Vector3(1.65f,1.65f,1f),contactShadowMaterial);
+            shadow.transform.rotation=Quaternion.Euler(90f,0f,0f);
+            var renderer=shadow.GetComponent<Renderer>();
+            renderer.shadowCastingMode=UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows=false;
+            return shadow;
+        }
+
         public void Show(InteractionView interaction, BattlePlanningView planning, IReadOnlyList<ObjectiveDefinition> objectives, VisualElement target,
             string environmentKey = null)
         {
