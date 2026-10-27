@@ -26,6 +26,20 @@ jobs:
         run: node BuildTools/Art/build_ashbound.mjs
       - name: Verify reproducible checked-in OBJ, MTL and manifests
         run: git diff --exit-code -- SourceArt/Ashbound
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install mesh review renderer requirements
+        run: python -m pip install -r BuildTools/Art/requirements-review.txt
+      - name: Render real source geometry from four camera angles
+        run: python BuildTools/Art/render_ashbound.py
+      - name: Upload Ashbound visual review sheets
+        uses: actions/upload-artifact@v4
+        with:
+          name: ashbound-enemy-mesh-study-01
+          path: SourceArt/Ashbound/Review/*.png
+          retention-days: 30
+          if-no-files-found: error
       - name: Verify no trailing whitespace errors
         run: git diff --check
       - name: Verify two separate enemy studies exist
