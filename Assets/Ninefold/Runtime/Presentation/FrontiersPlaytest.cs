@@ -20,6 +20,8 @@ namespace Ninefold.Presentation
     {
         public Camera BattlefieldCamera;
         public Material FixtureMaterial;
+        [Tooltip("Optional approved unit-specific runtime prefabs. Also loaded from Resources/Battle/BattleUnitVisuals.")]
+        public FrontiersBattleVisualCatalog BattleVisualCatalog;
         public StyleSheet ScreenStyles;
         private ContentCatalog catalog;
         private MissionPresentation menu;
@@ -176,7 +178,9 @@ namespace Ninefold.Presentation
             savePath = Path.Combine(Application.persistentDataPath, "AbstractPlaytest-v1");
             Guard(() => {
                 if (BattlefieldCamera == null || FixtureMaterial == null) throw new InvalidOperationException("Run Ninefold > Playtest > Create or Open Integration Scene.");
-                field = new PlaytestBattlefield(transform, BattlefieldCamera, FixtureMaterial);
+                var battleModels = BattleVisualCatalog != null ? BattleVisualCatalog :
+                    Resources.Load<FrontiersBattleVisualCatalog>("Battle/BattleUnitVisuals");
+                field = new PlaytestBattlefield(transform, BattlefieldCamera, FixtureMaterial,battleModels);
                 OpenProfile();
                 Refresh();
             });

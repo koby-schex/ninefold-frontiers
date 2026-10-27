@@ -48,6 +48,7 @@ namespace Ninefold.Presentation
         private readonly LineRenderer path, range;
         private GameObject terrain;
         private readonly BattlefieldScenery scenery;
+        private readonly FrontiersBattleVisualCatalog approvedModels;
         private string drawnSceneStudy = "none";
         public string SceneryStatus => terrain == null ? "not built (open a battle)" :
             "study 03 | " + drawnSceneStudy + " | meshes: " + scenery.MeshCount +
@@ -67,9 +68,11 @@ namespace Ninefold.Presentation
         private Bounds framing;
         private readonly List<Rect> barRects = new List<Rect>();
 
-        public PlaytestBattlefield(Transform parent, Camera camera, Material template)
+        public PlaytestBattlefield(Transform parent, Camera camera, Material template,
+            FrontiersBattleVisualCatalog approvedModels = null)
         {
             this.camera = camera;
+            this.approvedModels = approvedModels;
             world = new GameObject("Abstract battlefield — not canon"); world.transform.SetParent(parent, false);
             Material Make(Color color)
             {
@@ -540,6 +543,112 @@ namespace Ninefold.Presentation
             }
         }
 
+        private static Bounds MeasureLocalVisualBounds(Transform origin,Renderer[] renderers)
+        {
+            bool started=false;
+            Bounds result=default;
+            foreach(var renderer in renderers)
+            {
+                var r=renderer.bounds;
+                for(int i=0;i<8;i++)
+                {
+                    var corner=new Vector3(
+                        (i&1)==0?r.min.x:r.max.x,
+                        (i&2)==0?r.min.y:r.max.y,
+                        (i&4)==0?r.min.z:r.max.z);
+                    var point=origin.InverseTransformPoint(corner);
+                    if(!started) { result=new Bounds(point,Vector3.zero); started=true; }
+                    else result.Encapsulate(point);
+                }
+            }
+            return result;
+        }
+
+        // Battlefield visual handoff: game state and target picking continue to
+        // use the actual Core UnitId and the normal token anchor. Only its
+        // rendered body is replaced; no prefab component owns gameplay rules.
+        private bool TryCreateApprovedVisual(string unitId,out GameObject body)
+        {
+            body=null;
+            if(approvedModels==null ||
+                !approvedModels.TryGetApproved(unitId,out var selected))
+                return false;
+            // An approved battle prefab is art only. Reject live gameplay
+            // scripts before Instantiate so OnEnable cannot execute on the
+            // battlefield. Animators and renderers remain supported.
+            if(selected.Prefab.GetComponentsInChildren<MonoBehaviour>(true).Length>0)
+            {
+                Debug.LogWarning("Battle model "+unitId+
+                    " contains MonoBehaviour scripts; remove them from the visual-only prefab.");
+                return false;
+            }
+
+            var root=new GameObject(unitId+" · approved combat model");
+            root.transform.SetParent(world.transform,false);
+            var fitting=new GameObject("Tactical model normalization");
+            fitting.transform.SetParent(root.transform,false);
+            GameObject instance=null;
+            try
+            {
+                instance=Object.Instantiate(selected.Prefab,fitting.transform,false);
+                // Model prefabs may retain authoring components from art review.
+                // Disable any physical interaction/embedded scene lighting:
+                // the renderer remains cosmetic and never controls battle.
+                foreach(var collider in instance.GetComponentsInChildren<Collider>(true))
+                    collider.enabled=false;
+                foreach(var rigidbody in instance.GetComponentsInChildren<Rigidbody>(true))
+                {
+                    rigidbody.isKinematic=true;
+                    rigidbody.detectCollisions=false;
+                }
+                foreach(var embeddedCamera in instance.GetComponentsInChildren<Camera>(true))
+                    embeddedCamera.enabled=false;
+                foreach(var embeddedLight in instance.GetComponentsInChildren<Light>(true))
+                    embeddedLight.enabled=false;
+                foreach(var animator in instance.GetComponentsInChildren<Animator>(true))
+                    animator.applyRootMotion=false;
+
+                var renderers=instance.GetComponentsInChildren<Renderer>(true)
+                    .Where(renderer=>renderer.enabled && renderer.gameObject.activeInHierarchy)
+                    .ToArray();
+                if(renderers.Length==0)
+                    throw new InvalidOperationException("Prefab has no active visible renderer.");
+                // Renderer bounds are world-space, but fitting takes place in
+                // the token's local space. Convert every AABB corner first so
+                // review-prefab roots and non-identity scene transforms work.
+                var bounds=MeasureLocalVisualBounds(fitting.transform,renderers);
+                if(bounds.size.y<=.001f ||
+                    Mathf.Max(bounds.size.x,bounds.size.z)<=.001f ||
+                    float.IsNaN(bounds.size.y) || float.IsInfinity(bounds.size.y))
+                    throw new InvalidOperationException("Prefab has invalid visual bounds.");
+
+                // Preserve the proportions and authored material stack. Both
+                // the visual height and footprint are capped independently;
+                // exceptional units can get explicit limits in the catalog.
+                float maxHeight=Mathf.Clamp(selected.MaximumHeight,.6f,2.5f);
+                float maxWidth=Mathf.Clamp(selected.MaximumWidth,.5f,3.5f);
+                float factor=Mathf.Min(maxHeight/bounds.size.y,
+                    maxWidth/Mathf.Max(bounds.size.x,bounds.size.z));
+                if(float.IsNaN(factor) || float.IsInfinity(factor) || factor<=.00001f)
+                    throw new InvalidOperationException("Model bounds cannot be fitted.");
+                fitting.transform.localScale=Vector3.one*factor;
+                fitting.transform.localPosition=new Vector3(
+                    -bounds.center.x*factor,
+                    -StandardTokenHeight*.5f - bounds.min.y*factor,
+                    -bounds.center.z*factor);
+                body=root;
+                return true;
+            }
+            catch(Exception error)
+            {
+                Debug.LogWarning("Battle prefab unavailable for "+unitId+
+                    "; keeping abstract token. "+error.Message);
+                root.SetActive(false);
+                Object.Destroy(root);
+                return false;
+            }
+        }
+
         private void Reconcile(BattleView view)
         {
             var living = new HashSet<string>(view.HealthOverlays.Select(h => h.UnitId), StringComparer.Ordinal);
@@ -555,25 +664,36 @@ namespace Ninefold.Presentation
                     wildlifeActors.TryGetValue(h.UnitId, out var creature);
                     bool isSillrunner = creature == WorldFiveTutorialWildlifeV1.SillrunnerId;
                     bool isSeamstalker = creature == WorldFiveTutorialWildlifeV1.SeamstalkerId;
-                    t.Body = Primitive(h.UnitId,
-                        isSillrunner ? PrimitiveType.Sphere :
-                        isSeamstalker ? PrimitiveType.Capsule :
-                        h.IsEnemyControlled ? PrimitiveType.Cube : PrimitiveType.Capsule,
-                        Vector3.zero,
-                        isSillrunner ? new Vector3(.8f,StandardTokenHeight,.75f) :
-                        isSeamstalker ? new Vector3(.64f,StandardTokenHeight/2,.85f) :
-                        h.IsEnemyControlled ? new Vector3(.5f,StandardTokenHeight,.5f) :
-                        new Vector3(.5f,StandardTokenHeight/2,.5f),
-                        isSillrunner ? sillrunner : isSeamstalker ? seamstalker :
-                        h.IsEnemyControlled ? enemy : friendly);
-                    if (isSillrunner || isSeamstalker)
-                        AddWildlifeForm(t.Body, isSeamstalker);
-                    // Abstract tactical tokens: high contrast footing and a readable upper collar.
-                    var footing = Primitive("Unit footing", h.IsEnemyControlled ? PrimitiveType.Cube : PrimitiveType.Cylinder,
-                        Vector3.down * (StandardTokenHeight/2-.09f), new Vector3(.65f,.07f,.65f), grid);
-                    footing.transform.SetParent(t.Body.transform,true);
-                    var collar = Primitive("Unit ID collar",PrimitiveType.Cube,new Vector3(0,StandardTokenHeight*.22f,-.02f),new Vector3(.54f,.12f,.54f),active);
-                    collar.transform.SetParent(t.Body.transform,true);
+                    bool hasApprovedPrefab = TryCreateApprovedVisual(h.UnitId,out var modelBody);
+                    if(hasApprovedPrefab)
+                        t.Body=modelBody;
+                    else
+                    {
+                        t.Body = Primitive(h.UnitId,
+                            isSillrunner ? PrimitiveType.Sphere :
+                            isSeamstalker ? PrimitiveType.Capsule :
+                            h.IsEnemyControlled ? PrimitiveType.Cube : PrimitiveType.Capsule,
+                            Vector3.zero,
+                            isSillrunner ? new Vector3(.8f,StandardTokenHeight,.75f) :
+                            isSeamstalker ? new Vector3(.64f,StandardTokenHeight/2,.85f) :
+                            h.IsEnemyControlled ? new Vector3(.5f,StandardTokenHeight,.5f) :
+                            new Vector3(.5f,StandardTokenHeight/2,.5f),
+                            isSillrunner ? sillrunner : isSeamstalker ? seamstalker :
+                            h.IsEnemyControlled ? enemy : friendly);
+                        if (isSillrunner || isSeamstalker)
+                            AddWildlifeForm(t.Body,isSeamstalker);
+                        // The primitive-only locator collar and footing are not
+                        // layered on top of approved organic production art.
+                        var footing = Primitive("Unit footing",
+                            h.IsEnemyControlled ? PrimitiveType.Cube : PrimitiveType.Cylinder,
+                            Vector3.down*(StandardTokenHeight/2-.09f),
+                            new Vector3(.65f,.07f,.65f),grid);
+                        footing.transform.SetParent(t.Body.transform,true);
+                        var collar = Primitive("Unit ID collar",PrimitiveType.Cube,
+                            new Vector3(0,StandardTokenHeight*.22f,-.02f),
+                            new Vector3(.54f,.12f,.54f),active);
+                        collar.transform.SetParent(t.Body.transform,true);
+                    }
                     t.Scale=t.Body.transform.localScale;
                     t.TargetRing = MarkerRing("Valid target halo · open center",gold,.95f);
                     t.TargetRing.SetActive(false);
