@@ -695,6 +695,7 @@ namespace Ninefold.Presentation
         {
             path.positionCount = 0; range.positionCount = 0; destination.SetActive(false);
             inspection.SetActive(false); impact.SetActive(false); statusPulse.SetActive(false); impactBurst.SetActive(false);
+            impactLight.enabled=false; cameraImpulse=Vector2.zero;
             foreach (var t in tokens.Values) t.TargetRing.SetActive(false);
             // Keep before-state bars visible during playback; reconcile authoritative after-state once finished.
             float elapsed = 0;
@@ -707,6 +708,11 @@ namespace Ninefold.Presentation
                 if (!shown && t>=.55f) { AddFeedback(update,true); shown=true; }
                 float moveTime = pulse == null ? t : Mathf.Clamp01(t/.55f);
                 float strike = Mathf.Clamp01((t-.55f)/.45f);
+                float impactEnvelope = Mathf.Sin(strike*Mathf.PI);
+                // Small impact-only recoil. Reduced-motion playback uses a zero
+                // duration and skips the loop entirely.
+                cameraImpulse = pulse == null ? Vector2.zero :
+                    new Vector2(Mathf.Sin(strike*31f),Mathf.Cos(strike*24f)) * (.035f*impactEnvelope);
                 foreach (var before in update.Before.Units.Where(u => u.Position.HasValue))
                 {
                     if (!tokens.TryGetValue(before.Id, out var token)) continue;
@@ -718,6 +724,7 @@ namespace Ninefold.Presentation
                         position = AlongRoute(route,moveTime);
                     }
                     token.Body.transform.position = position + Vector3.up * token.Height / 2;
+                    token.ContactShadow.transform.position = position + Vector3.up*.019f;
                     if (before.Id==update.Before.Activation?.UnitId) selection.transform.position=position+Vector3.up*.04f;
                     if (pulse?.UnitId == before.Id && tokens.TryGetValue(pulse.TargetId,out var strikeTarget))
                     {
@@ -781,6 +788,12 @@ namespace Ninefold.Presentation
                     // event as floating damage feedback, without affecting rules.
                     var burstMaterial = healing ? friendly :
                         hasStatus && pulse.AbilityEffect.Health == null ? markings : gold;
+                    // One reused, shadowless light brightens the existing models
+                    // according to a real action event, with no scene allocation.
+                    impactLight.enabled = true;
+                    impactLight.color = burstMaterial.color;
+                    impactLight.transform.position = target.Body.transform.position + Vector3.up*.35f;
+                    impactLight.intensity = 1.7f*impactEnvelope;
                     impactBurst.SetActive(true);
                     impactBurst.transform.position = target.Body.transform.position;
                     float bloom = Mathf.Sin(strike*Mathf.PI);
@@ -809,6 +822,7 @@ namespace Ninefold.Presentation
             }
             if (!shown) AddFeedback(update,false);
             path.positionCount=0; impact.SetActive(false); statusPulse.SetActive(false); impactBurst.SetActive(false);
+            impactLight.enabled=false; cameraImpulse=Vector2.zero;
             Reconcile(update.After);
         }
         private static Vector3 AlongRoute(FieldPoint[] route, float fraction)
@@ -845,7 +859,7 @@ namespace Ninefold.Presentation
         public void Hide()
         {
             foreach (var item in feedback) item.Label.RemoveFromHierarchy(); feedback.Clear();
-            impactBurst.SetActive(false);
+            impactBurst.SetActive(false); impactLight.enabled=false; cameraImpulse=Vector2.zero;
             world.SetActive(false); camera.enabled = true; camera.rect = new Rect(0, 0, 1, 1);
         }
         public static Vector3 Vector(FieldPoint p) => new Vector3((float)p.X, (float)p.Y, (float)p.Z);
