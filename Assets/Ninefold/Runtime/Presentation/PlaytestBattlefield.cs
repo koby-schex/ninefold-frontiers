@@ -21,7 +21,7 @@ namespace Ninefold.Presentation
         private const float StandardTokenHeight = 1.45f;
         private sealed class Token
         {
-            public GameObject Body, TargetRing, CarryIcon;
+            public GameObject Body, TargetRing, CarryIcon, ContactShadow;
             public VisualElement Bar, Fill;
             public Label Caption;
             public Vector3 Position;
@@ -57,6 +57,12 @@ namespace Ninefold.Presentation
         private readonly GameObject destination, selection, inspection, impact, statusPulse;
         private readonly GameObject impactBurst;
         private readonly Transform[] impactShards = new Transform[8];
+        private readonly Mesh markerRingMesh;
+        private readonly Texture2D contactShadowTexture;
+        private readonly Material contactShadowMaterial;
+        private readonly bool translucentContactShadows;
+        private readonly Light battlefieldKey, impactLight;
+        private Vector2 cameraImpulse;
         private VisualElement surface;
         private Bounds framing;
         private readonly List<Rect> barRects = new List<Rect>();
@@ -78,10 +84,37 @@ namespace Ninefold.Presentation
             trim.color = new Color(.64f,.60f,.58f);
             grid.color = new Color(.23f,.21f,.27f);
             scenery = new BattlefieldScenery(template, floor, cover);
-            destination = Primitive("Destination preview", PrimitiveType.Cylinder, Vector3.zero, new Vector3(.7f, .025f, .7f), gold);
-            selection = Primitive("Active unit marker", PrimitiveType.Cylinder, Vector3.zero, new Vector3(.95f, .015f, .95f), active);
+            markerRingMesh = BuildMarkerRingMesh();
+            contactShadowTexture = BuildContactShadowTexture();
+            var shadowShader = Shader.Find("Sprites/Default");
+            if (shadowShader == null) shadowShader = Shader.Find("Unlit/Transparent");
+            // A stripped shader must never leave opaque black quads on the map.
+            translucentContactShadows = shadowShader != null;
+            contactShadowMaterial = shadowShader != null
+                ? new Material(shadowShader) : new Material(template);
+            contactShadowMaterial.name = "Mobile grounded unit contact shadows";
+            contactShadowMaterial.color = Color.white;
+            contactShadowMaterial.mainTexture = contactShadowTexture;
+            materials.Add(contactShadowMaterial);
+            var keyObject = new GameObject("Battlefield art key · presentation only");
+            keyObject.transform.SetParent(world.transform,false);
+            battlefieldKey = keyObject.AddComponent<Light>();
+            battlefieldKey.type = LightType.Directional;
+            battlefieldKey.shadows = LightShadows.None;
+            battlefieldKey.intensity = 1.05f;
+            battlefieldKey.transform.localRotation = Quaternion.Euler(48f,-38f,0f);
+            var hitLightObject = new GameObject("Pooled ability impact light");
+            hitLightObject.transform.SetParent(world.transform,false);
+            impactLight = hitLightObject.AddComponent<Light>();
+            impactLight.type = LightType.Point;
+            impactLight.shadows = LightShadows.None;
+            impactLight.range = 3.8f;
+            impactLight.intensity = 0f;
+            impactLight.enabled = false;
+            destination = MarkerRing("Destination preview · open center",gold,.70f);
+            selection = MarkerRing("Active unit halo · open center",active,.95f);
             var white = Make(new Color(.9f,.96f,1f));
-            inspection = Primitive("Inspected unit marker",PrimitiveType.Cube,Vector3.zero,new Vector3(1.15f,.015f,1.15f),white);
+            inspection = MarkerRing("Inspected unit halo · open center",white,1.15f);
             impact = Primitive("Action impact",PrimitiveType.Sphere,Vector3.zero,Vector3.one*.2f,gold); impact.SetActive(false);
             // Pooled, reusable radial strike shards: zero per-frame allocations,
             // no colliders, no scene-object creation when an ability fires.
@@ -125,6 +158,82 @@ namespace Ninefold.Presentation
             g.GetComponent<Renderer>().sharedMaterial = material;
             // Picking is projected into panel coordinates; no physics world is needed for fixture controls.
             Object.Destroy(g.GetComponent<Collider>()); return g;
+        }
+
+        // One shared open-center mesh replaces opaque cylinders for tactical
+        // selection, destination, inspection and target indications.
+        private static Mesh BuildMarkerRingMesh()
+        {
+            const int count=48;
+            var vertices=new Vector3[count*2];
+            var normals=new Vector3[count*2];
+            var uv=new Vector2[count*2];
+            var triangles=new int[count*6];
+            for(int i=0;i<count;i++)
+            {
+                float angle=i*Mathf.PI*2f/count;
+                var direction=new Vector3(Mathf.Cos(angle),0,Mathf.Sin(angle));
+                vertices[i*2]=direction*.5f;
+                vertices[i*2+1]=direction*.425f;
+                normals[i*2]=normals[i*2+1]=Vector3.up;
+                uv[i*2]=uv[i*2+1]=new Vector2((direction.x+1f)*.5f,(direction.z+1f)*.5f);
+                int outside=i*2, inside=outside+1;
+                int next=((i+1)%count)*2;
+                int t=i*6;
+                triangles[t]=outside; triangles[t+1]=next+1; triangles[t+2]=next;
+                triangles[t+3]=outside; triangles[t+4]=inside; triangles[t+5]=next+1;
+            }
+            var mesh=new Mesh {
+                name="Ninefold shared open-center tactical ring",
+                vertices=vertices,normals=normals,uv=uv,triangles=triangles
+            };
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+
+        private GameObject MarkerRing(string name,Material material,float diameter)
+        {
+            var ring=new GameObject(name);
+            ring.transform.SetParent(world.transform,false);
+            ring.transform.localScale=new Vector3(diameter,1f,diameter);
+            ring.AddComponent<MeshFilter>().sharedMesh=markerRingMesh;
+            ring.AddComponent<MeshRenderer>().sharedMaterial=material;
+            return ring;
+        }
+
+        private static Texture2D BuildContactShadowTexture()
+        {
+            const int dimension=64;
+            var texture=new Texture2D(dimension,dimension,TextureFormat.RGBA32,false)
+            {
+                name="Mobile soft contact shadow · shared",
+                filterMode=FilterMode.Bilinear,
+                wrapMode=TextureWrapMode.Clamp
+            };
+            var pixels=new Color[dimension*dimension];
+            for(int y=0;y<dimension;y++) for(int x=0;x<dimension;x++)
+            {
+                float px=(x+.5f-dimension*.5f)/(dimension*.5f);
+                float py=(y+.5f-dimension*.5f)/(dimension*.5f);
+                float radius=Mathf.Sqrt(px*px+py*py);
+                float falloff=Mathf.Pow(Mathf.Clamp01(1f-radius),2f);
+                pixels[y*dimension+x]=new Color(0f,0f,0f,.31f*falloff);
+            }
+            texture.SetPixels(pixels);
+            texture.Apply(false,true);
+            return texture;
+        }
+
+        private GameObject ContactShadow(string id)
+        {
+            var shadow=Primitive(id+" · grounded contact shadow",PrimitiveType.Quad,
+                Vector3.zero,new Vector3(1.65f,1.65f,1f),contactShadowMaterial);
+            // Unity Quad faces +Z; -90 X points it upward toward the camera.
+            shadow.transform.rotation=Quaternion.Euler(-90f,0f,0f);
+            var renderer=shadow.GetComponent<Renderer>();
+            renderer.shadowCastingMode=UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows=false;
+            return shadow;
         }
 
         public void Show(InteractionView interaction, BattlePlanningView planning, IReadOnlyList<ObjectiveDefinition> objectives, VisualElement target,
@@ -260,6 +369,12 @@ namespace Ninefold.Presentation
             var direction = BattlefieldSceneDirection.ForMission(missionId,environmentKey);
             drawnSceneStudy = direction.Study;
             camera.backgroundColor = direction.Sky;
+            // Presentation-only environment lighting. Does not alter encounter
+            // data, navigation, model prefabs or shared RenderSettings.
+            battlefieldKey.color = Color.Lerp(direction.Fill,Color.white,.25f);
+            battlefieldKey.intensity = direction.Study.StartsWith("W5",StringComparison.Ordinal) ? 1.15f : .95f;
+            battlefieldKey.transform.localRotation = Quaternion.Euler(52f,
+                direction.Study.Contains("fracture") ? -25f : -43f,0f);
             foreach (var label in objectiveLabels.Values) label.RemoveFromHierarchy();
             objectiveLabels.Clear(); objectivePositions.Clear(); objectiveVisuals.Clear();
             if (terrain != null) { terrain.SetActive(false); Object.Destroy(terrain); }
@@ -330,6 +445,7 @@ namespace Ninefold.Presentation
             {
                 Object.Destroy(token.Body);
                 Object.Destroy(token.TargetRing);
+                Object.Destroy(token.ContactShadow);
                 token.Bar.RemoveFromHierarchy();
             }
             tokens.Clear();
@@ -428,7 +544,9 @@ namespace Ninefold.Presentation
         {
             var living = new HashSet<string>(view.HealthOverlays.Select(h => h.UnitId), StringComparer.Ordinal);
             foreach (string id in tokens.Keys.Where(id => !living.Contains(id)).ToArray())
-            { Object.Destroy(tokens[id].Body); Object.Destroy(tokens[id].TargetRing); tokens[id].Bar.RemoveFromHierarchy(); tokens.Remove(id); }
+            { Object.Destroy(tokens[id].Body); Object.Destroy(tokens[id].TargetRing);
+                Object.Destroy(tokens[id].ContactShadow);
+                tokens[id].Bar.RemoveFromHierarchy(); tokens.Remove(id); }
             foreach (var h in view.HealthOverlays)
             {
                 if (!tokens.TryGetValue(h.UnitId, out var t))
@@ -457,8 +575,9 @@ namespace Ninefold.Presentation
                     var collar = Primitive("Unit ID collar",PrimitiveType.Cube,new Vector3(0,StandardTokenHeight*.22f,-.02f),new Vector3(.54f,.12f,.54f),active);
                     collar.transform.SetParent(t.Body.transform,true);
                     t.Scale=t.Body.transform.localScale;
-                    t.TargetRing = Primitive("Valid target marker",PrimitiveType.Cylinder,Vector3.zero,new Vector3(.95f,.025f,.95f),gold);
+                    t.TargetRing = MarkerRing("Valid target halo · open center",gold,.95f);
                     t.TargetRing.SetActive(false);
+                    t.ContactShadow = ContactShadow(h.UnitId);
                     // Floating per-unit health bars obscure the field on
                     // portrait phones. All HP lives in the lower HUD when
                     // the player inspects a unit. Keep this non-rendered
@@ -480,6 +599,7 @@ namespace Ninefold.Presentation
                 // The carried traveler no longer appears to be an independently
                 // selectable/stranded NPC at the old pickup site.
                 t.Body.SetActive(!pickedUp);
+                t.ContactShadow.SetActive(!pickedUp && translucentContactShadows);
                 if (carried && h.UnitId == view.RescueCarrierId && t.CarryIcon == null)
                 {
                     t.CarryIcon = Primitive("Rescued traveler carried", PrimitiveType.Sphere,
@@ -496,6 +616,7 @@ namespace Ninefold.Presentation
                 t.Bar.EnableInClassList("active-health",h.UnitId == view.Activation?.UnitId);
                 t.Position = Vector(h.Position) + Vector3.up * t.Height / 2;
                 t.TargetRing.transform.position = Vector(h.Position)+Vector3.up*.055f;
+                t.ContactShadow.transform.position = Vector(h.Position)+Vector3.up*.019f;
                 t.Body.transform.position = t.Position; t.Body.transform.localRotation = Quaternion.identity; t.Body.transform.localScale=t.Scale;
                 t.Caption.text = h.CurrentHealth + "/" + h.MaximumHealth;
                 t.Fill.style.width = Length.Percent((float)h.Fraction * 100);
@@ -510,6 +631,9 @@ namespace Ninefold.Presentation
             camera.pixelRect = new Rect(rect.x * sx, Screen.height - rect.yMax * sy, rect.width * sx, rect.height * sy);
             camera.transform.rotation = Quaternion.Euler(58, 0, 0);
             camera.transform.position = framing.center - camera.transform.forward * 30;
+            // Tiny bounded art-only recoil, automatically zero outside hits.
+            camera.transform.position += camera.transform.right * cameraImpulse.x +
+                camera.transform.up * cameraImpulse.y;
             // Bounding box in camera space keeps bodies and objective markers in view.
             float needed = 4;
             for (int i = 0; i < 8; i++)
@@ -519,6 +643,18 @@ namespace Ninefold.Presentation
                 needed = Mathf.Max(needed, Mathf.Abs(local.y) + 1.5f, (Mathf.Abs(local.x) + 1) / camera.aspect);
             }
             camera.orthographicSize = needed;
+            // Subtle active-unit heartbeat improves instant initiative scanning
+            // without adding overhead text or changing hit-testing.
+            if(selection.activeSelf)
+            {
+                float pulse=1f+Mathf.Sin(Time.unscaledTime*2.5f)*.035f;
+                selection.transform.localScale=new Vector3(.95f*pulse,1f,.95f*pulse);
+            }
+            if(destination.activeSelf)
+            {
+                float pulse=1f+Mathf.Sin(Time.unscaledTime*3.4f)*.045f;
+                destination.transform.localScale=new Vector3(.70f*pulse,1f,.70f*pulse);
+            }
             barRects.Clear();
             foreach (var pair in objectiveLabels)
             {
@@ -576,6 +712,7 @@ namespace Ninefold.Presentation
         {
             path.positionCount = 0; range.positionCount = 0; destination.SetActive(false);
             inspection.SetActive(false); impact.SetActive(false); statusPulse.SetActive(false); impactBurst.SetActive(false);
+            impactLight.enabled=false; cameraImpulse=Vector2.zero;
             foreach (var t in tokens.Values) t.TargetRing.SetActive(false);
             // Keep before-state bars visible during playback; reconcile authoritative after-state once finished.
             float elapsed = 0;
@@ -588,6 +725,11 @@ namespace Ninefold.Presentation
                 if (!shown && t>=.55f) { AddFeedback(update,true); shown=true; }
                 float moveTime = pulse == null ? t : Mathf.Clamp01(t/.55f);
                 float strike = Mathf.Clamp01((t-.55f)/.45f);
+                float impactEnvelope = Mathf.Sin(strike*Mathf.PI);
+                // Small impact-only recoil. Reduced-motion playback uses a zero
+                // duration and skips the loop entirely.
+                cameraImpulse = pulse == null ? Vector2.zero :
+                    new Vector2(Mathf.Sin(strike*31f),Mathf.Cos(strike*24f)) * (.035f*impactEnvelope);
                 foreach (var before in update.Before.Units.Where(u => u.Position.HasValue))
                 {
                     if (!tokens.TryGetValue(before.Id, out var token)) continue;
@@ -599,6 +741,7 @@ namespace Ninefold.Presentation
                         position = AlongRoute(route,moveTime);
                     }
                     token.Body.transform.position = position + Vector3.up * token.Height / 2;
+                    token.ContactShadow.transform.position = position + Vector3.up*.019f;
                     if (before.Id==update.Before.Activation?.UnitId) selection.transform.position=position+Vector3.up*.04f;
                     if (pulse?.UnitId == before.Id && tokens.TryGetValue(pulse.TargetId,out var strikeTarget))
                     {
@@ -662,6 +805,12 @@ namespace Ninefold.Presentation
                     // event as floating damage feedback, without affecting rules.
                     var burstMaterial = healing ? friendly :
                         hasStatus && pulse.AbilityEffect.Health == null ? markings : gold;
+                    // One reused, shadowless light brightens the existing models
+                    // according to a real action event, with no scene allocation.
+                    impactLight.enabled = true;
+                    impactLight.color = burstMaterial.color;
+                    impactLight.transform.position = target.Body.transform.position + Vector3.up*.35f;
+                    impactLight.intensity = 1.7f*impactEnvelope;
                     impactBurst.SetActive(true);
                     impactBurst.transform.position = target.Body.transform.position;
                     float bloom = Mathf.Sin(strike*Mathf.PI);
@@ -690,6 +839,7 @@ namespace Ninefold.Presentation
             }
             if (!shown) AddFeedback(update,false);
             path.positionCount=0; impact.SetActive(false); statusPulse.SetActive(false); impactBurst.SetActive(false);
+            impactLight.enabled=false; cameraImpulse=Vector2.zero;
             Reconcile(update.After);
         }
         private static Vector3 AlongRoute(FieldPoint[] route, float fraction)
@@ -726,10 +876,12 @@ namespace Ninefold.Presentation
         public void Hide()
         {
             foreach (var item in feedback) item.Label.RemoveFromHierarchy(); feedback.Clear();
-            impactBurst.SetActive(false);
+            impactBurst.SetActive(false); impactLight.enabled=false; cameraImpulse=Vector2.zero;
             world.SetActive(false); camera.enabled = true; camera.rect = new Rect(0, 0, 1, 1);
         }
         public static Vector3 Vector(FieldPoint p) => new Vector3((float)p.X, (float)p.Y, (float)p.Z);
-        public void Dispose() { scenery.Dispose(); Object.Destroy(world); foreach (var material in materials) Object.Destroy(material); }
+        public void Dispose() { scenery.Dispose(); Object.Destroy(world);
+            Object.Destroy(markerRingMesh); Object.Destroy(contactShadowTexture);
+            foreach (var material in materials) Object.Destroy(material); }
     }
 }
