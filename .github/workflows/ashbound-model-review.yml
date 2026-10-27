@@ -13,6 +13,8 @@ on:
     paths:
       - 'SourceArt/Ashbound/**'
       - 'BuildTools/Art/build_ashbound.mjs'
+      - 'BuildTools/Art/validate_ashbound.mjs'
+      - 'BuildTools/Art/render_ashbound.py'
       - '.github/workflows/ashbound-model-review.yml'
 permissions:
   contents: read
