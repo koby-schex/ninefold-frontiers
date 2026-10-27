@@ -60,6 +60,7 @@ namespace Ninefold.Presentation
         private readonly Mesh markerRingMesh;
         private readonly Texture2D contactShadowTexture;
         private readonly Material contactShadowMaterial;
+        private readonly bool translucentContactShadows;
         private readonly Light battlefieldKey, impactLight;
         private Vector2 cameraImpulse;
         private VisualElement surface;
@@ -87,6 +88,8 @@ namespace Ninefold.Presentation
             contactShadowTexture = BuildContactShadowTexture();
             var shadowShader = Shader.Find("Sprites/Default");
             if (shadowShader == null) shadowShader = Shader.Find("Unlit/Transparent");
+            // A stripped shader must never leave opaque black quads on the map.
+            translucentContactShadows = shadowShader != null;
             contactShadowMaterial = new Material(shadowShader != null ? shadowShader : template) {
                 name = "Mobile grounded unit contact shadows",
                 color = Color.white, mainTexture = contactShadowTexture
@@ -594,7 +597,7 @@ namespace Ninefold.Presentation
                 // The carried traveler no longer appears to be an independently
                 // selectable/stranded NPC at the old pickup site.
                 t.Body.SetActive(!pickedUp);
-                t.ContactShadow.SetActive(!pickedUp);
+                t.ContactShadow.SetActive(!pickedUp && translucentContactShadows);
                 if (carried && h.UnitId == view.RescueCarrierId && t.CarryIcon == null)
                 {
                     t.CarryIcon = Primitive("Rescued traveler carried", PrimitiveType.Sphere,
@@ -638,6 +641,18 @@ namespace Ninefold.Presentation
                 needed = Mathf.Max(needed, Mathf.Abs(local.y) + 1.5f, (Mathf.Abs(local.x) + 1) / camera.aspect);
             }
             camera.orthographicSize = needed;
+            // Subtle active-unit heartbeat improves instant initiative scanning
+            // without adding overhead text or changing hit-testing.
+            if(selection.activeSelf)
+            {
+                float pulse=1f+Mathf.Sin(Time.unscaledTime*2.5f)*.035f;
+                selection.transform.localScale=new Vector3(.95f*pulse,1f,.95f*pulse);
+            }
+            if(destination.activeSelf)
+            {
+                float pulse=1f+Mathf.Sin(Time.unscaledTime*3.4f)*.045f;
+                destination.transform.localScale=new Vector3(.70f*pulse,1f,.70f*pulse);
+            }
             barRects.Clear();
             foreach (var pair in objectiveLabels)
             {
