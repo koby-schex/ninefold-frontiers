@@ -138,6 +138,7 @@ namespace Ninefold.Editor
 
                 var rootObject = new GameObject("Ashbound " + SplitName(model) + " / noncanonical 3D study 01");
                 SceneManager.MoveGameObjectToScene(rootObject, preview);
+                int sectionIndex = 0;
                 foreach (var section in geometry.Sections)
                 {
                     var mesh = new Mesh
@@ -153,9 +154,8 @@ namespace Ninefold.Editor
                         new Vector2(v[0], v[1])).ToList());
                     mesh.SetTriangles(section.Indices, 0);
                     mesh.RecalculateBounds();
-                    AssetDatabase.CreateAsset(mesh, destination + "/section-" +
-                        AssetDatabase.GenerateUniqueAssetPath(section.Name.Replace('/', '_') + ".asset")
-                            .Replace(".asset", "") + ".asset");
+                    AssetDatabase.CreateAsset(mesh, AssetDatabase.GenerateUniqueAssetPath(
+                        destination + "/section-" + (sectionIndex++).ToString("D2") + ".asset"));
                     var child = new GameObject(section.Name);
                     child.transform.SetParent(rootObject.transform, false);
                     child.AddComponent<MeshFilter>().sharedMesh = mesh;
