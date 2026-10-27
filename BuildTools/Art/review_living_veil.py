@@ -116,7 +116,7 @@ def main(render_images=False):
     from PIL import Image,ImageDraw
     from build_living_veil import COLORS,ALPHA,FINISH
     sheet=Image.new('RGB',(1400,1200),'#eeede5');draw=ImageDraw.Draw(sheet)
-    draw.text((20,16),'LIVING VEIL / OLYRA — SURFACE STUDY 10',font=font(26),fill='#262c32')
+    draw.text((20,16),'LIVING VEIL / OLYRA — GEOMETRY STUDY 11',font=font(26),fill='#262c32')
     draw.text((20,52),'Actual source geometry • two static poses • provisional surfaces',font=font(18),fill='#596069')
     for row,pose in enumerate(POSES):
         m=make_model(pose);data=review_data(m)
@@ -126,7 +126,7 @@ def main(render_images=False):
             draw.text((i*466+15,95+row*540),pose.title()+' / '+label,font=font(18),fill='#262c32')
     sheet.save(out/'LivingVeil-Review.png')
     details=Image.new('RGB',(1400,640),'#eeede5');labels=ImageDraw.Draw(details)
-    labels.text((20,12),'SURFACE 10 / ACTUAL MESH — DETAIL AND TACTICAL READ',font=font(23),fill='#262c32')
+    labels.text((20,12),'GEOMETRY 11 / ACTUAL MESH — DETAIL AND TACTICAL READ',font=font(23),fill='#262c32')
     m=make_model('resting')
     for i,(label,prefix,eye,target,extent) in enumerate((
         ('Core and membrane roots','Olyra_',(3,3.6,6),(0,2.7,0),1.7),
@@ -137,7 +137,7 @@ def main(render_images=False):
         if prefix:chosen.parts=[p for p in chosen.parts if p['name'].startswith(prefix)]
         details.paste(render(review_data(chosen),eye,(460,540),extent,target,False),(i*466,85))
         labels.text((i*466+12,55),label,font=font(18),fill='#262c32')
-    details.save(out/'LivingVeil-Detail10.png')
+    details.save(out/'LivingVeil-Detail11.png')
     render_partner(out)
     render_material_comparison(out)
 
@@ -146,7 +146,7 @@ def render_partner(out):
     from PIL import Image,ImageDraw
     m=make_model('resting');m.parts=[p for p in m.parts if not p['name'].startswith('Olyra_')]
     sheet=Image.new('RGB',(1440,560),'#eeede5');labels=ImageDraw.Draw(sheet)
-    labels.text((16,10),'AVARIN SURFACE 10 / ACTUAL GEOMETRY / PROVISIONAL ART',font=font(20),fill='#262c32')
+    labels.text((16,10),'AVARIN GEOMETRY 11 / ACTUAL GEOMETRY / PROVISIONAL ART',font=font(20),fill='#262c32')
     views=(('Front',(1.95,1.1,8),(1.95,.95,.43),2.2),
            ('Side',(8,1.1,.43),(1.95,.95,.43),2.2),
            ('Back',(1.95,1.1,-8),(1.95,.95,.43),2.2),
@@ -154,7 +154,7 @@ def render_partner(out):
     for i,(label,eye,target,extent) in enumerate(views):
         sheet.paste(render(review_data(m),eye,(360,490),extent,target,False),(360*i,65))
         labels.text((360*i+12,40),label,font=font(16),fill='#262c32')
-    sheet.save(out/'Avarin-Partner10.png')
+    sheet.save(out/'Avarin-Partner11.png')
 
 @lru_cache(maxsize=1)
 def partner_review_tints():

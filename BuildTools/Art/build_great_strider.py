@@ -173,7 +173,10 @@ class Mesh:
             c=add(mul(center(r),1-a),mul(center(r+1),a))
             offset=.004+.052*math.sin(math.pi*t)*math.sin(math.pi*v)
             # Fine longitudinal relief follows the grown surface, fading into its edges.
-            offset+=.006*math.sin(v*math.pi*8)**2*math.sin(math.pi*t)*math.sin(math.pi*v)
+            offset+=.018*math.sin(v*math.pi*6+.5*math.sin(math.pi*t))**2*math.sin(math.pi*t)*math.sin(math.pi*v)
+            # Broad overlapping growth contours, continuous with the existing
+            # stress covering rather than a stack of manufactured armor plates.
+            offset+=.065*math.sin(math.pi*t)**2*math.sin(math.pi*v)**2*(.5+.5*math.cos(6*math.pi*t+.7*math.sin(math.pi*v)))
             return add(p,mul(unit(sub(p,c)),offset))
         self.panel(name,'grown_mineral',surface,22,13,.002)
 
@@ -358,7 +361,12 @@ def make_model():
             fullness=.10*math.sin(math.pi*row/6)**2 if name.startswith('Ilyth_Limb_') and row<6 else 0
             for j in range(sides):
                 index=row*sides+j; v=original[index]; radial=sub(v,center)
-                relief=.003*math.sin(math.pi*t)**2*math.cos(4*math.pi*j/sides) if name=='Ilyth_ShortNeck' else 0
+                relief=.023*math.sin(math.pi*t)**2*math.cos(4*math.pi*j/sides+.6*math.sin(math.pi*t)) if name=='Ilyth_ShortNeck' else 0
+                if name.startswith('Ilyth_Limb_'):
+                    # Soft longitudinal tissue at the existing joints. End rings,
+                    # cap centres and contact groups remain fixed for the rig.
+                    joint=math.exp(-((t-.43)/.10)**2)+.7*math.exp(-((t-.70)/.08)**2)
+                    relief=.030*joint*math.sin(math.pi*t)**2*math.cos(3*math.tau*j/sides+.5*t)
                 part['vertices'][index]=add(v,add(mul(radial,fullness),mul(unit(radial),relief)))
     # Cloth relief tapers to zero at each loft end, preserving wrist/hip/calf fits.
     for part in m.parts:
@@ -370,7 +378,7 @@ def make_model():
                 center=tuple(sum(verts[row*sides+j][axis] for j in range(sides))/sides for axis in range(3))
                 for j in range(sides):
                     index=row*sides+j; v=verts[index]; angle=j*math.tau/sides
-                    relief=.006*math.sin(math.pi*t)**2*math.sin(8*math.pi*t+2*angle)
+                    relief=.012*math.sin(math.pi*t)**2*math.sin(8*math.pi*t+2*angle)
                     part['vertices'][index]=add(v,mul(unit(sub(v,center)),relief))
     # Grown coverings follow the limb surfaces; soft joint gaps remain visible.
     for p in list(m.parts):
@@ -405,7 +413,7 @@ def write(mesh, output):
     factor=6/(top-bottom)
     for p in mesh.parts: p['vertices']=[mul(sub(v,(0,bottom,0)),factor) for v in p['vertices']]
     attach_uvs(mesh.parts)
-    obj=['# Great Strider surface study 13; meters; Y up; Z forward', 'mtllib GreatStrider.mtl']
+    obj=['# Great Strider geometry study 14; meters; Y up; Z forward', 'mtllib GreatStrider.mtl']
     offset=1; uv_offset=1
     for p in mesh.parts:
         obj.extend(['o '+p['name'],'usemtl '+p['material'],'s 1'])
@@ -425,14 +433,14 @@ def write(mesh, output):
         detail_color_space='linear',albedo_color_space='sRGB',opacity=OPACITY.get(name,1),review_specular_exponent=FINISH[name][0],
         review_specular_strength=FINISH[name][1],surface_description=SURFACES[name][2] if name in SURFACES else 'unchanged study material')
         for name,rgb in MATERIALS.items()}
-    (output/'materials.json').write_text(json.dumps(dict(status='provisional surface study 13',
+    (output/'materials.json').write_text(json.dumps(dict(status='provisional geometry study 14',
         uv_mapping='rest-pose dominant-axis box projection, repeating textures',materials=catalog),indent=2)+'\n')
     mtl=[]
     for name,rgb in MATERIALS.items():
         mtl.extend(['newmtl '+name,'Kd '+' '.join(map(str,(1,1,1) if name in SURFACES else rgb)),'Ks '+' '.join([str(FINISH[name][1])]*3),'Ns '+str(FINISH[name][0]),'d '+str(OPACITY.get(name,1)),''])
         if name in SURFACES: mtl.extend(['map_Kd Textures/'+name+'.png',''])
     (output/'GreatStrider.mtl').write_text('\n'.join(mtl))
-    report=dict(status='surface study 13; not production ready',units='meters',up='Y',forward='Z',
+    report=dict(status='geometry study 14; not production ready',units='meters',up='Y',forward='Z',
         height=6,parts=len(mesh.parts),vertices=offset-1,
         triangles=sum(len(p['faces']) for p in mesh.parts),
         materials=list(MATERIALS),limbs=['L_Fore','R_Fore','L_Rear','R_Rear'],

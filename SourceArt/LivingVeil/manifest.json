@@ -1,22 +1,22 @@
 {
-  "status": "surface study 10; not production ready",
+  "status": "geometry study 11; not production ready",
   "units": "meters",
   "up": "Y",
   "forward": "Z",
   "parts": 126,
   "vertices": 47136,
   "triangles": 93768,
-  "height": 3.009909388310124,
+  "height": 3.0099093961193693,
   "bounds": [
     [
-      -1.2849032550775161,
+      -1.2849018575364681,
       0.0,
-      -1.2820582443852557
+      -1.2820580196812343
     ],
     [
       2.453223018457157,
-      3.009909388310124,
-      1.2816848957380134
+      3.0099093961193693,
+      1.28168274994411
     ]
   ],
   "lobes": 5,

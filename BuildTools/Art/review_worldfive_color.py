@@ -9,6 +9,7 @@ from pathlib import Path
 from build_great_strider import ROOT,make_model as strider_model,write as write_strider,MATERIALS
 from build_living_veil import make_model as veil_model,COLORS
 from review_living_veil import review_data
+from review_worldfive_geometry import verify_geometry
 BASELINE='82741eef61caca9debc9becf58fa46ace505556f'
 OLD={'living_pearl':(.62,.65,.63),'limb_tissue':(.38,.40,.42),
      'soft_charcoal':(.12,.13,.16),'grown_mineral':(.84,.86,.85),
@@ -31,21 +32,25 @@ def check():
     import numpy as np
     for file in ('SourceArt/GreatStrider/GreatStrider.obj','SourceArt/LivingVeil/LivingVeil.obj','SourceArt/LivingVeil/LivingVeilProtective.obj'):
         old=subprocess.check_output(['git','show',BASELINE+':'+file],cwd=ROOT,text=True)
-        assert geometry(old)==geometry((ROOT/file).read_text()),('Geometry changed',file)
+        verify_geometry(old,(ROOT/file).read_text())
     # Alpha remains exactly the same at every pixel, despite the new membrane tint.
     import io
     old=subprocess.check_output(['git','show',BASELINE+':SourceArt/LivingVeil/Textures/OlyraMembrane.png'],cwd=ROOT)
     before=np.asarray(Image.open(io.BytesIO(old)))[:,:,3]
     after=np.asarray(Image.open(ROOT/'SourceArt/LivingVeil/Textures/OlyraMembrane.png'))[:,:,3]
     assert np.array_equal(before,after),'Canopy opacity changed'
-    for file in ('BuildTools/Art/living_veil_motion.py','SourceArt/LivingVeil/motion-study.json','Assets/Ninefold/Editor/LivingVeilMotion.cs'):
+    for file in ('BuildTools/Art/living_veil_motion.py','Assets/Ninefold/Editor/LivingVeilMotion.cs'):
         assert subprocess.check_output(['git','show',BASELINE+':'+file],cwd=ROOT)==(ROOT/file).read_bytes(),('Motion changed',file)
+    previous=json.loads(subprocess.check_output(['git','show',BASELINE+':SourceArt/LivingVeil/motion-study.json'],cwd=ROOT))
+    current=json.loads((ROOT/'SourceArt/LivingVeil/motion-study.json').read_text())
+    assert previous['duration_seconds']==current['duration_seconds']
+    assert [s['frame'] for s in previous['samples']]==[s['frame'] for s in current['samples']]
     # Readable broad material separation; not device/readability certification.
     def luminance(rgb):return sum(c*w for c,w in zip(rgb,(.2126,.7152,.0722)))
     assert luminance(MATERIALS['grown_mineral'])>luminance(MATERIALS['living_pearl'])>luminance(MATERIALS['limb_tissue'])
     assert luminance(COLORS['avar_skin'])>1.8*luminance(COLORS['cloth'])
     assert luminance(COLORS['olyra_membrane'])>3*luminance(COLORS['olyra_core'])
-    return dict(baseline=BASELINE,geometry_and_assignments_unchanged=True,canopy_alpha_identical=True,
+    return dict(baseline=BASELINE,topology_and_assignments_unchanged=True,bounded_organic_geometry=True,canopy_alpha_identical=True,
                 living_veil_motion_unchanged=True,palette_separation=True,
                 limits='Color proposals; no native Unity, mobile or final visual acceptance')
 

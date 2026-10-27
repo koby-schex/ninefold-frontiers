@@ -1,0 +1,18 @@
+{
+  "study": "proportion 01",
+  "model": "Riftwalker",
+  "units": "meters",
+  "parts": 74,
+  "vertices": 22036,
+  "triangles": 43776,
+  "canon": [
+    "v26.0 section 26.6",
+    "v25.3 bonded-tradition entries",
+    "locked World Five visual master"
+  ],
+  "limitations": [
+    "Early silhouette study; not final master fidelity",
+    "No rig, animation, LODs, texture unwrap or game registration",
+    "Unseen anatomy and module arrangements are proposals"
+  ]
+}
