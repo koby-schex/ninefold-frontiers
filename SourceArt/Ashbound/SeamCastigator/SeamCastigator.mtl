@@ -1,0 +1,41 @@
+# Proposed material swatches, not locked final colors
+newmtl skin
+Kd 0.43000 0.48000 0.50000
+Ns 34.0
+d 1.0
+
+newmtl mantle
+Kd 0.30000 0.42000 0.45000
+Ns 34.0
+d 1.0
+
+newmtl garment
+Kd 0.17000 0.23000 0.29000
+Ns 34.0
+d 1.0
+
+newmtl salvage
+Kd 0.35000 0.41000 0.45000
+Ns 34.0
+d 1.0
+
+newmtl hardware
+Kd 0.72000 0.46000 0.31000
+Ns 34.0
+d 1.0
+
+newmtl seam
+Kd 0.68000 0.68000 0.61000
+Ns 34.0
+d 1.0
+
+newmtl dark
+Kd 0.12000 0.16000 0.19000
+Ns 34.0
+d 1.0
+
+newmtl eye
+Kd 0.72000 0.78000 0.72000
+Ns 34.0
+d 1.0
+
