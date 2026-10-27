@@ -4,6 +4,8 @@ on:
     paths:
       - 'SourceArt/Ashbound/**'
       - 'BuildTools/Art/build_ashbound.mjs'
+      - 'BuildTools/Art/validate_ashbound.mjs'
+      - 'BuildTools/Art/render_ashbound.py'
       - '.github/workflows/ashbound-model-review.yml'
       - 'Assets/Ninefold/Editor/AshboundEnemyReview.cs'
   push:
@@ -11,6 +13,8 @@ on:
     paths:
       - 'SourceArt/Ashbound/**'
       - 'BuildTools/Art/build_ashbound.mjs'
+      - 'BuildTools/Art/validate_ashbound.mjs'
+      - 'BuildTools/Art/render_ashbound.py'
       - '.github/workflows/ashbound-model-review.yml'
 permissions:
   contents: read
@@ -22,10 +26,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Rebuild both enemy models from source
+      - name: Rebuild all four enemy models from source
         run: node BuildTools/Art/build_ashbound.mjs
       - name: Verify reproducible checked-in OBJ, MTL and manifests
         run: git diff --exit-code -- SourceArt/Ashbound
+      - name: Validate all enemy source meshes and semantic manifests
+        run: node BuildTools/Art/validate_ashbound.mjs
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -36,14 +42,16 @@ jobs:
       - name: Upload Ashbound visual review sheets
         uses: actions/upload-artifact@v4
         with:
-          name: ashbound-enemy-mesh-study-01
+          name: ashbound-enemy-mesh-study-02
           path: SourceArt/Ashbound/Review/*.png
           retention-days: 30
           if-no-files-found: error
       - name: Verify no trailing whitespace errors
         run: git diff --check
-      - name: Verify two separate enemy studies exist
+      - name: Verify all four separate enemy studies exist
         run: |
           test -s SourceArt/Ashbound/RiftForager/RiftForager.obj
           test -s SourceArt/Ashbound/PartedStriker/PartedStriker.obj
-          node -e "for (const n of ['RiftForager','PartedStriker']) { const m=require('./SourceArt/Ashbound/'+n+'/manifest.json'); if (!m.bipedal_avarin||!m.living_crescent_mantle||m.bonded_creature_count!==0||m.rigged||m.triangles<10000) throw Error(n+' invalid model'); }"
+          test -s SourceArt/Ashbound/SeamCastigator/SeamCastigator.obj
+          test -s SourceArt/Ashbound/AnchorWrecker/AnchorWrecker.obj
+          node -e "for (const n of ['RiftForager','PartedStriker','SeamCastigator','AnchorWrecker']) { const m=require('./SourceArt/Ashbound/'+n+'/manifest.json'); if (!m.bipedal_avarin||!m.living_crescent_mantle||m.bonded_creature_count!==0||m.rigged||m.triangles<10000) throw Error(n+' invalid model'); }"
