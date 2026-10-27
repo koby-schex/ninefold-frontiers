@@ -123,7 +123,7 @@ namespace Ninefold.Editor
             double chest=Ease((py-.76)/.71), neck=Ease((py-1.40)/.28);
             double torsoBend=-.070*frame.Attack+.075*frame.Recoil+.15*frame.Strain+.42*frame.Collapse;
             double breathing=.013*frame.Breath*Ease((py-.9)/.42);
-            double sway=(striker?.008:.013)*frame.Sway*chest;
+            double sway=(striker ? .008 : .013)*frame.Sway*chest;
 
             if (leg && side != 0)
             {
@@ -131,9 +131,9 @@ namespace Ninefold.Editor
                 // and a corrected ankle baseline. Swinging sole lifts; planted sole does not.
                 double phase=frame.Time*2*Math.PI+(side<0 ? 0 : Math.PI);
                 double cycle=Math.Sin(phase);
-                double angle=(striker?.21:.29)*frame.Walk* (side<0 ? 1 : -1);
+                double angle=(striker ? .21 : .29)*frame.Walk* (side<0 ? 1 : -1);
                 // Walk is active throughout the cycle, not only near its peaks.
-                if(frame.Motion==Clip.Advance) angle=(striker?.21:.29)*cycle;
+                if(frame.Motion==Clip.Advance) angle=(striker ? .21 : .29)*cycle;
                 angle+=(side<0 ? -.10:.11)*frame.Attack;
                 angle+=(side<0 ? -.18:.18)*frame.Collapse;
                 double pivotY=.90, pivotZ=-.024;
@@ -142,21 +142,21 @@ namespace Ninefold.Editor
                 double rotatedZ=pivotZ+dy*Math.Sin(angle)+dz*Math.Cos(angle);
                 // Transform the corresponding boot's nominal ankle point using
                 // the exact same rotation, then cancel its vertical drop.
-                double ankleZ=.091+(striker?.17:.07)*(side<0 ? -.26:1);
+                double ankleZ=.091+(striker ? .17 : .07)*(side<0 ? -.26:1);
                 double ankleDy=.063-pivotY,ankleDz=ankleZ-pivotZ;
                 double ankleY=pivotY+ankleDy*Math.Cos(angle)-ankleDz*Math.Sin(angle);
                 double footWeight=1-Ease((py-.20)/.66);
                 double lift=frame.Motion==Clip.Advance ? .070*Math.Pow(Math.Max(0,cycle),2) : 0;
                 py=rotatedY+footWeight*(.063-ankleY+lift)
                     -.22*frame.Collapse*Ease((rest[1]-.17)/.70);
-                pz=rotatedZ+(striker?.035:.055)*frame.Walk*footWeight;
+                pz=rotatedZ+(striker ? .035 : .055)*frame.Walk*footWeight;
                 px+=.020*frame.Recoil*side+.12*frame.Collapse*Ease((rest[1]-.16)/.72);
             }
             else if (arm && side != 0)
             {
                 double shoulderY=1.34, shoulderZ=.0;
                 double dy=py-shoulderY,dz=pz-shoulderZ;
-                double angle=(striker?.19:.27)*frame.Walk*(side<0 ? -1 : 1);
+                double angle=(striker ? .19 : .27)*frame.Walk*(side<0 ? -1 : 1);
                 // Larger attack reach on the right; left stays as a counterbalance.
                 angle+=(side>0 ? -.48:.18)*frame.Attack;
                 angle+=(side>0 ? .31:-.19)*frame.Recoil;
@@ -167,7 +167,7 @@ namespace Ninefold.Editor
                 pz=shoulderZ+dy*Math.Sin(angle)+dz*Math.Cos(angle)
                     +.10*frame.Attack*(side>0 ? 1:.36)
                     -.06*frame.Recoil;
-                px+=(striker?.014:.023)*frame.Walk*side;
+                px+=(striker ? .014 : .023)*frame.Walk*side;
             }
             else
             {
