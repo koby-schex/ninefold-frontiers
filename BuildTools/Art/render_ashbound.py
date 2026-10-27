@@ -8,7 +8,8 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[2]
-MODELS = ("RiftForager", "PartedStriker", "SeamCastigator", "AnchorWrecker")
+MODELS = ("RiftForager", "PartedStriker", "SeamCastigator",
+          "AnchorWrecker", "AfterechoSeer", "CampWitness")
 FRAMES = (("Front", 0), ("Three-quarter", math.pi/4),
           ("Right", math.pi/2), ("Back", math.pi))
 
