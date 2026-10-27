@@ -88,7 +88,8 @@ internal static partial class Program
     {
         foreach(bool striker in new[]{false,true})
         {
-            var right=Point(.32f,1.02f,.13f),head=Point(.047f,1.68f,.11f);
+            var right=Point(.32f,1.02f,.13f);
+            var head=Point(.047f,1.68f,.11f);
             var attacking=Pose("Avarin_Arm_R",right,AshboundMotion.Clip.Attack,.5,striker);
             var hit=Pose("Avarin_Torso",Point(0,1.28f,.1f),AshboundMotion.Clip.Hit,.5,striker);
             var neutral=Point(0,1.28f,.1f);
