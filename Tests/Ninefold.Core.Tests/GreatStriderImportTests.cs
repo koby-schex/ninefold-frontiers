@@ -32,8 +32,28 @@ internal static partial class Program
                 names.Count(n=>n.StartsWith("Avarin_SensoryRibbon_",StringComparison.Ordinal))!=6)
                 throw new Exception("Missing independent Avarin partner: "+unit);
             foreach (var section in mesh.Sections)
+            {
                 if (section.Vertices.Count!=section.Normals.Count || section.SourceParts.Count!=section.Vertices.Count)
                     throw new Exception("Incomplete new roster mesh streams: "+unit);
+                for(int i=0;i<section.Vertices.Count;i++)
+                {
+                    string part=section.SourceParts[i];var v=section.Vertices[i];
+                    double[] offset=new double[3];
+                    for(int channel=0;channel<3;channel++)
+                    {
+                        WorldFiveRosterMotion.Delta(part,v,channel,out float x,out float y,out float z);
+                        if(float.IsNaN(x+y+z)||float.IsInfinity(x+y+z)) throw new Exception("Nonfinite idle deformation");
+                        if((part.StartsWith("Avarin_",StringComparison.Ordinal)||part.Contains("Contact_")) && (x!=0||y!=0||z!=0))
+                            throw new Exception("Idle moved a partner or ground contact: "+part);
+                        offset[0]+=Math.Abs(x);offset[1]+=Math.Abs(y);offset[2]+=Math.Abs(z);
+                        if(part.StartsWith("Civic",StringComparison.Ordinal)||part.StartsWith("Convergence_",StringComparison.Ordinal))
+                            if(x!=(channel==1?.012f:0)||y!=(channel==1?.006f:0)||z!=0) throw new Exception("Payload is not rigid");
+                    }
+                    if(Math.Sqrt(offset.Sum(q=>q*q))>.065) throw new Exception("Excessive idle displacement");
+                    if(part=="Vaskel_Counterweight" && v[1]-offset[1]<.4) throw new Exception("Counterweight ground clearance");
+                }
+            }
+            if(materials.Count(m=>m.Texture!=null)<6) throw new Exception("Missing roster color maps");
         }
     }
     private static string StriderRoot()

@@ -1,18 +1,19 @@
 {
-  "study": "proportion 01",
+  "study": "detail and idle 02",
   "model": "Burdenbeast",
   "units": "meters",
-  "parts": 105,
-  "vertices": 24770,
-  "triangles": 49120,
+  "parts": 135,
+  "vertices": 26558,
+  "triangles": 52576,
   "canon": [
     "v26.0 section 26.6",
     "v25.3 bonded-tradition entries",
     "locked World Five visual master"
   ],
   "limitations": [
-    "Early silhouette study; not final master fidelity",
-    "No rig, animation, LODs, texture unwrap or game registration",
+    "Developing silhouette; not final master fidelity",
+    "Review idle blend shapes only; no walking, production rig, LODs or game registration",
+    "Projected study UVs; production unwrap outstanding",
     "Unseen anatomy and module arrangements are proposals"
   ]
 }
