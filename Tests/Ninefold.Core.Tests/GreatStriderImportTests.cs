@@ -11,6 +11,30 @@ internal static partial class Program
         yield return ("Strider real OBJ/MTL imports with UV seams and separate transparent shells", StriderRealSource);
         yield return ("Strider UV splits retain original smooth normals", StriderSeamNormals);
         yield return ("Strider importer rejects malformed geometry and unsafe texture paths", StriderRejectInvalid);
+        yield return ("World Five new roster sources import with canon limb counts", WorldFiveRosterSources);
+    }
+    private static void WorldFiveRosterSources()
+    {
+        string sourceArt=Directory.GetParent(StriderRoot()).FullName;
+        foreach (string unit in new[] { "Burdenbeast", "Riftwalker" })
+        {
+            string root=Path.Combine(sourceArt,unit);
+            var materials=GreatStriderSource.ReadMaterials(File.ReadLines(Path.Combine(root,unit+".mtl")),root);
+            var mesh=GreatStriderSource.ReadMesh(File.ReadLines(Path.Combine(root,unit+".obj")),materials);
+            var names=mesh.Sections.SelectMany(s=>s.SourceParts).Distinct().ToArray();
+            string prefix=unit=="Burdenbeast"?"Tervan_":"Vaskel_";
+            int limbs=unit=="Burdenbeast"?8:2;
+            if (names.Count(n=>n.StartsWith(prefix+"Limb_",StringComparison.Ordinal))!=limbs ||
+                names.Count(n=>n.StartsWith(prefix+"Contact_",StringComparison.Ordinal))!=limbs)
+                throw new Exception("Incorrect roster anatomy: "+unit);
+            if (names.Count(n=>n.StartsWith("Avarin_Arm_",StringComparison.Ordinal))!=2 ||
+                names.Count(n=>n.StartsWith("Avarin_Leg_",StringComparison.Ordinal))!=2 ||
+                names.Count(n=>n.StartsWith("Avarin_SensoryRibbon_",StringComparison.Ordinal))!=6)
+                throw new Exception("Missing independent Avarin partner: "+unit);
+            foreach (var section in mesh.Sections)
+                if (section.Vertices.Count!=section.Normals.Count || section.SourceParts.Count!=section.Vertices.Count)
+                    throw new Exception("Incomplete new roster mesh streams: "+unit);
+        }
     }
     private static string StriderRoot()
     {

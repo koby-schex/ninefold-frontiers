@@ -1,0 +1,59 @@
+newmtl avar_skin
+Kd 0.29 0.205 0.32
+Ns 24
+d 1
+
+newmtl ceramic
+Kd 0.6 0.62 0.61
+Ns 100
+d 1
+
+newmtl cloth
+Kd 0.075 0.08 0.12
+Ns 4
+d 1
+
+newmtl continuance_frame
+Kd 0.26 0.28 0.32
+Ns 100
+d 1
+
+newmtl eye
+Kd 0.055 0.065 0.07
+Ns 28
+d 1
+
+newmtl grown_mineral
+Kd 0.78 0.8 0.81
+Ns 82
+d 1
+
+newmtl limb_tissue
+Kd 0.2 0.19 0.28
+Ns 18
+d 1
+
+newmtl sail_membrane
+Kd 0.29 0.23 0.36
+Ns 64
+d 0.68
+
+newmtl sail_vein
+Kd 0.55 0.51 0.66
+Ns 28
+d 1
+
+newmtl soft_charcoal
+Kd 0.075 0.08 0.105
+Ns 16
+d 1
+
+newmtl tervan_hide
+Kd 0.19 0.17 0.16
+Ns 24
+d 1
+
+newmtl tervan_joint
+Kd 0.075 0.07 0.08
+Ns 24
+d 1

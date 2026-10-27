@@ -4,6 +4,8 @@ on:
     paths:
       - 'BuildTools/Art/**'
       - 'SourceArt/GreatStrider/**'
+      - 'SourceArt/Burdenbeast/**'
+      - 'SourceArt/Riftwalker/**'
       - '.github/workflows/art-review.yml'
       - '.gitattributes'
   push:
@@ -11,6 +13,8 @@ on:
     paths:
       - 'BuildTools/Art/**'
       - 'SourceArt/GreatStrider/**'
+      - 'SourceArt/Burdenbeast/**'
+      - 'SourceArt/Riftwalker/**'
       - '.github/workflows/art-review.yml'
       - '.gitattributes'
 permissions:
@@ -255,6 +259,7 @@ jobs:
           python-version: '3.12'
       - run: python -m pip install -r BuildTools/Art/requirements-review.txt
       - run: python BuildTools/Art/review_surface_detail.py
+      - run: python BuildTools/Art/review_worldfive_geometry.py
       - run: python BuildTools/Art/review_worldfive_color.py --render
       - uses: actions/upload-artifact@v4
         with:
@@ -264,3 +269,22 @@ jobs:
           path: |
             SourceArt/LivingVeil/Review/WorldFiveColor/
             SourceArt/LivingVeil/Review/SurfaceDetail/
+            SourceArt/LivingVeil/Review/OrganicGeometry/
+
+  new-roster:
+    name: New World Five roster geometry
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r BuildTools/Art/requirements-review.txt
+      - run: python BuildTools/Art/review_worldfive_roster.py --render
+      - uses: actions/upload-artifact@v4
+        with:
+          name: world-five-roster-${{ github.sha }}
+          retention-days: 30
+          if-no-files-found: error
+          path: SourceArt/WorldFiveRoster/Review/

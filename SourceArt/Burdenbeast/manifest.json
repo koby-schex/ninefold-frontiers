@@ -1,0 +1,18 @@
+{
+  "study": "proportion 01",
+  "model": "Burdenbeast",
+  "units": "meters",
+  "parts": 105,
+  "vertices": 24770,
+  "triangles": 49120,
+  "canon": [
+    "v26.0 section 26.6",
+    "v25.3 bonded-tradition entries",
+    "locked World Five visual master"
+  ],
+  "limitations": [
+    "Early silhouette study; not final master fidelity",
+    "No rig, animation, LODs, texture unwrap or game registration",
+    "Unseen anatomy and module arrangements are proposals"
+  ]
+}

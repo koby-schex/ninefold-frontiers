@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Living Veil surface study 10; actual editable geometry, meters/Y-up/+Z.
+"""Living Veil geometry study 11; actual editable geometry, meters/Y-up/+Z.
 Uses shared loft/sheet primitives and the established Avarin face study.
 Two static poses; no production rig, animation, or final canon acceptance implied.
 """
@@ -64,7 +64,12 @@ def make_model(pose='resting'):
     # Shape the existing continuous core, keeping its crest and organs attached.
     core=m.parts[-1]
     core['vertices']=[(x*(1-.15*(z/.57)**2),
-        y+.022*math.sin(3*math.atan2(x,z))*(x/.4)**2*(1-((y-2.72)/.29)**2),z)
+        y+.042*math.sin(3*math.atan2(x,z))*(x/.4)**2*(1-((y-2.72)/.29)**2),z)
+        for x,y,z in core['vertices']]
+    # Five soft root sectors shape the existing core without a separate head,
+    # extra appendages or changing the crest and organ attachment positions.
+    core['vertices']=[(x*(1+.08*math.cos(5*math.atan2(x,z))*max(0,1-((y-2.72)/.29)**2)),y,
+        z*(1+.055*math.cos(5*math.atan2(x,z))*max(0,1-((y-2.72)/.29)**2)))
         for x,y,z in core['vertices']]
     m.loft('Olyra_SensoryCrest','grown_mineral',[
         ((0,2.84,.12),.18,.045),((0,2.89,.36),.23,.055),((0,2.81,.62),.08,.025)],24)
@@ -85,6 +90,10 @@ def make_model(pose='resting'):
                 y=3.23+.30*math.sin(math.pi*t)-drop*t*t-.12*(2*v-1)**2*math.sin(math.pi*t)
             # Soft tissue scalloping fades at the root and at both side margins.
             y+=.025*math.sin(5*math.pi*v+.6*i)*math.sin(math.pi*t)**2*math.sin(math.pi*v)
+            # Root folds relax toward the outer canopy; ribs/veins use this same
+            # surface, preserving their attachment in both authored poses.
+            y+=.180*math.sin(7*math.pi*v+.45*i)*math.sin(math.pi*t)**2*math.exp(-2.8*t)*math.sin(math.pi*v)**2
+            y+=.018*math.sin(3*math.pi*v+.8*t+i)*math.sin(math.pi*t)**2*math.sin(math.pi*v)
             return (radial*math.sin(theta),y,radial*math.cos(theta))
         membrane(m,'Olyra_Lobe_'+str(i),surface)
         for j,v in enumerate((.12,.5,.88)):
@@ -186,7 +195,7 @@ def refine_surfaces(m):
             p['vertices']=[tuple(center[k]+radius[k]*math.copysign(abs((q[k]-center[k])/radius[k])**.82,q[k]-center[k]) for k in range(3)) for q in v]
 
 def write(m,out,pose='resting'):
-    out.mkdir(parents=True,exist_ok=True);stem='LivingVeil' if pose=='resting' else 'LivingVeilProtective';obj=['# Living Veil surface study 10; meters; Y up; +Z forward','mtllib LivingVeil.mtl'];offset=1;uv_offset=1
+    out.mkdir(parents=True,exist_ok=True);stem='LivingVeil' if pose=='resting' else 'LivingVeilProtective';obj=['# Living Veil geometry study 11; meters; Y up; +Z forward','mtllib LivingVeil.mtl'];offset=1;uv_offset=1
     used=sorted({p['material'] for p in m.parts})
     for p in m.parts:
         obj+=['o '+p['name'],'usemtl '+p['material'],'s 1']
@@ -205,7 +214,7 @@ def write(m,out,pose='resting'):
 
     vertices=[v for p in m.parts for v in p['vertices']]
     bounds=[[min(v[k] for v in vertices) for k in range(3)],[max(v[k] for v in vertices) for k in range(3)]]
-    report=dict(status='surface study 10; not production ready',units='meters',up='Y',forward='Z',parts=len(m.parts),vertices=len(vertices),triangles=sum(len(p['faces']) for p in m.parts),height=bounds[1][1],bounds=bounds,lobes=5,materials=used,
+    report=dict(status='geometry study 11; not production ready',units='meters',up='Y',forward='Z',parts=len(m.parts),vertices=len(vertices),triangles=sum(len(p['faces']) for p in m.parts),height=bounds[1][1],bounds=bounds,lobes=5,materials=used,
         pose=pose,model_id='world05.living-veil.olyra',membrane_alpha='RGBA texture; MTL d is transparency classification, importer uses alpha multiplier 1',limitations=['Provisional static pose and surfaces; not locked visual acceptance','No gliding pose, production rig, animation or LODs','Layered transparency sorting needs native review','Exact curvature, harness detail and three tiny visual organs are implementation proposals'])
     (out/('manifest.json' if pose=='resting' else 'protective-manifest.json')).write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps(report,indent=2))
