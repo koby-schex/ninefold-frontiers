@@ -41,7 +41,7 @@ internal static partial class Program
             foreach(bool striker in new[]{false,true})
                 if(AshboundMotion.Duration(clip,striker)<=.50)
                     throw new Exception("Unusable motion duration");
-            foreach(double t in new[]{0.,.01,.14,.33,.50,.71,.96,1.})
+            foreach(double t in new[]{0.0,.01,.14,.33,.50,.71,.96,1.0})
             {
                 var pose=Pose("Avarin_LivingCrescentMantle",
                     Point(.12f,1.72f,-.13f),clip,t);
@@ -73,7 +73,7 @@ internal static partial class Program
                 throw new Exception("Walk should deform both legs, not rigidly bob the body.");
             for(int i=0;i<=100;i++)
             {
-                double t=i/100.;
+                double t=i/100.0;
                 var lf=Pose("Avarin_Foot_L",left,AshboundMotion.Clip.Advance,t,striker);
                 var rf=Pose("Avarin_Foot_R",right,AshboundMotion.Clip.Advance,t,striker);
                 if(lf[1]<.060 || rf[1]<.060)
@@ -132,7 +132,7 @@ internal static partial class Program
                     float[] previous=atStart;
                     for(int t=1;t<=100;t++)
                     {
-                        var next=Pose(item.Item1,item.Item2,clip,t/100.,striker);
+                        var next=Pose(item.Item1,item.Item2,clip,t/100.0,striker);
                         if(Distance(previous,next)>.11)
                             throw new Exception("Discontinuous motion "+clip+" on "+item.Item1);
                         previous=next;
