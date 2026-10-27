@@ -12,7 +12,7 @@ using UnityEngine.SceneManagement;
 namespace Ninefold.Editor
 {
     /// <summary>
-    /// Read-only canonical-boundary review of four anonymous Ashbound art candidates.
+    /// Read-only canonical-boundary review of six anonymous Ashbound art candidates.
     /// Imported assets are generated in ArtReview, NEVER registered for battle.
     /// No source assets or gameplay IDs are modified.
     /// </summary>
@@ -21,7 +21,10 @@ namespace Ninefold.Editor
         private const string SourceRoot = "SourceArt/Ashbound/";
         private const string ReviewRoot = "Assets/Ninefold/ArtReview";
         private string message = "";
-        private static readonly string[] Models = { "RiftForager", "PartedStriker", "SeamCastigator", "AnchorWrecker" };
+        private static readonly string[] Models = {
+            "RiftForager", "PartedStriker", "SeamCastigator", "AnchorWrecker",
+            "AfterechoSeer", "CampWitness"
+        };
 
         [MenuItem("Ninefold/Art/Ashbound Enemy Review")]
         public static void Open() => GetWindow<AshboundEnemyReview>("Ashbound Review");
@@ -30,8 +33,8 @@ namespace Ninefold.Editor
         {
             EditorGUILayout.LabelField("WORLD FIVE / ASHBOUND", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
-                "Four nonplayable Ashbound studies: Rift Forager, Parted Striker, " +
-                "Seam Castigator and Anchor Wrecker. " +
+                "Six nonplayable Ashbound studies: Rift Forager, Parted Striker, " +
+                "Seam Castigator, Anchor Wrecker, Afterecho Seer and Camp Witness. " +
                 "Study 01, not final canon, not rigged, and NOT approved for mobile battles. " +
                 "Their living crescent mantles are sensory anatomy, NOT bonding organs. " +
                 "All attached hardware is provisional engineered equipment.",
@@ -73,6 +76,8 @@ namespace Ninefold.Editor
                 case "PartedStriker": return "Parted Striker";
                 case "SeamCastigator": return "Seam Castigator";
                 case "AnchorWrecker": return "Anchor Wrecker";
+                case "AfterechoSeer": return "Afterecho Seer";
+                case "CampWitness": return "Camp Witness";
                 default: throw new ArgumentException("Unknown Ashbound study.", nameof(n));
             }
         }

@@ -2,6 +2,7 @@
 // Run: node BuildTools/Art/build_ashbound.mjs
 import fs from 'node:fs';
 import path from 'node:path';
+import { finalPair } from './ashbound_final_pair_geometry.mjs';
 const DATA={
   "RiftForager": {
     "id": "ashbound-rift-forager",
@@ -131,7 +132,40 @@ const DATA={
       "dark":[0.15,0.17,0.19],
       "eye":[0.74,0.76,0.69]
     }
+  },
+  "AfterechoSeer": {
+    "id":"ashbound-afterecho-seer",
+    "role":"fragile long-range distortion and sensory pressure",
+    "bulk":0.76,
+    "stride":0.11,
+    "colors":{
+      "skin":[0.42,0.47,0.49],
+      "mantle":[0.30,0.41,0.48],
+      "garment":[0.18,0.21,0.28],
+      "salvage":[0.31,0.34,0.41],
+      "hardware":[0.55,0.43,0.63],
+      "seam":[0.66,0.70,0.75],
+      "dark":[0.13,0.16,0.22],
+      "eye":[0.73,0.77,0.80]
+    }
+  },
+  "CampWitness": {
+    "id":"ashbound-camp-witness",
+    "role":"camp-support observation and surveillance",
+    "bulk":0.98,
+    "stride":0.025,
+    "colors":{
+      "skin":[0.44,0.48,0.50],
+      "mantle":[0.36,0.42,0.43],
+      "garment":[0.28,0.27,0.25],
+      "salvage":[0.41,0.43,0.39],
+      "hardware":[0.59,0.48,0.33],
+      "seam":[0.67,0.65,0.58],
+      "dark":[0.17,0.18,0.19],
+      "eye":[0.78,0.76,0.69]
+    }
   }
+
 };
 function add(a,b){return a.map((x,i)=>x+b[i])}
 
@@ -306,6 +340,7 @@ function makeUnit(key){
       [x,.994,.127,.014,.012]],14);
   }
  }
+ finalPair(key,{loft,oval,wire,sheet});
  const pts=parts.flatMap(p=>p.verts);
  const bounds=[[0,1,2].map(k=>Math.min(...pts.map(p=>p[k]))),[0,1,2].map(k=>Math.max(...pts.map(p=>p[k])))];
  let offset=1;

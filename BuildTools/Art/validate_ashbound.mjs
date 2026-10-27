@@ -7,7 +7,9 @@ const models = {
   RiftForager: ['ashbound-rift-forager', 'Forager_OffsetShoulder'],
   PartedStriker: ['ashbound-parted-striker', 'Striker_OverbuiltRightShoulder'],
   SeamCastigator: ['ashbound-seam-castigator', 'Castigator_ArmCaptureBrace'],
-  AnchorWrecker: ['ashbound-anchor-wrecker', 'Wrecker_BluntAnchorPad']
+  AnchorWrecker: ['ashbound-anchor-wrecker', 'Wrecker_BluntAnchorPad'],
+  AfterechoSeer: ['ashbound-afterecho-seer', 'Seer_OverloadedCaptureCassette'],
+  CampWitness: ['ashbound-camp-witness', 'Witness_FoldedCampSignalPlate']
 };
 
 function requireCondition(condition, error) {
@@ -84,4 +86,4 @@ function audit(name, [unitId, specialty]) {
 }
 
 for (const [name, expected] of Object.entries(models)) audit(name, expected);
-console.log('All four Ashbound studies passed structural integrity (not visual/canon approval).');
+console.log('All six Ashbound studies passed structural integrity (not visual/canon approval).');
