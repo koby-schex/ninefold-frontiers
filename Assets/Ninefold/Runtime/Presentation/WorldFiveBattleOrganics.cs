@@ -386,8 +386,8 @@ namespace Ninefold.Presentation
             Part(root,owned,"Upper field wrap",fabric,Vector3.zero,
                 new[]{P(0,.258f,.122f),P(0,.145f,.160f),
                       P(0,.016f,.163f),P(0,-.100f,.147f)},
-                new[]{R(.133f,.039f),R(striker?.225f:.172f,.046f),
-                      R(striker?.225f:.170f,.052f),R(.113f,.038f)},24);
+                new[]{R(.133f,.039f),R(striker ? .225f : .172f,.046f),
+                      R(striker ? .225f : .170f,.052f),R(.113f,.038f)},24);
             // Overlapping chest-wear strips read clearly at portrait zoom.
             for(int strip=0;strip<4;strip++)
             {
