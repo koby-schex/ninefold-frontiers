@@ -1322,11 +1322,13 @@ namespace Ninefold.Presentation
             var portrait = new VisualElement { pickingMode = PickingMode.Ignore };
             portrait.AddToClassList("battle-active-portrait");
             current.Add(portrait);
-            Texture preview = active?.Id == null ? null :
+            // Keep the portrait's texture variable distinct from the pending
+            // command preview declared later in this same battle UI method.
+            Texture unitPortraitTexture = active?.Id == null ? null :
                 FrontiersPreviewRegistry.Source?.GetUnitPreview(active.Id);
-            if (preview != null)
+            if (unitPortraitTexture != null)
             {
-                var modelImage = new Image { image=preview, scaleMode=ScaleMode.ScaleToFit,
+                var modelImage = new Image { image=unitPortraitTexture, scaleMode=ScaleMode.ScaleToFit,
                     pickingMode=PickingMode.Ignore };
                 modelImage.AddToClassList("battle-active-portrait-image");
                 portrait.Add(modelImage);
