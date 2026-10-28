@@ -100,7 +100,7 @@ namespace Ninefold.Presentation
                 P(0,.13f,.59f)
             },new[]{R(.065f,.10f),R(.30f,.20f),R(.39f,.28f),
                 R(.43f,.28f),R(.40f,.26f),R(.29f,.20f),R(.07f,.09f)},24);
-            Part(root,owned,"Head",body,P(0,.12f,.54f),new[]{
+            var head = Part(root,owned,"Head",body,P(0,.12f,.54f),new[]{
                 P(0,0,-.13f),P(0,.02f,.02f),P(0,.03f,.20f),
                 P(0,.0f,.38f),P(0,-.045f,.52f)
             },new[]{R(.16f,.16f),R(.26f,.23f),R(.25f,.20f),
@@ -115,26 +115,30 @@ namespace Ninefold.Presentation
                 for(int pair=0;pair<2;pair++)
                 {
                     float z=pair==0?.34f:-.38f;
-                    Part(root,owned,"Walking limb",body,P(side*.43f,-.38f,z),new[]{
+                    var walkingLeg = Part(root,owned,"Walking limb",body,
+                        P(side*.43f,-.38f,z),new[]{
                         P(-side*.055f,.29f,0),
                         P(0,.11f,side*.008f),
                         P(side*.025f,-.11f,.036f),
                         P(side*.04f,-.30f,.10f)
                     },new[]{R(.14f,.16f),R(.122f,.123f),R(.090f,.092f),
                         R(.074f,.103f)},16);
-                    Part(root,owned,"Foot keratin",accent,
+                    var foot = Part(root,owned,"Foot keratin",accent,
                         P(side*.43f+side*.04f,-.68f,z+.1f),new[]{
                             P(0,0,-.07f),P(0,-.013f,.03f),P(0,-.025f,.18f)
                         },new[]{R(.081f,.046f),R(.095f,.05f),R(.042f,.026f)},12);
+                    foot.transform.SetParent(walkingLeg.transform,true);
                 }
                 Part(root,owned,"Sensory ridge",accent,P(side*.24f,.36f,.43f),new[]{
                     P(0,-.10f,-.27f),P(side*.024f,.02f,-.09f),
                     P(side*.035f,.10f,.10f),P(side*.016f,.04f,.31f)
                 },new[]{R(.035f,.038f),R(.076f,.061f),R(.085f,.051f),
                     R(.023f,.019f)},14);
-                Part(root,owned,"Lateral eye",dark,P(side*.215f,.18f,.83f),new[]{
+                var eye = Part(root,owned,"Lateral eye",dark,
+                    P(side*.215f,.18f,.83f),new[]{
                     P(0,0,-.04f),P(side*.016f,.005f,0),P(side*.016f,0,.052f)
                 },new[]{R(.016f,.020f),R(.046f,.053f),R(.008f,.013f)},12);
+                eye.transform.SetParent(head.transform,true);
             }
             if(stalker)
             {
