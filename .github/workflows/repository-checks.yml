@@ -15,6 +15,7 @@ jobs:
           python-version: '3.12'
       - run: python -m pip install -r BuildTools/Art/requirements-review.txt
       - run: python BuildTools/validate_repository.py
+      - run: python BuildTools/validate_battle_wayfinding.py
       - run: python BuildTools/Art/validate_great_strider.py
       - run: python BuildTools/Art/review_living_veil.py
       - run: python BuildTools/Art/review_worldfive_roster.py

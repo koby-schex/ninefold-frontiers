@@ -42,6 +42,24 @@ internal static partial class Program
     {
         var c=WorldFiveOpeningTenPrototype.Create();
         var ids=WorldFiveOpeningTenPrototype.MissionIds;
+        // Mission 4 is one contiguous, physically present capture zone,
+        // not a tap-to-activate objective. Rendering must represent the same
+        // immutable footprint defined by combat Core.
+        var fourth=c.Missions[ids[3]];
+        Equal(ObjectiveKind.Secure,fourth.Objectives[0].Kind);
+        Equal(2,fourth.Objectives[0].Required);
+        Equal(true,fourth.Objectives[0].Consecutive);
+        Equal(true,fourth.Objectives[0].Zone != null);
+        Equal(2m,fourth.Objectives[0].Zone.Min.X);
+        Equal(5m,fourth.Objectives[0].Zone.Max.X);
+        Equal(2m,fourth.Objectives[0].Zone.Min.Z);
+        Equal(6m,fourth.Objectives[0].Zone.Max.Z);
+        Equal(true,fourth.Objectives[0].Interaction == null);
+        Equal(true,fourth.Map.Obstacles.All(o=>
+            !(o.Bounds.Min.X < fourth.Objectives[0].Zone.Max.X &&
+              o.Bounds.Max.X > fourth.Objectives[0].Zone.Min.X &&
+              o.Bounds.Min.Z < fourth.Objectives[0].Zone.Max.Z &&
+              o.Bounds.Max.Z > fourth.Objectives[0].Zone.Min.Z)));
         var seven=c.Missions[ids[6]];
         Equal(ObjectiveKind.Defeat,seven.Objectives[0].Kind);
         Equal(2,seven.Objectives[0].Subjects.Count);
