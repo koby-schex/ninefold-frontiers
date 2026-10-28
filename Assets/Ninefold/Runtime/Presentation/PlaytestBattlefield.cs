@@ -748,6 +748,7 @@ namespace Ninefold.Presentation
                     wildlifeActors.TryGetValue(h.UnitId, out var creature);
                     bool isSillrunner = creature == WorldFiveTutorialWildlifeV1.SillrunnerId;
                     bool isSeamstalker = creature == WorldFiveTutorialWildlifeV1.SeamstalkerId;
+                    bool isAshbound = ashboundActors.TryGetValue(h.UnitId,out int ashboundType);
                     bool hasApprovedPrefab = TryCreateApprovedVisual(h.UnitId,out var modelBody);
                     if(hasApprovedPrefab)
                     {
@@ -755,7 +756,7 @@ namespace Ninefold.Presentation
                         t.ModelMotion=new FrontiersBattleModelMotion(modelBody);
                     }
                     else if(isSillrunner||isSeamstalker||
-                        ashboundActors.TryGetValue(h.UnitId,out int ashboundType))
+                        isAshbound)
                     {
                         // Only exact authored species/template IDs receive
                         // this explicitly unapproved runtime geometry candidate.
