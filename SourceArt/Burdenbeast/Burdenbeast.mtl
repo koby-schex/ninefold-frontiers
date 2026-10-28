@@ -33,11 +33,6 @@ Ns 82
 d 1
 map_Kd Textures/grown_mineral.png
 
-newmtl limb_tissue
-Kd 0.2 0.19 0.28
-Ns 18
-d 1
-
 newmtl sail_membrane
 Kd 0.29 0.23 0.36
 Ns 64

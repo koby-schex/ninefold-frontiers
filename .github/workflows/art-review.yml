@@ -277,11 +277,14 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - run: python -m pip install -r BuildTools/Art/requirements-review.txt
       - run: python BuildTools/Art/review_worldfive_roster.py --render
+      - run: python BuildTools/Art/review_worldfive_rebuild.py
       - uses: actions/upload-artifact@v4
         with:
           name: world-five-roster-${{ github.sha }}

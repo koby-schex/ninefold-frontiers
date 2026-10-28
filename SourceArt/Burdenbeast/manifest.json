@@ -1,19 +1,19 @@
 {
-  "study": "detail and idle 02",
+  "study": "silhouette rebuild 03",
   "model": "Burdenbeast",
   "units": "meters",
-  "parts": 135,
-  "vertices": 26558,
-  "triangles": 52576,
+  "parts": 183,
+  "vertices": 35458,
+  "triangles": 70184,
   "canon": [
     "v26.0 section 26.6",
     "v25.3 bonded-tradition entries",
     "locked World Five visual master"
   ],
   "limitations": [
-    "Developing silhouette; not final master fidelity",
-    "Review idle blend shapes only; no walking, production rig, LODs or game registration",
+    "Proposed rebuilt anatomy; user visual acceptance pending",
+    "Static geometry review; no new animation, production rig, LODs or game registration",
     "Projected study UVs; production unwrap outstanding",
-    "Unseen anatomy and module arrangements are proposals"
+    "Unseen anatomy and civic arrangements are proposals"
   ]
 }

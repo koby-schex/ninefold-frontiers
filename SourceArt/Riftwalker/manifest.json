@@ -1,19 +1,19 @@
 {
-  "study": "detail and idle 02",
+  "study": "silhouette rebuild 03",
   "model": "Riftwalker",
   "units": "meters",
-  "parts": 76,
-  "vertices": 22296,
-  "triangles": 44288,
+  "parts": 81,
+  "vertices": 24598,
+  "triangles": 48872,
   "canon": [
     "v26.0 section 26.6",
     "v25.3 bonded-tradition entries",
     "locked World Five visual master"
   ],
   "limitations": [
-    "Developing silhouette; not final master fidelity",
-    "Review idle blend shapes only; no walking, production rig, LODs or game registration",
+    "Proposed rebuilt anatomy; user visual acceptance pending",
+    "Static geometry review; no new animation, production rig, LODs or game registration",
     "Projected study UVs; production unwrap outstanding",
-    "Unseen anatomy and module arrangements are proposals"
+    "Unseen anatomy and civic arrangements are proposals"
   ]
 }

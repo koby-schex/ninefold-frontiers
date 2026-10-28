@@ -43,17 +43,17 @@ def main(render_images):
     if not render_images:return
     from render_great_strider import render,font
     from PIL import Image,ImageDraw
-    sheet=Image.new('RGB',(1440,1160),'#eeede5');draw=ImageDraw.Draw(sheet)
-    draw.text((20,12),'WORLD FIVE / STANDARD-UNIT DETAIL STUDIES 02',font=font(24),fill='#262c32')
+    sheet=Image.new('RGB',(1920,1160),'#eeede5');draw=ImageDraw.Draw(sheet)
+    draw.text((20,12),'WORLD FIVE / SILHOUETTE REBUILD 03 / ACTUAL MESHES',font=font(24),fill='#262c32')
     draw.text((20,48),'Actual source geometry. Proposed contours and equipment; no final master fidelity or game integration.',font=font(16),fill='#596069')
     for row,name in enumerate(BUILDERS):
         data=dict(parts=BUILDERS[name]().parts,materials=COLORS,finish=FINISH,opacity={'sail_membrane':.68},
             textures={n:tiles()[surface] for n,surface in SURFACE_TYPES.items()})
         target=(.4,1.1,0) if name=='Burdenbeast' else (.3,.9,0);extent=8 if name=='Burdenbeast' else 3.5
-        for col,(label,eye) in enumerate((('Front',(0,2,10)),('Three-quarter',(7,4,10)),('Tactical',(6,9,9)))):
+        for col,(label,eye) in enumerate((('Front',(0,2,10)),('Side',(10,2,0)),('Three-quarter',(7,4,10)),('Tactical',(6,9,9)))):
             sheet.paste(render(data,eye,(480,480),extent,target,False),(col*480,120+row*520))
             draw.text((col*480+12,95+row*520),name+' / '+label,font=font(17),fill='#262c32')
-    sheet.save(OUT/'Roster-Studies02.png')
+    sheet.save(OUT/'Roster-Studies03.png')
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--render',action='store_true');main(parser.parse_args().render)

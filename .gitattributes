@@ -36,3 +36,5 @@ SourceArt/LivingVeil/Textures/*.png -filter -diff -merge -text
 # Small reproducible roster tiles remain accessible to clean clones and CI.
 SourceArt/Burdenbeast/Textures/*.png -filter -diff -merge -text
 SourceArt/Riftwalker/Textures/*.png -filter -diff -merge -text
+# Small actual-mesh review sheet for silhouette approval.
+Docs/Review/WorldFiveSilhouette03/Comparison.png -filter -diff -merge -text
