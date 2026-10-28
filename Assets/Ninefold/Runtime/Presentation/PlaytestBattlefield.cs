@@ -43,6 +43,7 @@ namespace Ninefold.Presentation
         private readonly Dictionary<string, string> wildlifeActors = new Dictionary<string, string>(StringComparer.Ordinal);
         private readonly Dictionary<string, int> ashboundActors = new Dictionary<string, int>(StringComparer.Ordinal);
         private readonly List<Mesh> organicMeshes = new List<Mesh>();
+        private readonly List<Texture2D> organicTextures = new List<Texture2D>();
         private readonly List<Material> materials = new List<Material>();
         private readonly Dictionary<string, Label> objectiveLabels = new Dictionary<string, Label>();
         private readonly Dictionary<string, Vector3> objectivePositions = new Dictionary<string, Vector3>();
@@ -94,6 +95,15 @@ namespace Ninefold.Presentation
             foreach(var m in new[]{sillrunner,seamstalker,avarinSkin,avarinMantle,
                 avarinFabric,avarinGear,avarinWake,avarinShadow})
                 if(m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness",.24f);
+            var hideTexture=WorldFiveBattleOrganics.CreateSurfaceTexture(17);
+            var mantleTexture=WorldFiveBattleOrganics.CreateSurfaceTexture(41);
+            var equipmentTexture=WorldFiveBattleOrganics.CreateSurfaceTexture(73);
+            organicTextures.Add(hideTexture);organicTextures.Add(mantleTexture);
+            organicTextures.Add(equipmentTexture);
+            foreach(var m in new[]{sillrunner,seamstalker,avarinSkin}) m.mainTexture=hideTexture;
+            avarinMantle.mainTexture=mantleTexture;
+            foreach(var m in new[]{avarinFabric,avarinGear,avarinWake,avarinShadow})
+                m.mainTexture=equipmentTexture;
             active = Make(new Color(.94f, .85f, .52f)); floor = Make(new Color(.075f, .12f, .17f));
             grid = Make(new Color(.16f, .23f, .29f)); gold = Make(new Color(.9f, .65f, .25f));
             cover = Make(new Color(.26f, .35f, .42f)); trim = Make(new Color(.42f, .52f, .57f));
@@ -1157,6 +1167,8 @@ namespace Ninefold.Presentation
         public void Dispose() { scenery.Dispose(); Object.Destroy(world);
             foreach(var organicMesh in organicMeshes) Object.Destroy(organicMesh);
             organicMeshes.Clear();
+            foreach(var organicTexture in organicTextures) Object.Destroy(organicTexture);
+            organicTextures.Clear();
             Object.Destroy(markerRingMesh); Object.Destroy(contactShadowTexture);
             foreach (var material in materials) Object.Destroy(material); }
     }
