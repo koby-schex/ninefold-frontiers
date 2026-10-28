@@ -187,3 +187,39 @@
     margin-bottom: 3px;
     -unity-text-align: middle-left;
 }
+
+/* Live mission instructions, sourced from the actual active objective. */
+.root.visual-hud-mode .btg-next-step {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+    padding: 5px 7px;
+    background-color: rgba(21, 34, 39, 0.94);
+    border-left-width: 3px;
+    border-left-color: rgb(244, 202, 103);
+}
+.root.visual-hud-mode .btg-next-title {
+    color: rgb(250, 211, 120);
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+    font-size: 10px;
+    margin-right: 7px;
+    flex-shrink: 0;
+}
+.root.visual-hud-mode .btg-next-instruction {
+    color: rgb(236, 236, 225);
+    font-size: 12px;
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 140px;
+    white-space: normal;
+}
+.root.visual-hud-mode #battle-surface .btg-goal-zone {
+    position: absolute;
+    background-color: rgba(250, 208, 109, 0.22);
+    border-width: 2px;
+    border-color: rgb(250, 208, 109);
+}
+.root.short-home.visual-hud-mode .btg-next-title { font-size: 9px; }
+.root.short-home.visual-hud-mode .btg-next-instruction { font-size: 11px; }
