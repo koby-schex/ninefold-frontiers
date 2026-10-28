@@ -17,6 +17,7 @@ jobs:
       - run: python BuildTools/validate_repository.py
       - run: python BuildTools/validate_battle_wayfinding.py
       - run: python BuildTools/Art/validate_great_strider.py
+      - run: python BuildTools/Art/validate_worldfive_battle_organics.py
       - run: python BuildTools/Art/review_living_veil.py
       - run: python BuildTools/Art/review_worldfive_roster.py
       - run: git diff --check

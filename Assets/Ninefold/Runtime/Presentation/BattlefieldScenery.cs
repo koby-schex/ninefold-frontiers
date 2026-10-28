@@ -15,6 +15,8 @@ namespace Ninefold.Presentation
         private readonly Material floorSurface, coverSurface;
         private readonly Material[] paving = new Material[3];
         private readonly Texture2D mineral, worldFiveMineral;
+        private bool hasWorldFiveMaterialPulse;
+        private Color restingSeamAccent;
         private readonly List<Mesh> meshes = new List<Mesh>();
         private readonly List<Material> materials = new List<Material>();
 
@@ -59,6 +61,15 @@ namespace Ninefold.Presentation
             if (cover.HasProperty("_Smoothness")) cover.SetFloat("_Smoothness",.22f);
         }
 
+        // Subtle environmental liveliness, visual only: no hazard, lighting,
+        // spell effect, NavMesh operation or per-frame mesh allocation.
+        public void Animate(float time)
+        {
+            if(!hasWorldFiveMaterialPulse) return;
+            float shimmer=.035f+.035f*Mathf.Sin(time*.85f);
+            fractureSeam.color=Color.Lerp(restingSeamAccent,Color.white,shimmer);
+        }
+
         private static float Noise(int x, int y)
         {
             unchecked { uint n=(uint)(x*374761393+y*668265263); n=(n^(n>>13))*1274126177; return (n&65535)/65535f; }
@@ -77,6 +88,7 @@ namespace Ninefold.Presentation
             farHaze.color = direction.Haze;
             vegetation.color = direction.Plants;
             bool isWorldFive = WorldFiveSceneryKit.TryGet(direction,out var style);
+            hasWorldFiveMaterialPulse=isWorldFive;
             var texture = isWorldFive ? worldFiveMineral : mineral;
             floorSurface.mainTexture = texture;
             coverSurface.mainTexture = texture;
@@ -87,6 +99,7 @@ namespace Ninefold.Presentation
                 fractureBase.color = style.RiftStone;
                 fractureEdge.color = style.MineralHighlights;
                 fractureSeam.color = style.SeamAccent;
+                restingSeamAccent=style.SeamAccent;
                 fractureFloorTrace.color = Color.Lerp(direction.Floor,style.SeamAccent,.39f);
                 fractureFloorChip.color = Color.Lerp(direction.Floor,style.MineralHighlights,.54f);
             }
@@ -314,24 +327,51 @@ namespace Ninefold.Presentation
 
         private static void BuildCover(Batch faces,Batch caps,Vector3 min,Vector3 max)
         {
-            // All visual cover vertices stay inside the authoritative obstacle box.
-            float h=max.y-min.y, bevel=Mathf.Min(.16f,h*.18f);
-            float inset=Mathf.Min(.10f,Mathf.Min(max.x-min.x,max.z-min.z)*.15f);
-            var lower=new[] {new Vector3(min.x,min.y,min.z),new Vector3(min.x,min.y,max.z),new Vector3(max.x,min.y,max.z),new Vector3(max.x,min.y,min.z)};
-            var shoulder=new Vector3[4]; var crown=new Vector3[4];
+            // Carve long block-out cubes into stratified chamfered stone with
+            // asymmetric middle facets, entirely WITHIN authored cover bounds.
+            // Simulation still sees the original opaque obstacle footprint.
+            float width=max.x-min.x,depth=max.z-min.z,h=max.y-min.y;
+            float cut=Mathf.Min(.23f,Mathf.Min(width,depth)*.19f);
+            var outline=new[] {
+                new Vector2(min.x+cut,min.z),
+                new Vector2(min.x,min.z+cut),
+                new Vector2(min.x,max.z-cut),
+                new Vector2(min.x+cut,max.z),
+                new Vector2(max.x-cut,max.z),
+                new Vector2(max.x,max.z-cut),
+                new Vector2(max.x,min.z+cut),
+                new Vector2(max.x-cut,min.z)
+            };
+            var mid=new Vector3[8];var baseRing=new Vector3[8];
+            var shoulder=new Vector3[8];var crown=new Vector3[8];
             var center=(min+max)*.5f;
-            for(int i=0;i<4;i++)
+            float crownInset=Mathf.Min(.12f,cut*.44f);
+            for(int i=0;i<8;i++)
             {
-                shoulder[i]=new Vector3(lower[i].x,max.y-bevel,lower[i].z);
-                crown[i]=new Vector3(lower[i].x+(lower[i].x<center.x?inset:-inset),max.y,lower[i].z+(lower[i].z<center.z?inset:-inset));
+                var p=outline[i];
+                float grain=Mathf.Sin(i*2.18f+center.x*.9f+center.z*.43f);
+                baseRing[i]=new Vector3(p.x,min.y,p.y);
+                mid[i]=new Vector3(Mathf.Lerp(p.x,center.x,.026f),
+                    min.y+h*(.40f+.035f*grain),
+                    Mathf.Lerp(p.y,center.z,.026f));
+                shoulder[i]=new Vector3(p.x,max.y-Mathf.Min(.19f,h*.16f),p.y);
+                crown[i]=new Vector3(Mathf.Lerp(p.x,center.x,crownInset/Mathf.Max(.01f,width)),
+                    max.y,
+                    Mathf.Lerp(p.y,center.z,crownInset/Mathf.Max(.01f,depth)));
             }
-            for(int i=0;i<4;i++)
+            for(int i=0;i<8;i++)
             {
-                int j=(i+1)%4;
-                faces.Face(lower[i],lower[j],shoulder[j]); faces.Face(lower[i],shoulder[j],shoulder[i]);
-                caps.Face(shoulder[i],shoulder[j],crown[j]); caps.Face(shoulder[i],crown[j],crown[i]);
+                int j=(i+1)%8;
+                faces.Face(baseRing[i],baseRing[j],mid[j]);
+                faces.Face(baseRing[i],mid[j],mid[i]);
+                // A subtle rotated upper stratum catches the scene key light.
+                faces.Face(mid[i],mid[j],shoulder[j]);
+                faces.Face(mid[i],shoulder[j],shoulder[i]);
+                caps.Face(shoulder[i],shoulder[j],crown[j]);
+                caps.Face(shoulder[i],crown[j],crown[i]);
+                caps.Face(new Vector3(center.x,max.y,center.z),
+                    crown[i],crown[j]);
             }
-            caps.Face(crown[0],crown[1],crown[2]); caps.Face(crown[0],crown[2],crown[3]);
         }
 
         private void Emit(Transform parent,string name,Batch batch,Material material)
