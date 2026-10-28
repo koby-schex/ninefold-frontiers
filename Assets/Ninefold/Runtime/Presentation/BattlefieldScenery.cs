@@ -15,6 +15,8 @@ namespace Ninefold.Presentation
         private readonly Material floorSurface, coverSurface;
         private readonly Material[] paving = new Material[3];
         private readonly Texture2D mineral, worldFiveMineral;
+        private bool hasWorldFiveMaterialPulse;
+        private Color restingSeamAccent;
         private readonly List<Mesh> meshes = new List<Mesh>();
         private readonly List<Material> materials = new List<Material>();
 
@@ -59,6 +61,15 @@ namespace Ninefold.Presentation
             if (cover.HasProperty("_Smoothness")) cover.SetFloat("_Smoothness",.22f);
         }
 
+        // Subtle environmental liveliness, visual only: no hazard, lighting,
+        // spell effect, NavMesh operation or per-frame mesh allocation.
+        public void Animate(float time)
+        {
+            if(!hasWorldFiveMaterialPulse) return;
+            float shimmer=.035f+.035f*Mathf.Sin(time*.85f);
+            fractureSeam.color=Color.Lerp(restingSeamAccent,Color.white,shimmer);
+        }
+
         private static float Noise(int x, int y)
         {
             unchecked { uint n=(uint)(x*374761393+y*668265263); n=(n^(n>>13))*1274126177; return (n&65535)/65535f; }
@@ -77,6 +88,7 @@ namespace Ninefold.Presentation
             farHaze.color = direction.Haze;
             vegetation.color = direction.Plants;
             bool isWorldFive = WorldFiveSceneryKit.TryGet(direction,out var style);
+            hasWorldFiveMaterialPulse=isWorldFive;
             var texture = isWorldFive ? worldFiveMineral : mineral;
             floorSurface.mainTexture = texture;
             coverSurface.mainTexture = texture;
@@ -87,6 +99,7 @@ namespace Ninefold.Presentation
                 fractureBase.color = style.RiftStone;
                 fractureEdge.color = style.MineralHighlights;
                 fractureSeam.color = style.SeamAccent;
+                restingSeamAccent=style.SeamAccent;
                 fractureFloorTrace.color = Color.Lerp(direction.Floor,style.SeamAccent,.39f);
                 fractureFloorChip.color = Color.Lerp(direction.Floor,style.MineralHighlights,.54f);
             }
