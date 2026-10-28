@@ -102,3 +102,38 @@ Button.squad-card { padding: 14px; margin-bottom: 10px; align-items: stretch; -u
 .unit-identity { flex-grow: 1; flex-shrink: 1; min-width: 0; }
 .squad-card.selected { border-left-width: 4px; }
 .squad-card:disabled .tile-state { color: rgb(180, 190, 201); }
+
+/* Identified enemies: short, factual information in briefing and tap-to-inspect. */
+.ashbound-briefing-threats { border-left-width: 3px; border-left-color: rgb(179, 137, 101); }
+.ashbound-briefing-entry {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 5px;
+    padding-bottom: 6px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(130, 138, 147, .25);
+}
+.ashbound-threat-name {
+    color: rgb(245, 233, 209);
+    font-size: 13px;
+    -unity-font-style: bold;
+    flex-shrink: 1;
+    white-space: normal;
+    margin-right: 7px;
+}
+.ashbound-threat-role {
+    color: rgb(231, 186, 140);
+    font-size: 10px;
+    letter-spacing: 1px;
+    white-space: normal;
+    flex-shrink: 1;
+}
+.ashbound-threat-readout {
+    color: rgb(224, 223, 211);
+    font-size: 11px;
+    white-space: normal;
+    margin-top: 3px;
+    flex-shrink: 1;
+}
