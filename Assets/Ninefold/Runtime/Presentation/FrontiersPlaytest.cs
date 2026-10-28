@@ -1280,8 +1280,10 @@ namespace Ninefold.Presentation
                     var ability = actor?.Abilities.FirstOrDefault(a => a.Slot == action.Slot);
                     Text(details, AbilityName(action.Slot) + " · " + AbilityReadiness(action, actor) + (ability == null ? "" : " · Range " + ability.Range), "detail");
                 }
-                foreach (var objective in input.ReadPlanning().Objectives)
-                    Text(details, "Stabilize · " + ObjectiveReadiness(objective.Failure), "detail");
+                foreach (var objective in input.ReadPlanning().Objectives.Where(o =>
+                    catalog.Missions[b.MissionId].Objectives.Any(d =>
+                        d.Id == o.Id && d.Interaction != null)))
+                    Text(details, "Interact · " + ObjectiveReadiness(objective.Failure), "detail");
                 if (b.RescueCarrierId != null)
                     Text(details,"RESCUE: The traveler is carried by " +
                         UnitName(b.RescueCarrierId) + ". You do NOT control the rescued NPC. " +
@@ -1298,24 +1300,13 @@ namespace Ninefold.Presentation
             bool ready = !battleView.IsAnimating && !suspended && !battleDetails &&
                 b.Phase == BattleSessionPhase.PlayerInput;
             var active = b.Units.FirstOrDefault(u => u.Id == b.Activation?.UnitId);
+            // Always state the actual next player action within the battle dock.
+            // Secure objectives require occupying a zone, not tapping a device.
+            BattleObjectiveGuidance.NextStep(controls,catalog.Missions[b.MissionId],b);
             // No world-space HP bars: the active unit's vital state is always
             // visible above abilities. Tapping any other unit adds its own
             // inspect-only line, without granting control or spending actions.
             var status = new VisualElement(); status.AddToClassList("mobile-combat-status"); controls.Add(status);
-            var rescue = b.Objectives.FirstOrDefault(o=>o.Kind == ObjectiveKind.RescueAndExtract);
-            if (rescue != null && rescue.Status == ObjectiveStatus.Active)
-            {
-                var label = Text(controls, rescue.Rescued
-                    ? "CARRYING RESCUED TRAVELER  \u00b7  MOVE " + UnitName(b.RescueCarrierId) + " TO GOLD EXIT"
-                    : "RESCUE  \u00b7  USE YOUR FIRST DEPLOYED UNIT TO PICK UP THE TRAVELER",
-                    "battle-rescue-guidance");
-                label.EnableInClassList("rescue-ready",rescue.Rescued);
-                if (rescue.Rescued)
-                    Text(controls,b.Activation?.UnitId == b.RescueCarrierId
-                        ? "CARRIER ACTIVE  \u00b7  TAP THE GOLD EXIT TO MOVE THERE"
-                        : "TRAVELER IS CARRIED AUTOMATICALLY  \u00b7  WAIT FOR THE CARRIER'S TURN",
-                        "battle-rescue-hint");
-            }
             var current = Row(status); current.AddToClassList("mobile-active-unit");
             // Show production model portraits when the parallel asset team has
             // registered one; never instantiate a model or steal its texture.
@@ -2039,8 +2030,22 @@ namespace Ninefold.Presentation
                 Mark((float)ground.Bounds.Min.X,(float)ground.Bounds.Min.Z,(float)(ground.Bounds.Max.X-ground.Bounds.Min.X),(float)(ground.Bounds.Max.Z-ground.Bounds.Min.Z),"map-slow");
             foreach (var obstacle in mission.Map.Obstacles)
                 Mark((float)obstacle.Bounds.Min.X,(float)obstacle.Bounds.Min.Z,(float)(obstacle.Bounds.Max.X-obstacle.Bounds.Min.X),(float)(obstacle.Bounds.Max.Z-obstacle.Bounds.Min.Z),"map-cover");
-            foreach (var objective in mission.Objectives.Where(o=>o.Interaction!=null))
-                Mark((float)objective.Interaction.Point.X-.5f,(float)objective.Interaction.Point.Z-.5f,1,1,"map-objective");
+            foreach (var objective in mission.Objectives)
+            {
+                if(objective.Zone != null &&
+                    (objective.Kind == ObjectiveKind.Secure ||
+                     objective.Kind == ObjectiveKind.RescueAndExtract))
+                {
+                    var zone=objective.Zone;
+                    Mark((float)zone.Min.X,(float)zone.Min.Z,
+                        (float)(zone.Max.X-zone.Min.X),(float)(zone.Max.Z-zone.Min.Z),
+                        objective.Kind == ObjectiveKind.Secure
+                            ? "map-secure-zone" : "map-extraction-zone");
+                }
+                if(objective.Interaction!=null)
+                    Mark((float)objective.Interaction.Point.X-.5f,
+                        (float)objective.Interaction.Point.Z-.5f,1,1,"map-objective");
+            }
             foreach (var point in mission.Deployment)
                 Mark((float)point.X-.2f,(float)point.Z-.2f,.4f,.4f,"map-deploy");
             if (!compact)
@@ -2102,7 +2107,7 @@ namespace Ninefold.Presentation
                 if (id == WorldFiveOpeningTenPrototype.MissionIds[2])
                     return "Rescue the stranded traveler, then bring them back to the gold extraction zone using your first deployed unit.";
                 if (id == WorldFiveOpeningTenPrototype.MissionIds[3])
-                    return "Occupy the marked zone for two consecutive rounds. A test opponent can contest it.";
+                    return "Move an ally inside the GOLD outlined capture zone and keep the enemy out. Hold for two consecutive rounds. No capture button is needed.";
                 if (id == WorldFiveOpeningTenPrototype.MissionIds[4])
                     return "Protect the friendly traveler for two rounds. Keep the test threat away from them.";
                 if (id == WorldFiveOpeningTenPrototype.MissionIds[5])
@@ -2110,7 +2115,7 @@ namespace Ninefold.Presentation
                 if (id == WorldFiveOpeningTenPrototype.MissionIds[6])
                     return "Defeat both hostile test proxies. Tap to inspect a target, then double-tap to attack.";
                 if (id == WorldFiveOpeningTenPrototype.MissionIds[7])
-                    return "Hold the marked zone for two rounds. Routes around cover offer different approaches.";
+                    return "Move an ally into the GOLD outlined zone and keep enemies out for two rounds. Do not tap to capture.";
                 if (id == WorldFiveOpeningTenPrototype.MissionIds[8])
                     return "Your first deployed unit must recover the friendly proxy, then return to extraction.";
                 if (id == WorldFiveOpeningTenPrototype.MissionIds[9])
