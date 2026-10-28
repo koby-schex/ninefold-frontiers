@@ -79,6 +79,56 @@ namespace Ninefold.Presentation
         }
 
         /// <summary>
+        /// One actionable sentence in the fixed battle dock, derived from the
+        /// currently active objective. Does not issue gameplay commands.
+        /// </summary>
+        public static void NextStep(VisualElement parent, MissionContent mission, BattleView battle)
+        {
+            var current = battle.Objectives.FirstOrDefault(o => o.Status == ObjectiveStatus.Active);
+            if (current == null) return;
+            var authored = mission.Objectives.FirstOrDefault(o => o.Id == current.Id);
+            string instruction;
+            switch (current.Kind)
+            {
+                case ObjectiveKind.Secure:
+                    instruction = current.Progress > 0
+                        ? "KEEP HOLDING: Leave an ally inside the GOLD boundary. Keep enemies out. " +
+                          current.Progress + "/" + current.Required + " rounds secured."
+                        : "MOVE an ally INTO the GOLD outlined zone. Keep enemies out. " +
+                          "Hold it for " + current.Required + (current.Required == 1 ? " round." : " consecutive rounds.");
+                    break;
+                case ObjectiveKind.Stabilize:
+                    instruction = "MOVE toward the GOLD marker. When close enough, " +
+                        "tap the marker with your action available.";
+                    break;
+                case ObjectiveKind.Protect:
+                    instruction = "GUARD the marked traveler. Keep them alive for " +
+                        current.Required + (current.Required == 1 ? " round." : " rounds.");
+                    break;
+                case ObjectiveKind.Survive:
+                    instruction = "SURVIVE for " + current.Required +
+                        " rounds. Keep your squad alive; END TURN after acting.";
+                    break;
+                case ObjectiveKind.Defeat:
+                    instruction = "DEFEAT the marked enemies. Tap once to inspect; " +
+                        "double-tap a target to attack when in range.";
+                    break;
+                case ObjectiveKind.RescueAndExtract:
+                    instruction = current.Rescued
+                        ? "EXTRACT: Move the unit carrying the traveler into the GOLD exit boundary."
+                        : "RESCUE: Move your first deployed unit to the marked traveler, then tap to interact.";
+                    break;
+                default:
+                    return;
+            }
+            var panel = new VisualElement { pickingMode = PickingMode.Ignore };
+            panel.AddToClassList("btg-next-step");
+            parent.Add(panel);
+            Label(panel,"DO THIS NEXT","btg-next-title");
+            Label(panel,instruction,"btg-next-instruction");
+        }
+
+        /// <summary>
         /// Returns a noninteractive inset map. Its HitTest area must be excluded
         /// by the battle surface's pointer handlers so a tap on the inset never
         /// accidentally becomes a movement order in the 3D camera below.
@@ -130,6 +180,12 @@ namespace Ninefold.Presentation
             bool hasDestination = false;
             if (authored != null)
             {
+                // Capture/extraction areas must be visibly outlined on the
+                // radar, not reduced to an ambiguous center waypoint.
+                if (authored.Zone != null &&
+                    (authored.Kind == ObjectiveKind.Secure ||
+                     (authored.Kind == ObjectiveKind.RescueAndExtract && current.Rescued)))
+                    Area(authored.Zone,"btg-goal-zone");
                 // These are *locations*, not a proposed straight route. Never
                 // draw a path through cover or suggest illegal movement.
                 if (authored.Kind == ObjectiveKind.RescueAndExtract && current.Rescued && authored.Zone != null)
@@ -168,6 +224,8 @@ namespace Ninefold.Presentation
 
             string footer = current == null
                 ? battle.Objectives.Any(o => o.Status == ObjectiveStatus.Failed) ? "FAILED" : "COMPLETE"
+                : current.Kind == ObjectiveKind.Secure ? "GOLD = HOLD ZONE"
+                : current.Kind == ObjectiveKind.RescueAndExtract && current.Rescued ? "GOLD = EXIT"
                 : hasDestination ? "GOLD = GOAL"
                 : current.Kind == ObjectiveKind.Survive ? "HOLD POSITION"
                 : current.Kind == ObjectiveKind.Protect ? "GUARD TARGET"
