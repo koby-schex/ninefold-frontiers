@@ -50,12 +50,12 @@ d 1
 
 newmtl tervan_hide
 Kd 1 1 1
-Ns 24
+Ns 14
 d 1
 map_Kd Textures/tervan_hide.png
 
 newmtl tervan_joint
 Kd 1 1 1
-Ns 24
+Ns 9
 d 1
 map_Kd Textures/tervan_joint.png

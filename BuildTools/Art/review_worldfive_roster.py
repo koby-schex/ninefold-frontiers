@@ -3,7 +3,9 @@
 import argparse,collections,json,tempfile
 from pathlib import Path
 import numpy as np
-from build_worldfive_roster import BUILDERS,COLORS,FINISH,ROOT,write,SURFACE_TYPES,tiles
+from PIL import Image
+from worldfive_surfaces import LOCAL
+from build_worldfive_roster import BUILDERS,COLORS,FINISH,ROOT,write,SURFACE_TYPES,surface_values
 
 OUT=ROOT/'SourceArt/WorldFiveRoster/Review'
 
@@ -30,6 +32,14 @@ def validate(name):
         assert 1.2<np.ptp(animal[:,1])<1.8
         counter=np.array(next(p['vertices'] for p in m.parts if p['name']=='Vaskel_Counterweight'))
         assert counter[:,1].min()>.4,'Counterweight must not become a third ground contact'
+    for material in {p['material'] for p in m.parts}&LOCAL:
+        folder=ROOT/'SourceArt'/name/'Textures'
+        normals=np.asarray(Image.open(folder/(material+'_Normal.png')))
+        finish=np.asarray(Image.open(folder/(material+'_Finish.png')))
+        assert normals.shape==(128,128,3) and finish.shape==(128,128,4)
+        assert normals[:,:,2].min()>245 and np.ptp(normals[:,:,:2])>0
+        assert np.all(finish[:,:,:3]==0),'Organic surfaces must not become metallic'
+        assert 0<finish[:,:,3].min()<finish[:,:,3].max()<255
     with tempfile.TemporaryDirectory() as d:
         write(name,Path(d))
         for f in Path(d).rglob('*'):
@@ -44,16 +54,16 @@ def main(render_images):
     from render_great_strider import render,font
     from PIL import Image,ImageDraw
     sheet=Image.new('RGB',(1920,1160),'#eeede5');draw=ImageDraw.Draw(sheet)
-    draw.text((20,12),'WORLD FIVE / SILHOUETTE REBUILD 03 / ACTUAL MESHES',font=font(24),fill='#262c32')
+    draw.text((20,12),'WORLD FIVE / ANATOMY AND ARCHITECTURE 04 / ACTUAL MESHES',font=font(24),fill='#262c32')
     draw.text((20,48),'Actual source geometry. Proposed contours and equipment; no final master fidelity or game integration.',font=font(16),fill='#596069')
     for row,name in enumerate(BUILDERS):
         data=dict(parts=BUILDERS[name]().parts,materials=COLORS,finish=FINISH,opacity={'sail_membrane':.68},
-            textures={n:tiles()[surface] for n,surface in SURFACE_TYPES.items()})
+            textures={n:surface_values(n,surface) for n,surface in SURFACE_TYPES.items()})
         target=(.4,1.1,0) if name=='Burdenbeast' else (.3,.9,0);extent=8 if name=='Burdenbeast' else 3.5
         for col,(label,eye) in enumerate((('Front',(0,2,10)),('Side',(10,2,0)),('Three-quarter',(7,4,10)),('Tactical',(6,9,9)))):
             sheet.paste(render(data,eye,(480,480),extent,target,False),(col*480,120+row*520))
             draw.text((col*480+12,95+row*520),name+' / '+label,font=font(17),fill='#262c32')
-    sheet.save(OUT/'Roster-Studies03.png')
+    sheet.save(OUT/'Roster-Studies04.png')
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--render',action='store_true');main(parser.parse_args().render)

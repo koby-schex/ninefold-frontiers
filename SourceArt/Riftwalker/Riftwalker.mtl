@@ -53,8 +53,14 @@ Kd 0.075 0.08 0.105
 Ns 16
 d 1
 
+newmtl vaskel_flexure
+Kd 1 1 1
+Ns 12
+d 1
+map_Kd Textures/vaskel_flexure.png
+
 newmtl vaskel_tissue
 Kd 1 1 1
-Ns 24
+Ns 34
 d 1
 map_Kd Textures/vaskel_tissue.png

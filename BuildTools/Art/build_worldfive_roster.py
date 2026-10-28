@@ -8,11 +8,14 @@ from pathlib import Path
 from build_great_strider import Mesh, MATERIALS, FINISH, ROOT
 from build_living_veil import make_model as veil_model
 from strider_materials import attach_uvs, tiles, png_albedo
+from worldfive_surfaces import values as surface_values,write_details,LOCAL
 
 COLORS={**MATERIALS,'tervan_hide':(.19,.17,.16),'tervan_joint':(.075,.07,.08),
-        'vaskel_tissue':(.09,.055,.11),'anchor_channel':(.38,.30,.48)}
+        'vaskel_tissue':(.09,.055,.11),'vaskel_flexure':(.058,.036,.073),'anchor_channel':(.38,.30,.48)}
+FINISH={**FINISH,'tervan_hide':(14,.045),'tervan_joint':(9,.025),
+        'vaskel_tissue':(34,.09),'vaskel_flexure':(12,.035)}
 SURFACE_TYPES={'tervan_hide':'living_pearl','tervan_joint':'limb_tissue',
-    'vaskel_tissue':'living_pearl','grown_mineral':'grown_mineral',
+    'vaskel_tissue':'living_pearl','vaskel_flexure':'limb_tissue','grown_mineral':'grown_mineral',
     'ceramic':'ceramic','continuance_frame':'continuance_frame','cloth':'cloth','avar_skin':'avar_skin'}
 
 def finish_study(m):
@@ -47,7 +50,7 @@ BUILDERS={'Burdenbeast':burdenbeast,'Riftwalker':riftwalker}
 
 def write(name,folder):
     m=BUILDERS[name]();folder.mkdir(parents=True,exist_ok=True)
-    lines=['# '+name+' silhouette rebuild 03; meters Y-up +Z','mtllib '+name+'.mtl'];offset=1;uvoffset=1
+    lines=['# '+name+' anatomy and architecture 04; meters Y-up +Z','mtllib '+name+'.mtl'];offset=1;uvoffset=1
     for p in m.parts:
         lines+=['o '+p['name'],'usemtl '+p['material'],'s 1']
         lines+=['v '+' '.join(f'{q:.6f}' for q in v) for v in p['vertices']]
@@ -59,9 +62,10 @@ def write(name,folder):
     used=sorted({p['material'] for p in m.parts})
     textures=folder/'Textures';textures.mkdir(exist_ok=True)
     for n in used:
-        if n in SURFACE_TYPES:png_albedo(textures/(n+'.png'),tiles()[SURFACE_TYPES[n]],COLORS[n])
+        if n in SURFACE_TYPES:png_albedo(textures/(n+'.png'),surface_values(n,SURFACE_TYPES[n]),COLORS[n])
+        if n in LOCAL:write_details(textures,n,SURFACE_TYPES[n],FINISH[n][0])
     (folder/(name+'.mtl')).write_text('\n'.join('newmtl '+n+'\nKd '+' '.join(map(str,(1,1,1) if n in SURFACE_TYPES else COLORS[n]))+'\nNs '+str(FINISH.get(n,(24,.08))[0])+'\nd '+str(.68 if n=='sail_membrane' else 1)+'\n'+('map_Kd Textures/'+n+'.png\n' if n in SURFACE_TYPES else '') for n in used))
-    manifest=dict(study='silhouette rebuild 03',model=name,units='meters',parts=len(m.parts),vertices=offset-1,
+    manifest=dict(study='anatomy and architecture 04',model=name,units='meters',parts=len(m.parts),vertices=offset-1,
         triangles=sum(len(p['faces']) for p in m.parts),canon=['v26.0 section 26.6','v25.3 bonded-tradition entries','locked World Five visual master'],
         limitations=['Proposed rebuilt anatomy; user visual acceptance pending','Static geometry review; no new animation, production rig, LODs or game registration','Projected study UVs; production unwrap outstanding','Unseen anatomy and civic arrangements are proposals'])
     (folder/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
