@@ -294,7 +294,7 @@ namespace Ninefold.Presentation
                 // further disconnected ArtReview studies.
                 AshboundFirstContactDetails(root,kind,skin,mantle,
                     fabric,gear,conduit,dark,owned);
-                GroupAshboundMotion(root);
+                GroupAshboundMotion(root,owned);
             }
         }
 
@@ -507,7 +507,7 @@ namespace Ninefold.Presentation
         /// floating accessories in the prior independent-part motion.
         /// Per-limb contact remains a review study, not skeletal IK.
         /// </summary>
-        private static void GroupAshboundMotion(GameObject root)
+        private static void GroupAshboundMotion(GameObject root,List<Mesh> owned)
         {
             Transform Pivot(string label,Vector3 center,Transform parent)
             {
@@ -554,6 +554,66 @@ namespace Ninefold.Presentation
                         n.StartsWith("Temple ",StringComparison.Ordinal))
                     target=head;
                 part.SetParent(target,true);
+            }
+            // Reduce the draw-call cost of a sculpted study: combine same
+            // material surfaces within each independently moving limb/core.
+            // Face/mantle surfaces remain separate for sensory deformation.
+            foreach(var pivot in new[]{core,leftArm,rightArm,leftLeg,rightLeg})
+                BatchPivotSurfaces(pivot,owned);
+        }
+
+        private static void BatchPivotSurfaces(Transform pivot,List<Mesh> owned)
+        {
+            var grouping=new Dictionary<Material,List<MeshFilter>>();
+            foreach(Transform child in pivot)
+            {
+                var filter=child.GetComponent<MeshFilter>();
+                var renderer=child.GetComponent<MeshRenderer>();
+                if(filter==null || renderer==null || filter.sharedMesh==null)
+                    continue;
+                var material=renderer.sharedMaterial;
+                if(!grouping.TryGetValue(material,out var filters))
+                {
+                    filters=new List<MeshFilter>();
+                    grouping.Add(material,filters);
+                }
+                filters.Add(filter);
+            }
+            foreach(var group in grouping)
+            {
+                if(group.Value.Count<2) continue;
+                var combines=new CombineInstance[group.Value.Count];
+                for(int i=0;i<group.Value.Count;i++)
+                {
+                    var filter=group.Value[i];
+                    combines[i]=new CombineInstance {
+                        mesh=filter.sharedMesh,
+                        transform=pivot.worldToLocalMatrix*filter.transform.localToWorldMatrix
+                    };
+                }
+                var mesh=new Mesh {
+                    name=pivot.name+" / consolidated "+group.Key.name,
+                    indexFormat=IndexFormat.UInt32
+                };
+                mesh.CombineMeshes(combines,true,true,false);
+                mesh.RecalculateBounds();
+                owned.Add(mesh);
+                var node=new GameObject("Surface batch / "+group.Key.name);
+                node.transform.SetParent(pivot,false);
+                node.AddComponent<MeshFilter>().sharedMesh=mesh;
+                var renderer=node.AddComponent<MeshRenderer>();
+                renderer.sharedMaterial=group.Key;
+                renderer.shadowCastingMode=ShadowCastingMode.Off;
+                renderer.receiveShadows=false;
+                foreach(var original in group.Value)
+                {
+                    // Original meshes are now owned only by this batch.
+                    // Unity schedules the source object teardown safely
+                    // outside the traversal; scene models are not persisted.
+                    owned.Remove(original.sharedMesh);
+                    UnityEngine.Object.Destroy(original.sharedMesh);
+                    UnityEngine.Object.Destroy(original.gameObject);
+                }
             }
         }
     }
