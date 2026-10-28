@@ -14,6 +14,40 @@ namespace Ninefold.Presentation
     /// </summary>
     internal static class WorldFiveBattleOrganics
     {
+        /// <summary>
+        /// Low-memory repeatable surface grain. Tinted by the material itself;
+        /// purposefully subtle so skin and salvaged hardware don't look like
+        /// flat Microsoft Paint fills or high-gloss plastic. No source textures.
+        /// </summary>
+        internal static Texture2D CreateSurfaceTexture(int seed)
+        {
+            const int size=128;
+            var texture=new Texture2D(size,size,TextureFormat.RGBA32,true)
+            {
+                name="World Five organic study surface "+seed,
+                filterMode=FilterMode.Trilinear,
+                wrapMode=TextureWrapMode.Repeat
+            };
+            var pixels=new Color[size*size];
+            for(int y=0;y<size;y++)
+            for(int x=0;x<size;x++)
+            {
+                unchecked
+                {
+                    uint n=(uint)(x*374761393+y*668265263+seed*1013904223);
+                    n=(n^(n>>13))*1274126177;
+                    float fine=((n&65535)/65535f-.5f);
+                    float band=Mathf.Sin(x*.23f+y*.035f+seed*.71f);
+                    float broad=Mathf.Sin(x*.064f-y*.089f+seed*1.7f);
+                    float tone=Mathf.Clamp(.84f+fine*.095f+band*.045f+broad*.045f,.67f,.99f);
+                    pixels[y*size+x]=new Color(tone,tone*.99f,tone*.96f,1);
+                }
+            }
+            texture.SetPixels(pixels);
+            texture.Apply(true,true);
+            return texture;
+        }
+
         // A curved loft makes connected shoulders/bodies/limbs, not Unity cubes
         // and spheres assembled as a pretend character. All values are local.
         private static Mesh Loft(string name, Vector3[] centers, Vector2[] widths, int sides=20)
