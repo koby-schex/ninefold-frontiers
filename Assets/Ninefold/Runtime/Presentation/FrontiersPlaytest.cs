@@ -713,6 +713,35 @@ namespace Ninefold.Presentation
             Text(objective, "OBJECTIVE", "eyebrow").AddToClassList("mission-brief-overline");
             Text(objective, Description(definition.Id), "detail").AddToClassList("mission-brief-description");
 
+            // Read-only encounter identity comes from the authored spawn
+            // UnitIds. Never infer an Avarin/Ashbound role from an actor name.
+            var threatGroups=definition.Actors
+                .Select(a => {
+                    WorldFiveAshboundThreatReadout.TryGet(a.UnitId,out var threat);
+                    return threat;
+                })
+                .Where(threat=>threat!=null)
+                .GroupBy(threat=>threat.TemplateId)
+                .ToArray();
+            if(threatGroups.Length>0)
+            {
+                var enemyCard=Card(parent,"briefing-objective");
+                enemyCard.AddToClassList("ashbound-briefing-threats");
+                Text(enemyCard,"KNOWN HOSTILES · ASHBOUND","eyebrow");
+                foreach(var group in threatGroups)
+                {
+                    var threat=group.First();
+                    var entry=Row(enemyCard);
+                    entry.AddToClassList("ashbound-briefing-entry");
+                    Text(entry,group.Count()+" × "+threat.Name,"ashbound-threat-name");
+                    Text(entry,threat.Role,"ashbound-threat-role");
+                }
+                Text(enemyCard,
+                    "Read these as tactical roles, not guaranteed attack plans. " +
+                    "Tap an enemy during battle to inspect its current health, armor, range and effects.",
+                    "hint");
+            }
+
             var terrain = Card(parent, "briefing-terrain");
             terrain.AddToClassList("mission-brief-terrain");
             BuildMapPreview(terrain, definition);
@@ -1244,7 +1273,7 @@ namespace Ninefold.Presentation
             {
                 if (announcedAttempt != b.AttemptId || announcedActivation != b.Activation.ActivationId)
                 { announcedAttempt = b.AttemptId; announcedActivation = b.Activation.ActivationId; turnCueUntil = Time.unscaledTime + 1.6f; }
-                turnCue = Text(surface, (actor?.IsEnemyControlled == true ? "ENEMY TURN" : "YOUR TURN") + " · " + UnitName(b.Activation.UnitId), "turn-cue");
+                turnCue = Text(surface, (actor?.IsEnemyControlled == true ? "ENEMY TURN" : "YOUR TURN") + " · " + BattleActorName(b.Activation.UnitId), "turn-cue");
                 turnCue.pickingMode = PickingMode.Ignore;
                 turnCue.style.display = Time.unscaledTime < turnCueUntil ? DisplayStyle.Flex : DisplayStyle.None;
             }
@@ -1264,9 +1293,9 @@ namespace Ninefold.Presentation
                 details.RegisterCallback<PointerUpEvent>(e => e.StopPropagation());
                 surface.Add(details);
                 Text(details, MissionName(b.MissionId) + " · Round " + b.Round, "section");
-                Text(details, "Next: " + string.Join(" → ", b.UpcomingTurns.Take(4).Select(UnitName)), "detail");
+                Text(details, "Next: " + string.Join(" → ", b.UpcomingTurns.Take(4).Select(BattleActorName)), "detail");
                 var inspected = b.Units.FirstOrDefault(u => u.Id == battleView.SelectedUnitId) ?? actor;
-                if (inspected?.Health != null) Text(details, UnitName(inspected.Id) + " · HP " + inspected.Health.CurrentHealth + "/" + inspected.Health.MaximumHealth + " · Armor " + inspected.EffectiveArmor, "detail");
+                if (inspected?.Health != null) Text(details, BattleActorName(inspected.Id) + " · HP " + inspected.Health.CurrentHealth + "/" + inspected.Health.MaximumHealth + " · Armor " + inspected.EffectiveArmor, "detail");
                 Text(details, "PASSIVE · " + (actor == null ? "No active unit" :
                     catalog.Units.TryGetValue(actor.Id,out var unitDefinition) &&
                     catalog.Kits.TryGetValue(unitDefinition.KitId,out var kitDefinition) &&
@@ -1327,7 +1356,7 @@ namespace Ninefold.Presentation
             else
                 Text(portrait,active?.IsEnemyControlled == true ? "ENEMY" : "UNIT",
                     "battle-active-portrait-fallback").pickingMode = PickingMode.Ignore;
-            Text(current, "ACTIVE  " + UnitName(active?.Id), "mobile-actor-name");
+            Text(current, "ACTIVE  " + BattleActorName(active?.Id), "mobile-actor-name");
             Text(current, (b.Activation?.MovementRemaining.ToString("0.#") ?? "0") + " MOVE",
                 "mobile-actor-move");
             Text(current, b.Activation?.PrimaryActionAvailable == true ? "READY" : "USED",
@@ -1347,7 +1376,13 @@ namespace Ninefold.Presentation
             {
                 var selected = Row(status); selected.AddToClassList("mobile-inspected-unit");
                 Text(selected, (inspected.IsEnemyControlled ? "ENEMY  " : "ALLY  ") +
-                    UnitName(inspected.Id), "mobile-inspected-name");
+                    BattleActorName(inspected.Id), "mobile-inspected-name");
+                var threat=BattleEnemyThreat(inspected.Id);
+                if(threat!=null)
+                {
+                    Text(selected,"THREAT · "+threat.Role,"ashbound-threat-role");
+                    Text(selected,threat.Readout,"ashbound-threat-readout");
+                }
                 if (inspected.Health != null)
                     Text(selected, "HP " + inspected.Health.CurrentHealth + "/" +
                         inspected.Health.MaximumHealth + "  •  ARM " +
@@ -2089,6 +2124,25 @@ namespace Ninefold.Presentation
         }
         private static VisualElement Row(VisualElement parent) { var row = new VisualElement(); row.AddToClassList("row"); parent.Add(row); return row; }
         private static Label Text(VisualElement parent, string text, string cls) { var l = new Label(text); l.AddToClassList(cls); parent.Add(l); return l; }
+        // Combat HUD uses the mission's authored archetype, not a technical
+        // instance ID such as ashbound-encounter-forager-1. Other collections
+        // continue using the existing general-purpose label.
+        private WorldFiveAshboundThreatReadout.Threat BattleEnemyThreat(string actorId)
+        {
+            if(actorId==null || catalog==null || battleView==null ||
+                !catalog.Missions.TryGetValue(battleView.Battle.MissionId,out var mission))
+                return null;
+            var source=mission.Actors.FirstOrDefault(a=>a.Id==actorId);
+            if(source==null)return null;
+            return WorldFiveAshboundThreatReadout.TryGet(source.UnitId,out var threat)
+                ? threat : null;
+        }
+        private string BattleActorName(string actorId)
+        {
+            var threat=BattleEnemyThreat(actorId);
+            return threat==null?UnitName(actorId):threat.Name;
+        }
+
         public static string UnitName(string id) => id == null ? "—" : id.Replace("fixture-enemy-", "Enemy ").Replace("fixture-a-", "A").Replace("fixture-b-", "B");
         private static string ResourceName(string id) => id.StartsWith("fragment-") ? UnitName(id.Substring(9)) + " fragments" : "Test supplies";
         private string Description(string id)
