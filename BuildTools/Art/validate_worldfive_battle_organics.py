@@ -61,8 +61,10 @@ check("private static void BuildCover(Batch faces,Batch caps" in scenery and
 check("public void Animate(float time)" in scenery and
       "scenery.Animate(Time.unscaledTime);" in battle,
       "Subtle in-game environmental response must be wired to a real update path")
-check("new FieldObstacle" in creatures or "ObjectiveDefinition" in creatures,
-      "Native wildlife authored Core content should be present/untouched by art change")
+check('SillrunnerId="w5-wild-sillrunner"' in creatures and
+      'SeamstalkerId="w5-wild-seamstalker"' in creatures and
+      "new MissionContent" in creatures,
+      "Native wildlife authored Core identity must remain unchanged")
 check("public static readonly string[] EnemyTemplateIds" in enemy,
       "Approved ordinary Ashbound roster IDs are required")
 check("AddComponent<Collider>" not in art and
