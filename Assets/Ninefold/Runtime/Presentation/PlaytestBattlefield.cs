@@ -75,6 +75,7 @@ namespace Ninefold.Presentation
         private readonly bool translucentContactShadows;
         private readonly Light battlefieldKey, impactLight;
         private Vector2 cameraImpulse;
+        private bool isActionPlayback;
         private VisualElement surface;
         private Bounds framing;
         private readonly List<Rect> barRects = new List<Rect>();
@@ -957,6 +958,24 @@ namespace Ninefold.Presentation
                         1f+.009f*Mathf.Sin(phase),breath,1f);
                     if(pair.Value.OrganicHead!=null)
                     {
+                        if(!isActionPlayback)
+                        {
+                            // Asymmetrical breathing and searching on actual
+                            // attached anatomy, never on combat's root actor.
+                            pair.Value.OrganicCore.localRotation=Quaternion.Euler(
+                                .8f*Mathf.Sin(phase*.67f),
+                                .8f*Mathf.Sin(phase*.59f),0);
+                            pair.Value.OrganicHead.localRotation=Quaternion.Euler(
+                                1.5f*Mathf.Sin(phase*.86f),
+                                2.0f*Mathf.Sin(phase*.58f),
+                                1.2f*Mathf.Sin(phase*.69f));
+                            if(pair.Value.OrganicArmLeft!=null)
+                                pair.Value.OrganicArmLeft.localRotation=Quaternion.Euler(
+                                    1.3f*Mathf.Sin(phase*.74f),0,0);
+                            if(pair.Value.OrganicArmRight!=null)
+                                pair.Value.OrganicArmRight.localRotation=Quaternion.Euler(
+                                    -1.1f*Mathf.Sin(phase*.79f),0,0);
+                        }
                         foreach(Transform child in pair.Value.OrganicHead)
                         {
                             if(child.name.StartsWith("Living crescent ",StringComparison.Ordinal))
@@ -1039,6 +1058,7 @@ namespace Ninefold.Presentation
 
         public IEnumerator Play(BattleUpdate update, float duration)
         {
+            isActionPlayback=true;
             path.positionCount = 0; range.positionCount = 0; destination.SetActive(false);
             inspection.SetActive(false); impact.SetActive(false); statusPulse.SetActive(false); impactBurst.SetActive(false);
             impactLight.enabled=false; cameraImpulse=Vector2.zero;
@@ -1140,8 +1160,21 @@ namespace Ninefold.Presentation
                             pulse?.UnitId == before.Id,strike);
                     }
                     if(ashboundActors.ContainsKey(before.Id) && token.Organic)
+                    {
                         PoseAshbound(token,t,movement?.UnitId == before.Id,
                             pulse?.UnitId == before.Id,strike);
+                        if(pulse?.TargetId == before.Id && token.OrganicCore!=null)
+                        {
+                            // A real authoritative hit produces a bounded
+                            // flinch; no damage or status is inferred by art.
+                            float flinch=Mathf.Sin(strike*Mathf.PI);
+                            token.OrganicCore.localRotation *= Quaternion.Euler(
+                                13f*flinch,0,3f*flinch);
+                            if(token.OrganicHead!=null)
+                                token.OrganicHead.localRotation *= Quaternion.Euler(
+                                    -10f*flinch,0,-4f*flinch);
+                        }
+                    }
                     if (after?.Health?.IsDefeated == true)
                     {
                         token.Body.transform.localScale=token.Scale*(1-strike*.85f);
@@ -1201,6 +1234,7 @@ namespace Ninefold.Presentation
                 finishedToken.ModelMotion?.EndMovement();
             path.positionCount=0; impact.SetActive(false); statusPulse.SetActive(false); impactBurst.SetActive(false);
             impactLight.enabled=false; cameraImpulse=Vector2.zero;
+            isActionPlayback=false;
             Reconcile(update.After);
         }
         private static Vector3 AlongRoute(FieldPoint[] route, float fraction)
@@ -1236,6 +1270,7 @@ namespace Ninefold.Presentation
         }
         public void Hide()
         {
+            isActionPlayback=false;
             foreach(var token in tokens.Values)token.ModelMotion?.EndMovement();
             foreach (var item in feedback) item.Label.RemoveFromHierarchy(); feedback.Clear();
             impactBurst.SetActive(false); impactLight.enabled=false; cameraImpulse=Vector2.zero;
