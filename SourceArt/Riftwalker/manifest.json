@@ -1,10 +1,10 @@
 {
-  "study": "silhouette rebuild 03",
+  "study": "anatomy and architecture 04",
   "model": "Riftwalker",
   "units": "meters",
-  "parts": 81,
-  "vertices": 24598,
-  "triangles": 48872,
+  "parts": 86,
+  "vertices": 28976,
+  "triangles": 57608,
   "canon": [
     "v26.0 section 26.6",
     "v25.3 bonded-tradition entries",

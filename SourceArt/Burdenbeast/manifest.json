@@ -1,10 +1,10 @@
 {
-  "study": "silhouette rebuild 03",
+  "study": "anatomy and architecture 04",
   "model": "Burdenbeast",
   "units": "meters",
-  "parts": 183,
-  "vertices": 35458,
-  "triangles": 70184,
+  "parts": 185,
+  "vertices": 35854,
+  "triangles": 70968,
   "canon": [
     "v26.0 section 26.6",
     "v25.3 bonded-tradition entries",
