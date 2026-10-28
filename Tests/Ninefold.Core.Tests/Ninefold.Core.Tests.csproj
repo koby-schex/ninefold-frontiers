@@ -10,6 +10,7 @@
     <Compile Include="../../Assets/Ninefold/Editor/LivingVeilMotion.cs" Link="LivingVeilMotion.cs" />
     <Compile Include="../../Assets/Ninefold/Editor/WorldFiveRosterMotion.cs" Link="WorldFiveRosterMotion.cs" />
     <Compile Include="../../Assets/Ninefold/Editor/AshboundMotion.cs" Link="AshboundMotion.cs" />
+    <Compile Include="../../Assets/Ninefold/Editor/AshboundSkeleton.cs" Link="AshboundSkeleton.cs" />
     <ProjectReference Include="../../BuildTools/Core/Ninefold.Core.csproj" />
   </ItemGroup>
 </Project>
