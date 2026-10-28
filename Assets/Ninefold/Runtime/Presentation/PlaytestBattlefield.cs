@@ -276,8 +276,19 @@ namespace Ninefold.Presentation
                     if (objectiveVisuals.TryGetValue(pair.Key,out var marker))
                         marker.transform.position = extractionStage ? exit - pickup : Vector3.zero;
                 }
+                if (state.Kind == ObjectiveKind.Protect && definition.Subjects.Count > 0)
+                {
+                    var guarded = view.Units.FirstOrDefault(u => u.Id == definition.Subjects[0] &&
+                        u.IsEligible && u.Position.HasValue);
+                    if (guarded?.Position != null)
+                        objectivePositions[pair.Key] = Vector(guarded.Position.Value) + Vector3.up*.65f;
+                }
                 pair.Value.text = state.Kind == ObjectiveKind.RescueAndExtract && state.Rescued &&
                     state.Status == ObjectiveStatus.Active ? "EXIT" :
+                    state.Kind == ObjectiveKind.Secure && state.Status == ObjectiveStatus.Active
+                        ? "HOLD " + state.Progress + "/" + state.Required :
+                    state.Kind == ObjectiveKind.Protect && state.Status == ObjectiveStatus.Active
+                        ? "GUARD " + state.Progress + "/" + state.Required :
                     state.Status == ObjectiveStatus.Active ? "◎" :
                     state.Status == ObjectiveStatus.Completed ? "✓" : "×";
                 pair.Value.EnableInClassList("objective-ready",available?.CanInteract == true);
@@ -403,6 +414,57 @@ namespace Ninefold.Presentation
                 Shape("Slow ground",new Vector3(c.x,.02f,c.z),new Vector3(size.x,.025f,size.z),markings);
                 for (float z=(float)g.Bounds.Min.Z+.12f;z<(float)g.Bounds.Max.Z;z+=.35f)
                     Shape("Slow ground stripe",new Vector3(c.x,.04f,z),new Vector3(size.x,.015f,.06f),gold);
+            }
+            // Secure and extraction are AREAS, not point interactions.
+            // Previously the renderer only emitted Interaction markers, leaving
+            // Mission 004's real Secure zone entirely invisible.
+            void OutlineZone(FieldBox zone, string title)
+            {
+                var lo=Vector(zone.Min); var hi=Vector(zone.Max);
+                float w=hi.x-lo.x,d=hi.z-lo.z;
+                if(w<=.1f || d<=.1f) return;
+                float x=(lo.x+hi.x)*.5f,z=(lo.z+hi.z)*.5f;
+                var foundation=Shape(title+" · field pad",new Vector3(x,.018f,z),
+                    new Vector3(w,.028f,d),markings);
+                foundation.name=title+" · interior (visual only)";
+                Shape(title+" · south boundary",new Vector3(x,.056f,lo.z),
+                    new Vector3(w,.075f,.11f),gold);
+                Shape(title+" · north boundary",new Vector3(x,.056f,hi.z),
+                    new Vector3(w,.075f,.11f),gold);
+                Shape(title+" · west boundary",new Vector3(lo.x,.056f,z),
+                    new Vector3(.11f,.075f,d),gold);
+                Shape(title+" · east boundary",new Vector3(hi.x,.056f,z),
+                    new Vector3(.11f,.075f,d),gold);
+                foreach(float sx in new[]{lo.x,hi.x})
+                    foreach(float sz in new[]{lo.z,hi.z})
+                        Shape(title+" · visible corner beacon",
+                            new Vector3(sx,.29f,sz),new Vector3(.16f,.50f,.16f),active);
+            }
+            foreach(var o in objectives.Where(o=>o.Zone!=null))
+            {
+                // Extraction is also a physical destination, not a target
+                // that appears only after rescuing the traveler.
+                if(o.Kind==ObjectiveKind.Secure || o.Kind==ObjectiveKind.RescueAndExtract)
+                    OutlineZone(o.Zone,o.Kind==ObjectiveKind.Secure
+                        ? "CAPTURE AND HOLD "+o.Id : "EXTRACTION "+o.Id);
+                if(o.Kind==ObjectiveKind.Secure)
+                {
+                    var lo=Vector(o.Zone.Min);var hi=Vector(o.Zone.Max);
+                    var at=new Vector3((lo.x+hi.x)*.5f,.30f,(lo.z+hi.z)*.5f);
+                    var label=new Label { pickingMode=PickingMode.Ignore };
+                    label.AddToClassList("objective-marker");
+                    objectiveLabels.Add(o.Id,label);
+                    objectivePositions.Add(o.Id,at);
+                }
+            }
+            foreach(var o in objectives.Where(o=>o.Kind==ObjectiveKind.Protect &&
+                o.Subjects.Count>0))
+            {
+                var label=new Label { pickingMode=PickingMode.Ignore };
+                label.AddToClassList("objective-marker");
+                objectiveLabels.Add(o.Id,label);
+                // Updated from the actual living target position every frame.
+                objectivePositions.Add(o.Id,Vector3.zero);
             }
             foreach (var o in objectives.Where(o=>o.Interaction!=null))
             {
