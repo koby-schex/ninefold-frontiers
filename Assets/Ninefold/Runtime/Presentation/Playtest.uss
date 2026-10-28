@@ -47,6 +47,18 @@ Button.primary:disabled { background-color: rgb(35, 67, 72); color: rgb(143, 174
 .map-cover { background-color: rgb(98, 124, 141); border-width: 1px; border-color: rgb(161, 185, 195); }
 .map-slow { background-color: rgb(118, 89, 43); }
 .map-objective { background-color: rgb(242, 194, 89); }
+/* Secure and extraction are entire footprints, not missing point markers. */
+.map-secure-zone {
+    background-color: rgba(214, 168, 72, 0.32);
+    border-width: 3px;
+    border-color: rgb(250, 208, 104);
+}
+.map-extraction-zone {
+    background-color: rgba(75, 178, 157, 0.25);
+    border-width: 3px;
+    border-color: rgb(225, 204, 131);
+}
+
 .map-deploy { background-color: rgb(96, 236, 221); border-radius: 5px; }
 .battle-mode .brand { font-size: 17px; letter-spacing: 3px; }
 .root.battle-mode { background-color: transparent; }
