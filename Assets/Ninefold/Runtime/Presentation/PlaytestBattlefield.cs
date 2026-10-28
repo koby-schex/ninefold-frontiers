@@ -845,9 +845,13 @@ namespace Ninefold.Presentation
             foreach (var pair in objectiveLabels)
             {
                 var point = Project(objectivePositions[pair.Key],root)-rect.position;
-                pair.Value.style.left=Mathf.Clamp(point.x-16,0,Mathf.Max(0,rect.width-32));
-                pair.Value.style.top=Mathf.Clamp(point.y+12,0,Mathf.Max(0,rect.height-32));
-                barRects.Add(new Rect(Mathf.Clamp(point.x-16,0,Mathf.Max(0,rect.width-32)),Mathf.Clamp(point.y+12,0,Mathf.Max(0,rect.height-32)),32,32));
+                // These labels are 180px wide, not 32px. Center them above
+                // the actual marker rather than appearing off-map at the edge.
+                float left=Mathf.Clamp(point.x-90,0,Mathf.Max(0,rect.width-180));
+                float top=Mathf.Clamp(point.y+12,0,Mathf.Max(0,rect.height-32));
+                pair.Value.style.left=left;
+                pair.Value.style.top=top;
+                barRects.Add(new Rect(left,top,Mathf.Min(180,rect.width),32));
             }
             foreach (var item in feedback.ToArray())
             {
