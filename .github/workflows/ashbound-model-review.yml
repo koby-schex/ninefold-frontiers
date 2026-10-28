@@ -9,6 +9,9 @@ on:
       - 'BuildTools/Art/render_ashbound.py'
       - '.github/workflows/ashbound-model-review.yml'
       - 'Assets/Ninefold/Editor/AshboundEnemyReview.cs'
+      - 'Assets/Ninefold/Editor/AshboundMotion.cs'
+      - 'Assets/Ninefold/Editor/AshboundMotionReview.cs'
+      - 'Tests/Ninefold.Core.Tests/AshboundMotionTests.cs'
   push:
     branches: [main]
     paths:
