@@ -28,6 +28,7 @@ namespace Ninefold.Presentation
             public Vector3 Scale;
             public float Height;
             public FrontiersBattleModelMotion ModelMotion;
+            public bool Organic;
         }
         private sealed class FloatingFeedback
         {
@@ -40,19 +41,22 @@ namespace Ninefold.Presentation
         private readonly Camera camera;
         private readonly Dictionary<string, Token> tokens = new Dictionary<string, Token>();
         private readonly Dictionary<string, string> wildlifeActors = new Dictionary<string, string>(StringComparer.Ordinal);
+        private readonly Dictionary<string, int> ashboundActors = new Dictionary<string, int>(StringComparer.Ordinal);
+        private readonly List<Mesh> organicMeshes = new List<Mesh>();
         private readonly List<Material> materials = new List<Material>();
         private readonly Dictionary<string, Label> objectiveLabels = new Dictionary<string, Label>();
         private readonly Dictionary<string, Vector3> objectivePositions = new Dictionary<string, Vector3>();
         private readonly Dictionary<string, GameObject> objectiveVisuals = new Dictionary<string, GameObject>();
         private readonly List<FloatingFeedback> feedback = new List<FloatingFeedback>();
         private readonly Material friendly, enemy, active, floor, grid, gold, cover, trim, markings, sillrunner, seamstalker;
+        private readonly Material avarinSkin, avarinMantle, avarinFabric, avarinGear, avarinWake, avarinShadow;
         private readonly LineRenderer path, range;
         private GameObject terrain;
         private readonly BattlefieldScenery scenery;
         private readonly FrontiersBattleVisualCatalog approvedModels;
         private string drawnSceneStudy = "none";
         public string SceneryStatus => terrain == null ? "not built (open a battle)" :
-            "study 03 | " + drawnSceneStudy + " | meshes: " + scenery.MeshCount +
+            "organic preview 01 | " + drawnSceneStudy + " | scenery meshes: " + scenery.MeshCount +
             " | visible: " + world.activeInHierarchy;
         private string drawnAttempt;
         private string rescueSubjectId;
@@ -80,7 +84,16 @@ namespace Ninefold.Presentation
                 var m = new Material(template) { color = color }; materials.Add(m); return m;
             }
             friendly = Make(new Color(.14f, .72f, .8f)); enemy = Make(new Color(.94f, .34f, .27f));
-            sillrunner = Make(new Color(.56f,.74f,.56f)); seamstalker = Make(new Color(.63f,.40f,.77f));
+            sillrunner = Make(new Color(.43f,.62f,.50f)); seamstalker = Make(new Color(.49f,.35f,.58f));
+            avarinSkin = Make(new Color(.43f,.48f,.50f));
+            avarinMantle = Make(new Color(.32f,.42f,.46f));
+            avarinFabric = Make(new Color(.23f,.24f,.28f));
+            avarinGear = Make(new Color(.52f,.45f,.42f));
+            avarinWake = Make(new Color(.66f,.48f,.39f));
+            avarinShadow = Make(new Color(.13f,.19f,.23f));
+            foreach(var m in new[]{sillrunner,seamstalker,avarinSkin,avarinMantle,
+                avarinFabric,avarinGear,avarinWake,avarinShadow})
+                if(m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness",.24f);
             active = Make(new Color(.94f, .85f, .52f)); floor = Make(new Color(.075f, .12f, .17f));
             grid = Make(new Color(.16f, .23f, .29f)); gold = Make(new Color(.9f, .65f, .25f));
             cover = Make(new Color(.26f, .35f, .42f)); trim = Make(new Color(.42f, .52f, .57f));
@@ -498,16 +511,26 @@ namespace Ninefold.Presentation
         // spawn IDs from older studies never imply a particular creature type.
         public void ConfigureWildlifeActors(IEnumerable<ActorSpawn> actors)
         {
-            var next = actors.Where(actor =>
+            var roster=actors.ToArray();
+            var wildlife=roster.Where(actor =>
                 actor.UnitId == WorldFiveTutorialWildlifeV1.SillrunnerId ||
                 actor.UnitId == WorldFiveTutorialWildlifeV1.SeamstalkerId)
-                .ToDictionary(actor => actor.Id, actor => actor.UnitId, StringComparer.Ordinal);
-            if (next.Count == wildlifeActors.Count && next.All(pair =>
-                wildlifeActors.TryGetValue(pair.Key,out var prior) && prior == pair.Value))
-                return;
-            // Recreate visuals when switching mission studies that reuse actor
-            // spawn IDs; never let a prior creature skin leak into a new battle.
-            foreach (var token in tokens.Values)
+                .ToDictionary(actor=>actor.Id,actor=>actor.UnitId,StringComparer.Ordinal);
+            var ashbound=roster.Where(actor =>
+                Array.IndexOf(WorldFiveActOnePrototype.EnemyTemplateIds,actor.UnitId)>=0)
+                .ToDictionary(actor=>actor.Id,actor=>
+                    Array.IndexOf(WorldFiveActOnePrototype.EnemyTemplateIds,actor.UnitId),
+                    StringComparer.Ordinal);
+            if(wildlife.Count==wildlifeActors.Count &&
+                wildlife.All(pair=>wildlifeActors.TryGetValue(pair.Key,out var old) &&
+                    old==pair.Value) &&
+                ashbound.Count==ashboundActors.Count &&
+                ashbound.All(pair=>ashboundActors.TryGetValue(pair.Key,out int old) &&
+                    old==pair.Value)) return;
+
+            // Model authoring is presentation only. Changing a mission must
+            // never leak a creature/enemy skin across reused fixture actor IDs.
+            foreach(var token in tokens.Values)
             {
                 Object.Destroy(token.Body);
                 Object.Destroy(token.TargetRing);
@@ -515,52 +538,50 @@ namespace Ninefold.Presentation
                 token.Bar.RemoveFromHierarchy();
             }
             tokens.Clear();
-            wildlifeActors.Clear();
-            foreach (var pair in next) wildlifeActors.Add(pair.Key,pair.Value);
+            foreach(var mesh in organicMeshes) Object.Destroy(mesh);
+            organicMeshes.Clear();
+            wildlifeActors.Clear(); ashboundActors.Clear();
+            foreach(var pair in wildlife) wildlifeActors.Add(pair.Key,pair.Value);
+            foreach(var pair in ashbound) ashboundActors.Add(pair.Key,pair.Value);
         }
 
-        // Lightweight primitive assembly, not an approved anatomical sculpt.
-        // Each child is owned by its token root and is destroyed with it.
-        private void AddWildlifeForm(GameObject root, bool stalker)
+        // The two native wildlife use continuous lofted anatomy with small
+        // natural reliefs and no abstract Unity primitive assembly. The
+        // existing movement-event pose contract is preserved.
+        private void AddWildlifeForm(GameObject root,bool stalker)
         {
-            GameObject Part(string name, PrimitiveType shape, Vector3 offset, Vector3 scale, Material material)
+            WorldFiveBattleOrganics.Wildlife(root,stalker,
+                stalker ? seamstalker : sillrunner,trim,avarinShadow,organicMeshes);
+        }
+
+        private void AddAshboundForm(GameObject root,int type)
+        {
+            WorldFiveBattleOrganics.Ashbound(root,type,avarinSkin,avarinMantle,
+                avarinFabric,avarinGear,avarinWake,avarinShadow,organicMeshes);
+        }
+
+        private void PoseAshbound(Token token,float phase,bool moving,bool attacking,
+            float strike)
+        {
+            float gait = moving ? Mathf.Sin(phase*19f) : 0f;
+            float lunge = attacking ? Mathf.Sin(strike*Mathf.PI) : 0f;
+            foreach(Transform part in token.Body.transform)
             {
-                var part = Primitive(name, shape, Vector3.zero, Vector3.one, material);
-                part.transform.SetParent(root.transform, false);
-                part.transform.localPosition = offset;
-                part.transform.localScale = scale;
-                return part;
-            }
-            var hide = stalker ? seamstalker : sillrunner;
-            // Forward is positive Z. The low body and separate limbs make
-            // wildlife read as animals, not standing humanoid tokens.
-            Part("Dorsal shell", PrimitiveType.Sphere, new Vector3(0,.20f,-.05f),
-                new Vector3(.86f,.34f,.9f), hide);
-            Part("Head", PrimitiveType.Sphere, new Vector3(0,.12f,.60f),
-                new Vector3(.55f,.42f,.56f), hide);
-            foreach (float side in new[] { -1f,1f })
-            {
-                for (int i=0;i<2;i++)
-                {
-                    Part("Walking limb", PrimitiveType.Capsule,
-                        new Vector3(side*.47f,-.38f,i==0?.34f:-.38f),
-                        new Vector3(.18f,.58f,.18f), hide);
-                }
-                Part("Sensory ridge", PrimitiveType.Cube,
-                    new Vector3(side*.24f,.39f,.60f),
-                    new Vector3(.11f,.21f,.43f), trim);
-            }
-            if (stalker)
-            {
-                Part("Tapered tail", PrimitiveType.Capsule,
-                    new Vector3(0,-.08f,-.75f),new Vector3(.22f,.22f,.83f),hide);
-                Part("Shoulder spine",PrimitiveType.Cube,
-                    new Vector3(0,.48f,-.14f),new Vector3(.14f,.28f,.43f),markings);
-            }
-            else
-            {
-                Part("Balance fan",PrimitiveType.Sphere,
-                    new Vector3(0,.08f,-.67f),new Vector3(.6f,.24f,.35f),trim);
+                if(part.name=="Avarin leg Left")
+                    part.localRotation=Quaternion.Euler(gait*19f,0,0);
+                else if(part.name=="Avarin leg Right")
+                    part.localRotation=Quaternion.Euler(-gait*19f,0,0);
+                else if(part.name=="Avarin arm Left")
+                    part.localRotation=Quaternion.Euler(-gait*12f+lunge*9f,0,0);
+                else if(part.name=="Avarin arm Right")
+                    part.localRotation=Quaternion.Euler(gait*12f-lunge*34f,0,0);
+                else if(part.name=="Avarin torso")
+                    part.localRotation=Quaternion.Euler(lunge*-7f,
+                        moving ? gait*3f : 0f,0f);
+                else if(part.name.StartsWith("Living crescent ",StringComparison.Ordinal))
+                    part.localRotation=Quaternion.Euler(lunge*4f,0,
+                        (part.name.EndsWith("Left",StringComparison.Ordinal)?-1f:1f)
+                        *lunge*7f);
             }
         }
 
@@ -733,29 +754,37 @@ namespace Ninefold.Presentation
                         t.Body=modelBody;
                         t.ModelMotion=new FrontiersBattleModelMotion(modelBody);
                     }
+                    else if(isSillrunner||isSeamstalker||
+                        ashboundActors.TryGetValue(h.UnitId,out int ashboundType))
+                    {
+                        // Only exact authored species/template IDs receive
+                        // this explicitly unapproved runtime geometry candidate.
+                        // Never override a real approved battle-model prefab.
+                        t.Body=new GameObject(h.UnitId+" · provisional organic mesh");
+                        t.Body.transform.SetParent(world.transform,false);
+                        t.Organic=true;
+                        if(isSillrunner||isSeamstalker)
+                            AddWildlifeForm(t.Body,isSeamstalker);
+                        else
+                            AddAshboundForm(t.Body,ashboundType);
+                    }
                     else
                     {
-                        t.Body = Primitive(h.UnitId,
-                            isSillrunner ? PrimitiveType.Sphere :
-                            isSeamstalker ? PrimitiveType.Capsule :
+                        // Abstract tutorial / generic enemies remain clearly
+                        // marked fixture stand-ins, not counterfeit lore.
+                        t.Body=Primitive(h.UnitId,
                             h.IsEnemyControlled ? PrimitiveType.Cube : PrimitiveType.Capsule,
                             Vector3.zero,
-                            isSillrunner ? new Vector3(.8f,StandardTokenHeight,.75f) :
-                            isSeamstalker ? new Vector3(.64f,StandardTokenHeight/2,.85f) :
-                            h.IsEnemyControlled ? new Vector3(.5f,StandardTokenHeight,.5f) :
-                            new Vector3(.5f,StandardTokenHeight/2,.5f),
-                            isSillrunner ? sillrunner : isSeamstalker ? seamstalker :
-                            h.IsEnemyControlled ? enemy : friendly);
-                        if (isSillrunner || isSeamstalker)
-                            AddWildlifeForm(t.Body,isSeamstalker);
-                        // The primitive-only locator collar and footing are not
-                        // layered on top of approved organic production art.
-                        var footing = Primitive("Unit footing",
-                            h.IsEnemyControlled ? PrimitiveType.Cube : PrimitiveType.Cylinder,
+                            h.IsEnemyControlled
+                                ? new Vector3(.5f,StandardTokenHeight,.5f)
+                                : new Vector3(.5f,StandardTokenHeight/2,.5f),
+                            h.IsEnemyControlled?enemy:friendly);
+                        var footing=Primitive("Unit footing",
+                            h.IsEnemyControlled?PrimitiveType.Cube:PrimitiveType.Cylinder,
                             Vector3.down*(StandardTokenHeight/2-.09f),
                             new Vector3(.65f,.07f,.65f),grid);
                         footing.transform.SetParent(t.Body.transform,true);
-                        var collar = Primitive("Unit ID collar",PrimitiveType.Cube,
+                        var collar=Primitive("Unit ID collar",PrimitiveType.Cube,
                             new Vector3(0,StandardTokenHeight*.22f,-.02f),
                             new Vector3(.54f,.12f,.54f),active);
                         collar.transform.SetParent(t.Body.transform,true);
@@ -779,6 +808,8 @@ namespace Ninefold.Presentation
                 // Restore neutral poses after animation and on reduced-motion frames.
                 if (wildlifeActors.TryGetValue(h.UnitId,out var species))
                     PoseWildlife(t,species,0f,false,false,0f);
+                if(ashboundActors.ContainsKey(h.UnitId) && t.Organic)
+                    PoseAshbound(t,0f,false,false,0f);
                 bool carried = view.Objectives.Any(o=>o.Kind == ObjectiveKind.RescueAndExtract && o.Rescued &&
                     o.Status == ObjectiveStatus.Active);
                 bool pickedUp = carried && h.UnitId == rescueSubjectId;
@@ -840,6 +871,25 @@ namespace Ninefold.Presentation
             {
                 float pulse=1f+Mathf.Sin(Time.unscaledTime*3.4f)*.045f;
                 destination.transform.localScale=new Vector3(.70f*pulse,1f,.70f*pulse);
+            }
+            // Small visible breath and living-mantle reaction exist even when
+            // the player is thinking. Apply exclusively to cosmetic children,
+            // never the authoritative root/collider/target position.
+            foreach(var pair in tokens)
+            {
+                if(!pair.Value.Organic || !pair.Value.Body.activeSelf) continue;
+                float phase=Time.unscaledTime*(1.35f+
+                    (pair.Key.GetHashCode()&3)*.095f);
+                float breath=1f+Mathf.Sin(phase)*.018f;
+                foreach(Transform part in pair.Value.Body.transform)
+                {
+                    if(part.name=="Dorsal shell")
+                        part.localScale=new Vector3(1f,breath,1f);
+                    else if(part.name=="Avarin torso")
+                        part.localScale=new Vector3(1f+.009f*Mathf.Sin(phase),breath,1f);
+                    else if(part.name.StartsWith("Living crescent ",StringComparison.Ordinal))
+                        part.localScale=new Vector3(1f,1f+.025f*Mathf.Sin(phase+.8f),1f);
+                }
             }
             barRects.Clear();
             foreach (var pair in objectiveLabels)
@@ -1000,6 +1050,9 @@ namespace Ninefold.Presentation
                         PoseWildlife(token,wildlifeSpecies,t,travelling,
                             pulse?.UnitId == before.Id,strike);
                     }
+                    if(ashboundActors.ContainsKey(before.Id) && token.Organic)
+                        PoseAshbound(token,t,movement?.UnitId == before.Id,
+                            pulse?.UnitId == before.Id,strike);
                     if (after?.Health?.IsDefeated == true)
                     {
                         token.Body.transform.localScale=token.Scale*(1-strike*.85f);
@@ -1101,6 +1154,8 @@ namespace Ninefold.Presentation
         }
         public static Vector3 Vector(FieldPoint p) => new Vector3((float)p.X, (float)p.Y, (float)p.Z);
         public void Dispose() { scenery.Dispose(); Object.Destroy(world);
+            foreach(var organicMesh in organicMeshes) Object.Destroy(organicMesh);
+            organicMeshes.Clear();
             Object.Destroy(markerRingMesh); Object.Destroy(contactShadowTexture);
             foreach (var material in materials) Object.Destroy(material); }
     }
