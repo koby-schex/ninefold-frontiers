@@ -902,6 +902,7 @@ namespace Ninefold.Presentation
                         part.localScale=new Vector3(1f,1f+.025f*Mathf.Sin(phase+.8f),1f);
                 }
             }
+            scenery.Animate(Time.unscaledTime);
             barRects.Clear();
             foreach (var pair in objectiveLabels)
             {
