@@ -56,7 +56,10 @@ internal static partial class Program
         Equal(6m,fourth.Objectives[0].Zone.Max.Z);
         Equal(true,fourth.Objectives[0].Interaction == null);
         Equal(true,fourth.Map.Obstacles.All(o=>
-            !o.Bounds.Overlaps(fourth.Objectives[0].Zone)));
+            !(o.Bounds.Min.X < fourth.Objectives[0].Zone.Max.X &&
+              o.Bounds.Max.X > fourth.Objectives[0].Zone.Min.X &&
+              o.Bounds.Min.Z < fourth.Objectives[0].Zone.Max.Z &&
+              o.Bounds.Max.Z > fourth.Objectives[0].Zone.Min.Z)));
         var seven=c.Missions[ids[6]];
         Equal(ObjectiveKind.Defeat,seven.Objectives[0].Kind);
         Equal(2,seven.Objectives[0].Subjects.Count);
