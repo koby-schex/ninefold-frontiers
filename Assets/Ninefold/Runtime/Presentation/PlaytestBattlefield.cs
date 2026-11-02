@@ -29,6 +29,11 @@ namespace Ninefold.Presentation
             public float Height;
             public FrontiersBattleModelMotion ModelMotion;
             public bool Organic;
+            // Noncanonical first-contact review pivots (not Unity Animator
+            // bones). Cached to avoid per-frame hierarchy lookups and GC.
+            public Transform OrganicCore, OrganicHead;
+            public Transform OrganicArmLeft, OrganicArmRight;
+            public Transform OrganicLegLeft, OrganicLegRight;
         }
         private sealed class FloatingFeedback
         {
@@ -70,6 +75,7 @@ namespace Ninefold.Presentation
         private readonly bool translucentContactShadows;
         private readonly Light battlefieldKey, impactLight;
         private Vector2 cameraImpulse;
+        private bool isActionPlayback;
         private VisualElement surface;
         private Bounds framing;
         private readonly List<Rect> barRects = new List<Rect>();
@@ -573,8 +579,42 @@ namespace Ninefold.Presentation
         private void PoseAshbound(Token token,float phase,bool moving,bool attacking,
             float strike)
         {
-            float gait = moving ? Mathf.Sin(phase*19f) : 0f;
-            float lunge = attacking ? Mathf.Sin(strike*Mathf.PI) : 0f;
+            // Forager/Striker have anchored anatomical pivots. Their real
+            // moving parts stay attached: eyes/mandible and living mantle to
+            // the head, hand equipment to the arm, feet/leg wraps to the leg.
+            // Subsequent ordinary archetypes retain the earlier motion study.
+            float gait=moving?Mathf.Sin(phase*19f):0f;
+            float lunge=attacking?Mathf.Sin(strike*Mathf.PI):0f;
+            if(token.OrganicCore!=null)
+            {
+                var core=token.OrganicCore;
+                float idle=moving||attacking?0f:Mathf.Sin(Time.unscaledTime*1.65f);
+                core.localRotation=Quaternion.Euler(-8f*lunge+1.7f*gait,
+                    (moving?3.0f*gait:idle*.8f),1.5f*gait);
+                if(token.OrganicHead!=null)
+                    token.OrganicHead.localRotation=Quaternion.Euler(
+                        lunge*5f-2.4f*gait,-2.0f*gait,
+                        idle*1.7f+1.7f*lunge);
+                if(token.OrganicArmLeft!=null)
+                    token.OrganicArmLeft.localRotation=Quaternion.Euler(
+                        -gait*14f+lunge*11f,0,2.4f*gait);
+                if(token.OrganicArmRight!=null)
+                    token.OrganicArmRight.localRotation=Quaternion.Euler(
+                        gait*14f-lunge*37f,-3.5f*lunge,-2.5f*gait);
+                if(token.OrganicLegLeft!=null)
+                    token.OrganicLegLeft.localRotation=Quaternion.Euler(gait*21f,0,0);
+                if(token.OrganicLegRight!=null)
+                    token.OrganicLegRight.localRotation=Quaternion.Euler(-gait*21f,0,0);
+                // The step is bounded and returns to the exact rest center
+                // when not moving; it cannot change the Core legal position.
+                if(token.OrganicLegLeft!=null)
+                    token.OrganicLegLeft.localPosition=new Vector3(-.15f,
+                        -.32f+(moving?Mathf.Max(0,gait)*.038f:0),-.02f);
+                if(token.OrganicLegRight!=null)
+                    token.OrganicLegRight.localPosition=new Vector3(.15f,
+                        -.32f+(moving?Mathf.Max(0,-gait)*.038f:0),-.02f);
+                return;
+            }
             foreach(Transform part in token.Body.transform)
             {
                 if(part.name=="Avarin leg Left")
@@ -587,7 +627,7 @@ namespace Ninefold.Presentation
                     part.localRotation=Quaternion.Euler(gait*12f-lunge*34f,0,0);
                 else if(part.name=="Avarin torso")
                     part.localRotation=Quaternion.Euler(lunge*-7f,
-                        moving ? gait*3f : 0f,0f);
+                        moving?gait*3f:0f,0f);
                 else if(part.name.StartsWith("Living crescent ",StringComparison.Ordinal))
                     part.localRotation=Quaternion.Euler(lunge*4f,0,
                         (part.name.EndsWith("Left",StringComparison.Ordinal)?-1f:1f)
@@ -777,7 +817,24 @@ namespace Ninefold.Presentation
                         if(isSillrunner||isSeamstalker)
                             AddWildlifeForm(t.Body,isSeamstalker);
                         else
+                        {
                             AddAshboundForm(t.Body,ashboundType);
+                            if(ashboundType==0 || ashboundType==1)
+                            {
+                                t.OrganicCore=t.Body.transform.Find("Ashbound motion core");
+                                if(t.OrganicCore==null)
+                                    throw new InvalidOperationException("First-contact Avarin pivot is missing.");
+                                t.OrganicHead=t.OrganicCore.Find("Ashbound motion head");
+                                t.OrganicArmLeft=t.OrganicCore.Find("Ashbound motion arm Left");
+                                t.OrganicArmRight=t.OrganicCore.Find("Ashbound motion arm Right");
+                                t.OrganicLegLeft=t.Body.transform.Find("Ashbound motion leg Left");
+                                t.OrganicLegRight=t.Body.transform.Find("Ashbound motion leg Right");
+                                if(t.OrganicHead==null || t.OrganicArmLeft==null ||
+                                    t.OrganicArmRight==null || t.OrganicLegLeft==null ||
+                                    t.OrganicLegRight==null)
+                                    throw new InvalidOperationException("First-contact model lost its articulated anatomy.");
+                            }
+                        }
                     }
                     else
                     {
@@ -892,14 +949,53 @@ namespace Ninefold.Presentation
                 float phase=Time.unscaledTime*(1.35f+
                     (pair.Key.GetHashCode()&3)*.095f);
                 float breath=1f+Mathf.Sin(phase)*.018f;
-                foreach(Transform part in pair.Value.Body.transform)
+                if(pair.Value.OrganicCore!=null)
                 {
-                    if(part.name=="Dorsal shell")
-                        part.localScale=new Vector3(1f,breath,1f);
-                    else if(part.name=="Avarin torso")
-                        part.localScale=new Vector3(1f+.009f*Mathf.Sin(phase),breath,1f);
-                    else if(part.name.StartsWith("Living crescent ",StringComparison.Ordinal))
-                        part.localScale=new Vector3(1f,1f+.025f*Mathf.Sin(phase+.8f),1f);
+                    // One cached spine transform drives restrained quiet breath
+                    // across all attached surfaces. The crescent stays a living
+                    // environmental sensory mantle, not a combat power.
+                    pair.Value.OrganicCore.localScale=new Vector3(
+                        1f+.009f*Mathf.Sin(phase),breath,1f);
+                    if(pair.Value.OrganicHead!=null)
+                    {
+                        if(!isActionPlayback)
+                        {
+                            // Asymmetrical breathing and searching on actual
+                            // attached anatomy, never on combat's root actor.
+                            pair.Value.OrganicCore.localRotation=Quaternion.Euler(
+                                .8f*Mathf.Sin(phase*.67f),
+                                .8f*Mathf.Sin(phase*.59f),0);
+                            pair.Value.OrganicHead.localRotation=Quaternion.Euler(
+                                1.5f*Mathf.Sin(phase*.86f),
+                                2.0f*Mathf.Sin(phase*.58f),
+                                1.2f*Mathf.Sin(phase*.69f));
+                            if(pair.Value.OrganicArmLeft!=null)
+                                pair.Value.OrganicArmLeft.localRotation=Quaternion.Euler(
+                                    1.3f*Mathf.Sin(phase*.74f),0,0);
+                            if(pair.Value.OrganicArmRight!=null)
+                                pair.Value.OrganicArmRight.localRotation=Quaternion.Euler(
+                                    -1.1f*Mathf.Sin(phase*.79f),0,0);
+                        }
+                        foreach(Transform child in pair.Value.OrganicHead)
+                        {
+                            if(child.name.StartsWith("Living crescent ",StringComparison.Ordinal))
+                                child.localScale=new Vector3(1f,
+                                    1f+.023f*Mathf.Sin(phase+.8f),1f);
+                        }
+                    }
+                }
+                else
+                {
+                    foreach(Transform part in pair.Value.Body.transform)
+                    {
+                        if(part.name=="Dorsal shell")
+                            part.localScale=new Vector3(1f,breath,1f);
+                        else if(part.name=="Avarin torso")
+                            part.localScale=new Vector3(1f+.009f*Mathf.Sin(phase),breath,1f);
+                        else if(part.name.StartsWith("Living crescent ",StringComparison.Ordinal))
+                            part.localScale=new Vector3(1f,
+                                1f+.025f*Mathf.Sin(phase+.8f),1f);
+                    }
                 }
             }
             scenery.Animate(Time.unscaledTime);
@@ -962,6 +1058,7 @@ namespace Ninefold.Presentation
 
         public IEnumerator Play(BattleUpdate update, float duration)
         {
+            isActionPlayback=true;
             path.positionCount = 0; range.positionCount = 0; destination.SetActive(false);
             inspection.SetActive(false); impact.SetActive(false); statusPulse.SetActive(false); impactBurst.SetActive(false);
             impactLight.enabled=false; cameraImpulse=Vector2.zero;
@@ -1063,8 +1160,21 @@ namespace Ninefold.Presentation
                             pulse?.UnitId == before.Id,strike);
                     }
                     if(ashboundActors.ContainsKey(before.Id) && token.Organic)
+                    {
                         PoseAshbound(token,t,movement?.UnitId == before.Id,
                             pulse?.UnitId == before.Id,strike);
+                        if(pulse?.TargetId == before.Id && token.OrganicCore!=null)
+                        {
+                            // A real authoritative hit produces a bounded
+                            // flinch; no damage or status is inferred by art.
+                            float flinch=Mathf.Sin(strike*Mathf.PI);
+                            token.OrganicCore.localRotation *= Quaternion.Euler(
+                                13f*flinch,0,3f*flinch);
+                            if(token.OrganicHead!=null)
+                                token.OrganicHead.localRotation *= Quaternion.Euler(
+                                    -10f*flinch,0,-4f*flinch);
+                        }
+                    }
                     if (after?.Health?.IsDefeated == true)
                     {
                         token.Body.transform.localScale=token.Scale*(1-strike*.85f);
@@ -1124,6 +1234,7 @@ namespace Ninefold.Presentation
                 finishedToken.ModelMotion?.EndMovement();
             path.positionCount=0; impact.SetActive(false); statusPulse.SetActive(false); impactBurst.SetActive(false);
             impactLight.enabled=false; cameraImpulse=Vector2.zero;
+            isActionPlayback=false;
             Reconcile(update.After);
         }
         private static Vector3 AlongRoute(FieldPoint[] route, float fraction)
@@ -1159,6 +1270,7 @@ namespace Ninefold.Presentation
         }
         public void Hide()
         {
+            isActionPlayback=false;
             foreach(var token in tokens.Values)token.ModelMotion?.EndMovement();
             foreach (var item in feedback) item.Label.RemoveFromHierarchy(); feedback.Clear();
             impactBurst.SetActive(false); impactLight.enabled=false; cameraImpulse=Vector2.zero;
