@@ -226,28 +226,50 @@ namespace Ninefold.Editor
                         }
                     }
                     if(retainedTriangles.Count==0)continue;
+                    // Compact the retained source sections. Invisible
+                    // original anatomy vertices should not consume mobile
+                    // skinning buffers, alter renderer bounds or linger as
+                    // unreferenced geometry after the actual topology swap.
+                    var compactMap=new Dictionary<int,int>();
+                    var compactVertices=new List<Vector3>();
+                    var compactNormals=new List<Vector3>();
+                    var compactUvs=new List<Vector2>();
+                    var compactParts=new List<string>();
+                    var compactCoordinates=new List<float[]>();
+                    var compactTriangles=new List<int>();
+                    foreach(int oldIndex in retainedTriangles)
+                    {
+                        if(!compactMap.TryGetValue(oldIndex,out int newIndex))
+                        {
+                            newIndex=compactVertices.Count;
+                            compactMap.Add(oldIndex,newIndex);
+                            var xyz=section.Vertices[oldIndex];
+                            var normal=section.Normals[oldIndex];
+                            var uv=section.UVs[oldIndex];
+                            compactVertices.Add(new Vector3(xyz[0],xyz[1],xyz[2]));
+                            compactNormals.Add(new Vector3(normal[0],normal[1],normal[2]));
+                            compactUvs.Add(uv[0]!=0 || uv[1]!=0 ?
+                                new Vector2(uv[0],uv[1]) :
+                                new Vector2(xyz[0]*2.2f+xyz[2]*.3f,
+                                    xyz[1]*1.8f+xyz[2]*1.4f));
+                            compactParts.Add(section.SourceParts[oldIndex]);
+                            compactCoordinates.Add(xyz);
+                        }
+                        compactTriangles.Add(newIndex);
+                    }
                     var node=new GameObject("Surface_"+(sectionId++).ToString("D2"));
                     node.transform.SetParent(actor.transform,false);
                     var mesh=new Mesh { name=section.Name,indexFormat=IndexFormat.UInt32 };
-                    mesh.SetVertices(section.Vertices.Select(v=>new Vector3(v[0],v[1],v[2])).ToList());
-                    mesh.SetNormals(section.Normals.Select(v=>new Vector3(v[0],v[1],v[2])).ToList());
-                    mesh.SetUVs(0,section.UVs.Select((v,i)=>
-                    {
-                        // Prefer authored source UVs; fallback only if that
-                        // exact vertex's coordinates are missing/zero.
-                        if(v[0]!=0 || v[1]!=0)return new Vector2(v[0],v[1]);
-                        var xyz=section.Vertices[i];
-                        return new Vector2(xyz[0]*2.2f+xyz[2]*.3f,
-                            xyz[1]*1.8f+xyz[2]*1.4f);
-                    }).ToList());
-                    mesh.SetTriangles(retainedTriangles,0);
-                    // Tangent space is mandatory for imported normal-map
-                    // relief to affect the actual skinned renderer.
+                    mesh.SetVertices(compactVertices);
+                    mesh.SetNormals(compactNormals);
+                    mesh.SetUVs(0,compactUvs);
+                    mesh.SetTriangles(compactTriangles,0);
                     mesh.RecalculateTangents();
-                    var weights=new BoneWeight[section.Vertices.Count];
+                    var weights=new BoneWeight[compactVertices.Count];
                     for(int i=0;i<weights.Length;i++)
                     {
-                        var w=AshboundSkeleton.Skin(section.SourceParts[i],section.Vertices[i]);
+                        var w=AshboundSkeleton.Skin(compactParts[i],
+                            compactCoordinates[i]);
                         weights[i]=new BoneWeight {
                             boneIndex0=w.First,weight0=w.Primary,
                             boneIndex1=w.Second,weight1=w.Secondary
