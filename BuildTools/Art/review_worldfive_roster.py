@@ -11,7 +11,10 @@ OUT=ROOT/'SourceArt/WorldFiveRoster/Review'
 
 def validate(name):
     m=BUILDERS[name]();prefix='Tervan_' if name=='Burdenbeast' else 'Vaskel_'
-    expected=8 if name=='Burdenbeast' else 2
+    expected=8 if name=='Burdenbeast' else 0
+    if name=='Riftwalker':
+        forbidden=('Limb','Leg','Foot','Contact','Ankle','WaistWeb')
+        assert not any(any(word in p['name'] for word in forbidden) for p in m.parts if p['name'].startswith('Vaskel_')),'Superseded leg anatomy'
     assert len({p['name'] for p in m.parts})==len(m.parts)
     assert sum(p['name'].startswith(prefix+'Limb_') for p in m.parts)==expected
     assert sum(p['name'].startswith(prefix+'Contact_') for p in m.parts)==expected
@@ -30,6 +33,7 @@ def validate(name):
     if name=='Burdenbeast':assert 5<np.ptp(animal[:,2])<7
     else:
         assert 1.2<np.ptp(animal[:,1])<1.8
+        assert animal[:,1].min()>.4,'Legless review pose must clear the ground'
         counter=np.array(next(p['vertices'] for p in m.parts if p['name']=='Vaskel_Counterweight'))
         assert counter[:,1].min()>.4,'Counterweight must not become a third ground contact'
     for material in {p['material'] for p in m.parts}&LOCAL:
@@ -44,7 +48,7 @@ def validate(name):
         write(name,Path(d))
         for f in Path(d).rglob('*'):
             if f.is_file():assert f.read_bytes()==(ROOT/'SourceArt'/name/f.relative_to(d)).read_bytes(),('stale',f.name)
-    return dict(unit=name,limbs=expected,closed_parts=len(m.parts),grounded_contacts=True,partner_clearance=True,
+    return dict(unit=name,limbs=expected,closed_parts=len(m.parts),grounded_contacts=expected,partner_clearance=True,
         bounds=[animal.min(0).tolist(),animal.max(0).tolist()],limitations='Initial proposed contours, not final art, rig or collision certification')
 
 def main(render_images):

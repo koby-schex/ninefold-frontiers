@@ -20,7 +20,7 @@ namespace Ninefold.Editor
         public static void Riftwalker() { var w=GetWindow<WorldFiveRosterReview>("World Five roster"); w.unit="Riftwalker"; }
         private void OnGUI()
         {
-            EditorGUILayout.LabelField(unit + " · Anatomy and architecture 04", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(unit + (unit=="Riftwalker"?" · Legless anatomy 05":" · Anatomy and architecture 04"), EditorStyles.boldLabel);
             EditorGUILayout.HelpBox("Static anatomy review. Inspect the front, side and three-quarter silhouette against the locked visual master before further animation. This proposed mesh is awaiting visual acceptance.", MessageType.Info);
             if (GUILayout.Button("Create a fresh review scene"))
             {
@@ -43,10 +43,11 @@ namespace Ninefold.Editor
             string hash;
             using (var sha=SHA256.Create())
                 hash=BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(File.ReadAllText(source+unit+".obj")+File.ReadAllText(source+unit+".mtl")+File.ReadAllText("Assets/Ninefold/Editor/WorldFiveRosterReview.cs")+File.ReadAllText("Assets/Ninefold/Editor/WorldFiveRosterMotion.cs")))).Replace("-","").Substring(0,12);
-            string folder=AssetDatabase.GenerateUniqueAssetPath("Assets/Ninefold/ArtReview/"+unit+"04_"+hash);
+            string revision=unit=="Riftwalker"?"05":"04";
+            string folder=AssetDatabase.GenerateUniqueAssetPath("Assets/Ninefold/ArtReview/"+unit+revision+"_"+hash);
             Directory.CreateDirectory(folder);AssetDatabase.Refresh();
             var scene=EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,NewSceneMode.Single);
-            var root=new GameObject(unit+" — Anatomy and architecture 04");
+            var root=new GameObject(unit+" — Anatomy review "+revision);
             var mapped=materials.ToDictionary(s=>s.Name,s=>
             {
                 var m=new Material(shader) { name=s.Name };
@@ -102,7 +103,7 @@ namespace Ninefold.Editor
                 go.AddComponent<MeshFilter>().sharedMesh=mesh;
                 go.AddComponent<MeshRenderer>().sharedMaterial=mapped[part.Material];
             }
-            if (PrefabUtility.SaveAsPrefabAsset(root,folder+"/"+unit+"Study04.prefab") == null) throw new IOException("Prefab save failed.");
+            if (PrefabUtility.SaveAsPrefabAsset(root,folder+"/"+unit+"Study"+revision+".prefab") == null) throw new IOException("Prefab save failed.");
             var light=new GameObject("Review key").AddComponent<Light>();light.type=LightType.Directional;light.intensity=1.2f;
             light.transform.rotation=Quaternion.Euler(45,-30,0);
             RenderSettings.ambientMode=AmbientMode.Flat;RenderSettings.ambientLight=new Color(.45f,.45f,.45f);
@@ -112,7 +113,7 @@ namespace Ninefold.Editor
             camera.transform.LookAt(target);camera.nearClipPlane=.05f;camera.farClipPlane=100;
             camera.backgroundColor=new Color(.16f,.16f,.16f);camera.clearFlags=CameraClearFlags.SolidColor;
             AssetDatabase.SaveAssets();
-            if (!EditorSceneManager.SaveScene(scene,folder+"/"+unit+"Review04.unity")) throw new IOException("Scene save failed.");
+            if (!EditorSceneManager.SaveScene(scene,folder+"/"+unit+"Review"+revision+".unity")) throw new IOException("Scene save failed.");
             Selection.activeGameObject=root;
             SceneView.lastActiveSceneView?.FrameSelected();
             return true;

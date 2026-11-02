@@ -50,7 +50,8 @@ BUILDERS={'Burdenbeast':burdenbeast,'Riftwalker':riftwalker}
 
 def write(name,folder):
     m=BUILDERS[name]();folder.mkdir(parents=True,exist_ok=True)
-    lines=['# '+name+' anatomy and architecture 04; meters Y-up +Z','mtllib '+name+'.mtl'];offset=1;uvoffset=1
+    study='legless anatomy 05' if name=='Riftwalker' else 'anatomy and architecture 04'
+    lines=['# '+name+' '+study+'; meters Y-up +Z','mtllib '+name+'.mtl'];offset=1;uvoffset=1
     for p in m.parts:
         lines+=['o '+p['name'],'usemtl '+p['material'],'s 1']
         lines+=['v '+' '.join(f'{q:.6f}' for q in v) for v in p['vertices']]
@@ -65,9 +66,10 @@ def write(name,folder):
         if n in SURFACE_TYPES:png_albedo(textures/(n+'.png'),surface_values(n,SURFACE_TYPES[n]),COLORS[n])
         if n in LOCAL:write_details(textures,n,SURFACE_TYPES[n],FINISH[n][0])
     (folder/(name+'.mtl')).write_text('\n'.join('newmtl '+n+'\nKd '+' '.join(map(str,(1,1,1) if n in SURFACE_TYPES else COLORS[n]))+'\nNs '+str(FINISH.get(n,(24,.08))[0])+'\nd '+str(.68 if n=='sail_membrane' else 1)+'\n'+('map_Kd Textures/'+n+'.png\n' if n in SURFACE_TYPES else '') for n in used))
-    manifest=dict(study='anatomy and architecture 04',model=name,units='meters',parts=len(m.parts),vertices=offset-1,
+    manifest=dict(study=study,model=name,units='meters',parts=len(m.parts),vertices=offset-1,
         triangles=sum(len(p['faces']) for p in m.parts),canon=['v26.0 section 26.6','v25.3 bonded-tradition entries','locked World Five visual master'],
         limitations=['Proposed rebuilt anatomy; user visual acceptance pending','Static geometry review; no new animation, production rig, LODs or game registration','Projected study UVs; production unwrap outstanding','Unseen anatomy and civic arrangements are proposals'])
+    if name=='Riftwalker':manifest['canon'].append('v26.0 section 26.17, approved 2026-11-02: legless Vaskel; supersedes two-limb anatomy')
     (folder/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
     return m
 

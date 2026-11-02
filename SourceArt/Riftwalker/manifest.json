@@ -1,14 +1,15 @@
 {
-  "study": "anatomy and architecture 04",
+  "study": "legless anatomy 05",
   "model": "Riftwalker",
   "units": "meters",
-  "parts": 86,
-  "vertices": 28976,
-  "triangles": 57608,
+  "parts": 85,
+  "vertices": 30030,
+  "triangles": 59720,
   "canon": [
     "v26.0 section 26.6",
     "v25.3 bonded-tradition entries",
-    "locked World Five visual master"
+    "locked World Five visual master",
+    "v26.0 section 26.17, approved 2026-11-02: legless Vaskel; supersedes two-limb anatomy"
   ],
   "limitations": [
     "Proposed rebuilt anatomy; user visual acceptance pending",
