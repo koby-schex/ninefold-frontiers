@@ -26,6 +26,7 @@ jobs:
       - run: python BuildTools/Art/validate_rift_forager_anatomy_reconstruction.py
       - run: python BuildTools/Art/validate_rift_forager_sculpt_surface.py
       - run: python BuildTools/Art/validate_rift_forager_comparison.py --mode sources
+      - run: python BuildTools/Art/test_rift_forager_depth_raster.py
       - run: python BuildTools/Art/review_living_veil.py
       - run: python BuildTools/Art/review_worldfive_roster.py
       - run: git diff --check
