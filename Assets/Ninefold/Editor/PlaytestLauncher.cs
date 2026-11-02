@@ -68,6 +68,8 @@ namespace Ninefold.Editor
 
             GUILayout.Space(12); GUILayout.Label("Art review", EditorStyles.boldLabel);
             if (GUILayout.Button("Great Strider visual review", GUILayout.MinHeight(36))) GreatStriderReview.Open();
+            if (GUILayout.Button("Rift Forager battle-camera art review", GUILayout.MinHeight(36)))
+                RiftForagerBattleCameraReview.Open();
             EditorGUILayout.HelpBox("Separate model inspection scene. Stop Play mode before opening it; no profile changes.", MessageType.None);
 
             GUILayout.Space(12); GUILayout.Label("Diagnostics", EditorStyles.boldLabel);
