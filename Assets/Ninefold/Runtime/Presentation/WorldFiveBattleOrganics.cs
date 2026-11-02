@@ -106,7 +106,7 @@ namespace Ninefold.Presentation
             return mesh;
         }
 
-        private static GameObject Part(GameObject root,List<Mesh> owned,string name,
+        internal static GameObject Part(GameObject root,List<Mesh> owned,string name,
             Material material,Vector3 position,Vector3[] centers,Vector2[] radii,int sides=20)
         {
             var node=new GameObject(name);
@@ -121,8 +121,8 @@ namespace Ninefold.Presentation
             renderer.receiveShadows=false;
             return node;
         }
-        private static Vector2 R(float x,float y) => new Vector2(x,y);
-        private static Vector3 P(float x,float y,float z) => new Vector3(x,y,z);
+        internal static Vector2 R(float x,float y) => new Vector2(x,y);
+        internal static Vector3 P(float x,float y,float z) => new Vector3(x,y,z);
 
         internal static void Wildlife(GameObject root,bool stalker,
             Material body,Material accent,Material dark,List<Mesh> owned)
@@ -287,6 +287,12 @@ namespace Ninefold.Presentation
                     P(-.028f,-.16f,.02f)
                 },new[]{R(.061f,.043f),R(.125f,.09f),
                     R(.083f,.071f)},16);
+            if(kind==2 || kind==3)
+            {
+                WorldFiveAshboundMidRosterDetails.Build(root,kind,skin,mantle,
+                    fabric,gear,conduit,dark,owned);
+                GroupAshboundMotion(root,owned);
+            }
             if(kind==0 || kind==1)
             {
                 // First contact: visually refines the actual Mission 11 enemy
@@ -308,6 +314,99 @@ namespace Ninefold.Presentation
             Material conduit,Material dark,List<Mesh> owned)
         {
             bool striker=kind==1;
+            AvarinDetailedAnatomy(root,striker,skin,mantle,fabric,
+                gear,conduit,dark,owned);
+            if(!striker)
+            {
+                // Forager reads light and alert: asymmetrical terrain probe,
+                // flexible tethers, narrow repair apron and tool pack.
+                Part(root,owned,"Forager shoulder capture relay",gear,
+                    P(.305f,.305f,-.070f),
+                    new[]{P(-.07f,.038f,-.01f),
+                          P(0,.059f,-.027f),P(.109f,.009f,-.026f),
+                          P(.128f,-.081f,.010f)},
+                    new[]{R(.040f,.039f),R(.069f,.049f),
+                          R(.043f,.037f),R(.018f,.017f)},16);
+                Part(root,owned,"Forager hooked route reader",conduit,
+                    P(.335f,-.165f,.146f),
+                    new[]{P(0,.110f,-.012f),P(.018f,-.011f,.042f),
+                          P(.011f,-.172f,.160f),
+                          P(-.024f,-.230f,.242f)},
+                    new[]{R(.035f,.034f),R(.052f,.040f),
+                          R(.035f,.025f),R(.010f,.011f)},16);
+                Part(root,owned,"Forager reader tip",gear,
+                    P(.324f,-.396f,.389f),
+                    new[]{P(0,.028f,-.050f),P(.009f,0,0),
+                          P(-.021f,-.033f,.071f)},
+                    new[]{R(.015f,.014f),R(.059f,.027f),
+                          R(.010f,.008f)},12);
+                Part(root,owned,"Forager repair satchel",gear,
+                    P(-.245f,-.304f,-.16f),
+                    new[]{P(0,.106f,-.013f),P(-.021f,-.015f,-.014f),
+                          P(-.024f,-.185f,.017f)},
+                    new[]{R(.077f,.056f),R(.125f,.088f),
+                          R(.070f,.056f)},18);
+                Part(root,owned,"Forager trailing tag",fabric,
+                    P(-.24f,-.465f,-.108f),
+                    new[]{P(0,.07f,0),P(-.035f,-.024f,-.017f),
+                          P(-.070f,-.143f,-.015f)},
+                    new[]{R(.044f,.018f),R(.050f,.017f),
+                          R(.014f,.007f)},12);
+            }
+            else
+            {
+                // Striker's silhouette is unequivocally different at battle
+                // scale: overbuilt RIGHT shoulder and broad blunt forearm
+                // contact implement; the left remains visibly lighter.
+                Part(root,owned,"Striker layered right shoulder",gear,
+                    P(.217f,.274f,-.09f),
+                    new[]{P(-.09f,.094f,.02f),
+                          P(.026f,.122f,-.025f),
+                          P(.165f,.025f,-.045f),
+                          P(.112f,-.121f,.037f)},
+                    new[]{R(.071f,.063f),R(.147f,.098f),
+                          R(.128f,.090f),R(.025f,.027f)},24);
+                Part(root,owned,"Striker right arm impact housing",gear,
+                    P(.320f,-.180f,.175f),
+                    new[]{P(0,.136f,-.024f),P(.022f,.014f,.023f),
+                          P(.019f,-.151f,.105f)},
+                    new[]{R(.093f,.082f),R(.147f,.110f),
+                          R(.101f,.077f)},20);
+                Part(root,owned,"Striker blunt contact ridge",conduit,
+                    P(.361f,-.336f,.282f),
+                    new[]{P(-.095f,.021f,-.020f),P(0,.032f,.024f),
+                          P(.100f,.017f,.039f)},
+                    new[]{R(.048f,.036f),R(.071f,.056f),
+                          R(.047f,.034f)},18);
+                Part(root,owned,"Striker side ballast",gear,
+                    P(-.232f,-.075f,-.212f),
+                    new[]{P(0,.165f,-.016f),P(-.022f,.009f,-.044f),
+                          P(-.021f,-.178f,.012f)},
+                    new[]{R(.055f,.048f),R(.127f,.073f),
+                          R(.056f,.041f)},18);
+                for(int plate=0;plate<3;plate++)
+                {
+                    float h=-.04f-plate*.082f;
+                    Part(root,owned,"Striker layered chest plate "+plate,gear,
+                        P(0,h,.157f),
+                        new[]{P(-.224f,.043f,-.060f),
+                              P(-.055f,.020f,.027f),
+                              P(.135f,-.008f,.014f),
+                              P(.234f,-.036f,-.056f)},
+                        new[]{R(.016f,.013f),R(.032f,.025f),
+                              R(.032f,.023f),R(.010f,.010f)},18);
+                }
+            }
+        }
+
+        // Unified species anatomy for first-contact and mid-roster
+        // nonplayable Avarin. External gear is role-specific and is not
+        // classified as a new biological structure or canon addition.
+        internal static void AvarinDetailedAnatomy(GameObject root,bool armored,
+            Material skin,Material mantle,Material fabric,Material gear,
+            Material conduit,Material dark,List<Mesh> owned)
+        {
+            bool striker=armored;
             // Explicit face architecture. No sphere-blob face or floating eyes.
             Part(root,owned,"Temple brow bridge",skin,P(0,.72f,.127f),
                 new[]{P(-.155f,0,0),P(-.085f,.018f,.02f),
@@ -418,87 +517,6 @@ namespace Ninefold.Presentation
                           R(.012f,.011f),R(.006f,.008f)},10);
             }
 
-            if(!striker)
-            {
-                // Forager reads light and alert: asymmetrical terrain probe,
-                // flexible tethers, narrow repair apron and tool pack.
-                Part(root,owned,"Forager shoulder capture relay",gear,
-                    P(.305f,.305f,-.070f),
-                    new[]{P(-.07f,.038f,-.01f),
-                          P(0,.059f,-.027f),P(.109f,.009f,-.026f),
-                          P(.128f,-.081f,.010f)},
-                    new[]{R(.040f,.039f),R(.069f,.049f),
-                          R(.043f,.037f),R(.018f,.017f)},16);
-                Part(root,owned,"Forager hooked route reader",conduit,
-                    P(.335f,-.165f,.146f),
-                    new[]{P(0,.110f,-.012f),P(.018f,-.011f,.042f),
-                          P(.011f,-.172f,.160f),
-                          P(-.024f,-.230f,.242f)},
-                    new[]{R(.035f,.034f),R(.052f,.040f),
-                          R(.035f,.025f),R(.010f,.011f)},16);
-                Part(root,owned,"Forager reader tip",gear,
-                    P(.324f,-.396f,.389f),
-                    new[]{P(0,.028f,-.050f),P(.009f,0,0),
-                          P(-.021f,-.033f,.071f)},
-                    new[]{R(.015f,.014f),R(.059f,.027f),
-                          R(.010f,.008f)},12);
-                Part(root,owned,"Forager repair satchel",gear,
-                    P(-.245f,-.304f,-.16f),
-                    new[]{P(0,.106f,-.013f),P(-.021f,-.015f,-.014f),
-                          P(-.024f,-.185f,.017f)},
-                    new[]{R(.077f,.056f),R(.125f,.088f),
-                          R(.070f,.056f)},18);
-                Part(root,owned,"Forager trailing tag",fabric,
-                    P(-.24f,-.465f,-.108f),
-                    new[]{P(0,.07f,0),P(-.035f,-.024f,-.017f),
-                          P(-.070f,-.143f,-.015f)},
-                    new[]{R(.044f,.018f),R(.050f,.017f),
-                          R(.014f,.007f)},12);
-            }
-            else
-            {
-                // Striker's silhouette is unequivocally different at battle
-                // scale: overbuilt RIGHT shoulder and broad blunt forearm
-                // contact implement; the left remains visibly lighter.
-                Part(root,owned,"Striker layered right shoulder",gear,
-                    P(.217f,.274f,-.09f),
-                    new[]{P(-.09f,.094f,.02f),
-                          P(.026f,.122f,-.025f),
-                          P(.165f,.025f,-.045f),
-                          P(.112f,-.121f,.037f)},
-                    new[]{R(.071f,.063f),R(.147f,.098f),
-                          R(.128f,.090f),R(.025f,.027f)},24);
-                Part(root,owned,"Striker right arm impact housing",gear,
-                    P(.320f,-.180f,.175f),
-                    new[]{P(0,.136f,-.024f),P(.022f,.014f,.023f),
-                          P(.019f,-.151f,.105f)},
-                    new[]{R(.093f,.082f),R(.147f,.110f),
-                          R(.101f,.077f)},20);
-                Part(root,owned,"Striker blunt contact ridge",conduit,
-                    P(.361f,-.336f,.282f),
-                    new[]{P(-.095f,.021f,-.020f),P(0,.032f,.024f),
-                          P(.100f,.017f,.039f)},
-                    new[]{R(.048f,.036f),R(.071f,.056f),
-                          R(.047f,.034f)},18);
-                Part(root,owned,"Striker side ballast",gear,
-                    P(-.232f,-.075f,-.212f),
-                    new[]{P(0,.165f,-.016f),P(-.022f,.009f,-.044f),
-                          P(-.021f,-.178f,.012f)},
-                    new[]{R(.055f,.048f),R(.127f,.073f),
-                          R(.056f,.041f)},18);
-                for(int plate=0;plate<3;plate++)
-                {
-                    float h=-.04f-plate*.082f;
-                    Part(root,owned,"Striker layered chest plate "+plate,gear,
-                        P(0,h,.157f),
-                        new[]{P(-.224f,.043f,-.060f),
-                              P(-.055f,.020f,.027f),
-                              P(.135f,-.008f,.014f),
-                              P(.234f,-.036f,-.056f)},
-                        new[]{R(.016f,.013f),R(.032f,.025f),
-                              R(.032f,.023f),R(.010f,.010f)},18);
-                }
-            }
         }
 
         /// <summary>
@@ -507,7 +525,7 @@ namespace Ninefold.Presentation
         /// floating accessories in the prior independent-part motion.
         /// Per-limb contact remains a review study, not skeletal IK.
         /// </summary>
-        private static void GroupAshboundMotion(GameObject root,List<Mesh> owned)
+        internal static void GroupAshboundMotion(GameObject root,List<Mesh> owned)
         {
             Transform Pivot(string label,Vector3 center,Transform parent)
             {
