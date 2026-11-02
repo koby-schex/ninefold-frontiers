@@ -15,7 +15,7 @@ The user reported character models look like simple drawings. This new tool give
 3. Use `Ninefold > Art > Review Rift Forager at Battle Camera Scale` or the corresponding Art review button in the Playtest Launcher. If there are multiple generated rigs, explicitly choose the most recent desired rig in **Rig review prefab**; it cannot accept an unrelated, approved gameplay, or unsafely scripted prefab.
 4. Click **CAPTURE PORTRAIT ART REVIEW**. A disposable preview scene is used; the current Unity scene and saves are not touched. The tool uses the actual skinned mesh, source bones and textures, real Animator clip samples, and neutral lighting and floor.
 5. Click **Reveal exported PNGs and measurements**. The output is a timestamped folder under your **local** Unity project `Library/NinefoldReviews/RiftForager/`, which remains outside version control. Open `review-report.txt` for exact renderer, vertex, triangle, 19-bone and eight-material counts, source prefab path, camera settings and file list.
-6. Review and share the screenshots, especially `tactical-390x844-idle-front.png`, `tactical-390x844-attack-three-quarter.png`, `tactical-390x844-afterecho-side.png`, and `detail-390x844-idle-front.png`.
+6. Review the tactical and narrow contact sheets first, then share the screenshots, especially `tactical-390x844-idle-front.png`, `tactical-390x844-attack-three-quarter.png`, `tactical-390x844-afterecho-side.png`, and `detail-390x844-idle-front.png`.
 
 ## What is actually captured
 
@@ -23,7 +23,8 @@ The user reported character models look like simple drawings. This new tool give
 - Four **320×568** tactical frames: Idle and Attack at front and three-quarter, with the same battlefield camera projection.
 - Four **390×844** close-up frames: Idle and Attack at front and three-quarter, from 18° with orthographicSize 1.26 to inspect face, matte materials, equipment and skin weights. These are **not** gameplay screenshots.
 - One **390×844** flat-normal-map control frame: the exact same Idle pose and URP material assets but a zero `_BumpScale`, to assess how much tangent-space normal relief contributes and whether the visual issue is topology rather than surface maps.
-- Total: **21 real Unity PNG frames plus a measurement report**. No AI-generated image can substitute for them.
+- Two assembled contact sheets: `contact-sheet-tactical-390x844.png` (4 angles × 3 poses) and `contact-sheet-narrow-320x568.png` (2 angles × 2 poses). These tiles reuse the **actual Unity-captured image pixels**, not fabricated illustrations. The top row is the first listed pose, each row is arranged front to rear.
+- Total: **21 real Unity PNG frames, two contact sheets, and one measurement report**. No AI-generated image can substitute for them.
 
 **Important caveat:** all captures use a neutral stage and the currently built skinned *review candidate*, rather than a live played Mission 11. That isolates geometry/animation for visual comparison. Even the tactical 58° angles do not fully reproduce the mission's map zoom, clutter, environment lighting, or phone thermal conditions. These must be reviewed separately before registering a model in any battle.
 
