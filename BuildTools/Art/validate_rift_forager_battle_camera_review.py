@@ -12,6 +12,7 @@ def read(p): return (root/p).read_text(encoding="utf-8")
 tool=read("Assets/Ninefold/Editor/RiftForagerBattleCameraReview.cs")
 game=read("Assets/Ninefold/Runtime/Presentation/PlaytestBattlefield.cs")
 rig=read("Assets/Ninefold/Editor/AshboundRigReview.cs")
+motion=read("Assets/Ninefold/Runtime/Presentation/FrontiersBattleModelMotion.cs")
 guide=read("Docs/Review/RiftForagerBattleCameraGate01/README.md")
 
 def expect(ok,msg):
@@ -62,6 +63,15 @@ expect('ContactSheet(export,tactical,4,3,390,844,tacticalSheet)' in tool and
        'tile.GetPixels32()' in tool and
        'Array.Copy(pixels,y*tileWidth,surface,' in tool,
        "Actual captured PNGs must be assembled into mobile-scale review grids")
+expect('controller.AddParameter("Moving",AnimatorControllerParameterType.Bool);' in rig and
+       'startWalking=idle.AddTransition(advance)' in rig and
+       'stopWalking=advance.AddTransition(idle)' in rig and
+       'AnimatorConditionMode.If,0,"Moving"' in rig and
+       'AnimatorConditionMode.IfNot,0,"Moving"' in rig and
+       'private static readonly int Moving=Animator.StringToHash("Moving");' in motion and
+       'public void BeginMovement() => SetMoving(true)' in motion and
+       'public void EndMovement() => SetMoving(false)' in motion,
+       "Actual authored locomotion must be wired to battle renderer Moving bool")
 expect('new MaterialPropertyBlock()' in tool and
        'flat.SetFloat("_BumpScale",0)' in tool and
        'control-390x844-idle-no-normal-detail.png' in tool,
