@@ -16,7 +16,7 @@ namespace Ninefold.Editor
     /// </summary>
     internal static class RiftForagerAnatomyReconstruction
     {
-        internal const string Revision="rift-forager-continuous-anatomy-surface-02";
+        internal const string Revision="rift-forager-continuous-anatomy-surface-03";
         internal const float DefaultStep=.029f;
 
         internal sealed class Surface
@@ -82,19 +82,23 @@ namespace Ninefold.Editor
         {
             float d=Ellipsoid(x,y,z,0,.947f,-.016f,.168f,.206f,.132f);
             d=Union(d,Ellipsoid(x,y,z,0,1.154f,-.024f,
-                .180f,.250f,.141f),.10f);
-            d=Union(d,Ellipsoid(x,y,z,0,1.343f,-.036f,
-                .203f,.180f,.132f),.11f);
+                .170f,.235f,.134f),.087f);
+            d=Union(d,Ellipsoid(x,y,z,0,1.343f,-.043f,
+                .183f,.180f,.118f),.075f);
             d=Union(d,Ellipsoid(x,y,z,0,1.487f,-.012f,
                 .074f,.128f,.076f),.085f);
-            // Sculpted temple and naturally tapered chin; separate detailed
-            // eyes, ridges and the living mantle remain real source geometry.
-            d=Union(d,Ellipsoid(x,y,z,0,1.669f,.020f,
-                .108f,.139f,.105f),.060f);
-            d=Union(d,Ellipsoid(x,y,z,0,1.596f,.059f,
-                .068f,.054f,.072f),.036f);
-            d=Union(d,Ellipsoid(x,y,z,0,1.750f,-.012f,
-                .090f,.054f,.079f),.035f);
+            // Original source features sit at exact anterior landmarks: paired eyes
+            // (+/- .044,1.68,.110), mouth (0,1.592,.109), forehead ridge
+            // (0,1.738,.092). The previous enlarged skull engulfed them.
+            // Keep the living mantle, separate authored face details and
+            // external gear in their original locations; shape the *body*
+            // behind their contact plane rather than moving or deleting them.
+            d=Union(d,Ellipsoid(x,y,z,0,1.676f,.007f,
+                .105f,.143f,.091f),.045f);
+            d=Union(d,Ellipsoid(x,y,z,0,1.599f,.044f,
+                .061f,.053f,.059f),.027f);
+            d=Union(d,Ellipsoid(x,y,z,0,1.751f,-.018f,
+                .098f,.061f,.077f),.035f);
 
             // Broad organic planes rather than disconnected facial detail
             // shapes. Integrate temple and cheekbone structure into the
@@ -103,10 +107,10 @@ namespace Ninefold.Editor
             for(int sign=-1;sign<=1;sign+=2)
             {
                 float s=sign;
-                d=Union(d,Ellipsoid(x,y,z,s*.063f,1.636f,.058f,
-                    .049f,.052f,.054f),.030f);
-                d=Union(d,Ellipsoid(x,y,z,s*.081f,1.703f,.018f,
-                    .033f,.070f,.057f),.033f);
+                d=Union(d,Ellipsoid(x,y,z,s*.068f,1.641f,.064f,
+                    .045f,.047f,.046f),.023f);
+                d=Union(d,Ellipsoid(x,y,z,s*.082f,1.710f,.025f,
+                    .039f,.060f,.050f),.025f);
                 // Shoulder and chest transition planes stay inside the
                 // anatomical silhouette rather than resembling a glued
                 // shoulder-pad prop.
@@ -130,8 +134,8 @@ namespace Ninefold.Editor
                 float s=sign;
                 // Natural shoulder-to-elbow transition. Subtle taper is
                 // anatomical, not overlapping cylinders for each segment.
-                d=Union(d,Ellipsoid(x,y,z,s*.166f,1.366f,-.021f,
-                    .105f,.107f,.105f),.070f);
+                d=Union(d,Ellipsoid(x,y,z,s*.166f,1.366f,-.029f,
+                    .105f,.107f,.088f),.058f);
                 d=Union(d,Capsule(x,y,z,s*.181f,1.387f,-.022f,
                     s*.250f,1.132f,.049f,.091f,.073f),.062f);
                 d=Union(d,Capsule(x,y,z,s*.250f,1.135f,.049f,

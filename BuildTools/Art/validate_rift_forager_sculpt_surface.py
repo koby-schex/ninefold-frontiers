@@ -17,13 +17,13 @@ workflow=read(".github/workflows/repository-checks.yml")
 guide=read("Docs/Review/RiftForagerSculptSurface02/README.md")
 def check(ok,msg):
     if not ok:raise AssertionError(msg)
-check('rift-forager-continuous-anatomy-surface-02' in s and
+check('rift-forager-continuous-anatomy-surface-03' in s and
       'private static float Union(' in s and
       'internal static float Field(' in s,
       "Second pass must alter the original continuous anatomical surface, not overlay props")
 for term in (
-    '1.636f,.058f',
-    '1.703f,.018f',
+    '1.641f,.064f',
+    '1.710f,.025f',
     '1.365f,.063f',
     '1.294f,-.106f',
     '1.045f,.075f',
@@ -43,7 +43,7 @@ check('var sculpt=RiftForagerAnatomyReconstruction.Generate();' in rig and
       'unified.RecalculateTangents();' in rig and
       'AshboundSkeleton.SkinOrganic(rebuilt.Vertices[i])' in rig,
       "Actual skinned Unity review prefab must use the seam-safe sculpt/UV output")
-for method in ("RebuildAnatomicalPlanes","RebuildUvSeams","RebuildWeightContinuity"):
+for method in ("RebuildAnatomicalPlanes","RebuildSourceFeatureClearance", "RebuildUvSeams","RebuildWeightContinuity"):
     check(method in tests,"Executable real model quality test missing: "+method)
 check('RebuildTopology' in tests and 'Seamless anatomy has' in tests and
       'RebuildSurface' in tests and 'RebuildWeights' in tests,
