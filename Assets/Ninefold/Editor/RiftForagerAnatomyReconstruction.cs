@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Ninefold.Editor
 {
@@ -160,7 +159,7 @@ namespace Ninefold.Editor
             int nx=(int)Math.Ceiling((maxX-minX)/step)+1;
             int ny=(int)Math.Ceiling((maxY-minY)/step)+1;
             int nz=(int)Math.Ceiling((maxZ-minZ)/step)+1;
-            int strideY=nx,strideZ=nx*ny;
+            int strideZ=nx*ny;
             int total=nx*ny*nz;
             var values=new float[total];
             int Id(int x,int y,int z)=>x+nx*(y+ny*z);
@@ -172,10 +171,8 @@ namespace Ninefold.Editor
 
             var mesh=new Surface();
             var edges=new Dictionary<ulong,int>();
-            float[][] pointCache=new float[8][];
             int[] cubeIds=new int[8];
             float[] cubeValues=new float[8];
-            float[] candidateNormal=new float[3];
 
             int Edge(int idA,int idB,float valueA,float valueB)
             {
@@ -227,6 +224,7 @@ namespace Ninefold.Editor
                 target.Add(a);target.Add(b);target.Add(c);
             }
 
+            int[] inner=new int[4],outer=new int[4];
             for(int z=0;z<nz-1;z++)
             for(int y=0;y<ny-1;y++)
             for(int x=0;x<nx-1;x++)
@@ -243,7 +241,6 @@ namespace Ninefold.Editor
                 if(!inside||!outside)continue;
                 for(int tetra=0;tetra<6;tetra++)
                 {
-                    int[] inner=new int[4],outer=new int[4];
                     int nInner=0,nOuter=0;
                     for(int v=0;v<4;v++)
                     {
