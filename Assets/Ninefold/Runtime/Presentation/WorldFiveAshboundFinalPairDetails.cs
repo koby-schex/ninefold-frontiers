@@ -56,7 +56,7 @@ namespace Ninefold.Presentation
                 float offset=petal*.073f;
                 bool right=petal<3;
                 float side=right?1f:-1f;
-                float x=right?.316f+offset:-.271f;
+                float x=right ? .316f+offset : -.271f;
                 Part(root,owned,"Seer external signal petal "+petal,
                     petal%3==0?wake:salvage,
                     P(x,.48f-offset*.23f,-.21f-offset*.18f),new[]{
@@ -88,7 +88,7 @@ namespace Ninefold.Presentation
                 Part(root,owned,"Seer cassette instability readout "+dial,
                     wake,P(.120f,h,.256f),new[]{
                         P(-.058f,.0f,-.014f),
-                        P(-.016f,(dial%2==0?.010f:-.007f),.014f),
+                        P(-.016f,(dial%2==0 ? .010f : -.007f),.014f),
                         P(.068f,-.006f,-.003f)},
                     new[]{R(.006f,.007f),R(.011f,.010f),
                         R(.006f,.007f)},12);
