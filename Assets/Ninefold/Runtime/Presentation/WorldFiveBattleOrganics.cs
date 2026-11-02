@@ -287,6 +287,15 @@ namespace Ninefold.Presentation
                     P(-.028f,-.16f,.02f)
                 },new[]{R(.061f,.043f),R(.125f,.09f),
                     R(.083f,.071f)},16);
+            if(kind==4 || kind==5)
+            {
+                // Final two ordinary enemy types use the same Avarin biology,
+                // but role-specific hardware and equipment. All are
+                // provisional, live battle meshes rather than canon masters.
+                WorldFiveAshboundFinalPairDetails.Build(root,kind,skin,mantle,
+                    fabric,gear,conduit,dark,owned);
+                GroupAshboundMotion(root,owned);
+            }
             if(kind==2 || kind==3)
             {
                 WorldFiveAshboundMidRosterDetails.Build(root,kind,skin,mantle,
@@ -570,7 +579,15 @@ namespace Ninefold.Presentation
                         n.StartsWith("Castigator high right shoulder ",StringComparison.Ordinal) ||
                         n.StartsWith("Castigator right ",StringComparison.Ordinal) ||
                         n.StartsWith("Wrecker left load shoulder",StringComparison.Ordinal) ||
-                        n.StartsWith("Wrecker right ",StringComparison.Ordinal))
+                        n.StartsWith("Wrecker right ",StringComparison.Ordinal) ||
+                        n.StartsWith("Seer left forearm ",StringComparison.Ordinal) ||
+                        n.StartsWith("Seer left brace channel ",StringComparison.Ordinal) ||
+                        n.StartsWith("Seer right forearm ",StringComparison.Ordinal) ||
+                        n.StartsWith("Seer right brace channel ",StringComparison.Ordinal) ||
+                        n.StartsWith("Witness left arm ",StringComparison.Ordinal) ||
+                        n.StartsWith("Witness left signal ",StringComparison.Ordinal) ||
+                        n.StartsWith("Witness reinforced left shoulder ",StringComparison.Ordinal) ||
+                        n.StartsWith("Witness lighter right shoulder ",StringComparison.Ordinal))
                     target=left?leftArm:rightArm;
                 else if(n.StartsWith("Avarin temple face",StringComparison.Ordinal) ||
                         n.StartsWith("Living crescent ",StringComparison.Ordinal) ||

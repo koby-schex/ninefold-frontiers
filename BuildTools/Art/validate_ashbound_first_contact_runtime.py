@@ -67,7 +67,7 @@ required("if(hasApprovedPrefab)" in battle and
          "isAshbound)" in battle and
          "Array.IndexOf(WorldFiveActOnePrototype.EnemyTemplateIds,actor.UnitId)>=0" in battle,
          "Visual candidates must not override accepted models or misidentify tutorial enemies")
-required("if(ashboundType>=0 && ashboundType<=3)" in battle and
+required("if(ashboundType>=0 && ashboundType<=5)" in battle and
          'Find("Ashbound motion core")' in battle and
          'Find("Ashbound motion head")' in battle,
          "Battle render must cache first-contact and mid-roster articulated pivots")

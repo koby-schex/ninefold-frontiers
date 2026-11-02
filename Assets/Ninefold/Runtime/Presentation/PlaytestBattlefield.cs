@@ -582,13 +582,18 @@ namespace Ninefold.Presentation
         private void PoseAshbound(Token token,float phase,bool moving,bool attacking,
             float strike)
         {
-            // Forager, Striker, Castigator and Wrecker share anatomical
-            // pivots, with role-specific pacing/attack weight. These moves
-            // are cosmetic and never override Core movement or accuracy.
+            // All six anonymous Ashbound Avarin share anatomy but have
+            // distinctive cadence, balance and purposeful equipment gestures.
+            // Moves remain visual-only and never affect Core hit certainty.
             bool castigator=token.AshboundKind==2;
             bool wrecker=token.AshboundKind==3;
+            bool seer=token.AshboundKind==4;
+            bool witness=token.AshboundKind==5;
             float cadence=wrecker?13f:castigator?16f:19f;
-            float weight=wrecker ? .69f : castigator ? .87f : 1f;
+            if(seer) cadence=17f;
+            if(witness) cadence=12f;
+            float weight=wrecker ? .69f : castigator ? .87f :
+                seer ? .79f : witness ? .62f : 1f;
             float gait=moving?Mathf.Sin(phase*cadence)*weight:0f;
             float lunge=attacking?Mathf.Sin(strike*Mathf.PI):0f;
             if(token.OrganicCore!=null)
@@ -596,20 +601,23 @@ namespace Ninefold.Presentation
                 var core=token.OrganicCore;
                 float idle=moving||attacking?0f:Mathf.Sin(Time.unscaledTime*1.65f);
                 core.localRotation=Quaternion.Euler(
-                    (wrecker?-4.4f:castigator?-6.3f:-8f)*lunge+1.7f*gait,
+                    (wrecker?-4.4f:castigator?-6.3f:
+                        seer?-5.0f:witness?-3.7f:-8f)*lunge+1.7f*gait,
                     (moving?3.0f*gait:idle*.8f),1.5f*gait);
                 if(token.OrganicHead!=null)
                     token.OrganicHead.localRotation=Quaternion.Euler(
-                        (castigator?8f:5f)*lunge-2.4f*gait,
-                        (castigator?-4f:-2f)*gait,
-                        idle*1.7f+1.7f*lunge);
+                        (seer?11f:witness?4f:castigator?8f:5f)*lunge-2.4f*gait,
+                        (seer?-6f:witness?3f:castigator?-4f:-2f)*gait,
+                        idle*(seer?2.4f:witness?1.2f:1.7f)+1.7f*lunge);
                 if(token.OrganicArmLeft!=null)
                     token.OrganicArmLeft.localRotation=Quaternion.Euler(
-                        -gait*14f+lunge*(wrecker?6f:11f),0,2.4f*gait);
+                        -gait*14f+lunge*(wrecker?6f:seer?17f:witness?20f:11f),
+                        witness ? -5f*lunge : 0f,2.4f*gait);
                 if(token.OrganicArmRight!=null)
                     token.OrganicArmRight.localRotation=Quaternion.Euler(
-                        gait*14f-lunge*(wrecker?20f:castigator?29f:37f),
-                        (castigator?-9f:-3.5f)*lunge,-2.5f*gait);
+                        gait*14f-lunge*(wrecker?20f:castigator?29f:
+                            seer?24f:witness?11f:37f),
+                        (castigator?-9f:seer?-7f:-3.5f)*lunge,-2.5f*gait);
                 if(token.OrganicLegLeft!=null)
                     token.OrganicLegLeft.localRotation=Quaternion.Euler(gait*21f,0,0);
                 if(token.OrganicLegRight!=null)
@@ -829,7 +837,7 @@ namespace Ninefold.Presentation
                         {
                             AddAshboundForm(t.Body,ashboundType);
                             t.AshboundKind=ashboundType;
-                            if(ashboundType>=0 && ashboundType<=3)
+                            if(ashboundType>=0 && ashboundType<=5)
                             {
                                 t.OrganicCore=t.Body.transform.Find("Ashbound motion core");
                                 if(t.OrganicCore==null)
@@ -975,10 +983,14 @@ namespace Ninefold.Presentation
                             pair.Value.OrganicCore.localRotation=Quaternion.Euler(
                                 .8f*Mathf.Sin(phase*.67f),
                                 .8f*Mathf.Sin(phase*.59f),0);
+                            float uneasy=pair.Value.AshboundKind==4
+                                ? .9f*Mathf.Sin(phase*3.8f)*Mathf.Sin(phase*.31f)
+                                : 0f;
+                            float surveying=pair.Value.AshboundKind==5 ? 3f : 2f;
                             pair.Value.OrganicHead.localRotation=Quaternion.Euler(
-                                1.5f*Mathf.Sin(phase*.86f),
-                                2.0f*Mathf.Sin(phase*.58f),
-                                1.2f*Mathf.Sin(phase*.69f));
+                                1.5f*Mathf.Sin(phase*.86f)+uneasy,
+                                surveying*Mathf.Sin(phase*.58f),
+                                1.2f*Mathf.Sin(phase*.69f)+uneasy*.6f);
                             if(pair.Value.OrganicArmLeft!=null)
                                 pair.Value.OrganicArmLeft.localRotation=Quaternion.Euler(
                                     1.3f*Mathf.Sin(phase*.74f),0,0);
