@@ -379,7 +379,7 @@ namespace Ninefold.Editor
                     try
                     {
                         if(!tile.LoadImage(File.ReadAllBytes(
-                            Path.Combine(folder,names[i])),true))
+                            Path.Combine(folder,names[i])),false))
                             throw new InvalidDataException(
                                 "Cannot decode actual render "+names[i]);
                         if(tile.width!=tileWidth || tile.height!=tileHeight)
