@@ -21,7 +21,7 @@ required("if(kind==0 || kind==1)" in art and
          "AshboundFirstContactDetails(root,kind,skin,mantle," in art,
          "Only Forager and Striker must receive the initial detailed sculpt pass")
 required("GroupAshboundMotion(root,owned);" in art and
-         "private static void GroupAshboundMotion(GameObject root,List<Mesh> owned)" in art,
+         "internal static void GroupAshboundMotion(GameObject root,List<Mesh> owned)" in art,
          "The first pair must have explicit articulated child hierarchy")
 for anatomy in [
     "Temple brow bridge", "Temple mouth relief", "Temple eye ",
