@@ -16,8 +16,8 @@ namespace Ninefold.Editor
     /// </summary>
     internal static class RiftForagerAnatomyReconstruction
     {
-        internal const string Revision="rift-forager-continuous-anatomy-surface-03";
-        internal const float DefaultStep=.029f;
+        internal const string Revision="rift-forager-continuous-anatomy-surface-04";
+        internal const float DefaultStep=.023f;
 
         internal sealed class Surface
         {
@@ -75,6 +75,21 @@ namespace Ninefold.Editor
             return Mix(b,a,h)-softness*h*(1-h);
         }
 
+        // Soft lateral mandible taper, inside the existing Avarin temple-face.
+        // The existing eye / brow / mouth anchor positions remain untouched.
+        // A small positive distance makes the SIDE of the lower face a little
+        // narrower without cutting the skull or inventing new anatomical parts.
+        internal static float JawContour(float x,float y,float z)
+        {
+            float lateral=Math.Abs(x)-.100f;
+            float vertical=y-1.613f;
+            float anterior=z-.040f;
+            return .009f*(float)Math.Exp(
+                -lateral*lateral/.0016f
+                -vertical*vertical/.0050f
+                -anterior*anterior/.0080f);
+        }
+
         // The sculpt field is anatomical: a unified biped torso, shoulder
         // transitions, tapered arms, planted legs, organic face and natural
         // temple. It deliberately adds NO bonded companion, organ or gear.
@@ -86,7 +101,7 @@ namespace Ninefold.Editor
             d=Union(d,Ellipsoid(x,y,z,0,1.343f,-.043f,
                 .183f,.180f,.118f),.075f);
             d=Union(d,Ellipsoid(x,y,z,0,1.487f,-.012f,
-                .074f,.128f,.076f),.085f);
+                .070f,.125f,.071f),.078f);
             // Original source features sit at exact anterior landmarks: paired eyes
             // (+/- .044,1.68,.110), mouth (0,1.592,.109), forehead ridge
             // (0,1.738,.092). The previous enlarged skull engulfed them.
@@ -175,7 +190,7 @@ namespace Ninefold.Editor
                 .003f*upperBack*(float)Math.Sin(12f*x)+
                 .0019f*shoulder*(float)Math.Cos(9f*y+3f*z)+
                 .0011f*neck*(float)Math.Cos(17f*x);
-            return d+structure;
+            return d+structure+JawContour(x,y,z);
         }
 
         /// <summary>
