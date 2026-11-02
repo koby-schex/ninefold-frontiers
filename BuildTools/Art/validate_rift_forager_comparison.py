@@ -62,12 +62,16 @@ def source_check():
         demand(phrase in render,"Comparison must use authentic geometry with truthful review labels: "+phrase)
     demand("RebuildTopology" in tests and "RebuildUvSeams" in tests,
            "Topology/UV reconstruction checks must remain independently executable")
-    for fragment in (EXPORT,RENDER,"BuildTools/Art/RiftForagerMeshExport/RiftForagerMeshExport.csproj",
-                     "actions/upload-artifact@v4",
-                     "rift-forager-connected-anatomy-before-after",
-                     "dotnet run --project BuildTools/Art/RiftForagerMeshExport"):
-        demand(fragment in wf or (fragment.endswith(".csproj") and
-                (ROOT/fragment).exists()),
+    demand((ROOT/EXPORT).is_file(),
+           "Concrete .NET export program must exist")
+    for fragment in (
+        RENDER,
+        "BuildTools/Art/RiftForagerMeshExport/RiftForagerMeshExport.csproj",
+        "actions/upload-artifact@v4",
+        "rift-forager-connected-anatomy-before-after",
+        "dotnet run --project BuildTools/Art/RiftForagerMeshExport",
+    ):
+        demand(fragment in wf,
                "CI workflow must generate and upload actual comparison: "+fragment)
     demand('"rigged": false' in source and '"mobile_certified": false' in source,
            "Unapproved original static source must remain unaltered")
