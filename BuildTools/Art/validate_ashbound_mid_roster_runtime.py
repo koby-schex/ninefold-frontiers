@@ -70,7 +70,7 @@ check("part.SetParent(target,true);" in art and
       "BatchPivotSurfaces(pivot,owned)" in art and
       "mesh.CombineMeshes(combines,true,true,false);" in art,
       "Actual body part motion and per-limb material batching are mandatory")
-check("if(ashboundType>=0 && ashboundType<=3)" in battle and
+check("if(ashboundType>=0 && ashboundType<=5)" in battle and
       "t.AshboundKind=ashboundType;" in battle and
       "float cadence=wrecker?13f:castigator?16f:19f;" in battle and
       "token.OrganicArmRight.localRotation" in battle and
@@ -81,7 +81,7 @@ check("TryCreateApprovedVisual(h.UnitId,out var modelBody)" in battle and
       "else if(isSillrunner||isSeamstalker||" in battle,
       "An approved model must always override provisional runtime details")
 check("Array.IndexOf(WorldFiveActOnePrototype.EnemyTemplateIds,actor.UnitId)>=0" in battle and
-      "if(ashboundType>=0 && ashboundType<=3)" in battle,
+      "if(ashboundType>=0 && ashboundType<=5)" in battle,
       "Only exact approved Ashbound NPC identity may get detailed mesh candidates")
 for forbidden in ("AddComponent<Rigidbody>", "AddComponent<Collider>",
                   "AddComponent<Animator>", "AddComponent<MonoBehaviour>"):
