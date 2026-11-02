@@ -22,6 +22,7 @@ jobs:
       - run: python BuildTools/Art/validate_ashbound_mid_roster_runtime.py
       - run: python BuildTools/Art/validate_ashbound_final_pair_runtime.py
       - run: python BuildTools/Art/validate_rift_forager_skinned_review.py
+      - run: python BuildTools/Art/validate_rift_forager_battle_camera_review.py
       - run: python BuildTools/Art/review_living_veil.py
       - run: python BuildTools/Art/review_worldfive_roster.py
       - run: git diff --check
