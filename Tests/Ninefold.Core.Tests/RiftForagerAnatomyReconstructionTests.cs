@@ -14,9 +14,9 @@ internal static partial class Program
         yield return ("Reconstructed organic skinning has four normalized anatomical influences",RebuildWeights);
     }
 
-    private static RiftForagerAnatomyReconstruction.Surface body;
-    private static RiftForagerAnatomyReconstruction.Surface Body() =>
-        body??=RiftForagerAnatomyReconstruction.Generate();
+    private static RiftForagerAnatomyReconstruction.Surface reconstructedAnatomy;
+    private static RiftForagerAnatomyReconstruction.Surface OrganicAnatomy() =>
+        reconstructedAnatomy??=RiftForagerAnatomyReconstruction.Generate();
 
     private static void RebuildIdentity()
     {
@@ -38,7 +38,7 @@ internal static partial class Program
 
     private static void RebuildTopology()
     {
-        var m=Body();
+        var m=OrganicAnatomy();
         if(m.Vertices.Count<4000 || m.TriangleCount<8000 ||
            m.TriangleCount>160000)
             throw new Exception("Continuous anatomy is empty or too costly to review.");
@@ -68,7 +68,7 @@ internal static partial class Program
 
     private static void RebuildSurface()
     {
-        var m=Body();
+        var m=OrganicAnatomy();
         Equal(m.Vertices.Count,m.Normals.Count);
         Equal(m.Vertices.Count,m.UVs.Count);
         float minY=100,maxY=-100,minX=100,maxX=-100;
@@ -111,7 +111,7 @@ internal static partial class Program
 
     private static void RebuildWeights()
     {
-        var m=Body();
+        var m=OrganicAnatomy();
         bool face=false,legs=false,arms=false;
         foreach(var p in m.Vertices)
         {
