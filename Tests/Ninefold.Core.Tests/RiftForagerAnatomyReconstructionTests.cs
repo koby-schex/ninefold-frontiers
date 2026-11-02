@@ -13,6 +13,7 @@ internal static partial class Program
         yield return ("Reconstructed Rift Forager body has finite smooth normals and bounded dimensions",RebuildSurface);
         yield return ("Reconstructed organic skinning has four normalized anatomical influences",RebuildWeights);
         yield return ("Rift Forager procedural rest sculpt has smooth anatomical landmark definition",RebuildAnatomicalPlanes);
+        yield return ("Rift Forager rebuilt face exposes existing source eyes, mouth and brow",RebuildSourceFeatureClearance);
         yield return ("Rift Forager UV output splits wrap without losing faces or deformation data",RebuildUvSeams);
         yield return ("Rift Forager four-bone skinning remains spatially continuous across sculpted joints",RebuildWeightContinuity);
     }
@@ -158,6 +159,29 @@ internal static partial class Program
                     throw new Exception(
                         "Required connected natural anatomical landmark is missing.");
         }
+    }
+
+    private static void RebuildSourceFeatureClearance()
+    {
+        // Actual old OBJ feature locations from build_ashbound.mjs.
+        // Positive Field is *outside* the new continuous skin; features
+        // need visible clearance, but should not float far from the face.
+        float left=RiftForagerAnatomyReconstruction.Field(-.044f,1.68f,.110f);
+        float right=RiftForagerAnatomyReconstruction.Field(.044f,1.68f,.110f);
+        if(left<.004f || left>.027f || right<.004f || right>.027f ||
+           Math.Abs(left-right)>.006f)
+            throw new Exception("Reconstructed skull hides or detaches original paired eye geometry.");
+        float mouth=RiftForagerAnatomyReconstruction.Field(0,1.592f,.109f);
+        if(mouth<.002f || mouth>.025f)
+            throw new Exception("Reconstructed jaw hides or detaches original source mouth.");
+        float brow=RiftForagerAnatomyReconstruction.Field(0,1.738f,.092f);
+        if(brow<.0005f || brow>.025f)
+            throw new Exception("Reconstructed forehead buries the original living brow ridge.");
+        float sash=RiftForagerAnatomyReconstruction.Field(-.060f,1.23f,.115f);
+        if(sash<.0005f || sash>.030f)
+            throw new Exception("Reconstructed chest buries or detaches the original diagonal field braid.");
+        if(RiftForagerAnatomyReconstruction.Field(0,1.65f,.01f)>=0)
+            throw new Exception("A feature-clearance carve has accidentally hollowed out the skull.");
     }
 
     private static void RebuildUvSeams()
