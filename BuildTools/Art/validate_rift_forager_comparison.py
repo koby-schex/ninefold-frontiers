@@ -20,6 +20,7 @@ SHEETS={
     "RiftForager-BeforeAfter-Tactical-390x844.png":(3120,844),
     "RiftForager-BeforeAfter-Close-390x844.png":(3120,844),
     "RiftForager-BeforeAfter-Narrow-320x568.png":(1280,568),
+    "RiftForager-BeforeAfter-Face-390x844.png":(1560,844),
 }
 
 
@@ -60,6 +61,13 @@ def source_check():
         'new_connected_body_triangles',
     ):
         demand(phrase in render,"Comparison must use authentic geometry with truthful review labels: "+phrase)
+    demand("from mesh_depth_raster import draw_mesh_with_depth" in render and
+           "img=draw_mesh_with_depth(img,screen,distance,triangles[valid],shaded[valid])" in render and
+           "np.argsort(distance[triangles].mean(axis=1))" not in render,
+           "Review previews must use pixel-accurate occlusion, not centroid sorting")
+    demand("test_rift_forager_depth_raster.py" in wf and
+           "test_rift_forager_depth_raster.py" in (ROOT/".github/workflows/repository-checks.yml").read_text(),
+           "Depth raster regression tests must run in both art and default repository checks")
     demand("RebuildTopology" in tests and "RebuildUvSeams" in tests,
            "Topology/UV reconstruction checks must remain independently executable")
     demand((ROOT/EXPORT).is_file(),
@@ -94,6 +102,8 @@ def artifact_check():
     for phrase in ("NOT Unity", "NOT skinned", "NOT mobile",
                    "NOT official"):
         demand(phrase in limitations,"Important factual caveat omitted: "+phrase)
+    demand("per-pixel barycentric" in data["camera_approximation"]["visibility"],
+           "Generated mesh evidence must explicitly record correct visibility algorithm")
     before=data["before"]
     after=data["after"]
     preserved=data["preserved_details"]
