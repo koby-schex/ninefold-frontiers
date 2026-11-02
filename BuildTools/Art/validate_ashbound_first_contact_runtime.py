@@ -21,7 +21,7 @@ required("if(kind==0 || kind==1)" in art and
          "AshboundFirstContactDetails(root,kind,skin,mantle," in art,
          "Only Forager and Striker must receive the initial detailed sculpt pass")
 required("GroupAshboundMotion(root,owned);" in art and
-         "private static void GroupAshboundMotion(GameObject root,List<Mesh> owned)" in art,
+         "internal static void GroupAshboundMotion(GameObject root,List<Mesh> owned)" in art,
          "The first pair must have explicit articulated child hierarchy")
 for anatomy in [
     "Temple brow bridge", "Temple mouth relief", "Temple eye ",
@@ -67,10 +67,10 @@ required("if(hasApprovedPrefab)" in battle and
          "isAshbound)" in battle and
          "Array.IndexOf(WorldFiveActOnePrototype.EnemyTemplateIds,actor.UnitId)>=0" in battle,
          "Visual candidates must not override accepted models or misidentify tutorial enemies")
-required("if(ashboundType==0 || ashboundType==1)" in battle and
+required("if(ashboundType>=0 && ashboundType<=3)" in battle and
          'Find("Ashbound motion core")' in battle and
          'Find("Ashbound motion head")' in battle,
-         "Battle render must cache articulated first-contact actor pivots")
+         "Battle render must cache first-contact and mid-roster articulated pivots")
 required("if(token.OrganicCore!=null)" in battle and
          "token.OrganicLegLeft.localRotation" in battle and
          "token.OrganicLegRight.localRotation" in battle and

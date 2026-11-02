@@ -29,6 +29,9 @@ namespace Ninefold.Presentation
             public float Height;
             public FrontiersBattleModelMotion ModelMotion;
             public bool Organic;
+            // Exact authored Ashbound archetype, never inferred from a spawn
+            // ID or a resemblance to another unit's geometry.
+            public int AshboundKind = -1;
             // Noncanonical first-contact review pivots (not Unity Animator
             // bones). Cached to avoid per-frame hierarchy lookups and GC.
             public Transform OrganicCore, OrganicHead;
@@ -579,28 +582,34 @@ namespace Ninefold.Presentation
         private void PoseAshbound(Token token,float phase,bool moving,bool attacking,
             float strike)
         {
-            // Forager/Striker have anchored anatomical pivots. Their real
-            // moving parts stay attached: eyes/mandible and living mantle to
-            // the head, hand equipment to the arm, feet/leg wraps to the leg.
-            // Subsequent ordinary archetypes retain the earlier motion study.
-            float gait=moving?Mathf.Sin(phase*19f):0f;
+            // Forager, Striker, Castigator and Wrecker share anatomical
+            // pivots, with role-specific pacing/attack weight. These moves
+            // are cosmetic and never override Core movement or accuracy.
+            bool castigator=token.AshboundKind==2;
+            bool wrecker=token.AshboundKind==3;
+            float cadence=wrecker?13f:castigator?16f:19f;
+            float weight=wrecker ? .69f : castigator ? .87f : 1f;
+            float gait=moving?Mathf.Sin(phase*cadence)*weight:0f;
             float lunge=attacking?Mathf.Sin(strike*Mathf.PI):0f;
             if(token.OrganicCore!=null)
             {
                 var core=token.OrganicCore;
                 float idle=moving||attacking?0f:Mathf.Sin(Time.unscaledTime*1.65f);
-                core.localRotation=Quaternion.Euler(-8f*lunge+1.7f*gait,
+                core.localRotation=Quaternion.Euler(
+                    (wrecker?-4.4f:castigator?-6.3f:-8f)*lunge+1.7f*gait,
                     (moving?3.0f*gait:idle*.8f),1.5f*gait);
                 if(token.OrganicHead!=null)
                     token.OrganicHead.localRotation=Quaternion.Euler(
-                        lunge*5f-2.4f*gait,-2.0f*gait,
+                        (castigator?8f:5f)*lunge-2.4f*gait,
+                        (castigator?-4f:-2f)*gait,
                         idle*1.7f+1.7f*lunge);
                 if(token.OrganicArmLeft!=null)
                     token.OrganicArmLeft.localRotation=Quaternion.Euler(
-                        -gait*14f+lunge*11f,0,2.4f*gait);
+                        -gait*14f+lunge*(wrecker?6f:11f),0,2.4f*gait);
                 if(token.OrganicArmRight!=null)
                     token.OrganicArmRight.localRotation=Quaternion.Euler(
-                        gait*14f-lunge*37f,-3.5f*lunge,-2.5f*gait);
+                        gait*14f-lunge*(wrecker?20f:castigator?29f:37f),
+                        (castigator?-9f:-3.5f)*lunge,-2.5f*gait);
                 if(token.OrganicLegLeft!=null)
                     token.OrganicLegLeft.localRotation=Quaternion.Euler(gait*21f,0,0);
                 if(token.OrganicLegRight!=null)
@@ -819,11 +828,12 @@ namespace Ninefold.Presentation
                         else
                         {
                             AddAshboundForm(t.Body,ashboundType);
-                            if(ashboundType==0 || ashboundType==1)
+                            t.AshboundKind=ashboundType;
+                            if(ashboundType>=0 && ashboundType<=3)
                             {
                                 t.OrganicCore=t.Body.transform.Find("Ashbound motion core");
                                 if(t.OrganicCore==null)
-                                    throw new InvalidOperationException("First-contact Avarin pivot is missing.");
+                                    throw new InvalidOperationException("Detailed Ashbound Avarin pivot is missing.");
                                 t.OrganicHead=t.OrganicCore.Find("Ashbound motion head");
                                 t.OrganicArmLeft=t.OrganicCore.Find("Ashbound motion arm Left");
                                 t.OrganicArmRight=t.OrganicCore.Find("Ashbound motion arm Right");
@@ -832,7 +842,7 @@ namespace Ninefold.Presentation
                                 if(t.OrganicHead==null || t.OrganicArmLeft==null ||
                                     t.OrganicArmRight==null || t.OrganicLegLeft==null ||
                                     t.OrganicLegRight==null)
-                                    throw new InvalidOperationException("First-contact model lost its articulated anatomy.");
+                                    throw new InvalidOperationException("Detailed Ashbound model lost its articulated anatomy.");
                             }
                         }
                     }
