@@ -176,7 +176,8 @@ namespace Ninefold.Editor
                 var bytes=File.ReadAllBytes(obj).Concat(File.ReadAllBytes(mtl))
                     .Concat(File.ReadAllBytes(manifest))
                     .Concat(File.ReadAllBytes("Assets/Ninefold/Editor/AshboundSkeleton.cs"))
-                    .Concat(File.ReadAllBytes("Assets/Ninefold/Editor/AshboundRigReview.cs")).ToArray();
+                    .Concat(File.ReadAllBytes("Assets/Ninefold/Editor/AshboundRigReview.cs"))
+                    .Concat(File.ReadAllBytes("Assets/Ninefold/Editor/AshboundReviewPbr.cs")).ToArray();
                 signature=BitConverter.ToString(hash.ComputeHash(bytes))
                     .Replace("-","").Substring(0,12).ToLowerInvariant();
             }
