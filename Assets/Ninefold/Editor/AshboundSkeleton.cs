@@ -205,7 +205,8 @@ namespace Ninefold.Editor
                     if(bone==2)return new Pose(11f*pulse,0,4f*tremor);
                     if(bone==3)return new Pose(-7f*pulse,2f*tremor,5f*tremor);
                     if(bone==5)return new Pose(7f*pulse,7f*tremor,0);
-                    if(bone==6)return new Pose(-14f*pulse,9f*tremor,11f*tremor);
+                    if(bone==6)return new Pose(-14f*pulse,
+                        7f*pulse+9f*tremor,4f*pulse+11f*tremor);
                     if(bone==7||bone==10)return new Pose(-6f*pulse,0,4f*tremor);
                     if(bone==11||bone==8)return new Pose(5f*pulse,0,0);
                     return new Pose(0,0,0);
