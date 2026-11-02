@@ -255,7 +255,11 @@ namespace Ninefold.Editor
                 var controller=AnimatorController.CreateAnimatorControllerAtPath(
                     folder+"/"+name+"Review01.controller");
                 var machine=controller.layers[0].stateMachine;
-                AnimatorState idle=null;
+                // The actual battlefield's visual driver uses Moving(bool)
+                // rather than sending an Advance trigger. Without this,
+                // the authored walking animation would never play in combat.
+                controller.AddParameter("Moving",AnimatorControllerParameterType.Bool);
+                AnimatorState idle=null,advance=null;
                 for(int i=0;i<built.Length;i++)
                 {
                     var type=(AshboundMotion.Clip)i;
@@ -264,6 +268,7 @@ namespace Ninefold.Editor
                     var state=machine.AddState(label);
                     state.motion=built[i];state.writeDefaultValues=true;
                     if(i==0){idle=state;machine.defaultState=state;}
+                    if(i==1)advance=state;
                     var transition=machine.AddAnyStateTransition(state);
                     transition.hasExitTime=false;
                     transition.duration=.09f;
@@ -275,6 +280,20 @@ namespace Ninefold.Editor
                         back.duration=.14f;
                     }
                 }
+                // Combat compatibility remains visual-only. Authoritative
+                // movement positions come from Core; this blends locomotion
+                // when Start/EndMovement are called by the battle renderer.
+                if(idle==null || advance==null)
+                    throw new InvalidDataException("Missing Idle/Advance rig states.");
+                var startWalking=idle.AddTransition(advance);
+                startWalking.hasExitTime=false;
+                startWalking.duration=.12f;
+                startWalking.AddCondition(AnimatorConditionMode.If,0,"Moving");
+                var stopWalking=advance.AddTransition(idle);
+                stopWalking.hasExitTime=false;
+                stopWalking.duration=.12f;
+                stopWalking.AddCondition(AnimatorConditionMode.IfNot,0,"Moving");
+
                 var animator=actor.AddComponent<Animator>();
                 animator.runtimeAnimatorController=controller;
                 animator.applyRootMotion=false;
