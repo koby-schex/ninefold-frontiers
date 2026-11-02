@@ -294,7 +294,12 @@ namespace Ninefold.Editor
                 // soft-joined biped skin instead of overlapping limb tubes.
                 // Mesh is generated only in disposable ArtReview and is never
                 // assigned as an approved live battle catalog model.
-                var rebuilt=RiftForagerAnatomyReconstruction.Generate();
+                // The analytic sculpt remains one truly connected body.
+                // Only the UV render representation duplicates vertices
+                // along the rear texture seam so normal/bump detail doesn't
+                // stretch across the whole unwrap.
+                var sculpt=RiftForagerAnatomyReconstruction.Generate();
+                var rebuilt=RiftForagerAnatomyReconstruction.MakeTextureReady(sculpt);
                 var anatomy=new GameObject("Reconstructed continuous Avarin anatomy");
                 anatomy.transform.SetParent(actor.transform,false);
                 var unified=new Mesh {

@@ -12,6 +12,9 @@ internal static partial class Program
         yield return ("Reconstructed Avarin is one closed indexed surface with distinct face and feet",RebuildTopology);
         yield return ("Reconstructed Rift Forager body has finite smooth normals and bounded dimensions",RebuildSurface);
         yield return ("Reconstructed organic skinning has four normalized anatomical influences",RebuildWeights);
+        yield return ("Rift Forager procedural rest sculpt has smooth anatomical landmark definition",RebuildAnatomicalPlanes);
+        yield return ("Rift Forager UV output splits wrap without losing faces or deformation data",RebuildUvSeams);
+        yield return ("Rift Forager four-bone skinning remains spatially continuous across sculpted joints",RebuildWeightContinuity);
     }
 
     private static RiftForagerAnatomyReconstruction.Surface reconstructedAnatomy;
@@ -133,5 +136,105 @@ internal static partial class Program
             throw new Exception("Skin weight regions lack anatomical deformation.");
         Throws<ArgumentException>(()=>
             AshboundSkeleton.SkinOrganic(new[]{0f,float.NaN,0f}));
+    }
+
+    private static void RebuildAnatomicalPlanes()
+    {
+        // Real local volume must be present in the same SDF, not in
+        // separately rendered tubes, plates or invented creature organs.
+        foreach(float side in new[]{-1f,1f})
+        {
+            float f=side;
+            foreach(var center in new[]{
+                new[]{f*.063f,1.636f,.058f},   // cheek and temple transition
+                new[]{f*.116f,1.365f,.063f},   // collar shoulder tissue
+                new[]{f*.131f,1.294f,-.106f}, // scapula behind torso
+                new[]{f*.255f,1.045f,.075f},  // lower forearm connection
+                new[]{f*.135f,.485f,.079f},   // knee tissue
+                new[]{f*.159f,.061f,.212f}    // forward anatomical foot
+            })
+                if(RiftForagerAnatomyReconstruction.Field(
+                    center[0],center[1],center[2])>=0)
+                    throw new Exception(
+                        "Required connected natural anatomical landmark is missing.");
+        }
+    }
+
+    private static void RebuildUvSeams()
+    {
+        var raw=OrganicAnatomy();
+        var corrected=RiftForagerAnatomyReconstruction.MakeTextureReady(raw);
+        Equal(raw.TriangleCount,corrected.TriangleCount);
+        Equal(corrected.Vertices.Count,corrected.Normals.Count);
+        Equal(corrected.Vertices.Count,corrected.UVs.Count);
+        if(corrected.Vertices.Count<=raw.Vertices.Count)
+            throw new Exception("Back-of-body texture wrap was not split.");
+        foreach(var list in new[]{corrected.SkinIndices,corrected.GarmentIndices})
+        for(int i=0;i<list.Count;i+=3)
+        {
+            int a=list[i],b=list[i+1],c=list[i+2];
+            if(a<0||a>=corrected.Vertices.Count||
+               b<0||b>=corrected.Vertices.Count||
+               c<0||c>=corrected.Vertices.Count)
+                throw new Exception("UV seam has an out-of-range triangle.");
+            float u0=corrected.UVs[a][0],u1=corrected.UVs[b][0],
+                u2=corrected.UVs[c][0];
+            float span=Math.Max(u0,Math.Max(u1,u2))-
+                Math.Min(u0,Math.Min(u1,u2));
+            if(span>.50001f)
+                throw new Exception("A texture-facing triangle still crosses "+
+                    "the U=0/1 wrap by "+span);
+        }
+
+        // Every render-only seam duplication must be in exactly the same
+        // rest position and normal as some original raw vertex, preserving
+        // weighted deformation across the seam.
+        var keys=new HashSet<string>(raw.Vertices.Select((point,i)=>
+            string.Join(",",point.Select(v=>v.ToString("R",
+                System.Globalization.CultureInfo.InvariantCulture)))+"|"+
+            string.Join(",",raw.Normals[i].Select(v=>v.ToString("R",
+                System.Globalization.CultureInfo.InvariantCulture)))));
+        for(int i=raw.Vertices.Count;i<corrected.Vertices.Count;i++)
+        {
+            var k=string.Join(",",corrected.Vertices[i].Select(v=>
+                v.ToString("R",System.Globalization.CultureInfo.InvariantCulture)))+
+                "|"+string.Join(",",corrected.Normals[i].Select(v=>
+                v.ToString("R",System.Globalization.CultureInfo.InvariantCulture)));
+            if(!keys.Contains(k))
+                throw new Exception("Seam duplication moved actual anatomy/normal.");
+        }
+        Throws<ArgumentNullException>(()=>
+            RiftForagerAnatomyReconstruction.MakeTextureReady(null!));
+    }
+
+    private static void RebuildWeightContinuity()
+    {
+        float[] Vector(float[] point)
+        {
+            var w=AshboundSkeleton.SkinOrganic(point);
+            var values=new float[AshboundSkeleton.Count];
+            values[w.A]+=w.WA;values[w.B]+=w.WB;
+            values[w.C]+=w.WC;values[w.D]+=w.WD;
+            return values;
+        }
+        foreach(float side in new[]{-1f,1f})
+        foreach(var center in new[]{
+            new[]{side*.165f,1.39f,-.021f}, // shoulder blend
+            new[]{side*.250f,1.125f,.048f},// elbow region
+            new[]{side*.108f,.86f,-.02f},  // hip
+            new[]{side*.135f,.49f,.025f},  // knee
+            new[]{side*.060f,1.64f,.03f}  // temple/face
+        })
+        {
+            var a=Vector(center);
+            var b=Vector(new[]{center[0]+side*.001f,
+                center[1]+.001f,center[2]});
+            float difference=0;
+            for(int i=0;i<a.Length;i++)
+                difference+=Math.Abs(a[i]-b[i]);
+            if(difference>.115f)
+                throw new Exception("Skin weight discontinuity near anatomical joint: "+
+                    difference);
+        }
     }
 }

@@ -16,7 +16,7 @@ namespace Ninefold.Editor
     /// </summary>
     internal static class RiftForagerAnatomyReconstruction
     {
-        internal const string Revision="rift-forager-continuous-anatomy-01";
+        internal const string Revision="rift-forager-continuous-anatomy-surface-02";
         internal const float DefaultStep=.029f;
 
         internal sealed class Surface
@@ -96,6 +96,35 @@ namespace Ninefold.Editor
             d=Union(d,Ellipsoid(x,y,z,0,1.750f,-.012f,
                 .090f,.054f,.079f),.035f);
 
+            // Broad organic planes rather than disconnected facial detail
+            // shapes. Integrate temple and cheekbone structure into the
+            // actual ONE-piece head; the separately authored eye details
+            // remain anchored to the source face.
+            for(int sign=-1;sign<=1;sign+=2)
+            {
+                float s=sign;
+                d=Union(d,Ellipsoid(x,y,z,s*.063f,1.636f,.058f,
+                    .049f,.052f,.054f),.030f);
+                d=Union(d,Ellipsoid(x,y,z,s*.081f,1.703f,.018f,
+                    .033f,.070f,.057f),.033f);
+                // Shoulder and chest transition planes stay inside the
+                // anatomical silhouette rather than resembling a glued
+                // shoulder-pad prop.
+                d=Union(d,Ellipsoid(x,y,z,s*.116f,1.365f,.063f,
+                    .082f,.039f,.051f),.036f);
+                d=Union(d,Ellipsoid(x,y,z,s*.131f,1.294f,-.106f,
+                    .078f,.112f,.051f),.050f);
+                // Natural tissue volume follows the elbow and knee joints.
+                d=Union(d,Ellipsoid(x,y,z,s*.255f,1.045f,.075f,
+                    .048f,.078f,.050f),.035f);
+                d=Union(d,Ellipsoid(x,y,z,s*.135f,.485f,.079f,
+                    .067f,.059f,.053f),.036f);
+                // Continuous tapered anterior foot rather than a rounded
+                // anonymous ball; no extra toes or invented limbs.
+                d=Union(d,Ellipsoid(x,y,z,s*.159f,.061f,.212f,
+                    .052f,.036f,.069f),.025f);
+            }
+
             for(int sign=-1;sign<=1;sign+=2)
             {
                 float s=sign;
@@ -123,16 +152,123 @@ namespace Ninefold.Editor
                 d=Union(d,Ellipsoid(x,y,z,s*.158f,.075f,.121f,
                     .065f,.057f,.144f),.043f);
             }
-            // Controlled very-low-amplitude sculpt-like volume refinement:
-            // anatomical broad plane transitions, not stochastic micro-noise
-            // or unnatural protruding scales.
+            // Shape tension follows anatomical landmark regions, not
+            // random high-frequency noise or equipment-like bumps. No
+            // additional triangles/components are layered on the surface.
+            float upperBack=(float)Math.Exp(
+                -(y-1.319f)*(y-1.319f)/.065f)*
+                (float)Math.Exp(-(z+.099f)*(z+.099f)/.045f);
+            float waist=(float)Math.Exp(
+                -(y-1.037f)*(y-1.037f)/.042f)*
+                (float)Math.Exp(-z*z/.055f);
+            float neck=(float)Math.Exp(
+                -(y-1.512f)*(y-1.512f)/.016f);
             float shoulder=(float)Math.Exp(
-                -(y-1.31f)*(y-1.31f)/.095f)*
+                -(y-1.303f)*(y-1.303f)/.083f)*
                 Math.Min(1f,Math.Abs(x)*5f);
-            float structure=.0025f*(float)Math.Sin(13f*y+4f*z)*
-                shoulder+.0017f*(float)Math.Sin(9f*z+7f*y)*
-                (1f-shoulder);
+            float structure=
+                .004f*waist*(float)Math.Cos(11f*x+2f*z)+
+                .003f*upperBack*(float)Math.Sin(12f*x)+
+                .0019f*shoulder*(float)Math.Cos(9f*y+3f*z)+
+                .0011f*neck*(float)Math.Cos(17f*x);
             return d+structure;
+        }
+
+        /// <summary>
+        /// Geometry-preserving UV seam split. The connected raw anatomical
+        /// surface remains topologically watertight for deformation and
+        /// testing; duplicated render vertices at the cylindrical U=0/1
+        /// transition prevent interpolation across an entire atlas tile.
+        /// </summary>
+        internal static Surface MakeTextureReady(Surface raw)
+        {
+            if(raw==null)throw new ArgumentNullException(nameof(raw));
+            if(raw.Vertices.Count!=raw.Normals.Count ||
+                raw.Vertices.Count!=raw.UVs.Count)
+                throw new ArgumentException(
+                    "Anatomical positions/normals/UV lengths disagree.",
+                    nameof(raw));
+
+            var result=new Surface();
+            for(int i=0;i<raw.Vertices.Count;i++)
+            {
+                result.Vertices.Add(raw.Vertices[i]);
+                result.Normals.Add(raw.Normals[i]);
+                result.UVs.Add(raw.UVs[i]);
+            }
+            var shifted=new Dictionary<int,int>();
+            int Seam(int vertex)
+            {
+                if(shifted.TryGetValue(vertex,out int duplicated))
+                    return duplicated;
+                var uv=raw.UVs[vertex];
+                int index=result.Vertices.Count;
+                result.Vertices.Add(raw.Vertices[vertex]);
+                result.Normals.Add(raw.Normals[vertex]);
+                result.UVs.Add(new[]{uv[0]+1f,uv[1]});
+                shifted.Add(vertex,index);
+                return index;
+            }
+
+            // Cylindrical coordinates are undefined near their axis. A
+            // triangle straddling that pole can cover >180 degrees even
+            // after a 0/1 seam wrap: planar UVs are safer there, avoiding
+            // huge normal-map streaks while leaving anatomical positions
+            // and gradients unchanged. Cached vertices keep shared seams
+            // stable for adjacent pole triangles.
+            var planar=new Dictionary<int,int>();
+            int Planar(int vertex)
+            {
+                if(planar.TryGetValue(vertex,out int existing))
+                    return existing;
+                var point=raw.Vertices[vertex];
+                int index=result.Vertices.Count;
+                result.Vertices.Add(point);
+                result.Normals.Add(raw.Normals[vertex]);
+                result.UVs.Add(new[]{
+                    .5f+point[0]*2.0f+point[2]*.35f,
+                    raw.UVs[vertex][1]
+                });
+                planar.Add(vertex,index);
+                return index;
+            }
+
+            void Rewrite(List<int> original,List<int> destination)
+            {
+                for(int i=0;i<original.Count;i+=3)
+                {
+                    int a=original[i],b=original[i+1],c=original[i+2];
+                    float u0=raw.UVs[a][0],u1=raw.UVs[b][0],
+                        u2=raw.UVs[c][0];
+                    float min=Math.Min(u0,Math.Min(u1,u2));
+                    float max=Math.Max(u0,Math.Max(u1,u2));
+                    bool crosses=max-min>.5f;
+                    int aa=crosses && u0<.5f?Seam(a):a;
+                    int bb=crosses && u1<.5f?Seam(b):b;
+                    int cc=crosses && u2<.5f?Seam(c):c;
+                    float minU=Math.Min(result.UVs[aa][0],
+                        Math.Min(result.UVs[bb][0],result.UVs[cc][0]));
+                    float maxU=Math.Max(result.UVs[aa][0],
+                        Math.Max(result.UVs[bb][0],result.UVs[cc][0]));
+                    if(maxU-minU>.5f)
+                    {
+                        // True polar singularity: shifting by one map tile
+                        // still cannot produce locally continuous UVs.
+                        aa=Planar(a);bb=Planar(b);cc=Planar(c);
+                    }
+                    destination.Add(aa);
+                    destination.Add(bb);
+                    destination.Add(cc);
+                }
+            }
+
+            Rewrite(raw.GarmentIndices,result.GarmentIndices);
+            Rewrite(raw.SkinIndices,result.SkinIndices);
+            if(result.TriangleCount!=raw.TriangleCount ||
+                result.Vertices.Count>raw.Vertices.Count*3)
+                throw new InvalidOperationException(
+                    "UV seam correction damaged anatomical triangle counts.");
+            return result;
         }
 
         private static readonly int[,] Tetrahedra = {
