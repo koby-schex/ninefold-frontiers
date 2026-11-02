@@ -39,13 +39,13 @@ namespace Ninefold.Editor
                 material.SetTexture("_BumpMap",normal);
                 material.SetFloat("_BumpScale",NormalStrength(surface.Name));
                 material.EnableKeyword("_NORMALMAP");
-                material.SetFloat("_Metallic",surface.Name=="hardware"?.48f:
-                    surface.Name=="salvage"?.29f:
-                    surface.Name=="seam"?.11f:.01f);
-                material.SetFloat("_Smoothness",surface.Name=="eye"?.51f:
-                    surface.Name=="hardware"?.39f:
-                    surface.Name=="skin"?.31f:
-                    surface.Name=="mantle"?.24f:.20f);
+                material.SetFloat("_Metallic",surface.Name=="hardware" ? .48f :
+                    surface.Name=="salvage" ? .29f :
+                    surface.Name=="seam" ? .11f : .01f);
+                material.SetFloat("_Smoothness",surface.Name=="eye" ? .51f :
+                    surface.Name=="hardware" ? .39f :
+                    surface.Name=="skin" ? .31f :
+                    surface.Name=="mantle" ? .24f : .20f);
                 material.enableInstancing=true;
                 AssetDatabase.CreateAsset(material,prefix+".mat");
                 output.Add(surface.Name,material);
@@ -137,7 +137,7 @@ namespace Ninefold.Editor
                              Height(material,(x+Size-1)%Size,y,seed);
                     float dy=Height(material,x,(y+1)%Size,seed)-
                              Height(material,x,(y+Size-1)%Size,seed);
-                    float scale=material=="eye"?.7f:2.1f;
+                    float scale=material=="eye" ? .7f : 2.1f;
                     var normal=new Vector3(-dx*scale,-dy*scale,1).normalized;
                     pixels[y*Size+x]=new Color32(
                         ToByte(.5f+.5f*normal.x),
