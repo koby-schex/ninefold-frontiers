@@ -155,6 +155,15 @@ namespace Ninefold.Editor
                 prefab.GetComponentsInChildren<Renderer>(true).Length!=renderers.Length)
                 throw new InvalidDataException("Expected only real skinned "+
                     "source mesh renderers, not generic decorative primitives.");
+            var connected=renderers.Where(renderer=>
+                renderer.sharedMesh!=null &&
+                renderer.sharedMesh.name==
+                "Rift Forager continuous anatomical rest skin 01").ToArray();
+            if(connected.Length!=1 || connected[0].sharedMesh.subMeshCount!=2)
+                throw new InvalidDataException(
+                    "Build the updated connected-anatomy Rift Forager first. "+
+                    "The older disconnected body is not an acceptable "+
+                    "reconstruction review candidate.");
             var mats=new HashSet<Material>();
             rendererCount=renderers.Length;triangles=0;vertices=0;
             foreach(var renderer in renderers)
