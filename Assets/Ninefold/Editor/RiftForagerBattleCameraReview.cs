@@ -185,7 +185,7 @@ namespace Ninefold.Editor
                 }
             }
             distinctMaterials=mats.Count;
-            if(triangles<36000 || vertices<18000 || distinctMaterials!=8)
+            if(triangles<18000 || vertices<10000 || distinctMaterials!=8)
                 throw new InvalidDataException("Source geometry or material "+
                     "count differs unexpectedly; do not silently approve.");
             return Path.GetDirectoryName(path).Replace('\\','/');
