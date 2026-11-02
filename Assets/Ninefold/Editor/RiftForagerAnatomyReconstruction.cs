@@ -210,6 +210,29 @@ namespace Ninefold.Editor
                 return index;
             }
 
+            // Cylindrical coordinates are undefined near their axis. A
+            // triangle straddling that pole can cover >180 degrees even
+            // after a 0/1 seam wrap: planar UVs are safer there, avoiding
+            // huge normal-map streaks while leaving anatomical positions
+            // and gradients unchanged. Cached vertices keep shared seams
+            // stable for adjacent pole triangles.
+            var planar=new Dictionary<int,int>();
+            int Planar(int vertex)
+            {
+                if(planar.TryGetValue(vertex,out int existing))
+                    return existing;
+                var point=raw.Vertices[vertex];
+                int index=result.Vertices.Count;
+                result.Vertices.Add(point);
+                result.Normals.Add(raw.Normals[vertex]);
+                result.UVs.Add(new[]{
+                    .5f+point[0]*2.0f+point[2]*.35f,
+                    raw.UVs[vertex][1]
+                });
+                planar.Add(vertex,index);
+                return index;
+            }
+
             void Rewrite(List<int> original,List<int> destination)
             {
                 for(int i=0;i<original.Count;i+=3)
@@ -220,16 +243,29 @@ namespace Ninefold.Editor
                     float min=Math.Min(u0,Math.Min(u1,u2));
                     float max=Math.Max(u0,Math.Max(u1,u2));
                     bool crosses=max-min>.5f;
-                    destination.Add(crosses && u0<.5f?Seam(a):a);
-                    destination.Add(crosses && u1<.5f?Seam(b):b);
-                    destination.Add(crosses && u2<.5f?Seam(c):c);
+                    int aa=crosses && u0<.5f?Seam(a):a;
+                    int bb=crosses && u1<.5f?Seam(b):b;
+                    int cc=crosses && u2<.5f?Seam(c):c;
+                    float minU=Math.Min(result.UVs[aa][0],
+                        Math.Min(result.UVs[bb][0],result.UVs[cc][0]));
+                    float maxU=Math.Max(result.UVs[aa][0],
+                        Math.Max(result.UVs[bb][0],result.UVs[cc][0]));
+                    if(maxU-minU>.5f)
+                    {
+                        // True polar singularity: shifting by one map tile
+                        // still cannot produce locally continuous UVs.
+                        aa=Planar(a);bb=Planar(b);cc=Planar(c);
+                    }
+                    destination.Add(aa);
+                    destination.Add(bb);
+                    destination.Add(cc);
                 }
             }
 
             Rewrite(raw.GarmentIndices,result.GarmentIndices);
             Rewrite(raw.SkinIndices,result.SkinIndices);
             if(result.TriangleCount!=raw.TriangleCount ||
-                result.Vertices.Count>raw.Vertices.Count*2)
+                result.Vertices.Count>raw.Vertices.Count*3)
                 throw new InvalidOperationException(
                     "UV seam correction damaged anatomical triangle counts.");
             return result;
