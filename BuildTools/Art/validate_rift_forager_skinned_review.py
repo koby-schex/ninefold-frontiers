@@ -43,7 +43,7 @@ require('GetWindow<AshboundRigReview>' in build and
         "Builder must be a directly accessible Rift Forager-only Unity command")
 require('GreatStriderSource.ReadMaterials' in build and
         'GreatStriderSource.ReadMesh' in build and
-        'section.SourceParts[i]' in build and
+        'compactParts.Add(section.SourceParts[oldIndex]);' in build and
         'mesh.boneWeights=weights;' in build and
         'mesh.bindposes=bindposes;' in build and
         'mesh.SetTriangles(compactTriangles,0);' in build and
