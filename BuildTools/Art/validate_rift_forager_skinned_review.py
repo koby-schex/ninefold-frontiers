@@ -46,6 +46,7 @@ require('GreatStriderSource.ReadMaterials' in build and
         'section.SourceParts[i]' in build and
         'mesh.boneWeights=weights;' in build and
         'mesh.bindposes=bindposes;' in build and
+        'mesh.SetTriangles(retainedTriangles,0);' in build and
         'new BoneWeight' in build and
         'new SkinnedMeshRenderer' not in build and
         'node.AddComponent<SkinnedMeshRenderer>()' in build,
