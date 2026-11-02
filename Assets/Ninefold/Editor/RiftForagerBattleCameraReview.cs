@@ -315,6 +315,24 @@ namespace Ninefold.Editor
                 completed.Add(control);
                 foreach(var entry in overrides)entry.Key.SetPropertyBlock(entry.Value);
 
+                // Contact sheets make comparison actionable without asking
+                // reviewers to manually assemble twelve separate PNG files.
+                var tactical=completed.Where(n=>
+                    n.StartsWith("tactical-390x844-",StringComparison.Ordinal)).ToArray();
+                if(tactical.Length!=12)
+                    throw new InvalidDataException("Tactical review must have 12 poses/views.");
+                const string tacticalSheet="contact-sheet-tactical-390x844.png";
+                ContactSheet(export,tactical,4,3,390,844,tacticalSheet);
+                completed.Add(tacticalSheet);
+
+                var narrowFrames=completed.Where(n=>
+                    n.StartsWith("tactical-320x568-",StringComparison.Ordinal)).ToArray();
+                if(narrowFrames.Length!=4)
+                    throw new InvalidDataException("Narrow review must have four poses/views.");
+                const string narrowSheet="contact-sheet-narrow-320x568.png";
+                ContactSheet(export,narrowFrames,2,2,320,568,narrowSheet);
+                completed.Add(narrowSheet);
+
                 var report=new StringBuilder();
                 report.AppendLine("NINEFOLD: FRONTIERS — RIFT FORAGER REAL SKINNED MODEL REVIEW");
                 report.AppendLine("Status: PROVISIONAL / NOT CANON APPROVED / NOT DEVICE CERTIFIED");
@@ -344,6 +362,44 @@ namespace Ninefold.Editor
                 if(scene.IsValid()) EditorSceneManager.ClosePreviewScene(scene);
                 if(terrain!=null) UnityEngine.Object.DestroyImmediate(terrain);
             }
+        }
+
+        private static void ContactSheet(string folder,string[] names,
+            int columns,int rows,int tileWidth,int tileHeight,string output)
+        {
+            int w=columns*tileWidth,h=rows*tileHeight;
+            var sheet=new Texture2D(w,h,TextureFormat.RGB24,false);
+            try
+            {
+                var surface=new Color32[w*h];
+                for(int i=0;i<names.Length;i++)
+                {
+                    var tile=new Texture2D(tileWidth,tileHeight,
+                        TextureFormat.RGB24,false);
+                    try
+                    {
+                        if(!tile.LoadImage(File.ReadAllBytes(
+                            Path.Combine(folder,names[i])),true))
+                            throw new InvalidDataException(
+                                "Cannot decode actual render "+names[i]);
+                        if(tile.width!=tileWidth || tile.height!=tileHeight)
+                            throw new InvalidDataException(
+                                "Unexpected render size for "+names[i]);
+                        var pixels=tile.GetPixels32();
+                        int column=i%columns;
+                        int row=rows-1-i/columns; // top row = first pose
+                        for(int y=0;y<tileHeight;y++)
+                            Array.Copy(pixels,y*tileWidth,surface,
+                                (row*tileHeight+y)*w+column*tileWidth,
+                                tileWidth);
+                    }
+                    finally { UnityEngine.Object.DestroyImmediate(tile); }
+                }
+                sheet.SetPixels32(surface);
+                sheet.Apply(false,false);
+                File.WriteAllBytes(Path.Combine(folder,output),sheet.EncodeToPNG());
+            }
+            finally { UnityEngine.Object.DestroyImmediate(sheet); }
         }
 
         private struct View
