@@ -209,7 +209,13 @@ namespace Ninefold.Editor
                 float vx=t[0]-p[0],vy=t[1]-p[1],vz=t[2]-p[2];
                 float cx=uy*vz-uz*vy,cy=uz*vx-ux*vz,
                     cz=ux*vy-uy*vx;
-                if(cx*cx+cy*cy+cz*cz<1e-13f)return;
+                // Surface extraction must preserve even very small lawful
+                // triangles around a cell/tetra junction. The previous
+                // aggressive area cull opened hundreds of boundary edges.
+                // Clamped interpolation already prevents collapsed corners.
+                if(cx==0f && cy==0f && cz==0f)
+                    throw new InvalidOperationException(
+                        "Collapsed iso-surface triangle: input field degeneracy.");
                 var n=mesh.Normals[a];
                 if(cx*n[0]+cy*n[1]+cz*n[2]<0)
                 {
