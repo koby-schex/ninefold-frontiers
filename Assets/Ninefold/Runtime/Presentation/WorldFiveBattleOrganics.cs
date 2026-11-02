@@ -547,14 +547,16 @@ namespace Ninefold.Presentation
             {
                 string n=part.name;
                 Transform target=core;
-                bool left=n.EndsWith("Left",StringComparison.Ordinal) ||
-                    n.Contains(" Left ",StringComparison.Ordinal);
-                bool right=n.EndsWith("Right",StringComparison.Ordinal) ||
-                    n.Contains(" Right ",StringComparison.Ordinal);
+                bool left=n.EndsWith("Left",StringComparison.OrdinalIgnoreCase) ||
+                    n.IndexOf(" left ",StringComparison.OrdinalIgnoreCase)>=0;
+                bool right=n.EndsWith("Right",StringComparison.OrdinalIgnoreCase) ||
+                    n.IndexOf(" right ",StringComparison.OrdinalIgnoreCase)>=0;
                 if(n.StartsWith("Avarin leg ",StringComparison.Ordinal) ||
                    n.StartsWith("Avarin foot ",StringComparison.Ordinal) ||
                    n.StartsWith("Shin reinforcement ",StringComparison.Ordinal) ||
-                   n.StartsWith("Heel geometry ",StringComparison.Ordinal))
+                   n.StartsWith("Heel geometry ",StringComparison.Ordinal) ||
+                   n.StartsWith("Wrecker leg load-brace ",StringComparison.Ordinal) ||
+                   n.StartsWith("Wrecker leg brace-rivet ",StringComparison.Ordinal))
                     target=left?leftLeg:rightLeg;
                 else if(n.StartsWith("Avarin arm ",StringComparison.Ordinal) ||
                         n.StartsWith("Avarin forearm relief ",StringComparison.Ordinal) ||
@@ -564,7 +566,11 @@ namespace Ninefold.Presentation
                         n.StartsWith("Reinforced forearm ",StringComparison.Ordinal) ||
                         n.StartsWith("Forager hooked ",StringComparison.Ordinal) ||
                         n.StartsWith("Forager reader ",StringComparison.Ordinal) ||
-                        n.StartsWith("Field sensor frame",StringComparison.Ordinal))
+                        n.StartsWith("Field sensor frame",StringComparison.Ordinal) ||
+                        n.StartsWith("Castigator high right shoulder ",StringComparison.Ordinal) ||
+                        n.StartsWith("Castigator right ",StringComparison.Ordinal) ||
+                        n.StartsWith("Wrecker left load shoulder",StringComparison.Ordinal) ||
+                        n.StartsWith("Wrecker right ",StringComparison.Ordinal))
                     target=left?leftArm:rightArm;
                 else if(n.StartsWith("Avarin temple face",StringComparison.Ordinal) ||
                         n.StartsWith("Living crescent ",StringComparison.Ordinal) ||
