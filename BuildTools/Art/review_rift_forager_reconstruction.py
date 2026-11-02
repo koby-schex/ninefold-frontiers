@@ -20,6 +20,7 @@ from PIL import Image, ImageDraw
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from render_ashbound import parse_materials, parse_obj
+from mesh_depth_raster import draw_mesh_with_depth
 
 ORIGINAL = ROOT / "SourceArt/Ashbound/RiftForager/RiftForager.obj"
 MATERIALS = ROOT / "SourceArt/Ashbound/RiftForager/RiftForager.mtl"
@@ -129,13 +130,12 @@ def write_mesh(path, vertices, faces, materials):
 
 
 def raster(vertices, triangles, material_names, palette,
-           yaw, tilt, width, height, half_height, label, view):
+           yaw, tilt, width, height, half_height, label, view, center_y=.93):
     """Orthographic face raster of true static OBJ triangles.
 
     Model colors are source MTL swatches. No synthesized new anatomy or
     glossy fake photorealistic detail, and no claim to match Unity shaders.
     """
-    center_y = .93
     cos_y, sin_y = math.cos(yaw), math.sin(yaw)
     rotated_x = vertices[:,0]*cos_y - vertices[:,2]*sin_y
     rotated_z = vertices[:,0]*sin_y + vertices[:,2]*cos_y
@@ -156,22 +156,17 @@ def raster(vertices, triangles, material_names, palette,
     colors = np.asarray([np.clip(palette[key],0,1)
                          for key in material_names], dtype=np.float64)
     shaded = (np.clip(colors*intensity[:,None],0,1)*255).astype(np.uint8)
-    order = np.argsort(distance[triangles].mean(axis=1))
-
     img=Image.new("RGB", (width,height), (22,27,34))
     drawer=ImageDraw.Draw(img)
     # Neutral scale cue; do not imply any canonical World Five location.
-    foot=height*.50+(.93*math.cos(pitch))*scale
+    foot=height*.50+(center_y*math.cos(pitch))*scale
     drawer.ellipse((width*.5-48,foot-8,width*.5+48,foot+8),
                    fill=(39,45,53),outline=(59,66,72),width=1)
-    for index in order:
-        if not valid[index]:
-            continue
-        xy=screen[triangles[index]]
-        if not np.isfinite(xy).all():
-            raise ValueError("Nonfinite screen-space triangle")
-        drawer.polygon([tuple(map(float,point)) for point in xy],
-                       fill=tuple(int(v) for v in shaded[index]))
+    # Triangle-centroid painter ordering misrepresented intersections and
+    # sometimes concealed original eyes/gear. Depth is now per-pixel across
+    # every real triangle and is independent of triangle submission order.
+    img=draw_mesh_with_depth(img,screen,distance,triangles[valid],shaded[valid])
+    drawer=ImageDraw.Draw(img)
     drawer.rectangle((0,0,width,69),fill=(17,22,29))
     drawer.text((12,9), label,fill=(236,223,199))
     drawer.text((12,28), f"{view} | {tilt} DEG | ORTHO {half_height:g}",
@@ -184,7 +179,7 @@ def raster(vertices, triangles, material_names, palette,
 
 
 def sheet(name, options, models, palette, views, width, height,
-          tilt, half_height):
+          tilt, half_height, center_y=.93):
     source, replacement=models
     result=Image.new("RGB",(width*len(views)*2,height))
     for row, (variant, data) in enumerate((
@@ -194,7 +189,7 @@ def sheet(name, options, models, palette, views, width, height,
         vertices, triangles, materials=data
         for i,(label,yaw) in enumerate(views):
             frame=raster(vertices,triangles,materials,palette,
-                         yaw,tilt,width,height,half_height,variant,label)
+                         yaw,tilt,width,height,half_height,variant,label,center_y=center_y)
             x=(i*2+row)*width
             result.paste(frame,(x,0))
     output=options.output/name
@@ -232,6 +227,9 @@ def main():
               args,(before,after),palette,VIEWS,390,844,18,1.26),
         sheet("RiftForager-BeforeAfter-Narrow-320x568.png",
               args,(before,after),palette,VIEWS[:2],320,568,58,4.0),
+        # Head / shoulder enlargement is inspection-only, NOT gameplay scale.
+        sheet("RiftForager-BeforeAfter-Face-390x844.png",
+              args,(before,after),palette,VIEWS[:2],390,844,18,.56,1.53),
     ]
     report={
         "status":"PROVISIONAL STATIC MESH COMPARISON — NOT CANON APPROVAL",
@@ -249,6 +247,9 @@ def main():
             "tactical_orthographic_half_height":4.0,
             "close_tilt_degrees":18,
             "close_orthographic_half_height":1.26,
+            "face_orthographic_half_height":.56,
+            "face_center_y":1.53,
+            "visibility":"per-pixel barycentric z-buffer, not centroid painter",
         },
         "before":{"vertices":int(len(before[0])),
                   "triangles":int(len(before[1]))},
