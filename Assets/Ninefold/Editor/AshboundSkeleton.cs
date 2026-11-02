@@ -175,7 +175,6 @@ namespace Ninefold.Editor
             float legs=Smooth(.043f,.115f,lateral)*
                 (1-Smooth(.75f,.94f,y));
             float baseBody=Math.Max(0,1-head);
-            float totalRegion=Math.Max(.001f,1-head*1f);
             legs*=baseBody;
             arms*=baseBody*(1-legs);
             float torso=1-head-legs-arms;
