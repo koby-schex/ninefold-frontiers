@@ -223,6 +223,9 @@ namespace Ninefold.Editor
                             xyz[1]*1.8f+xyz[2]*1.4f);
                     }).ToList());
                     mesh.SetTriangles(section.Indices,0);
+                    // Tangent space is mandatory for imported normal-map
+                    // relief to affect the actual skinned renderer.
+                    mesh.RecalculateTangents();
                     var weights=new BoneWeight[section.Vertices.Count];
                     for(int i=0;i<weights.Length;i++)
                     {
