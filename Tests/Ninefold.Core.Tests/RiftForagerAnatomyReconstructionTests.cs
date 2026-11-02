@@ -136,6 +136,8 @@ internal static partial class Program
             throw new Exception("Skin weight regions lack anatomical deformation.");
         Throws<ArgumentException>(()=>
             AshboundSkeleton.SkinOrganic(new[]{0f,float.NaN,0f}));
+    }
+
     private static void RebuildAnatomicalPlanes()
     {
         // Real local volume must be present in the same SDF, not in
@@ -234,6 +236,5 @@ internal static partial class Program
                 throw new Exception("Skin weight discontinuity near anatomical joint: "+
                     difference);
         }
-    }
     }
 }
