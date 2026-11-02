@@ -177,7 +177,8 @@ namespace Ninefold.Editor
                     .Concat(File.ReadAllBytes(manifest))
                     .Concat(File.ReadAllBytes("Assets/Ninefold/Editor/AshboundSkeleton.cs"))
                     .Concat(File.ReadAllBytes("Assets/Ninefold/Editor/AshboundRigReview.cs"))
-                    .Concat(File.ReadAllBytes("Assets/Ninefold/Editor/AshboundReviewPbr.cs")).ToArray();
+                    .Concat(File.ReadAllBytes("Assets/Ninefold/Editor/AshboundReviewPbr.cs"))
+                    .Concat(File.ReadAllBytes("Assets/Ninefold/Editor/RiftForagerAnatomyReconstruction.cs")).ToArray();
                 signature=BitConverter.ToString(hash.ComputeHash(bytes))
                     .Replace("-","").Substring(0,12).ToLowerInvariant();
             }
@@ -209,28 +210,66 @@ namespace Ninefold.Editor
                 {
                     if(section.Vertices.Count!=section.SourceParts.Count)
                         throw new InvalidDataException("Missing anatomical part binding on source vertices.");
+                    // Retain authentic source accessory/face/mantle geometry,
+                    // but actually REMOVE original detached torso/limb/head
+                    // tubes. The reconstructed body replaces their triangles.
+                    var retainedTriangles=new List<int>();
+                    for(int face=0;face<section.Indices.Count;face+=3)
+                    {
+                        int vertexIndex=section.Indices[face];
+                        if(!RiftForagerAnatomyReconstruction.ReplacesOldBodyPart(
+                            section.SourceParts[vertexIndex]))
+                        {
+                            retainedTriangles.Add(section.Indices[face]);
+                            retainedTriangles.Add(section.Indices[face+1]);
+                            retainedTriangles.Add(section.Indices[face+2]);
+                        }
+                    }
+                    if(retainedTriangles.Count==0)continue;
+                    // Compact the retained source sections. Invisible
+                    // original anatomy vertices should not consume mobile
+                    // skinning buffers, alter renderer bounds or linger as
+                    // unreferenced geometry after the actual topology swap.
+                    var compactMap=new Dictionary<int,int>();
+                    var compactVertices=new List<Vector3>();
+                    var compactNormals=new List<Vector3>();
+                    var compactUvs=new List<Vector2>();
+                    var compactParts=new List<string>();
+                    var compactCoordinates=new List<float[]>();
+                    var compactTriangles=new List<int>();
+                    foreach(int oldIndex in retainedTriangles)
+                    {
+                        if(!compactMap.TryGetValue(oldIndex,out int newIndex))
+                        {
+                            newIndex=compactVertices.Count;
+                            compactMap.Add(oldIndex,newIndex);
+                            var xyz=section.Vertices[oldIndex];
+                            var normal=section.Normals[oldIndex];
+                            var uv=section.UVs[oldIndex];
+                            compactVertices.Add(new Vector3(xyz[0],xyz[1],xyz[2]));
+                            compactNormals.Add(new Vector3(normal[0],normal[1],normal[2]));
+                            compactUvs.Add(uv[0]!=0 || uv[1]!=0 ?
+                                new Vector2(uv[0],uv[1]) :
+                                new Vector2(xyz[0]*2.2f+xyz[2]*.3f,
+                                    xyz[1]*1.8f+xyz[2]*1.4f));
+                            compactParts.Add(section.SourceParts[oldIndex]);
+                            compactCoordinates.Add(xyz);
+                        }
+                        compactTriangles.Add(newIndex);
+                    }
                     var node=new GameObject("Surface_"+(sectionId++).ToString("D2"));
                     node.transform.SetParent(actor.transform,false);
                     var mesh=new Mesh { name=section.Name,indexFormat=IndexFormat.UInt32 };
-                    mesh.SetVertices(section.Vertices.Select(v=>new Vector3(v[0],v[1],v[2])).ToList());
-                    mesh.SetNormals(section.Normals.Select(v=>new Vector3(v[0],v[1],v[2])).ToList());
-                    mesh.SetUVs(0,section.UVs.Select((v,i)=>
-                    {
-                        // Prefer authored source UVs; fallback only if that
-                        // exact vertex's coordinates are missing/zero.
-                        if(v[0]!=0 || v[1]!=0)return new Vector2(v[0],v[1]);
-                        var xyz=section.Vertices[i];
-                        return new Vector2(xyz[0]*2.2f+xyz[2]*.3f,
-                            xyz[1]*1.8f+xyz[2]*1.4f);
-                    }).ToList());
-                    mesh.SetTriangles(section.Indices,0);
-                    // Tangent space is mandatory for imported normal-map
-                    // relief to affect the actual skinned renderer.
+                    mesh.SetVertices(compactVertices);
+                    mesh.SetNormals(compactNormals);
+                    mesh.SetUVs(0,compactUvs);
+                    mesh.SetTriangles(compactTriangles,0);
                     mesh.RecalculateTangents();
-                    var weights=new BoneWeight[section.Vertices.Count];
+                    var weights=new BoneWeight[compactVertices.Count];
                     for(int i=0;i<weights.Length;i++)
                     {
-                        var w=AshboundSkeleton.Skin(section.SourceParts[i],section.Vertices[i]);
+                        var w=AshboundSkeleton.Skin(compactParts[i],
+                            compactCoordinates[i]);
                         weights[i]=new BoneWeight {
                             boneIndex0=w.First,weight0=w.Primary,
                             boneIndex1=w.Second,weight1=w.Secondary
@@ -250,6 +289,58 @@ namespace Ninefold.Editor
                     renderer.updateWhenOffscreen=false;
                     var bound=mesh.bounds;bound.Expand(.5f);renderer.localBounds=bound;
                 }
+
+                // REAL topology-level reconstruction: one continuous,
+                // soft-joined biped skin instead of overlapping limb tubes.
+                // Mesh is generated only in disposable ArtReview and is never
+                // assigned as an approved live battle catalog model.
+                var rebuilt=RiftForagerAnatomyReconstruction.Generate();
+                var anatomy=new GameObject("Reconstructed continuous Avarin anatomy");
+                anatomy.transform.SetParent(actor.transform,false);
+                var unified=new Mesh {
+                    name="Rift Forager continuous anatomical rest skin 01",
+                    indexFormat=IndexFormat.UInt32
+                };
+                unified.SetVertices(rebuilt.Vertices.Select(v=>
+                    new Vector3(v[0],v[1],v[2])).ToList());
+                unified.SetNormals(rebuilt.Normals.Select(v=>
+                    new Vector3(v[0],v[1],v[2])).ToList());
+                unified.SetUVs(0,rebuilt.UVs.Select(v=>
+                    new Vector2(v[0],v[1])).ToList());
+                unified.subMeshCount=2;
+                unified.SetTriangles(rebuilt.GarmentIndices,0);
+                unified.SetTriangles(rebuilt.SkinIndices,1);
+                unified.RecalculateTangents();
+                var organicWeights=new BoneWeight[rebuilt.Vertices.Count];
+                for(int i=0;i<organicWeights.Length;i++)
+                {
+                    var w=AshboundSkeleton.SkinOrganic(rebuilt.Vertices[i]);
+                    organicWeights[i]=new BoneWeight {
+                        boneIndex0=w.A,weight0=w.WA,
+                        boneIndex1=w.B,weight1=w.WB,
+                        boneIndex2=w.C,weight2=w.WC,
+                        boneIndex3=w.D,weight3=w.WD
+                    };
+                }
+                unified.boneWeights=organicWeights;
+                var organicBindposes=new Matrix4x4[bones.Length];
+                for(int i=0;i<bones.Length;i++)
+                    organicBindposes[i]=
+                        bones[i].worldToLocalMatrix*anatomy.transform.localToWorldMatrix;
+                unified.bindposes=organicBindposes;
+                unified.RecalculateBounds();
+                AssetDatabase.CreateAsset(unified,
+                    folder+"/RiftForagerContinuousAnatomy01.asset");
+                var organicRenderer=anatomy.AddComponent<SkinnedMeshRenderer>();
+                organicRenderer.sharedMesh=unified;
+                organicRenderer.bones=bones;
+                organicRenderer.rootBone=bones[0];
+                organicRenderer.sharedMaterials=new[]{
+                    materialMap["garment"],materialMap["skin"]
+                };
+                organicRenderer.updateWhenOffscreen=false;
+                var organicBounds=unified.bounds;organicBounds.Expand(.5f);
+                organicRenderer.localBounds=organicBounds;
 
                 var built=BuildClips(folder,name);
                 var controller=AnimatorController.CreateAnimatorControllerAtPath(
@@ -322,8 +413,11 @@ namespace Ninefold.Editor
                 instance=actor;clips=built;current=folder;normalized=0;selectedClip=0;
                 Selection.activeGameObject=actor;
                 completed=true;
-                Debug.Log("Ashbound skeletal review built: "+name+" / "+source.Sections.Count+
-                    " skinned material surfaces, "+AshboundSkeleton.Count+" bones, six authored clips.");
+                Debug.Log("Ashbound reconstruction review built: "+name+
+                    " / one seamless organic body, "+rebuilt.Vertices.Count+
+                    " reconstructed vertices, "+rebuilt.TriangleCount+
+                    " body triangles, "+AshboundSkeleton.Count+
+                    " bones and six existing animation clips. PROVISIONAL ART.");
                 Sample();
             }
             finally

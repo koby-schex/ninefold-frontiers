@@ -140,6 +140,92 @@ namespace Ninefold.Editor
                   :Blend(2,3,(y-1.04f)/.31f);
         }
 
+        internal readonly struct Weight4
+        {
+            internal readonly int A,B,C,D;
+            internal readonly float WA,WB,WC,WD;
+            internal Weight4(int a,int b,int c,int d,
+                float wa,float wb,float wc,float wd)
+            {
+                A=a;B=b;C=c;D=d;
+                WA=wa;WB=wb;WC=wc;WD=wd;
+            }
+            internal float Total=>WA+WB+WC+WD;
+        }
+
+        /// <summary>
+        /// Smooth cross-joint weights on a genuinely CONTINUOUS biped mesh.
+        /// A connected torso/arm/hip surface needs blended anatomy groups
+        /// instead of hard per-OBJ-part assignment and floaty joint seams.
+        /// Four influences maximum, each normalized and physically bounded.
+        /// </summary>
+        internal static Weight4 SkinOrganic(float[] vertex)
+        {
+            if(vertex==null||vertex.Length!=3 ||
+                float.IsNaN(vertex[0]) || float.IsNaN(vertex[1]) || float.IsNaN(vertex[2]) ||
+                float.IsInfinity(vertex[0]) || float.IsInfinity(vertex[1]) || float.IsInfinity(vertex[2]))
+                throw new ArgumentException(
+                    "Finite reconstruction vertex required.",nameof(vertex));
+            float x=vertex[0],y=vertex[1];
+            float lateral=Math.Abs(x);
+            float Smooth(float a,float b,float v)=>Ease((v-a)/(b-a));
+            float head=Smooth(1.45f,1.64f,y);
+            float arms=Smooth(.143f,.263f,lateral)*
+                Smooth(.85f,1.09f,y)*(1-Smooth(1.395f,1.54f,y));
+            float legs=Smooth(.043f,.115f,lateral)*
+                (1-Smooth(.75f,.94f,y));
+            float baseBody=Math.Max(0,1-head);
+            legs*=baseBody;
+            arms*=baseBody*(1-legs);
+            float torso=1-head-legs-arms;
+            torso=Math.Max(0,torso);
+            var weights=new float[Count];
+
+            void Pair(int a,int b,float t,float strength)
+            {
+                t=Ease(t);
+                weights[a]+=strength*(1-t);
+                weights[b]+=strength*t;
+            }
+            if(y<1.12f)
+                Pair(1,2,(y-.77f)/.38f,torso);
+            else if(y<1.44f)
+                Pair(2,3,(y-1.06f)/.36f,torso);
+            else
+                Pair(3,4,(y-1.41f)/.17f,torso);
+
+            Pair(4,5,(y-1.46f)/.20f,head);
+
+            bool left=x<0;
+            int shoulder=left?7:10,elbow=left?8:11,hand=left?9:12;
+            if(y>=1.12f)
+                Pair(elbow,shoulder,(y-1.10f)/.31f,arms);
+            else
+                Pair(hand,elbow,(y-.83f)/.30f,arms);
+
+            int hip=left?13:16,knee=left?14:17,ankle=left?15:18;
+            if(y>=.49f)
+                Pair(knee,hip,(y-.46f)/.41f,legs);
+            else
+                Pair(ankle,knee,(y-.11f)/.39f,legs);
+
+            int[] selected=new int[4];
+            float[] chosen=new float[4];
+            for(int i=0;i<4;i++)
+            {
+                int best=0;
+                for(int j=1;j<weights.Length;j++)
+                    if(weights[j]>weights[best])best=j;
+                selected[i]=best;chosen[i]=weights[best];weights[best]=0;
+            }
+            float sum=chosen[0]+chosen[1]+chosen[2]+chosen[3];
+            if(sum<.001f)throw new InvalidOperationException(
+                "Continuous body vertex has no anatomical skinning.");
+            return new Weight4(selected[0],selected[1],
+                selected[2],selected[3],chosen[0]/sum,
+                chosen[1]/sum,chosen[2]/sum,chosen[3]/sum);
+        }
+
         /// <summary>
         /// Euler offsets (degrees) to the anatomical local bind orientation,
         /// plus optional pelvis vertical shift in meters. No root movement.
