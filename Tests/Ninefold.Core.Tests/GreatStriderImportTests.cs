@@ -23,7 +23,10 @@ internal static partial class Program
             var mesh=GreatStriderSource.ReadMesh(File.ReadLines(Path.Combine(root,unit+".obj")),materials);
             var names=mesh.Sections.SelectMany(s=>s.SourceParts).Distinct().ToArray();
             string prefix=unit=="Burdenbeast"?"Tervan_":"Vaskel_";
-            int limbs=unit=="Burdenbeast"?8:2;
+            int limbs=unit=="Burdenbeast"?8:0;
+            if (unit=="Riftwalker" && names.Any(n=>n.StartsWith("Vaskel_",StringComparison.Ordinal) &&
+                new[] { "Limb", "Leg", "Foot", "Contact", "Ankle", "WaistWeb" }.Any(n.Contains)))
+                throw new Exception("Superseded Vaskel leg anatomy");
             if (names.Count(n=>n.StartsWith(prefix+"Limb_",StringComparison.Ordinal))!=limbs ||
                 names.Count(n=>n.StartsWith(prefix+"Contact_",StringComparison.Ordinal))!=limbs)
                 throw new Exception("Incorrect roster anatomy: "+unit);

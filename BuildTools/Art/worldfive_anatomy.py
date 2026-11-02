@@ -1,6 +1,7 @@
 """Anatomy and civic architecture revision 04. Unseen contours are proposals.
 
-Only existing canonical anatomy: two Vaskel limbs, sensory crescent and flexible
+Vaskel anatomy follows the approved v26.0 section 26.17 legless correction:
+sensory crescent and flexible
 counterweight; eight muscular Tervan limbs and independent civic infrastructure.
 """
 import math
@@ -52,62 +53,52 @@ def surface_folds(m,part):
 
 
 def vaskel():
+    """Legless, suspended crescent study per v26.0 section 26.17.
+    Suspension is a static visual pose, not a newly invented flight mechanism.
+    """
     m=Mesh()
-    # The crescent is now sagittal, with a deep inward waist and offset keel.
-    body=[(-.10,.81,-.42),(-.09,1.06,-.53),(-.04,1.32,-.46),
-          (.04,1.48,-.24),(.10,1.48,.05),(.13,1.38,.29),(.12,1.23,.43)]
+    # A single tapering curled trunk carries the silhouette; no leg roots/pads.
+    body=[(-.04,.57,.40),(-.09,.54,.13),(-.12,.65,-.18),
+          (-.10,.90,-.40),(-.06,1.20,-.43),(.01,1.47,-.28),
+          (.07,1.59,-.01),(.10,1.57,.27),(.11,1.48,.50)]
     ridge(m,'Vaskel_CrescentTorso','vaskel_tissue',body,
-          [.075,.15,.215,.24,.20,.13,.025],[.09,.14,.19,.20,.14,.095,.025])
-    skin_relief(m.parts[-1],.13)
+          [.018,.055,.095,.14,.19,.23,.22,.16,.035],
+          [.015,.045,.07,.10,.14,.18,.16,.105,.025])
+    skin_relief(m.parts[-1],.09)
     surface_folds(m,m.parts[-1])
-    ridge(m,'Vaskel_WaistWeb','vaskel_flexure',
-          [(-.12,1.23,-.39),(-.08,1.15,-.30),(.08,1.13,-.18),(.22,1.12,-.04)],
-          [.06,.13,.14,.07],[.07,.13,.14,.08])
-    # Unequal loaded limbs: thick roots enter the waist; the hock narrows before
-    # spreading into a soft pad. No third limb or conventional mammalian head.
-    limbs={
-        'L':([(-.16,1.08,-.29),(-.29,.89,-.12),(-.36,.59,-.28),(-.32,.28,-.13),(-.30,.10,.04)],
-             [.15,.125,.085,.065,.095],[.17,.17,.095,.07,.11]),
-        'R':([(.15,1.20,-.10),(.31,.98,.13),(.37,.64,.02),(.34,.34,.22),(.32,.10,.43)],
-             [.17,.145,.09,.065,.09],[.18,.18,.095,.065,.105])}
-    for side,(points,width,depth) in limbs.items():
-        ridge(m,'Vaskel_Limb_'+side,'vaskel_tissue',points,width,depth)
-        skin_relief(m.parts[-1],.19)
-        x,_,z=points[-1]
-        m.oval('Vaskel_Contact_'+side,'soft_charcoal',(x,.065,z),(.12,.065,.16))
-        p=m.parts[-1];bottom=min(v[1] for v in p['vertices'])
-        p['vertices']=[(a,b-bottom,c) for a,b,c in p['vertices']]
-        m.oval('Vaskel_AnkleRoot_'+side,'vaskel_flexure',(x,.135,z),(.085,.10,.105))
-    # Flexible flattened counterweight on the opposite side of the offset torso.
+    # Flexible counterweight folds away from the lower trunk, tapering upward.
     ridge(m,'Vaskel_Counterweight','vaskel_tissue',
-          [(-.16,1.03,-.33),(-.35,.97,-.49),(-.55,1.04,-.64),(-.69,1.24,-.66),(-.68,1.40,-.53)],
-          [.12,.13,.105,.065,.008],[.10,.085,.05,.025,.008])
-    skin_relief(m.parts[-1],.10)
-    # Pale sensory crescent sits against the outer body, with layered tapered
-    # margins. Its tiny pits and broken channels remain recessed/non-emissive.
-    crest=[(-.08,1.13,-.67),(-.03,1.48,-.50),(.04,1.72,-.23),(.10,1.69,.10),(.12,1.46,.37),(.12,1.29,.45)]
+          [(-.11,.76,-.28),(-.26,.63,-.25),(-.39,.57,-.05),
+           (-.48,.66,.18),(-.50,.87,.31),(-.44,1.05,.33)],
+          [.095,.095,.075,.05,.025,.006],
+          [.065,.065,.047,.03,.015,.005])
+    skin_relief(m.parts[-1],.08)
+    # Grown crescent follows the convex dorsal curve, embedded in the trunk.
+    crest=[(-.10,.79,-.46),(-.06,1.12,-.59),(.00,1.47,-.47),
+           (.05,1.72,-.20),(.08,1.75,.09),(.10,1.65,.36),(.11,1.50,.51)]
     ridge(m,'Vaskel_SensoryCrescent','grown_mineral',crest,
-          [.012,.085,.10,.085,.055,.008],[.012,.025,.035,.03,.02,.008])
+          [.012,.075,.14,.18,.17,.11,.009],
+          [.012,.035,.045,.05,.045,.025,.008])
     sensory=m.parts[-1]
-    skin_relief(sensory,.06)
+    # Short attached lamellae follow the upper shoulder, not detached spikes.
     for side in (-1,1):
         for tier in range(2):
-            path=[(x+side*(.13+.035*tier),y-.075-.065*tier,z-.015-.055*tier) for x,y,z in crest[1:5]]
-            path[-1]=(path[-1][0],path[-1][1]+.045*tier,path[-1][2]-.035*tier)
-            ridge(m,'Vaskel_CrescentMargin_'+str(side)+'_'+str(tier),'grown_mineral',path,
-                  [.008,.075,.065,.006],[.008,.028,.020,.006])
-        for k in range(3):
-            x,y,z=side_point(sensory,3+3*k,side)
+            offset=side*(.11+.055*tier)
+            path=[(x+offset,y-.08-.055*tier,z) for x,y,z in crest[2:6]]
+            ridge(m,'Vaskel_CrescentMargin_'+str(side)+'_'+str(tier),
+                  'grown_mineral',path,[.015,.075,.065,.009],[.012,.025,.02,.006])
+        for k in range(5):
+            x,y,z=side_point(sensory,3+2*k,side)
             m.oval('Vaskel_SensoryPit_'+str(side)+'_'+str(k),'eye',
-                   (x-side*.003,y,z),(.009,.008,.009))
-        # Secondary visual organ in the front sensory fold, not a glowing eye.
-        m.oval('Vaskel_SecondaryEye_'+str(side),'eye',(.12+side*.072,1.37,.397),(.014,.011,.008))
-        for k in range(2):
-            a,b=crest[k+1],crest[k+2]
-            pts=[tuple(a[j]+(b[j]-a[j])*t for j in range(3)) for t in (.18,.38,.58)]
+                   (x-side*.003,y,z),(.008,.008,.008))
+        m.oval('Vaskel_SecondaryEye_'+str(side),'eye',
+               (.10+side*.11,1.56,.33),(.010,.009,.008))
+        # Recessed broken channels sampled from the actual sensory surface.
+        for k in range(3):
+            pts=[side_point(sensory,r,side) for r in (5+3*k,6+3*k)]
             ridge(m,'Vaskel_ChannelSegment_'+str(side)+'_'+str(k),'anchor_channel',
-                  [(x+side*.14,y-.075,z) for x,y,z in pts],[.006,.012,.006],[.006,.008,.006])
-    m.oval('Vaskel_ContinuityAnchor','ceramic',(.28,1.30,-.18),(.025,.043,.035))
+                  [(x-side*.002,y,z) for x,y,z in pts],[.009,.008],[.006,.005])
+    m.oval('Vaskel_ContinuityAnchor','ceramic',(.23,1.37,-.22),(.025,.043,.035))
     return m
 
 
