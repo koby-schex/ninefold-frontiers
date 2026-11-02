@@ -55,6 +55,13 @@ expect('new[]{"Idle","Attack","Afterecho"}' in tool and
        'new[]{"Idle","Attack"}' in tool and
        'clips[pose].SampleAnimation(actor,clips[pose].length*.5f)' in tool,
        "Capture different actual skeletal poses rather than fake static textures")
+expect('ContactSheet(export,tactical,4,3,390,844,tacticalSheet)' in tool and
+       'ContactSheet(export,narrowFrames,2,2,320,568,narrowSheet)' in tool and
+       'contact-sheet-tactical-390x844.png' in tool and
+       'contact-sheet-narrow-320x568.png' in tool and
+       'tile.GetPixels32()' in tool and
+       'Array.Copy(pixels,y*tileWidth,surface,' in tool,
+       "Actual captured PNGs must be assembled into mobile-scale review grids")
 expect('new MaterialPropertyBlock()' in tool and
        'flat.SetFloat("_BumpScale",0)' in tool and
        'control-390x844-idle-no-normal-detail.png' in tool,
