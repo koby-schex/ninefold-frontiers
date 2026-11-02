@@ -28,6 +28,12 @@ The user reported character models look like simple drawings. This new tool give
 
 **Important caveat:** all captures use a neutral stage and the currently built skinned *review candidate*, rather than a live played Mission 11. That isolates geometry/animation for visual comparison. Even the tactical 58° angles do not fully reproduce the mission's map zoom, clutter, environment lighting, or phone thermal conditions. These must be reviewed separately before registering a model in any battle.
 
+## Runtime locomotion contract corrected
+
+The skinned Rift Forager's generated Animator Controller now includes a real `Moving(bool)` parameter. The controller transitions between **Idle** and **Advance** when this value changes, matching the existing `FrontiersBattleModelMotion.BeginMovement/EndMovement` calls. The six original clip triggers are preserved; Hit/Attack/Defeat are still driven by actual authored combat events, **not** by this tool. No underlying Core position or movement rule changes.
+
+This does **not** register the model into battle. It closes a genuine compatibility gap **before** later approval, so a reviewed animated asset will not silently stand idle when the battle renderer tells it to walk.
+
 ## Strict acceptance / rejection criteria
 
 | Gate | What to inspect | Reject when |
