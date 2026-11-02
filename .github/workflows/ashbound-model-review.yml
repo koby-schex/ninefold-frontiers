@@ -93,7 +93,7 @@ jobs:
         run: |
           python BuildTools/Art/review_rift_forager_reconstruction.py --body SourceArt/Ashbound/Review/Generated/RiftForager-ConnectedBody-REVIEW.obj --output SourceArt/Ashbound/Review/Generated
       - name: Validate comparison deliverables and review boundaries
-        run: python BuildTools/Art/validate_rift_forager_comparison.py
+        run: python BuildTools/Art/validate_rift_forager_comparison.py --mode artifacts
       - name: Upload real before/after mesh geometry and review sheets
         uses: actions/upload-artifact@v4
         with:
