@@ -179,11 +179,14 @@ namespace Ninefold.Editor
             Accumulate(mesh.EdgeIndices);
             for(int i=0;i<mesh.Vertices.Count;i++)
             {
-                var n=accumulated[i];
-                float len=(float)Math.Sqrt(n[0]*n[0]+n[1]*n[1]+n[2]*n[2]);
+                var gradient=accumulated[i];
+                float len=(float)Math.Sqrt(
+                    gradient[0]*gradient[0]+gradient[1]*gradient[1]+
+                    gradient[2]*gradient[2]);
                 if(len<1e-9f)
                     throw new InvalidOperationException("Invalid stitched cloth normal.");
-                mesh.Normals[i]=new[]{n[0]/len,n[1]/len,n[2]/len};
+                mesh.Normals[i]=new[]{
+                    gradient[0]/len,gradient[1]/len,gradient[2]/len};
             }
             return mesh;
         }
