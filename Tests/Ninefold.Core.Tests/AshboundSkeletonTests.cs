@@ -13,6 +13,7 @@ internal static partial class Program
         yield return ("Ashbound first-contact actual OBJ anatomy binds to stable rig joints", SkeletonOriginalMeshes);
         yield return ("Ashbound six skinned clips are finite and return to rest when nonterminal", SkeletonClipBoundaries);
         yield return ("Ashbound skinned clips move gait attack mantle strain and defeat independently", SkeletonMotionDetail);
+        yield return ("Full six-state rig has pelvis weight shift, secondary wrist articulation and controlled recovery", SkeletonMajorMotionPass);
     }
 
     private static void SkeletonTopology()
@@ -137,6 +138,35 @@ internal static partial class Program
         Throws<ArgumentOutOfRangeException>(()=>AshboundSkeleton.Sample(
             -1,AshboundMotion.Clip.Idle,0,false));
     }
+    private static void SkeletonMajorMotionPass()
+    {
+        foreach(bool striker in new[]{false,true})
+        {
+            var pelvis=AshboundSkeleton.Sample(1,AshboundMotion.Clip.Advance,.25,striker);
+            if(pelvis.PositionY>-.012f || pelvis.PositionY<-.030f)
+                throw new Exception("Walking motion has no physical center-of-mass shift.");
+            var l=AshboundSkeleton.Sample(15,AshboundMotion.Clip.Advance,.125,striker);
+            var r=AshboundSkeleton.Sample(18,AshboundMotion.Clip.Advance,.125,striker);
+            if(Math.Abs(l.Z)<.4f || Math.Abs(r.Z)<.4f || l.Z*r.Z>=0)
+                throw new Exception("Feet lack differential banking/roll.");
+            var idleHand=AshboundSkeleton.Sample(9,AshboundMotion.Clip.Idle,.25,striker);
+            if(Math.Abs(idleHand.X)+Math.Abs(idleHand.Y)<.15)
+                throw new Exception("Idle hand secondary motion missing.");
+            var attackHand=AshboundSkeleton.Sample(12,AshboundMotion.Clip.Attack,.5,striker);
+            if(Math.Abs(attackHand.Y)<3f || Math.Abs(attackHand.Z)<3f)
+                throw new Exception("Attack hand follow-through missing.");
+            var hitElbow=AshboundSkeleton.Sample(8,AshboundMotion.Clip.Hit,.5,striker);
+            if(Math.Abs(hitElbow.X)<3f)
+                throw new Exception("Hit recoil is still rigid.");
+            var tremorHand=AshboundSkeleton.Sample(12,AshboundMotion.Clip.Afterecho,.45,striker);
+            if(Math.Abs(tremorHand.Z)<.5f)
+                throw new Exception("Afterecho no longer propagates to hands.");
+            var defeatedHand=AshboundSkeleton.Sample(9,AshboundMotion.Clip.Defeat,1,striker);
+            if(Math.Abs(defeatedHand.X)<10)
+                throw new Exception("Defeat hands fail to settle.");
+        }
+    }
+
     private static void SkeletonMotionDetail()
     {
         foreach(bool striker in new[]{false,true})
