@@ -15,6 +15,7 @@ internal static partial class Program
         yield return ("Rift Forager procedural rest sculpt has smooth anatomical landmark definition",RebuildAnatomicalPlanes);
         yield return ("Higher-density Avarin jaw sculpt remains localized and retains facial detail clearance",RebuildJawSculptDensity);
         yield return ("Rift Forager asymmetric physical fieldcloth is closed, outside anatomy and skinnable",RebuildTailoredGarment);
+        yield return ("Rift Forager resculpt restores elongated Avarin temple-face instead of round human skull",RebuildTempleFaceSilhouette);
         yield return ("Rift Forager rebuilt face exposes existing source eyes, mouth and brow",RebuildSourceFeatureClearance);
         yield return ("Rift Forager UV output splits wrap without losing faces or deformation data",RebuildUvSeams);
         yield return ("Rift Forager four-bone skinning remains spatially continuous across sculpted joints",RebuildWeightContinuity);
@@ -235,6 +236,30 @@ internal static partial class Program
             throw new Exception("Both back panels have identical hem silhouettes.");
         if(RiftForagerTailoredGarment.PanelPoint(0,0,0,false)[1]>1.12f)
             throw new Exception("Fieldcloth rises into the mantle or back-mounted hardware.");
+    }
+
+    private static void RebuildTempleFaceSilhouette()
+    {
+        // Source before/after face images show the old candidate had a broad,
+        // rounded skull that made the Avarin read too human. These REAL
+        // geometry samples require a tapered temple profile without removing
+        // the original paired eyes, mouth, forehead relief or inner head.
+        var surface=OrganicAnatomy();
+        if(surface.TriangleCount<32000 || surface.TriangleCount>90000)
+            throw new Exception("Anatomy resculpt exceeded connected mesh budget.");
+        float side=RiftForagerAnatomyReconstruction.Field(.102f,1.69f,0f);
+        float mirror=RiftForagerAnatomyReconstruction.Field(-.102f,1.69f,0f);
+        float temple=RiftForagerAnatomyReconstruction.Field(.095f,1.745f,0f);
+        float cheek=RiftForagerAnatomyReconstruction.Field(.063f,1.636f,.058f);
+        float head=RiftForagerAnatomyReconstruction.Field(0f,1.75f,0f);
+        float plane=RiftForagerAnatomyReconstruction.TemplePlane(.077f,1.724f,-.018f);
+        float planeEye=RiftForagerAnatomyReconstruction.TemplePlane(.044f,1.68f,.110f);
+        if(side<.004f || mirror<.004f || Math.Abs(side-mirror)>.006f ||
+           temple<-.001f || cheek>-.009f || head>-.025f ||
+           plane<.004f || planeEye>.001f)
+            throw new Exception("Temple-face proportions lost tapered bony anatomy or source relief.");
+        if(RiftForagerAnatomyReconstruction.Field(0f,1.65f,.01f)>-.025f)
+            throw new Exception("Narrowed cheek/jaw accidentally hollowed the skull.");
     }
 
     private static void RebuildSourceFeatureClearance()
