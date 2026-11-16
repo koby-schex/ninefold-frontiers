@@ -211,6 +211,66 @@ def sheet(name, options, models, palette, views, width, height,
     return output
 
 
+def body_only_anatomy(path,body_name):
+    """Keep exactly the indexed anatomical body group, excluding cloth.
+
+    The high-res exported file also contains separately modeled fieldcloth,
+    while the lower body-only LOD files intentionally do not. Strip it for a
+    fair 3-way *anatomy-only* source-geometry comparison at matched scale.
+    """
+    positions=[]
+    faces=[]
+    materials=[]
+    group=None
+    mat=None
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.startswith("v "):
+            positions.append([float(t) for t in line.split()[1:4]])
+        elif line.startswith("o "):
+            group=line[2:].strip()
+        elif line.startswith("usemtl "):
+            mat=line.split(maxsplit=1)[1]
+        elif line.startswith("f ") and group==body_name:
+            if mat is None:
+                raise ValueError("Body LOD face lacks source material")
+            corners=[int(t.split("/")[0])-1 for t in line.split()[1:]]
+            if len(corners)!=3:
+                raise ValueError("LOD body must be triangulated")
+            faces.append(corners)
+            materials.append(mat)
+    if len(faces)<2500:
+        raise ValueError("Body LOD geometry is missing or primitive-level")
+    arr=np.asarray(faces,dtype=np.int32)
+    used,indices=np.unique(arr.reshape(-1),return_inverse=True)
+    verts=np.asarray(positions,dtype=np.float64)[used]
+    if not np.isfinite(verts).all():
+        raise ValueError("Nonfinite LOD coordinates")
+    return verts,indices.reshape(-1,3).astype(np.int32),materials
+
+
+def render_body_lod_sheet(args,palette):
+    sources=(
+        (args.body,"RiftForager_Connected_ArtReviewBody","LOD0 | HIGH"),
+        (args.output/"RiftForager-AnatomyLOD1-REVIEW.obj",
+         "RiftForager_AnatomyLOD1_REVIEW","LOD1 | MEDIUM"),
+        (args.output/"RiftForager-AnatomyLOD2-REVIEW.obj",
+         "RiftForager_AnatomyLOD2_REVIEW","LOD2 | DISTANT")
+    )
+    models=[body_only_anatomy(path,group) for path,group,_ in sources]
+    counts=[len(model[1]) for model in models]
+    if not counts[0]>counts[1]>counts[2]:
+        raise ValueError("Actual LOD triangulations are not decreasing")
+    strip=Image.new("RGB",(390*3,844))
+    for i,(model,source) in enumerate(zip(models,sources)):
+        label=source[2]+" / "+str(counts[i])+" TRI"
+        frame=raster(*model,palette,math.pi/4,58,390,844,4.0,
+                     label,"ANATOMY ONLY")
+        strip.paste(frame,(i*390,0))
+    name="RiftForager-ThreeLOD-Tactical-390x844.png"
+    strip.save(args.output/name,optimize=True)
+    return args.output/name,counts
+
+
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument("--body", type=Path, required=True,
@@ -244,6 +304,8 @@ def main():
         sheet("RiftForager-BeforeAfter-Face-390x844.png",
               args,(before,after),palette,VIEWS[:2],390,844,18,.56,1.53),
     ]
+    lod_image,lod_counts=render_body_lod_sheet(args,palette)
+    images.append(lod_image)
     report={
         "status":"PROVISIONAL STATIC MESH COMPARISON — NOT CANON APPROVAL",
         "before":"original unrigged SourceArt/RiftForager OBJ",
@@ -269,6 +331,12 @@ def main():
         "after":{"vertices":int(len(after[0])),
                  "triangles":int(len(after[1]))},
         "preserved_details":details,
+        "anatomy_lods":{
+            "high_triangles":lod_counts[0],
+            "medium_triangles":lod_counts[1],
+            "distant_triangles":lod_counts[2],
+            "note":"Three actual C# anatomy-only meshes; accessories and fabric not included"
+        },
         "images":[image.name for image in images],
     }
     (args.output/"comparison-metrics.json").write_text(
