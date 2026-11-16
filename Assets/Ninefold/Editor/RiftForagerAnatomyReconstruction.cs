@@ -16,7 +16,7 @@ namespace Ninefold.Editor
     /// </summary>
     internal static class RiftForagerAnatomyReconstruction
     {
-        internal const string Revision="rift-forager-continuous-anatomy-surface-05";
+        internal const string Revision="rift-forager-continuous-anatomy-surface-06-major";
         internal const float DefaultStep=.023f;
 
         internal sealed class Surface
@@ -105,16 +105,45 @@ namespace Ninefold.Editor
                 -depth*depth/.009f);
         }
 
+        // Physically modeled longitudinal muscle/tissue planes, not a
+        // texture overlay or extra mesh. These low-frequency SDF offsets
+        // taper heavy primitive-looking joints, articulate calves and the
+        // dorsal forearms, and preserve the source eye/brow/mouth/sash anchors.
+        internal static float RegionalSculpt(float x,float y,float z)
+        {
+            float ax=Math.Abs(x);
+            float forearm=(float)Math.Exp(
+                -(ax-.252f)*(ax-.252f)/.0035f
+                -(y-1.02f)*(y-1.02f)/.023f
+                -(z-.095f)*(z-.095f)/.014f);
+            float thigh=(float)Math.Exp(
+                -(ax-.128f)*(ax-.128f)/.0060f
+                -(y-.705f)*(y-.705f)/.020f
+                -(z-.024f)*(z-.024f)/.014f);
+            float ankle=(float)Math.Exp(
+                -(ax-.156f)*(ax-.156f)/.0040f
+                -(y-.20f)*(y-.20f)/.010f);
+            float spine=(float)Math.Exp(
+                -x*x/.021f
+                -(y-1.365f)*(y-1.365f)/.014f
+                -(z+.112f)*(z+.112f)/.009f);
+            // Positive offsets slightly pinch an otherwise round loft.
+            // Subtle negative dorsal spine plane supplies natural form
+            // without introducing a biological protrusion.
+            return .0055f*forearm+.0065f*thigh+
+                   .005f*ankle-.004f*spine;
+        }
+
         // The sculpt field is anatomical: a unified biped torso, shoulder
         // transitions, tapered arms, planted legs, organic face and natural
         // temple. It deliberately adds NO bonded companion, organ or gear.
         internal static float Field(float x,float y,float z)
         {
-            float d=Ellipsoid(x,y,z,0,.947f,-.016f,.168f,.206f,.132f);
+            float d=Ellipsoid(x,y,z,0,.947f,-.016f,.157f,.206f,.124f);
             d=Union(d,Ellipsoid(x,y,z,0,1.154f,-.024f,
-                .170f,.235f,.134f),.087f);
+                .165f,.235f,.134f),.087f);
             d=Union(d,Ellipsoid(x,y,z,0,1.343f,-.043f,
-                .183f,.180f,.118f),.075f);
+                .174f,.180f,.118f),.075f);
             d=Union(d,Ellipsoid(x,y,z,0,1.487f,-.012f,
                 .061f,.125f,.067f),.078f);
             // Original source features sit at exact anterior landmarks: paired eyes
@@ -165,9 +194,9 @@ namespace Ninefold.Editor
                 // Natural shoulder-to-elbow transition. Subtle taper is
                 // anatomical, not overlapping cylinders for each segment.
                 d=Union(d,Ellipsoid(x,y,z,s*.166f,1.366f,-.029f,
-                    .105f,.107f,.088f),.058f);
+                    .096f,.107f,.084f),.058f);
                 d=Union(d,Capsule(x,y,z,s*.181f,1.387f,-.022f,
-                    s*.250f,1.132f,.049f,.091f,.073f),.062f);
+                    s*.250f,1.132f,.049f,.086f,.072f),.062f);
                 d=Union(d,Capsule(x,y,z,s*.250f,1.135f,.049f,
                     s*.254f,.891f,.125f,.071f,.048f),.048f);
                 d=Union(d,Ellipsoid(x,y,z,s*.253f,.845f,.158f,
@@ -178,11 +207,11 @@ namespace Ninefold.Editor
                 d=Union(d,Ellipsoid(x,y,z,s*.107f,.862f,-.027f,
                     .114f,.133f,.105f),.075f);
                 d=Union(d,Capsule(x,y,z,s*.105f,.868f,-.021f,
-                    s*.130f,.496f,.022f,.101f,.080f),.065f);
+                    s*.130f,.496f,.022f,.096f,.077f),.065f);
                 d=Union(d,Ellipsoid(x,y,z,s*.134f,.482f,.025f,
                     .078f,.084f,.079f),.045f);
                 d=Union(d,Capsule(x,y,z,s*.134f,.488f,.028f,
-                    s*.155f,.140f,.074f,.074f,.049f),.047f);
+                    s*.155f,.140f,.074f,.070f,.047f),.047f);
                 d=Union(d,Ellipsoid(x,y,z,s*.158f,.075f,.121f,
                     .065f,.057f,.144f),.043f);
             }
@@ -205,7 +234,8 @@ namespace Ninefold.Editor
                 .003f*upperBack*(float)Math.Sin(12f*x)+
                 .0019f*shoulder*(float)Math.Cos(9f*y+3f*z)+
                 .0011f*neck*(float)Math.Cos(17f*x);
-            return d+structure+JawContour(x,y,z)+TemplePlane(x,y,z);
+            return d+structure+JawContour(x,y,z)+TemplePlane(x,y,z)+
+                RegionalSculpt(x,y,z);
         }
 
         /// <summary>
