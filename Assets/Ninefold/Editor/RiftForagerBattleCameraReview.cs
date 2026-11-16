@@ -164,21 +164,53 @@ namespace Ninefold.Editor
                     "Build the updated connected-anatomy Rift Forager first. "+
                     "The older disconnected body is not an acceptable "+
                     "reconstruction review candidate.");
+            // LOD1 and LOD2 use truly lower triangle source meshes but
+            // cannot be simultaneously visible with LOD0. Verify all tiers
+            // while reporting only the actually rendered high-detail set.
+            var lod=prefab.GetComponent<LODGroup>();
+            if(lod==null)
+                throw new InvalidDataException("Integrated anatomy LODGroup is missing.");
+            var tiers=lod.GetLODs();
+            if(tiers.Length!=3 || tiers[0].renderers.Length!=1 ||
+               tiers[0].renderers[0]!=connected[0])
+                throw new InvalidDataException("Three contiguous anatomy LOD tiers required.");
+            long[] counts=new long[3];
+            var alternate=new HashSet<Renderer>();
+            for(int level=0;level<3;level++)
+            {
+                if(tiers[level].renderers.Length!=1 ||
+                   !(tiers[level].renderers[0] is SkinnedMeshRenderer))
+                    throw new InvalidDataException("LOD contains a non-skinned/duplicate renderer.");
+                var mesh=tiers[level].renderers[0].GetComponent<SkinnedMeshRenderer>().sharedMesh;
+                if(mesh==null || mesh.subMeshCount!=2)
+                    throw new InvalidDataException("LOD missing true material-assigned anatomy.");
+                for(int i=0;i<mesh.subMeshCount;i++)
+                    counts[level]+=(long)mesh.GetIndexCount(i)/3L;
+                if(level>0)alternate.Add(tiers[level].renderers[0]);
+            }
+            if(!(counts[0]>counts[1] && counts[1]>counts[2]) ||
+               counts[2]<2500 || counts[0]>90000)
+                throw new InvalidDataException("Physical LOD geometry is not optimized.");
             var mats=new HashSet<Material>();
-            rendererCount=renderers.Length;triangles=0;vertices=0;
+            rendererCount=0;triangles=0;vertices=0;
             foreach(var renderer in renderers)
             {
                 var mesh=renderer.sharedMesh;
                 if(mesh==null || renderer.bones.Length!=AshboundSkeleton.Count)
                     throw new InvalidDataException("Review candidate has invalid "+
                         "mesh or 19-bone binding.");
-                vertices+=mesh.vertexCount;
-                for(int i=0;i<mesh.subMeshCount;i++)
-                    triangles+=(long)mesh.GetIndexCount(i)/3L;
+                if(!alternate.Contains(renderer))
+                {
+                    rendererCount++;
+                    vertices+=mesh.vertexCount;
+                    for(int i=0;i<mesh.subMeshCount;i++)
+                        triangles+=(long)mesh.GetIndexCount(i)/3L;
+                }
                 foreach(var mat in renderer.sharedMaterials)
                 {
                     if(mat==null || mat.GetTexture("_BaseMap")==null ||
-                        mat.GetTexture("_BumpMap")==null)
+                        mat.GetTexture("_BumpMap")==null ||
+                        mat.GetTexture("_MetallicGlossMap")==null)
                         throw new InvalidDataException(
                             "Missing UV-linked albedo/normal-map material.");
                     mats.Add(mat);
@@ -350,7 +382,13 @@ namespace Ninefold.Editor
                 report.AppendLine("Source prefab: "+AssetDatabase.GetAssetPath(prefab));
                 report.AppendLine("SkinnedMeshRenderers: "+renderers);
                 report.AppendLine("Mesh vertices (all sections): "+vertices);
-                report.AppendLine("Total mesh triangles: "+triangles);
+                report.AppendLine("High-detail active mesh triangles: "+triangles);
+                var tiers=prefab.GetComponent<LODGroup>().GetLODs();
+                report.AppendLine("Anatomy LOD triangle counts: "+
+                    string.Join(" / ",tiers.Select(t=>
+                        t.renderers[0].GetComponent<SkinnedMeshRenderer>()
+                            .sharedMesh.triangles.Length/3)));
+                report.AppendLine("Accessory and tailored cloth remain present at all anatomy LODs.");
                 report.AppendLine("Distinct material assets: "+materialCount);
                 report.AppendLine("Rig bone count: "+AshboundSkeleton.Count);
                 report.AppendLine("Clips: "+string.Join(", ",labels));
