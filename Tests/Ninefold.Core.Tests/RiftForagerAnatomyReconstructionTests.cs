@@ -13,6 +13,7 @@ internal static partial class Program
         yield return ("Reconstructed Rift Forager body has finite smooth normals and bounded dimensions",RebuildSurface);
         yield return ("Reconstructed organic skinning has four normalized anatomical influences",RebuildWeights);
         yield return ("Rift Forager procedural rest sculpt has smooth anatomical landmark definition",RebuildAnatomicalPlanes);
+        yield return ("Higher-density Avarin jaw sculpt remains localized and retains facial detail clearance",RebuildJawSculptDensity);
         yield return ("Rift Forager rebuilt face exposes existing source eyes, mouth and brow",RebuildSourceFeatureClearance);
         yield return ("Rift Forager UV output splits wrap without losing faces or deformation data",RebuildUvSeams);
         yield return ("Rift Forager four-bone skinning remains spatially continuous across sculpted joints",RebuildWeightContinuity);
@@ -159,6 +160,27 @@ internal static partial class Program
                     throw new Exception(
                         "Required connected natural anatomical landmark is missing.");
         }
+    }
+
+    private static void RebuildJawSculptDensity()
+    {
+        // This is a PHYSICAL surface-detail pass, not a normal-map or
+        // cosmetic material trick. Smaller marching cells refine the actual
+        // connected body triangles used by the skinned Unity review asset.
+        if(RiftForagerAnatomyReconstruction.DefaultStep>.024f)
+            throw new Exception("Facial/shoulder sculpt resolution regressed to coarse facets.");
+        var surface=OrganicAnatomy();
+        if(surface.TriangleCount<32000 || surface.TriangleCount>90000)
+            throw new Exception("Unexpected face-resolution triangle budget: "+surface.TriangleCount);
+
+        float inset=RiftForagerAnatomyReconstruction.JawContour(.100f,1.613f,.040f);
+        float symmetric=RiftForagerAnatomyReconstruction.JawContour(-.100f,1.613f,.040f);
+        float eye=RiftForagerAnatomyReconstruction.JawContour(.044f,1.680f,.110f);
+        float mouth=RiftForagerAnatomyReconstruction.JawContour(0f,1.592f,.109f);
+        float torso=RiftForagerAnatomyReconstruction.JawContour(.100f,1.20f,.040f);
+        if(inset<.0085f || inset>.010f || Math.Abs(inset-symmetric)>1e-7f ||
+           eye>.001f || mouth>.0001f || torso>.00001f)
+            throw new Exception("Lower face contour became asymmetric or moved eye, mouth or torso.");
     }
 
     private static void RebuildSourceFeatureClearance()
