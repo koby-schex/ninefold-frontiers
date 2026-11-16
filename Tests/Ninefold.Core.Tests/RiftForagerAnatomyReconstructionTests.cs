@@ -16,6 +16,9 @@ internal static partial class Program
         yield return ("Higher-density Avarin jaw sculpt remains localized and retains facial detail clearance",RebuildJawSculptDensity);
         yield return ("Rift Forager asymmetric physical fieldcloth is closed, outside anatomy and skinnable",RebuildTailoredGarment);
         yield return ("Rift Forager resculpt restores elongated Avarin temple-face instead of round human skull",RebuildTempleFaceSilhouette);
+        yield return ("Full-body anatomical detail is shaped in actual SDF and protects source landmarks",RebuildFullBodySculpt);
+        yield return ("Connected high medium low geometry variants retain valid silhouettes",RebuildMultiResolutionAnatomy);
+        yield return ("Tailored cloth now has realistic normalized directional face normals",RebuildClothShading);
         yield return ("Rift Forager rebuilt face exposes existing source eyes, mouth and brow",RebuildSourceFeatureClearance);
         yield return ("Rift Forager UV output splits wrap without losing faces or deformation data",RebuildUvSeams);
         yield return ("Rift Forager four-bone skinning remains spatially continuous across sculpted joints",RebuildWeightContinuity);
@@ -260,6 +263,76 @@ internal static partial class Program
             throw new Exception("Temple-face proportions lost tapered bony anatomy or source relief.");
         if(RiftForagerAnatomyReconstruction.Field(0f,1.65f,.01f)>-.025f)
             throw new Exception("Narrowed cheek/jaw accidentally hollowed the skull.");
+    }
+
+    private static void RebuildFullBodySculpt()
+    {
+        float a=RiftForagerAnatomyReconstruction.RegionalSculpt(.252f,1.02f,.095f);
+        float b=RiftForagerAnatomyReconstruction.RegionalSculpt(.128f,.705f,.024f);
+        float c=RiftForagerAnatomyReconstruction.RegionalSculpt(.156f,.20f,.075f);
+        float spine=RiftForagerAnatomyReconstruction.RegionalSculpt(0f,1.365f,-.112f);
+        float eyes=RiftForagerAnatomyReconstruction.RegionalSculpt(.044f,1.68f,.110f);
+        float sash=RiftForagerAnatomyReconstruction.RegionalSculpt(-.06f,1.23f,.115f);
+        if(a<.003f || b<.004f || c<.003f || spine>-.003f ||
+           Math.Abs(eyes)>.001f || Math.Abs(sash)>.001f)
+            throw new Exception("Full-body sculpt has lost physical planes or intrudes on authored eyes/sash.");
+        foreach(var p in new[]{
+            new[]{.252f,1.02f,.095f},new[]{.128f,.705f,.024f},
+            new[]{.156f,.20f,.075f}
+        })
+        {
+            float left=RiftForagerAnatomyReconstruction.RegionalSculpt(
+                -p[0],p[1],p[2]);
+            float right=RiftForagerAnatomyReconstruction.RegionalSculpt(
+                p[0],p[1],p[2]);
+            if(Math.Abs(left-right)>1e-6f)
+                throw new Exception("Unapproved anatomical asymmetry.");
+        }
+    }
+
+    private static void RebuildMultiResolutionAnatomy()
+    {
+        var high=OrganicAnatomy();
+        var medium=RiftForagerAnatomyReconstruction.Generate(.036f);
+        var distant=RiftForagerAnatomyReconstruction.Generate(.052f);
+        if(!(high.TriangleCount>medium.TriangleCount &&
+             medium.TriangleCount>distant.TriangleCount) ||
+           medium.TriangleCount<6000 || distant.TriangleCount<3000 ||
+           high.TriangleCount>90000)
+            throw new Exception("Actual connected LOD triangle levels invalid.");
+        foreach(var mesh in new[]{medium,distant})
+        {
+            if(mesh.SkinIndices.Count==0 || mesh.GarmentIndices.Count==0 ||
+               mesh.Normals.Count!=mesh.Vertices.Count ||
+               mesh.UVs.Count!=mesh.Vertices.Count)
+                throw new Exception("Lesser LOD lost anatomical faces, UVs or normals.");
+            float minY=100f,maxY=-100f;
+            foreach(var p in mesh.Vertices)
+            {
+                minY=Math.Min(minY,p[1]);maxY=Math.Max(maxY,p[1]);
+                if(p.Any(v=>float.IsNaN(v)||float.IsInfinity(v)))
+                    throw new Exception("LOD surface contains invalid vertex.");
+            }
+            if(minY<-.02f || minY>.065f || maxY<1.73f || maxY>1.9f)
+                throw new Exception("LOD changed body dimensions unexpectedly.");
+        }
+    }
+
+    private static void RebuildClothShading()
+    {
+        var garment=RiftForagerTailoredGarment.Generate();
+        float minX=1f,maxX=-1f,minZ=1f,maxZ=-1f;
+        foreach(var n in garment.Normals)
+        {
+            float length=(float)Math.Sqrt(n[0]*n[0]+n[1]*n[1]+n[2]*n[2]);
+            if(float.IsNaN(length)||float.IsInfinity(length)||
+               Math.Abs(length-1)>1e-3f)
+                throw new Exception("Garment normal not normalized.");
+            minX=Math.Min(minX,n[0]);maxX=Math.Max(maxX,n[0]);
+            minZ=Math.Min(minZ,n[2]);maxZ=Math.Max(maxZ,n[2]);
+        }
+        if(maxX-minX<.08f || maxZ-minZ<1f)
+            throw new Exception("Drape mesh still has uniform flat-cutout normals.");
     }
 
     private static void RebuildSourceFeatureClearance()
