@@ -15,7 +15,7 @@ namespace Ninefold.Editor
     /// </summary>
     internal static class AshboundReviewPbr
     {
-        private const int Size=256;
+        private const int Size=512;
         private static readonly float Circle=2f*Mathf.PI;
 
         internal static Dictionary<string,Material> Build(
@@ -81,45 +81,79 @@ namespace Ninefold.Editor
             }
         }
 
+        // Tileable smooth noise avoids the mechanical repeating sine-wave
+        // appearance of the former 256-pixel prototype. Each octave wraps
+        // exactly across the material tile, including image edges.
+        private static float HashNoise(int x,int y,int seed)
+        {
+            unchecked
+            {
+                uint h=(uint)seed;
+                h^=(uint)x*0x9E3779B9u;
+                h^=(uint)y*0x85EBCA6Bu;
+                h^=h>>16;
+                h*=0x7FEB352Du;
+                h^=h>>15;
+                h*=0x846CA68Bu;
+                h^=h>>16;
+                return (h&0x00FFFFFFu)/8388607.5f-1f;
+            }
+        }
+
+        private static float TiledNoise(int x,int y,int cells,int seed)
+        {
+            float px=(float)x*cells/Size,py=(float)y*cells/Size;
+            int ix=Mathf.FloorToInt(px),iy=Mathf.FloorToInt(py);
+            float tx=px-ix,ty=py-iy;
+            tx=tx*tx*(3f-2f*tx);
+            ty=ty*ty*(3f-2f*ty);
+            int bx=ix%cells,by=iy%cells;
+            int nx=(bx+1)%cells,ny=(by+1)%cells;
+            float a=Mathf.Lerp(HashNoise(bx,by,seed),HashNoise(nx,by,seed),tx);
+            float b=Mathf.Lerp(HashNoise(bx,ny,seed),HashNoise(nx,ny,seed),tx);
+            return Mathf.Lerp(a,b,ty);
+        }
+
         private static float Height(string material,int x,int y,int seed)
         {
             float theta=Circle*x/Size,phi=Circle*y/Size;
-            float grain=Mathf.Sin(theta*13+seed*.00019f)*
-                        Mathf.Cos(phi*11-seed*.00013f);
-            float fine=Mathf.Sin(theta*47+phi*43+seed*.00034f)*
-                       Mathf.Sin(phi*37-theta*41);
+            float grain=.55f*TiledNoise(x,y,7,seed)+
+                        .28f*TiledNoise(x,y,23,seed+71)+
+                        .17f*TiledNoise(x,y,61,seed+137);
+            float fine=TiledNoise(x,y,89,seed+211);
             switch(material)
             {
                 case "skin":
                     // Shallow irregular pores, never painted scales or an
                     // invented biological membrane.
-                    return .23f*grain+.15f*fine+
-                        .09f*Mathf.Sin(theta*61)*Mathf.Sin(phi*59);
+                    return .30f*grain+.09f*fine+
+                        .035f*Mathf.Sin(theta*61)*Mathf.Sin(phi*59);
                 case "mantle":
                     // Long, flowing organic relief on the *living* sensory
                     // crescent, not an artificial shielding device.
-                    return .34f*Mathf.Sin(theta*5+.75f*Mathf.Sin(phi*3))+
-                        .13f*grain+.09f*fine;
+                    return .22f*Mathf.Sin(theta*5+.45f*Mathf.Sin(phi*3))+
+                        .22f*grain+.06f*fine;
                 case "garment":
                     // Quiet directional woven fabric and repaired seams.
-                    return .26f*Mathf.Sin(theta*30)+
-                        .18f*Mathf.Sin(phi*29)+.09f*grain;
+                    return .09f*Mathf.Sin(theta*58+.15f*grain)+
+                        .09f*Mathf.Sin(phi*63-.15f*grain)+
+                        .28f*grain+.06f*fine;
                 case "salvage":
                     // Thin worn mechanical grain, not conspicuous random
                     // impact craters or invented relic glyphs.
-                    return .22f*Mathf.Sin(theta*15+.3f*Mathf.Sin(phi*3))+
-                        .17f*grain+.12f*fine;
+                    return .18f*Mathf.Sin(theta*15+.3f*Mathf.Sin(phi*3))+
+                        .26f*grain+.11f*fine;
                 case "hardware":
-                    return .27f*Mathf.Sin(theta*19)+
-                        .13f*Mathf.Sin(phi*23)+.12f*fine;
+                    return .12f*Mathf.Sin(theta*19)+
+                        .12f*Mathf.Sin(phi*23)+.22f*grain+.09f*fine;
                 case "seam":
-                    return .28f*Mathf.Sin(theta*17)+.19f*grain;
+                    return .11f*Mathf.Sin(theta*17)+.29f*grain;
                 case "dark":
-                    return .13f*grain+.09f*fine;
+                    return .28f*grain+.05f*fine;
                 case "eye":
-                    return .035f*grain;
+                    return .025f*grain;
                 default:
-                    return .14f*grain;
+                    return .19f*grain;
             }
         }
 
@@ -146,7 +180,12 @@ namespace Ninefold.Editor
                 }
                 else
                 {
-                    float tone=Mathf.Clamp(.91f+height*.10f,.74f,1f);
+                    // Modulate the EXISTING eight source swatches rather than
+                    // inventing approved skin, mantle, Arcana or faction hues.
+                    float contrast=material=="skin" ? .085f :
+                        material=="garment" ? .12f :
+                        material=="salvage" ? .14f : .075f;
+                    float tone=Mathf.Clamp(.94f+height*contrast,.73f,1f);
                     pixels[y*Size+x]=new Color32(
                         ToByte(tone),ToByte(tone*.993f),
                         ToByte(tone*.984f),255);
@@ -172,7 +211,7 @@ namespace Ninefold.Editor
             importer.mipmapEnabled=true;
             importer.wrapMode=TextureWrapMode.Repeat;
             importer.filterMode=FilterMode.Trilinear;
-            importer.maxTextureSize=256;
+            importer.maxTextureSize=512;
             importer.SaveAndReimport();
             var loaded=AssetDatabase.LoadAssetAtPath<Texture2D>(path);
             if(loaded==null)
