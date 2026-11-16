@@ -56,6 +56,14 @@ require('mesh.RecalculateTangents();' in build and
         'renderer.bones=bones;' in build and
         'renderer.rootBone=bones[0];' in build,
         "Tangent-space normal maps need real skinned mesh data")
+require('private const int Size=512;' in pbr and
+        'private static float TiledNoise(' in pbr and
+        'private static float HashNoise(' in pbr and
+        'TiledNoise(x,y,7,seed)' in pbr and
+        'TiledNoise(x,y,61,seed+137)' in pbr and
+        'importer.maxTextureSize=512;' in pbr and
+        'surface.Color[0],surface.Color[1],surface.Color[2]' in pbr,
+        "Review materials must retain original swatches with tileable 512px microdetail")
 require('AshboundReviewPbr.Build(folder,shader,materials)' in build and
         'material.SetTexture("_BaseMap",albedo);' in pbr and
         'material.SetTexture("_BumpMap",normal);' in pbr and
