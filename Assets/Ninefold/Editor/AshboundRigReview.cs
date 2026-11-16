@@ -348,6 +348,77 @@ namespace Ninefold.Editor
                 var organicBounds=unified.bounds;organicBounds.Expand(.5f);
                 organicRenderer.localBounds=organicBounds;
 
+                // Two additional real skinned geometry resolutions are staged
+                // alongside the high-fidelity continuous body in ArtReview.
+                // Only the anatomical renderers are managed by this LODGroup:
+                // the canonical crescent, original source gear and the physical
+                // tailored drape remain visible and unmodified at every tier.
+                // This is an editor review quality/performance preparation,
+                // not a mobile FPS certification or live gameplay promotion.
+                var anatomyLods=new List<Renderer> { organicRenderer };
+                var lodSteps=new[]{.036f,.052f};
+                for(int lodIndex=0;lodIndex<lodSteps.Length;lodIndex++)
+                {
+                    int level=lodIndex+1;
+                    var rawLod=RiftForagerAnatomyReconstruction.Generate(lodSteps[lodIndex]);
+                    var readyLod=RiftForagerAnatomyReconstruction.MakeTextureReady(rawLod);
+                    var lodObject=new GameObject("Continuous Avarin anatomy LOD"+level);
+                    lodObject.transform.SetParent(actor.transform,false);
+                    var lodMesh=new Mesh {
+                        name="Rift Forager continuous rest skin LOD"+level,
+                        indexFormat=IndexFormat.UInt32
+                    };
+                    lodMesh.SetVertices(readyLod.Vertices.Select(v=>
+                        new Vector3(v[0],v[1],v[2])).ToList());
+                    lodMesh.SetNormals(readyLod.Normals.Select(v=>
+                        new Vector3(v[0],v[1],v[2])).ToList());
+                    lodMesh.SetUVs(0,readyLod.UVs.Select(v=>
+                        new Vector2(v[0],v[1])).ToList());
+                    lodMesh.subMeshCount=2;
+                    lodMesh.SetTriangles(readyLod.GarmentIndices,0);
+                    lodMesh.SetTriangles(readyLod.SkinIndices,1);
+                    lodMesh.RecalculateTangents();
+                    var weightsLod=new BoneWeight[readyLod.Vertices.Count];
+                    for(int v=0;v<weightsLod.Length;v++)
+                    {
+                        var w=AshboundSkeleton.SkinOrganic(readyLod.Vertices[v]);
+                        weightsLod[v]=new BoneWeight {
+                            boneIndex0=w.A,weight0=w.WA,
+                            boneIndex1=w.B,weight1=w.WB,
+                            boneIndex2=w.C,weight2=w.WC,
+                            boneIndex3=w.D,weight3=w.WD
+                        };
+                    }
+                    lodMesh.boneWeights=weightsLod;
+                    var posesLod=new Matrix4x4[bones.Length];
+                    for(int k=0;k<bones.Length;k++)
+                        posesLod[k]=bones[k].worldToLocalMatrix*
+                            lodObject.transform.localToWorldMatrix;
+                    lodMesh.bindposes=posesLod;
+                    lodMesh.RecalculateBounds();
+                    AssetDatabase.CreateAsset(lodMesh,
+                        folder+"/RiftForagerContinuousAnatomyLOD"+level+".asset");
+                    var lodRenderer=lodObject.AddComponent<SkinnedMeshRenderer>();
+                    lodRenderer.sharedMesh=lodMesh;
+                    lodRenderer.bones=bones;
+                    lodRenderer.rootBone=bones[0];
+                    lodRenderer.sharedMaterials=new[]{
+                        materialMap["garment"],materialMap["skin"]
+                    };
+                    lodRenderer.updateWhenOffscreen=false;
+                    var b=lodMesh.bounds;b.Expand(.5f);
+                    lodRenderer.localBounds=b;
+                    anatomyLods.Add(lodRenderer);
+                }
+                var anatomyLodGroup=actor.AddComponent<LODGroup>();
+                anatomyLodGroup.fadeMode=LODFadeMode.None;
+                anatomyLodGroup.SetLODs(new[]{
+                    new LOD(.52f,new[]{anatomyLods[0]}),
+                    new LOD(.23f,new[]{anatomyLods[1]}),
+                    new LOD(.055f,new[]{anatomyLods[2]})
+                });
+                anatomyLodGroup.RecalculateBounds();
+
                 // Two true draped *fabric* skins: closed geometric panels with
                 // stitched edges, intentionally asymmetric hems and visible
                 // folds. Skin to the existing skeleton so the cloth follows
