@@ -12,7 +12,7 @@ namespace Ninefold.Editor
     /// </summary>
     internal static class RiftForagerTailoredGarment
     {
-        internal const string Revision="rift-forager-tailored-fieldcloth-01";
+        internal const string Revision="rift-forager-tailored-fieldcloth-02";
         internal const int Columns=15;
         internal const int Rows=23;
 
@@ -42,19 +42,34 @@ namespace Ninefold.Editor
                 (left?-1f:1f)*spread*(.25f+.75f*u);
             // Asymmetric hanging hems are visibly different from one another.
             // Avoid perfectly straight sheet edges and disconnected ribbons.
-            float length=left?.515f:.594f;
-            float y=1.334f-length*v+
+            float length=left?.350f:.445f;
+            float y=1.083f-length*v+
                 (.012f*(float)Math.Sin(2.2f*Math.PI*u+.7f*panel))*v*v;
             float fold=(float)Math.Sin(4f*Math.PI*u+1.4f*panel+.7f*v);
             float z=-.142f-.034f*v-.011f*v*v-
                 .010f*(float)Math.Sin(Math.PI*v)*fold;
-            // Position actual *fabric* outside the existing SDF anatomy.
-            // Solving against the source field avoids hiding it in the body.
-            // Upper limit is bounded to reject accidental far-floating panels.
-            for(int i=0;i<38 &&
-                RiftForagerAnatomyReconstruction.Field(x,y,z)<.011f;i++)
-                z-=.008f;
-            if(RiftForagerAnatomyReconstruction.Field(x,y,z)<.007f ||
+            // A smooth, continuous rest-fit solve along the rear normal.
+            // Former fixed 8-mm steps made jagged diagonal surface stripes
+            // when neighboring fabric columns crossed an anatomy threshold.
+            // Bisection avoids quantized stepping and keeps the cloth outside.
+            if(RiftForagerAnatomyReconstruction.Field(x,y,z)<.011f)
+            {
+                float near=z;
+                float far=z-.35f;
+                if(RiftForagerAnatomyReconstruction.Field(x,y,far)<.011f)
+                    throw new InvalidOperationException(
+                        "Rear garment could not clear the original anatomy.");
+                for(int i=0;i<21;i++)
+                {
+                    float mid=(near+far)*.5f;
+                    if(RiftForagerAnatomyReconstruction.Field(x,y,mid)<.011f)
+                        near=mid;
+                    else
+                        far=mid;
+                }
+                z=far;
+            }
+            if(RiftForagerAnatomyReconstruction.Field(x,y,z)<.009f ||
                z<-.49f)
                 throw new InvalidOperationException(
                     "Fieldcloth intersects anatomy or floats off the back.");
