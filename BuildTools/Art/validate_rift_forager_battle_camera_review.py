@@ -52,14 +52,18 @@ expect('camera.transform.rotation = Quaternion.Euler(58, 0, 0);' in game and
        'Capture(camera,390,844,58f,view.Yaw,4f,' in tool and
        'Capture(camera,320,568,58f,view.Yaw,4f,' in tool,
        "Tactical views must use the actual game's tilt/minimum framing and portrait resolutions")
-expect('new[]{"Idle","Attack","Afterecho"}' in tool and
-       'new[]{"Idle","Attack"}' in tool and
-       'clips[pose].SampleAnimation(actor,clips[pose].length*.5f)' in tool,
-       "Capture different actual skeletal poses rather than fake static textures")
-expect('ContactSheet(export,tactical,4,3,390,844,tacticalSheet)' in tool and
-       'ContactSheet(export,narrowFrames,2,2,320,568,narrowSheet)' in tool and
+expect('"Idle","Advance","Attack","Hit","Afterecho","Defeat"' in tool and
+       'clips[pose].SampleAnimation(actor,clips[pose].length*.5f)' in tool and
+       'tactical.Length!=24' in tool and
+       'narrowFrames.Length!=12' in tool and
+       'detailFrames.Length!=12' in tool,
+       "Capture all six distinct skeletal clips at tactical, narrow and detail scale")
+expect('ContactSheet(export,tactical,4,6,390,844,tacticalSheet)' in tool and
+       'ContactSheet(export,narrowFrames,2,6,320,568,narrowSheet)' in tool and
+       'ContactSheet(export,detailFrames,2,6,390,844,detailSheet)' in tool and
        'contact-sheet-tactical-390x844.png' in tool and
        'contact-sheet-narrow-320x568.png' in tool and
+       'contact-sheet-detail-390x844.png' in tool and
        'tile.GetPixels32()' in tool and
        'Array.Copy(pixels,y*tileWidth,surface,' in tool,
        "Actual captured PNGs must be assembled into mobile-scale review grids")
@@ -72,6 +76,12 @@ expect('controller.AddParameter("Moving",AnimatorControllerParameterType.Bool);'
        'public void BeginMovement() => SetMoving(true)' in motion and
        'public void EndMovement() => SetMoving(false)' in motion,
        "Actual authored locomotion must be wired to battle renderer Moving bool")
+expect('prefab.GetComponent<LODGroup>()' in tool and
+       'var tiers=lod.GetLODs();' in tool and
+       'counts[0]>counts[1] && counts[1]>counts[2]' in tool and
+       'alternate.Contains(renderer)' in tool and
+       'mat.GetTexture("_MetallicGlossMap")==null' in tool,
+       "Review must verify true LOD reduction, packed response maps and report only actively rendered triangles")
 expect('new MaterialPropertyBlock()' in tool and
        'flat.SetFloat("_BumpScale",0)' in tool and
        'control-390x844-idle-no-normal-detail.png' in tool,

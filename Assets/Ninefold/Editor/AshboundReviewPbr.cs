@@ -32,6 +32,7 @@ namespace Ninefold.Editor
                 string prefix=folder+"/RiftForager_"+surface.Name;
                 var albedo=WriteMap(prefix+"_albedo.png",surface.Name,false);
                 var normal=WriteMap(prefix+"_normal.png",surface.Name,true);
+                var packed=WritePackedMask(prefix+"_metallicSmoothness.png",surface.Name);
                 var material=new Material(shader) {name="Rift Forager / "+surface.Name};
                 material.SetColor("_BaseColor",new Color(
                     surface.Color[0],surface.Color[1],surface.Color[2],surface.Opacity));
@@ -39,13 +40,13 @@ namespace Ninefold.Editor
                 material.SetTexture("_BumpMap",normal);
                 material.SetFloat("_BumpScale",NormalStrength(surface.Name));
                 material.EnableKeyword("_NORMALMAP");
-                material.SetFloat("_Metallic",surface.Name=="hardware" ? .48f :
-                    surface.Name=="salvage" ? .29f :
-                    surface.Name=="seam" ? .11f : .01f);
-                material.SetFloat("_Smoothness",surface.Name=="eye" ? .51f :
-                    surface.Name=="hardware" ? .39f :
-                    surface.Name=="skin" ? .31f :
-                    surface.Name=="mantle" ? .24f : .20f);
+                // URP Lit Metallic workflow: R=metalness, A=smoothness,
+                // linear texture import. The source eight-color palette
+                // remains unchanged; this is provisional material *response*.
+                material.SetTexture("_MetallicGlossMap",packed);
+                material.SetFloat("_Metallic",1f);
+                material.SetFloat("_Smoothness",1f);
+                material.EnableKeyword("_METALLICSPECGLOSSMAP");
                 material.enableInstancing=true;
                 AssetDatabase.CreateAsset(material,prefix+".mat");
                 output.Add(surface.Name,material);
@@ -155,6 +156,78 @@ namespace Ninefold.Editor
                 default:
                     return .19f*grain;
             }
+        }
+
+        private static float Metal(string material)
+        {
+            switch(material)
+            {
+                case "hardware":return .55f;
+                case "salvage":return .31f;
+                case "seam":return .12f;
+                case "eye":return .02f;
+                default:return .008f;
+            }
+        }
+
+        private static float Smooth(string material)
+        {
+            switch(material)
+            {
+                case "hardware":return .45f;
+                case "eye":return .50f;
+                case "skin":return .28f;
+                case "mantle":return .23f;
+                case "garment":return .16f;
+                case "salvage":return .27f;
+                case "dark":return .14f;
+                default:return .21f;
+            }
+        }
+
+        private static Texture2D WritePackedMask(string path,string material)
+        {
+            int seed=Seed(material)+1579;
+            var pixels=new Color32[Size*Size];
+            for(int y=0;y<Size;y++)
+            for(int x=0;x<Size;x++)
+            {
+                // Low-contrast spatial response variation differentiates
+                // woven fabric, living tissue and worn metal under URP light,
+                // instead of treating every 512px tile as uniform plastic.
+                float grain=TiledNoise(x,y,11,seed);
+                float abrasion=TiledNoise(x,y,37,seed+109);
+                float metal=Mathf.Clamp01(Metal(material)+
+                    (material=="hardware"||material=="salvage" ? .08f*grain : 0f));
+                float gloss=Mathf.Clamp(Smooth(material)+
+                    .055f*grain-.025f*abrasion,.06f,.82f);
+                pixels[y*Size+x]=new Color32(
+                    ToByte(metal),0,0,ToByte(gloss));
+            }
+            var staging=new Texture2D(Size,Size,TextureFormat.RGBA32,
+                false,true) {name=Path.GetFileNameWithoutExtension(path)};
+            try
+            {
+                staging.SetPixels32(pixels);
+                staging.Apply(false,false);
+                File.WriteAllBytes(path,staging.EncodeToPNG());
+            }
+            finally { UnityEngine.Object.DestroyImmediate(staging); }
+            AssetDatabase.ImportAsset(path,ImportAssetOptions.ForceUpdate);
+            var importer=AssetImporter.GetAtPath(path) as TextureImporter;
+            if(importer==null)
+                throw new IOException("Packed material mask did not import: "+path);
+            importer.textureType=TextureImporterType.Default;
+            importer.sRGBTexture=false;
+            importer.mipmapEnabled=true;
+            importer.wrapMode=TextureWrapMode.Repeat;
+            importer.filterMode=FilterMode.Trilinear;
+            importer.maxTextureSize=512;
+            importer.SaveAndReimport();
+            var loaded=AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            if(loaded==null)
+                throw new IOException("Packed material mask missing: "+path);
+            return loaded;
         }
 
         private static Texture2D WriteMap(string path,string material,bool isNormal)

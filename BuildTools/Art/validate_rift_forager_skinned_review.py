@@ -64,6 +64,25 @@ require('private const int Size=512;' in pbr and
         'importer.maxTextureSize=512;' in pbr and
         'surface.Color[0],surface.Color[1],surface.Color[2]' in pbr,
         "Review materials must retain original swatches with tileable 512px microdetail")
+require('WritePackedMask(' in pbr and
+        'material.SetTexture("_MetallicGlossMap",packed);' in pbr and
+        'material.EnableKeyword("_METALLICSPECGLOSSMAP");' in pbr and
+        'importer.sRGBTexture=false;' in pbr and
+        'metallicSmoothness.png' in pbr and
+        'new Texture2D(Size,Size,TextureFormat.RGBA32,' in pbr,
+        "Actual imported, linear packed URP metallic/smoothness maps required")
+require('var lodSteps=new[]{.036f,.052f};' in build and
+        'actor.AddComponent<LODGroup>()' in build and
+        'anatomyLodGroup.SetLODs(' in build and
+        'lodMesh.boneWeights=weightsLod;' in build and
+        'lodRenderer.bones=bones;' in build and
+        'RebuildMultiResolutionAnatomy' in
+        text("Tests/Ninefold.Core.Tests/RiftForagerAnatomyReconstructionTests.cs"),
+        "High/medium/distant physical 19-bone anatomy LODs required")
+require('SkeletonMajorMotionPass' in tests and
+        'case AshboundMotion.Clip.Defeat:' in rig and
+        'if(bone==15)return new Pose(-8f*beat+3f*doubleBeat' in rig,
+        "All six clips require pose detail and actual regression tests")
 require('AshboundReviewPbr.Build(folder,shader,materials)' in build and
         'material.SetTexture("_BaseMap",albedo);' in pbr and
         'material.SetTexture("_BumpMap",normal);' in pbr and

@@ -72,6 +72,35 @@ internal static class Program
         return indices.Count/3;
     }
 
+    private static (int Vertices,int Triangles) WriteBodyLod(
+        string path,float step,int level)
+    {
+        // Exactly the same continuous generator and UV split as Unity's
+        // LODGroup. These reduced meshes intentionally exclude mantle,
+        // source accessories and waist drape, which stay visible separately.
+        var raw=RiftForagerAnatomyReconstruction.Generate(step);
+        var mesh=RiftForagerAnatomyReconstruction.MakeTextureReady(raw);
+        if(mesh.TriangleCount<2500 || mesh.Vertices.Count<1500)
+            throw new InvalidDataException("LOD was degraded to primitive geometry.");
+        using(var writer=new StreamWriter(path,false,
+            new UTF8Encoding(encoderShouldEmitUTF8Identifier:false)))
+        {
+            writer.WriteLine("# Ninefold ArtReview anatomical LOD "+level);
+            writer.WriteLine("# NOT skinned, NOT gameplay or mobile-certified");
+            writer.WriteLine("mtllib RiftForager.mtl");
+            writer.WriteLine("o RiftForager_AnatomyLOD"+level+"_REVIEW");
+            foreach(var v in mesh.Vertices)WriteTriplet(writer,"v",v);
+            foreach(var uv in mesh.UVs)WriteTriplet(writer,"vt",uv);
+            foreach(var n in mesh.Normals)WriteTriplet(writer,"vn",n);
+            writer.WriteLine("s 1");
+            int tris=WriteFaces(writer,"garment",mesh.GarmentIndices,mesh.Vertices.Count)+
+                WriteFaces(writer,"skin",mesh.SkinIndices,mesh.Vertices.Count);
+            if(tris!=mesh.TriangleCount)
+                throw new InvalidDataException("LOD export lost surface triangles.");
+        }
+        return (mesh.Vertices.Count,mesh.TriangleCount);
+    }
+
     private static int Main(string[] args)
     {
         try
@@ -135,6 +164,18 @@ internal static class Program
             Console.WriteLine("RENDER_VERTICES "+mesh.Vertices.Count);
             Console.WriteLine("CLOTH_TRIANGLES "+mesh.GarmentIndices.Count/3);
             Console.WriteLine("SKIN_TRIANGLES "+mesh.SkinIndices.Count/3);
+            string outputFolder=Path.GetDirectoryName(target)!;
+            var mid=WriteBodyLod(
+                Path.Combine(outputFolder,"RiftForager-AnatomyLOD1-REVIEW.obj"),
+                .036f,1);
+            var distant=WriteBodyLod(
+                Path.Combine(outputFolder,"RiftForager-AnatomyLOD2-REVIEW.obj"),
+                .052f,2);
+            if(!(mesh.TriangleCount>mid.Triangles &&
+                mid.Triangles>distant.Triangles))
+                throw new InvalidDataException("LOD geometry triangle order invalid.");
+            Console.WriteLine("LOD1_ANATOMY_TRIANGLES "+mid.Triangles);
+            Console.WriteLine("LOD2_ANATOMY_TRIANGLES "+distant.Triangles);
             Console.WriteLine("TAILORED_DRAPE_TRIANGLES "+drape.TriangleCount);
             Console.WriteLine("TOTAL_TRIANGLES "+(mesh.TriangleCount+drape.TriangleCount));
             return 0;

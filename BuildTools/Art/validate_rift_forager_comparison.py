@@ -21,6 +21,7 @@ SHEETS={
     "RiftForager-BeforeAfter-Close-390x844.png":(3120,844),
     "RiftForager-BeforeAfter-Narrow-320x568.png":(1280,568),
     "RiftForager-BeforeAfter-Face-390x844.png":(1560,844),
+    "RiftForager-ThreeLOD-Tactical-390x844.png":(1170,844),
 }
 
 
@@ -47,6 +48,13 @@ def source_check():
         "NO animations, skin weights or Unity shader are baked",
     ):
         demand(phrase in export,"Standalone .NET OBJ must be the exact pure C# Unity geometry: "+phrase)
+    demand("WriteBodyLod(" in export and
+           'RiftForager-AnatomyLOD1-REVIEW.obj' in export and
+           'RiftForager-AnatomyLOD2-REVIEW.obj' in export and
+           "render_body_lod_sheet(args,palette)" in render and
+           "body_only_anatomy(path,body_name)" in render and
+           "RebuildMultiResolutionAnatomy" in tests,
+           "Three exact C# anatomy LODs and honest 3-way sheet must be in CI")
     demand("RiftForagerTailoredGarment.Generate()" in export and
            "RiftForagerTailoredGarment.Generate()" in rig and
            "RiftForagerTailoredGarment.cs" in core and
@@ -118,6 +126,15 @@ def artifact_check():
     before=data["before"]
     after=data["after"]
     preserved=data["preserved_details"]
+    lod=data["anatomy_lods"]
+    demand(32000<lod["high_triangles"]<90000 and
+           6000<lod["medium_triangles"]<lod["high_triangles"] and
+           3000<lod["distant_triangles"]<lod["medium_triangles"],
+           "Source-generated anatomy LOD triangle budgets or ordering invalid")
+    for f in ("RiftForager-AnatomyLOD1-REVIEW.obj",
+              "RiftForager-AnatomyLOD2-REVIEW.obj"):
+        demand((OUT/f).is_file() and (OUT/f).stat().st_size>100,
+               "Generated source-linked anatomical LOD OBJ missing: "+f)
     demand(before["vertices"]>15000 and before["triangles"]>30000,
            "Original source geometry too small")
     demand(after["vertices"]>4000 and after["triangles"]>8000,
@@ -146,10 +163,11 @@ def artifact_check():
             width_per_view=390 if "390x844" in name else 320
             left=img.crop((0,0,width_per_view,img.height))
             right=img.crop((width_per_view,0,2*width_per_view,img.height))
-            differences=ImageChops.difference(left,right)
-            demand(differences.getbbox() is not None,
-                   "Before/after pair is a duplicated image instead of a distinct model render")
-    print("PASS real source/connected anatomy OBJ files, original .MTL and three review sheets")
+            if "ThreeLOD" not in name:
+                differences=ImageChops.difference(left,right)
+                demand(differences.getbbox() is not None,
+                       "Before/after pair is a duplicated image instead of a distinct model render")
+    print("PASS real source/connected anatomy OBJ files, 2 additional LOD OBJs, original .MTL and five review sheets")
     print("PASS nonidentical before/after images, correct native pixel sizes and intact assets")
     print("NOTE all visual models remain provisional. Do not claim Unity quality or canon acceptance.")
 

@@ -164,21 +164,53 @@ namespace Ninefold.Editor
                     "Build the updated connected-anatomy Rift Forager first. "+
                     "The older disconnected body is not an acceptable "+
                     "reconstruction review candidate.");
+            // LOD1 and LOD2 use truly lower triangle source meshes but
+            // cannot be simultaneously visible with LOD0. Verify all tiers
+            // while reporting only the actually rendered high-detail set.
+            var lod=prefab.GetComponent<LODGroup>();
+            if(lod==null)
+                throw new InvalidDataException("Integrated anatomy LODGroup is missing.");
+            var tiers=lod.GetLODs();
+            if(tiers.Length!=3 || tiers[0].renderers.Length!=1 ||
+               tiers[0].renderers[0]!=connected[0])
+                throw new InvalidDataException("Three contiguous anatomy LOD tiers required.");
+            long[] counts=new long[3];
+            var alternate=new HashSet<Renderer>();
+            for(int level=0;level<3;level++)
+            {
+                if(tiers[level].renderers.Length!=1 ||
+                   !(tiers[level].renderers[0] is SkinnedMeshRenderer))
+                    throw new InvalidDataException("LOD contains a non-skinned/duplicate renderer.");
+                var mesh=tiers[level].renderers[0].GetComponent<SkinnedMeshRenderer>().sharedMesh;
+                if(mesh==null || mesh.subMeshCount!=2)
+                    throw new InvalidDataException("LOD missing true material-assigned anatomy.");
+                for(int i=0;i<mesh.subMeshCount;i++)
+                    counts[level]+=(long)mesh.GetIndexCount(i)/3L;
+                if(level>0)alternate.Add(tiers[level].renderers[0]);
+            }
+            if(!(counts[0]>counts[1] && counts[1]>counts[2]) ||
+               counts[2]<2500 || counts[0]>90000)
+                throw new InvalidDataException("Physical LOD geometry is not optimized.");
             var mats=new HashSet<Material>();
-            rendererCount=renderers.Length;triangles=0;vertices=0;
+            rendererCount=0;triangles=0;vertices=0;
             foreach(var renderer in renderers)
             {
                 var mesh=renderer.sharedMesh;
                 if(mesh==null || renderer.bones.Length!=AshboundSkeleton.Count)
                     throw new InvalidDataException("Review candidate has invalid "+
                         "mesh or 19-bone binding.");
-                vertices+=mesh.vertexCount;
-                for(int i=0;i<mesh.subMeshCount;i++)
-                    triangles+=(long)mesh.GetIndexCount(i)/3L;
+                if(!alternate.Contains(renderer))
+                {
+                    rendererCount++;
+                    vertices+=mesh.vertexCount;
+                    for(int i=0;i<mesh.subMeshCount;i++)
+                        triangles+=(long)mesh.GetIndexCount(i)/3L;
+                }
                 foreach(var mat in renderer.sharedMaterials)
                 {
                     if(mat==null || mat.GetTexture("_BaseMap")==null ||
-                        mat.GetTexture("_BumpMap")==null)
+                        mat.GetTexture("_BumpMap")==null ||
+                        mat.GetTexture("_MetallicGlossMap")==null)
                         throw new InvalidDataException(
                             "Missing UV-linked albedo/normal-map material.");
                     mats.Add(mat);
@@ -273,7 +305,11 @@ namespace Ninefold.Editor
                     new View("front",180f),new View("three-quarter",140f),
                     new View("side",90f),new View("rear",0f)
                 };
-                foreach(string pose in new[]{"Idle","Attack","Afterecho"})
+                // All six distinct actual skinned motion states, not just
+                // three handpicked highlights. One contact sheet lets the
+                // reviewer reject pose clipping and poor silhouette once.
+                foreach(string pose in new[]{
+                    "Idle","Advance","Attack","Hit","Afterecho","Defeat"})
                 {
                     clips[pose].SampleAnimation(actor,clips[pose].length*.5f);
                     foreach(var view in views)
@@ -286,7 +322,8 @@ namespace Ninefold.Editor
                     }
                 }
 
-                foreach(string pose in new[]{"Idle","Attack"})
+                foreach(string pose in new[]{
+                    "Idle","Advance","Attack","Hit","Afterecho","Defeat"})
                 {
                     clips[pose].SampleAnimation(actor,clips[pose].length*.5f);
                     foreach(var view in new[]{views[0],views[1]})
@@ -328,19 +365,27 @@ namespace Ninefold.Editor
                 // reviewers to manually assemble twelve separate PNG files.
                 var tactical=completed.Where(n=>
                     n.StartsWith("tactical-390x844-",StringComparison.Ordinal)).ToArray();
-                if(tactical.Length!=12)
-                    throw new InvalidDataException("Tactical review must have 12 poses/views.");
+                if(tactical.Length!=24)
+                    throw new InvalidDataException("Tactical review must have all six clips across four angles.");
                 const string tacticalSheet="contact-sheet-tactical-390x844.png";
-                ContactSheet(export,tactical,4,3,390,844,tacticalSheet);
+                ContactSheet(export,tactical,4,6,390,844,tacticalSheet);
                 completed.Add(tacticalSheet);
 
                 var narrowFrames=completed.Where(n=>
                     n.StartsWith("tactical-320x568-",StringComparison.Ordinal)).ToArray();
-                if(narrowFrames.Length!=4)
-                    throw new InvalidDataException("Narrow review must have four poses/views.");
+                if(narrowFrames.Length!=12)
+                    throw new InvalidDataException("Narrow review must have all six clip silhouettes.");
                 const string narrowSheet="contact-sheet-narrow-320x568.png";
-                ContactSheet(export,narrowFrames,2,2,320,568,narrowSheet);
+                ContactSheet(export,narrowFrames,2,6,320,568,narrowSheet);
                 completed.Add(narrowSheet);
+
+                var detailFrames=completed.Where(n=>
+                    n.StartsWith("detail-390x844-",StringComparison.Ordinal)).ToArray();
+                if(detailFrames.Length!=12)
+                    throw new InvalidDataException("Close review must have all six clip silhouettes.");
+                const string detailSheet="contact-sheet-detail-390x844.png";
+                ContactSheet(export,detailFrames,2,6,390,844,detailSheet);
+                completed.Add(detailSheet);
 
                 var report=new StringBuilder();
                 report.AppendLine("NINEFOLD: FRONTIERS — RIFT FORAGER REAL SKINNED MODEL REVIEW");
@@ -350,10 +395,17 @@ namespace Ninefold.Editor
                 report.AppendLine("Source prefab: "+AssetDatabase.GetAssetPath(prefab));
                 report.AppendLine("SkinnedMeshRenderers: "+renderers);
                 report.AppendLine("Mesh vertices (all sections): "+vertices);
-                report.AppendLine("Total mesh triangles: "+triangles);
+                report.AppendLine("High-detail active mesh triangles: "+triangles);
+                var tiers=prefab.GetComponent<LODGroup>().GetLODs();
+                report.AppendLine("Anatomy LOD triangle counts: "+
+                    string.Join(" / ",tiers.Select(t=>
+                        t.renderers[0].GetComponent<SkinnedMeshRenderer>()
+                            .sharedMesh.triangles.Length/3)));
+                report.AppendLine("Accessory and tailored cloth remain present at all anatomy LODs.");
                 report.AppendLine("Distinct material assets: "+materialCount);
                 report.AppendLine("Rig bone count: "+AshboundSkeleton.Count);
                 report.AppendLine("Clips: "+string.Join(", ",labels));
+                report.AppendLine("All six actual skinned clips sampled across 24 tactical, 12 narrow and 12 detail angles.");
                 report.AppendLine("Tactical: 58° downward, orthographic half-height=4 world units");
                 report.AppendLine("Camera estimate: actual missions may pull farther back.");
                 report.AppendLine("Details: 18° downward, orthographic half-height=1.26.");

@@ -247,9 +247,14 @@ namespace Ninefold.Editor
                     if(bone==5)return new Pose(.65f*beat,.8f*beat,0);
                     if(bone==6)return new Pose(1.6f*beat,.7f*doubleBeat,1.1f*beat);
                     if(bone==7||bone==10)return new Pose((bone==7?-1:1)*.8f*beat,0,0);
+                    if(bone==8||bone==11)return new Pose(.55f*doubleBeat,0,.4f*beat);
+                    if(bone==9||bone==12)return new Pose(.4f*beat,.3f*doubleBeat,0);
+                    if(bone==4)return new Pose(.7f*beat,0,.3f*doubleBeat);
                     return new Pose(0,0,0);
                 case AshboundMotion.Clip.Advance:
-                    if(bone==1)return new Pose(2f*doubleBeat,1.1f*beat,2.6f*heavy*beat);
+                    if(bone==1)return new Pose(2f*doubleBeat,1.1f*beat,
+                        2.6f*heavy*beat,
+                        -.009f*(1f-(float)Math.Cos(4*Math.PI*time)));
                     if(bone==2)return new Pose(3.2f*doubleBeat,0,2f*beat);
                     if(bone==3)return new Pose(-2f*doubleBeat,0,-1.4f*beat);
                     if(bone==5)return new Pose(.75f*doubleBeat,-.9f*beat,0);
@@ -258,12 +263,14 @@ namespace Ninefold.Editor
                     if(bone==16)return new Pose(-16f*beat/heavy,0,0);
                     if(bone==14)return new Pose(Math.Max(0,-beat)*25f,0,0);
                     if(bone==17)return new Pose(Math.Max(0,beat)*25f,0,0);
-                    if(bone==15)return new Pose(-8f*beat,0,0);
-                    if(bone==18)return new Pose(8f*beat,0,0);
+                    if(bone==15)return new Pose(-8f*beat+3f*doubleBeat,0,2f*doubleBeat);
+                    if(bone==18)return new Pose(8f*beat-3f*doubleBeat,0,-2f*doubleBeat);
                     if(bone==7)return new Pose(-10f*beat,0,-.9f*beat);
                     if(bone==10)return new Pose(10f*beat,0,.9f*beat);
-                    if(bone==8)return new Pose(-2f*beat,0,0);
-                    if(bone==11)return new Pose(2f*beat,0,0);
+                    if(bone==8)return new Pose(-2f*beat,0,2f*doubleBeat);
+                    if(bone==11)return new Pose(2f*beat,0,-2f*doubleBeat);
+                    if(bone==9)return new Pose(2f*doubleBeat,0,-3f*beat);
+                    if(bone==12)return new Pose(-2f*doubleBeat,0,3f*beat);
                     return new Pose(0,0,0);
                 case AshboundMotion.Clip.Attack:
                     if(bone==1)return new Pose(4f*pulse,0,-2f*pulse);
@@ -271,7 +278,10 @@ namespace Ninefold.Editor
                     if(bone==3)return new Pose(-8f*pulse,2f*pulse,3f*pulse);
                     if(bone==10)return new Pose(-37f*heavy*pulse,-4f*pulse,7f*pulse);
                     if(bone==11)return new Pose(-38f*heavy*pulse,0,0);
-                    if(bone==12)return new Pose(-9f*pulse,0,0);
+                    if(bone==12)return new Pose(-9f*pulse,
+                        5f*pulse,-5f*pulse);
+                    if(bone==9)return new Pose(-7f*pulse,0,5f*pulse);
+                    if(bone==4)return new Pose(3f*pulse,0,-2f*pulse);
                     if(bone==7)return new Pose(14f*pulse,0,-8f*pulse);
                     if(bone==5)return new Pose(7f*pulse,0,0);
                     if(bone==6)return new Pose(6f*pulse,2f*pulse,0);
@@ -284,6 +294,8 @@ namespace Ninefold.Editor
                     if(bone==6)return new Pose(-12f*pulse,0,7f*pulse);
                     if(bone==7)return new Pose(9f*pulse,0,0);
                     if(bone==10)return new Pose(13f*pulse,0,0);
+                    if(bone==8||bone==11)return new Pose(6f*pulse,0,2f*pulse);
+                    if(bone==14||bone==17)return new Pose(5f*pulse,0,0);
                     return new Pose(0,0,0);
                 case AshboundMotion.Clip.Afterecho:
                     float tremor=(float)(Math.Sin(18*Math.PI*time)*.65+
@@ -294,7 +306,11 @@ namespace Ninefold.Editor
                     if(bone==6)return new Pose(-14f*pulse,
                         7f*pulse+9f*tremor,4f*pulse+11f*tremor);
                     if(bone==7||bone==10)return new Pose(-6f*pulse,0,4f*tremor);
-                    if(bone==11||bone==8)return new Pose(5f*pulse,0,0);
+                    if(bone==11||bone==8)return new Pose(
+                        5f*pulse+3f*tremor,0,2f*tremor);
+                    if(bone==9||bone==12)return new Pose(
+                        4f*tremor,3f*tremor,2f*pulse);
+                    if(bone==1)return new Pose(2f*pulse,0,3f*tremor);
                     return new Pose(0,0,0);
                 case AshboundMotion.Clip.Defeat:
                     if(bone==1)return new Pose(18f*settle,0,8f*settle,-.17f*settle);
@@ -305,6 +321,9 @@ namespace Ninefold.Editor
                     if(bone==7||bone==10)return new Pose(24f*settle,0,(bone==7?-12:12)*settle);
                     if(bone==13||bone==16)return new Pose(-10f*settle,0,0);
                     if(bone==14||bone==17)return new Pose(24f*settle,0,0);
+                    if(bone==8||bone==11)return new Pose(19f*settle,0,0);
+                    if(bone==9||bone==12)return new Pose(12f*settle,0,0);
+                    if(bone==15||bone==18)return new Pose(-7f*settle,0,0);
                     return new Pose(0,0,0);
                 default:throw new ArgumentOutOfRangeException(nameof(clip));
             }
