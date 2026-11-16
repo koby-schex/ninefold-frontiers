@@ -8,8 +8,8 @@ The Rift Forager's body in #184 has one smooth closed mesh with a painted garmen
 
 ## Actual geometry changes
 
-- **Two independent stitched fieldcloth panels**, shaped to drape behind the upper torso and below the natural mantle. Their different lengths, fold phase and flared hems break the anonymous symmetric bodysuit silhouette.
-- Each panel has **two physical surfaces separated by ~7 mm plus a sealed perimeter**, with real triangles, UVs and cloth/trim submeshes. The drape is built around the *existing analytical body field* to ensure collision-free rest placement, not attached as arbitrary floating ovals.
+- **Two independent stitched fieldcloth panels**, shaped as fitted rear waist-and-hip fieldcloth tails, below the natural mantle and clear of upper-back equipment. Their different lengths, fold phase and flared hems break the anonymous symmetric bodysuit silhouette.
+- Each panel has **two physical surfaces separated by ~7 mm plus a sealed perimeter**, with real triangles, UVs and cloth/trim submeshes. The drape uses a continuous bisection clearance solve against the *existing analytical body field* to prevent clipping or stair-step creases; it is not attached as arbitrary floating ovals.
 - **Source-linked C# generator** `Assets/Ninefold/Editor/RiftForagerTailoredGarment.cs` feeds both the **Unity 19-bone SkinnedMeshRenderer** and the **GitHub Actions static OBJ review**, so the renders show actual authored triangles. The same existing garment and dark material swatches are reused.
 - The original sensory crescent, eyes, temple, chest braid, apron and engineering/salvage pieces are untouched. Body mesh, gameplay visuals and all other faction units remain unchanged.
 - Unity's rig-review folder hash includes the garment generator's bytes, making a fresh independently staged ArtReview prefab and scene. No live prefab or story changes.
