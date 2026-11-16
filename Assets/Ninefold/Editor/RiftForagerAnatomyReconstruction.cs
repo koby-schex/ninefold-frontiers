@@ -16,7 +16,7 @@ namespace Ninefold.Editor
     /// </summary>
     internal static class RiftForagerAnatomyReconstruction
     {
-        internal const string Revision="rift-forager-continuous-anatomy-surface-04";
+        internal const string Revision="rift-forager-continuous-anatomy-surface-05";
         internal const float DefaultStep=.023f;
 
         internal sealed class Surface
@@ -90,6 +90,21 @@ namespace Ninefold.Editor
                 -anterior*anterior/.0080f);
         }
 
+        // Planing the upper temple is *part of the one-piece anatomical field*.
+        // This subtractive contour is local to the skull side and vanishes
+        // near the original facial features and the living crescent mantle.
+        // It introduces no new crest, appendage, eye, or biological organ.
+        internal static float TemplePlane(float x,float y,float z)
+        {
+            float lateral=Math.Abs(x)-.077f;
+            float vertical=y-1.724f;
+            float depth=z+.018f;
+            return .0045f*(float)Math.Exp(
+                -lateral*lateral/.00075f
+                -vertical*vertical/.010f
+                -depth*depth/.009f);
+        }
+
         // The sculpt field is anatomical: a unified biped torso, shoulder
         // transitions, tapered arms, planted legs, organic face and natural
         // temple. It deliberately adds NO bonded companion, organ or gear.
@@ -101,19 +116,19 @@ namespace Ninefold.Editor
             d=Union(d,Ellipsoid(x,y,z,0,1.343f,-.043f,
                 .183f,.180f,.118f),.075f);
             d=Union(d,Ellipsoid(x,y,z,0,1.487f,-.012f,
-                .070f,.125f,.071f),.078f);
+                .061f,.125f,.067f),.078f);
             // Original source features sit at exact anterior landmarks: paired eyes
             // (+/- .044,1.68,.110), mouth (0,1.592,.109), forehead ridge
             // (0,1.738,.092). The previous enlarged skull engulfed them.
             // Keep the living mantle, separate authored face details and
             // external gear in their original locations; shape the *body*
             // behind their contact plane rather than moving or deleting them.
-            d=Union(d,Ellipsoid(x,y,z,0,1.676f,.007f,
-                .105f,.143f,.091f),.045f);
-            d=Union(d,Ellipsoid(x,y,z,0,1.599f,.044f,
-                .061f,.053f,.059f),.027f);
-            d=Union(d,Ellipsoid(x,y,z,0,1.751f,-.018f,
-                .098f,.061f,.077f),.035f);
+            d=Union(d,Ellipsoid(x,y,z,0,1.679f,.002f,
+                .088f,.164f,.086f),.041f);
+            d=Union(d,Ellipsoid(x,y,z,0,1.599f,.037f,
+                .055f,.058f,.056f),.029f);
+            d=Union(d,Ellipsoid(x,y,z,0,1.750f,-.021f,
+                .078f,.070f,.066f),.030f);
 
             // Broad organic planes rather than disconnected facial detail
             // shapes. Integrate temple and cheekbone structure into the
@@ -122,10 +137,10 @@ namespace Ninefold.Editor
             for(int sign=-1;sign<=1;sign+=2)
             {
                 float s=sign;
-                d=Union(d,Ellipsoid(x,y,z,s*.068f,1.641f,.064f,
-                    .045f,.047f,.046f),.023f);
-                d=Union(d,Ellipsoid(x,y,z,s*.082f,1.710f,.025f,
-                    .039f,.060f,.050f),.025f);
+                d=Union(d,Ellipsoid(x,y,z,s*.062f,1.641f,.050f,
+                    .032f,.044f,.035f),.026f);
+                d=Union(d,Ellipsoid(x,y,z,s*.071f,1.714f,.017f,
+                    .030f,.066f,.037f),.024f);
                 // Shoulder and chest transition planes stay inside the
                 // anatomical silhouette rather than resembling a glued
                 // shoulder-pad prop.
@@ -190,7 +205,7 @@ namespace Ninefold.Editor
                 .003f*upperBack*(float)Math.Sin(12f*x)+
                 .0019f*shoulder*(float)Math.Cos(9f*y+3f*z)+
                 .0011f*neck*(float)Math.Cos(17f*x);
-            return d+structure+JawContour(x,y,z);
+            return d+structure+JawContour(x,y,z)+TemplePlane(x,y,z);
         }
 
         /// <summary>
