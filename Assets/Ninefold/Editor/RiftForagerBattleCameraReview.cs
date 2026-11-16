@@ -305,7 +305,11 @@ namespace Ninefold.Editor
                     new View("front",180f),new View("three-quarter",140f),
                     new View("side",90f),new View("rear",0f)
                 };
-                foreach(string pose in new[]{"Idle","Attack","Afterecho"})
+                // All six distinct actual skinned motion states, not just
+                // three handpicked highlights. One contact sheet lets the
+                // reviewer reject pose clipping and poor silhouette once.
+                foreach(string pose in new[]{
+                    "Idle","Advance","Attack","Hit","Afterecho","Defeat"})
                 {
                     clips[pose].SampleAnimation(actor,clips[pose].length*.5f);
                     foreach(var view in views)
@@ -318,7 +322,8 @@ namespace Ninefold.Editor
                     }
                 }
 
-                foreach(string pose in new[]{"Idle","Attack"})
+                foreach(string pose in new[]{
+                    "Idle","Advance","Attack","Hit","Afterecho","Defeat"})
                 {
                     clips[pose].SampleAnimation(actor,clips[pose].length*.5f);
                     foreach(var view in new[]{views[0],views[1]})
@@ -360,19 +365,27 @@ namespace Ninefold.Editor
                 // reviewers to manually assemble twelve separate PNG files.
                 var tactical=completed.Where(n=>
                     n.StartsWith("tactical-390x844-",StringComparison.Ordinal)).ToArray();
-                if(tactical.Length!=12)
-                    throw new InvalidDataException("Tactical review must have 12 poses/views.");
+                if(tactical.Length!=24)
+                    throw new InvalidDataException("Tactical review must have all six clips across four angles.");
                 const string tacticalSheet="contact-sheet-tactical-390x844.png";
-                ContactSheet(export,tactical,4,3,390,844,tacticalSheet);
+                ContactSheet(export,tactical,4,6,390,844,tacticalSheet);
                 completed.Add(tacticalSheet);
 
                 var narrowFrames=completed.Where(n=>
                     n.StartsWith("tactical-320x568-",StringComparison.Ordinal)).ToArray();
-                if(narrowFrames.Length!=4)
-                    throw new InvalidDataException("Narrow review must have four poses/views.");
+                if(narrowFrames.Length!=12)
+                    throw new InvalidDataException("Narrow review must have all six clip silhouettes.");
                 const string narrowSheet="contact-sheet-narrow-320x568.png";
-                ContactSheet(export,narrowFrames,2,2,320,568,narrowSheet);
+                ContactSheet(export,narrowFrames,2,6,320,568,narrowSheet);
                 completed.Add(narrowSheet);
+
+                var detailFrames=completed.Where(n=>
+                    n.StartsWith("detail-390x844-",StringComparison.Ordinal)).ToArray();
+                if(detailFrames.Length!=12)
+                    throw new InvalidDataException("Close review must have all six clip silhouettes.");
+                const string detailSheet="contact-sheet-detail-390x844.png";
+                ContactSheet(export,detailFrames,2,6,390,844,detailSheet);
+                completed.Add(detailSheet);
 
                 var report=new StringBuilder();
                 report.AppendLine("NINEFOLD: FRONTIERS — RIFT FORAGER REAL SKINNED MODEL REVIEW");
@@ -392,6 +405,7 @@ namespace Ninefold.Editor
                 report.AppendLine("Distinct material assets: "+materialCount);
                 report.AppendLine("Rig bone count: "+AshboundSkeleton.Count);
                 report.AppendLine("Clips: "+string.Join(", ",labels));
+                report.AppendLine("All six actual skinned clips sampled across 24 tactical, 12 narrow and 12 detail angles.");
                 report.AppendLine("Tactical: 58° downward, orthographic half-height=4 world units");
                 report.AppendLine("Camera estimate: actual missions may pull farther back.");
                 report.AppendLine("Details: 18° downward, orthographic half-height=1.26.");
