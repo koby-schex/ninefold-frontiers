@@ -12,7 +12,7 @@ namespace Ninefold.Editor
     /// </summary>
     internal static class RiftForagerTailoredGarment
     {
-        internal const string Revision="rift-forager-tailored-fieldcloth-02";
+        internal const string Revision="rift-forager-tailored-fieldcloth-03";
         internal const int Columns=15;
         internal const int Rows=23;
 
@@ -37,17 +37,19 @@ namespace Ninefold.Editor
             bool left=panel==0;
             float leftEdge=left?-.172f:.020f;
             float rightEdge=left?-.013f:.162f;
-            float spread=(float)Math.Sin(Math.PI*v)*.018f;
+            float spread=(float)Math.Sin(Math.PI*v)*.025f;
             float x=leftEdge+(rightEdge-leftEdge)*u+
                 (left?-1f:1f)*spread*(.25f+.75f*u);
             // Asymmetric hanging hems are visibly different from one another.
             // Avoid perfectly straight sheet edges and disconnected ribbons.
             float length=left?.350f:.445f;
             float y=1.083f-length*v+
-                (.012f*(float)Math.Sin(2.2f*Math.PI*u+.7f*panel))*v*v;
+                (.017f*(float)Math.Sin(2.2f*Math.PI*u+.7f*panel))*v*v;
             float fold=(float)Math.Sin(4f*Math.PI*u+1.4f*panel+.7f*v);
+            float bias=(float)Math.Sin(2f*Math.PI*u+1.3f*v+.8f*panel);
             float z=-.142f-.034f*v-.011f*v*v-
-                .010f*(float)Math.Sin(Math.PI*v)*fold;
+                .016f*(float)Math.Sin(Math.PI*v)*fold-
+                .006f*v*v*bias;
             // A smooth, continuous rest-fit solve along the rear normal.
             // Former fixed 8-mm steps made jagged diagonal surface stripes
             // when neighboring fabric columns crossed an anatomy threshold.
@@ -143,6 +145,46 @@ namespace Ninefold.Editor
                mesh.UVs.Count!=mesh.Vertices.Count ||
                mesh.Normals.Count!=mesh.Vertices.Count)
                 throw new InvalidOperationException("Unexpected fieldcloth buffers.");
+
+            // Actual area-weighted mesh normals, not the old uniform +/-Z
+            // normals that made curved folds shade like a flat cutout. Both
+            // cloth skins and the separately material-assigned sewn border
+            // contribute geometric face normals at their shared positions.
+            var accumulated=new float[mesh.Vertices.Count][];
+            for(int i=0;i<accumulated.Length;i++)
+                accumulated[i]=new float[3];
+            void Accumulate(List<int> faces)
+            {
+                for(int i=0;i<faces.Count;i+=3)
+                {
+                    int a=faces[i],b=faces[i+1],c=faces[i+2];
+                    var p=mesh.Vertices[a];
+                    var q=mesh.Vertices[b];
+                    var t=mesh.Vertices[c];
+                    float ux=q[0]-p[0],uy=q[1]-p[1],uz=q[2]-p[2];
+                    float vx=t[0]-p[0],vy=t[1]-p[1],vz=t[2]-p[2];
+                    float nx=uy*vz-uz*vy;
+                    float ny=uz*vx-ux*vz;
+                    float nz=ux*vy-uy*vx;
+                    for(int k=0;k<3;k++)
+                    {
+                        int idx=faces[i+k];
+                        accumulated[idx][0]+=nx;
+                        accumulated[idx][1]+=ny;
+                        accumulated[idx][2]+=nz;
+                    }
+                }
+            }
+            Accumulate(mesh.ClothIndices);
+            Accumulate(mesh.EdgeIndices);
+            for(int i=0;i<mesh.Vertices.Count;i++)
+            {
+                var n=accumulated[i];
+                float len=(float)Math.Sqrt(n[0]*n[0]+n[1]*n[1]+n[2]*n[2]);
+                if(len<1e-9f)
+                    throw new InvalidOperationException("Invalid stitched cloth normal.");
+                mesh.Normals[i]=new[]{n[0]/len,n[1]/len,n[2]/len};
+            }
             return mesh;
         }
     }
