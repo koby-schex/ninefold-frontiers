@@ -14,6 +14,7 @@ internal static partial class Program
         yield return ("Reconstructed organic skinning has four normalized anatomical influences",RebuildWeights);
         yield return ("Rift Forager procedural rest sculpt has smooth anatomical landmark definition",RebuildAnatomicalPlanes);
         yield return ("Higher-density Avarin jaw sculpt remains localized and retains facial detail clearance",RebuildJawSculptDensity);
+        yield return ("Rift Forager asymmetric physical fieldcloth is closed, outside anatomy and skinnable",RebuildTailoredGarment);
         yield return ("Rift Forager rebuilt face exposes existing source eyes, mouth and brow",RebuildSourceFeatureClearance);
         yield return ("Rift Forager UV output splits wrap without losing faces or deformation data",RebuildUvSeams);
         yield return ("Rift Forager four-bone skinning remains spatially continuous across sculpted joints",RebuildWeightContinuity);
@@ -181,6 +182,59 @@ internal static partial class Program
         if(inset<.0085f || inset>.010f || Math.Abs(inset-symmetric)>1e-7f ||
            eye>.001f || mouth>.0001f || torso>.00001f)
             throw new Exception("Lower face contour became asymmetric or moved eye, mouth or torso.");
+    }
+
+    private static void RebuildTailoredGarment()
+    {
+        var garment=RiftForagerTailoredGarment.Generate();
+        if(garment.Vertices.Count!=4*RiftForagerTailoredGarment.Columns*
+               RiftForagerTailoredGarment.Rows ||
+           garment.TriangleCount<2200 || garment.TriangleCount>6000 ||
+           garment.EdgeIndices.Count<200)
+            throw new Exception("Actual double-layer, stitched fieldcloth topology missing.");
+        Equal(garment.Vertices.Count,garment.UVs.Count);
+        Equal(garment.Vertices.Count,garment.Normals.Count);
+        var edges=new Dictionary<ulong,int>();
+        void Edge(int a,int b)
+        {
+            uint lo=(uint)Math.Min(a,b),hi=(uint)Math.Max(a,b);
+            ulong key=((ulong)lo<<32)|hi;
+            edges[key]=edges.TryGetValue(key,out int n)?n+1:1;
+        }
+        foreach(var group in new[]{garment.ClothIndices,garment.EdgeIndices})
+        for(int i=0;i<group.Count;i+=3)
+        {
+            int a=group[i],b=group[i+1],c=group[i+2];
+            if(a==b || b==c || a==c ||
+               a<0 || b<0 || c<0 ||
+               a>=garment.Vertices.Count || b>=garment.Vertices.Count ||
+               c>=garment.Vertices.Count)
+                throw new Exception("Fieldcloth has invalid or degenerate triangle.");
+            Edge(a,b);Edge(b,c);Edge(c,a);
+        }
+        if(edges.Any(pair=>pair.Value!=2))
+            throw new Exception("Layered fieldcloth shell must be edge-manifold and closed.");
+
+        foreach(var point in garment.Vertices)
+        {
+            if(point.Any(v=>float.IsNaN(v) || float.IsInfinity(v)) ||
+               point[1]<.60f || point[1]>1.12f ||
+               point[2]>-.08f || point[2]<-.50f ||
+               RiftForagerAnatomyReconstruction.Field(
+                   point[0],point[1],point[2])<.002f)
+                throw new Exception("Drape penetrates original body, floats away or covers living mantle.");
+            var weights=AshboundSkeleton.SkinOrganic(point);
+            if(Math.Abs(weights.Total-1)>1e-5)
+                throw new Exception("The new fieldcloth lost normalized 19-bone skinning.");
+        }
+        var bottomLeft=RiftForagerTailoredGarment.PanelPoint(
+            0,0,RiftForagerTailoredGarment.Rows-1,false);
+        var bottomRight=RiftForagerTailoredGarment.PanelPoint(
+            1,0,RiftForagerTailoredGarment.Rows-1,false);
+        if(bottomLeft[1]-bottomRight[1]<.055f)
+            throw new Exception("Both back panels have identical hem silhouettes.");
+        if(RiftForagerTailoredGarment.PanelPoint(0,0,0,false)[1]>1.12f)
+            throw new Exception("Fieldcloth rises into the mantle or back-mounted hardware.");
     }
 
     private static void RebuildSourceFeatureClearance()

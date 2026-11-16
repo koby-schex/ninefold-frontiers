@@ -9,5 +9,7 @@
   <ItemGroup>
     <Compile Include="../../../Assets/Ninefold/Editor/RiftForagerAnatomyReconstruction.cs"
              Link="RiftForagerAnatomyReconstruction.cs" />
+    <Compile Include="../../../Assets/Ninefold/Editor/RiftForagerTailoredGarment.cs"
+             Link="RiftForagerTailoredGarment.cs" />
   </ItemGroup>
 </Project>

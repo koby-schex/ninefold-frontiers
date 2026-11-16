@@ -178,7 +178,8 @@ namespace Ninefold.Editor
                     .Concat(File.ReadAllBytes("Assets/Ninefold/Editor/AshboundSkeleton.cs"))
                     .Concat(File.ReadAllBytes("Assets/Ninefold/Editor/AshboundRigReview.cs"))
                     .Concat(File.ReadAllBytes("Assets/Ninefold/Editor/AshboundReviewPbr.cs"))
-                    .Concat(File.ReadAllBytes("Assets/Ninefold/Editor/RiftForagerAnatomyReconstruction.cs")).ToArray();
+                    .Concat(File.ReadAllBytes("Assets/Ninefold/Editor/RiftForagerAnatomyReconstruction.cs"))
+                    .Concat(File.ReadAllBytes("Assets/Ninefold/Editor/RiftForagerTailoredGarment.cs")).ToArray();
                 signature=BitConverter.ToString(hash.ComputeHash(bytes))
                     .Replace("-","").Substring(0,12).ToLowerInvariant();
             }
@@ -346,6 +347,59 @@ namespace Ninefold.Editor
                 organicRenderer.updateWhenOffscreen=false;
                 var organicBounds=unified.bounds;organicBounds.Expand(.5f);
                 organicRenderer.localBounds=organicBounds;
+
+                // Two true draped *fabric* skins: closed geometric panels with
+                // stitched edges, intentionally asymmetric hems and visible
+                // folds. Skin to the existing skeleton so the cloth follows
+                // the same review animations as the underlying anatomy.
+                // No mantle, face or SourceArt gear triangle is changed.
+                var fieldcloth=RiftForagerTailoredGarment.Generate();
+                var clothNode=new GameObject("Tailored asymmetrical rear fieldcloth");
+                clothNode.transform.SetParent(actor.transform,false);
+                var drape=new Mesh {
+                    name="Rift Forager physical fieldcloth study 01",
+                    indexFormat=IndexFormat.UInt32
+                };
+                drape.SetVertices(fieldcloth.Vertices.Select(p=>
+                    new Vector3(p[0],p[1],p[2])).ToList());
+                drape.SetNormals(fieldcloth.Normals.Select(p=>
+                    new Vector3(p[0],p[1],p[2])).ToList());
+                drape.SetUVs(0,fieldcloth.UVs.Select(p=>
+                    new Vector2(p[0],p[1])).ToList());
+                drape.subMeshCount=2;
+                drape.SetTriangles(fieldcloth.ClothIndices,0);
+                drape.SetTriangles(fieldcloth.EdgeIndices,1);
+                drape.RecalculateTangents();
+                var clothWeights=new BoneWeight[fieldcloth.Vertices.Count];
+                for(int i=0;i<clothWeights.Length;i++)
+                {
+                    var w=AshboundSkeleton.SkinOrganic(fieldcloth.Vertices[i]);
+                    clothWeights[i]=new BoneWeight {
+                        boneIndex0=w.A,weight0=w.WA,
+                        boneIndex1=w.B,weight1=w.WB,
+                        boneIndex2=w.C,weight2=w.WC,
+                        boneIndex3=w.D,weight3=w.WD
+                    };
+                }
+                drape.boneWeights=clothWeights;
+                var clothBindposes=new Matrix4x4[bones.Length];
+                for(int i=0;i<bones.Length;i++)
+                    clothBindposes[i]=bones[i].worldToLocalMatrix*
+                        clothNode.transform.localToWorldMatrix;
+                drape.bindposes=clothBindposes;
+                drape.RecalculateBounds();
+                AssetDatabase.CreateAsset(drape,
+                    folder+"/RiftForagerTailoredFieldcloth01.asset");
+                var clothRenderer=clothNode.AddComponent<SkinnedMeshRenderer>();
+                clothRenderer.sharedMesh=drape;
+                clothRenderer.bones=bones;
+                clothRenderer.rootBone=bones[0];
+                clothRenderer.sharedMaterials=new[]{
+                    materialMap["garment"],materialMap["dark"]
+                };
+                clothRenderer.updateWhenOffscreen=false;
+                var clothBounds=drape.bounds;clothBounds.Expand(.5f);
+                clothRenderer.localBounds=clothBounds;
 
                 var built=BuildClips(folder,name);
                 var controller=AnimatorController.CreateAnimatorControllerAtPath(

@@ -31,6 +31,9 @@ def demand(ok,description):
 
 def source_check():
     surface=(ROOT/"Assets/Ninefold/Editor/RiftForagerAnatomyReconstruction.cs").read_text()
+    tailor=(ROOT/"Assets/Ninefold/Editor/RiftForagerTailoredGarment.cs").read_text()
+    rig=(ROOT/"Assets/Ninefold/Editor/AshboundRigReview.cs").read_text()
+    core=(ROOT/"Tests/Ninefold.Core.Tests/Ninefold.Core.Tests.csproj").read_text()
     export=(ROOT/EXPORT).read_text()
     render=(ROOT/RENDER).read_text()
     wf=(ROOT/WORKFLOW).read_text()
@@ -44,6 +47,14 @@ def source_check():
         "NO animations, skin weights or Unity shader are baked",
     ):
         demand(phrase in export,"Standalone .NET OBJ must be the exact pure C# Unity geometry: "+phrase)
+    demand("RiftForagerTailoredGarment.Generate()" in export and
+           "RiftForagerTailoredGarment.Generate()" in rig and
+           "RiftForagerTailoredGarment.cs" in core and
+           "RiftForagerTailoredGarment.cs" in (ROOT/"BuildTools/Art/RiftForagerMeshExport/RiftForagerMeshExport.csproj").read_text() and
+           "RiftForagerTailoredGarment.cs" in wf and
+           "RebuildTailoredGarment" in tests and
+           "PanelPoint(int panel,int column,int row,bool inside)" in tailor,
+           "Real fieldcloth source must be shared by rig, OBJ export, tests and art workflow")
     demand("internal static Surface Generate(" in surface and
            "internal static Surface MakeTextureReady(Surface raw)" in surface,
            "Actual source mesh generator must still be shared with Unity")
@@ -111,6 +122,10 @@ def artifact_check():
            "Original source geometry too small")
     demand(after["vertices"]>4000 and after["triangles"]>8000,
            "Combined reconstructed model geometry too small")
+    demand(2200<=preserved["new_tailored_fieldcloth_triangles"]<=6000 and
+           preserved["new_anatomy_and_cloth_triangles"]==
+           preserved["new_connected_body_triangles"]+preserved["new_tailored_fieldcloth_triangles"],
+           "Physically draped garment is missing from exported geometry")
     demand(preserved["new_connected_body_triangles"]>8000 and
            preserved["retained_accessory_triangles"]>5000,
            "Connected body OR existing equipment was lost")

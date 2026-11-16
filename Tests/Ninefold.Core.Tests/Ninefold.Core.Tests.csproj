@@ -12,6 +12,7 @@
     <Compile Include="../../Assets/Ninefold/Editor/AshboundMotion.cs" Link="AshboundMotion.cs" />
     <Compile Include="../../Assets/Ninefold/Editor/AshboundSkeleton.cs" Link="AshboundSkeleton.cs" />
     <Compile Include="../../Assets/Ninefold/Editor/RiftForagerAnatomyReconstruction.cs" Link="RiftForagerAnatomyReconstruction.cs" />
+    <Compile Include="../../Assets/Ninefold/Editor/RiftForagerTailoredGarment.cs" Link="RiftForagerTailoredGarment.cs" />
     <ProjectReference Include="../../BuildTools/Core/Ninefold.Core.csproj" />
   </ItemGroup>
 </Project>

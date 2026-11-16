@@ -11,6 +11,7 @@ on:
       - 'BuildTools/Art/review_rift_forager_reconstruction.py'
       - 'BuildTools/Art/validate_rift_forager_comparison.py'
       - 'Assets/Ninefold/Editor/RiftForagerAnatomyReconstruction.cs'
+      - 'Assets/Ninefold/Editor/RiftForagerTailoredGarment.cs'
       - '.github/workflows/ashbound-model-review.yml'
       - 'Assets/Ninefold/Editor/AshboundEnemyReview.cs'
       - 'Assets/Ninefold/Editor/AshboundMotion.cs'
@@ -28,6 +29,7 @@ on:
       - 'BuildTools/Art/review_rift_forager_reconstruction.py'
       - 'BuildTools/Art/validate_rift_forager_comparison.py'
       - 'Assets/Ninefold/Editor/RiftForagerAnatomyReconstruction.cs'
+      - 'Assets/Ninefold/Editor/RiftForagerTailoredGarment.cs'
       - '.github/workflows/ashbound-model-review.yml'
 permissions:
   contents: read

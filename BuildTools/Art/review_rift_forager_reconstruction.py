@@ -96,8 +96,19 @@ def combine_with_body(body_path, old_path):
     body_vertices, body_faces, body_materials = parse_obj(body_path)
     if len(body_vertices) < 4000 or len(body_faces) < 8000:
         raise ValueError("Rebuilt connected anatomy is unexpectedly small")
-    if set(body_materials) != {"skin", "garment"}:
-        raise ValueError("Connected body lost its two approved study regions")
+    if set(body_materials) != {"skin", "garment", "dark"}:
+        raise ValueError("Anatomy/fieldcloth lost provisional skin, cloth or trim materials")
+    # Count actual C# exporter triangles authored after the second named OBJ.
+    # A bare generated material name does not prove any draped geometry exists.
+    drape_triangles = 0
+    in_drape = False
+    for row in body_path.read_text(encoding="utf-8").splitlines():
+        if row.startswith("o "):
+            in_drape = row == "o RiftForager_TailoredRearFieldcloth_ArtReview"
+        elif in_drape and row.startswith("f "):
+            drape_triangles += 1
+    if not 2200 <= drape_triangles <= 6000:
+        raise ValueError("Expected distinct true garment geometry in exact exported OBJ")
     vertices = np.concatenate([accessories, body_vertices], axis=0)
     triangles = np.concatenate([faces, body_faces+len(accessories)], axis=0)
     mats = material_names + body_materials
@@ -109,8 +120,10 @@ def combine_with_body(body_path, old_path):
             {"retained_parts": len(preserved),
              "replaced_body_parts": sorted(removed),
              "retained_accessory_triangles": len(faces),
-             "new_connected_body_triangles": len(body_faces),
-             "new_connected_body_vertices": len(body_vertices)})
+             "new_connected_body_triangles": len(body_faces)-drape_triangles,
+             "new_tailored_fieldcloth_triangles": drape_triangles,
+             "new_anatomy_and_cloth_triangles": len(body_faces),
+             "new_anatomy_and_cloth_vertices": len(body_vertices)})
 
 
 def write_mesh(path, vertices, faces, materials):
