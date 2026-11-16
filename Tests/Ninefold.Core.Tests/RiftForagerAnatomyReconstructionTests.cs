@@ -218,7 +218,7 @@ internal static partial class Program
         foreach(var point in garment.Vertices)
         {
             if(point.Any(v=>float.IsNaN(v) || float.IsInfinity(v)) ||
-               point[1]<.68f || point[1]>1.36f ||
+               point[1]<.60f || point[1]>1.12f ||
                point[2]>-.08f || point[2]<-.50f ||
                RiftForagerAnatomyReconstruction.Field(
                    point[0],point[1],point[2])<.002f)
@@ -233,8 +233,8 @@ internal static partial class Program
             1,0,RiftForagerTailoredGarment.Rows-1,false);
         if(bottomLeft[1]-bottomRight[1]<.055f)
             throw new Exception("Both back panels have identical hem silhouettes.");
-        if(RiftForagerTailoredGarment.PanelPoint(0,0,0,false)[1]>1.36f)
-            throw new Exception("Fieldcloth collides with the living crescent mantle.");
+        if(RiftForagerTailoredGarment.PanelPoint(0,0,0,false)[1]>1.12f)
+            throw new Exception("Fieldcloth rises into the mantle or back-mounted hardware.");
     }
 
     private static void RebuildSourceFeatureClearance()
