@@ -133,7 +133,7 @@ namespace Ninefold.Core.Content
                 "The signal interference is spreading across the local crossing. Remain operational while another team confirms the records.",
                 "The team has endured the false readings. Their timing appears connected to the unstable capture devices.",
                 A.DeepFracture,K.Survive,4,B(-10,-7,11,11),Rocks(R(-6,1,-4,4),R(0,-1,2,1),R(6,4,8,7)),
-                Ground(G(3,-4,6,-2)),P(-6,-5),E((4,9,8),(1,8,-3),(2,6,6)),P(0,0)),
+                Ground(G(3,-4,6,-2)),P(-6,-5),E((4,9,8),(1,8,-3),(2,5,6)),P(0,0)),
             Make(40,"Witness at the edge",
                 "A traveler has asked to share what they witnessed near an empty harness. Protect them while they finish their account.",
                 "The testimony confirms the Parting has a human cost and is not a necessary act of survival. The team preserves the report.",
