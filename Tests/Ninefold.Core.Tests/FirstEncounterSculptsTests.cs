@@ -18,6 +18,8 @@ internal static partial class Program
             EncounterForagerIdentity);
         yield return ("Forager actually wears two closed fitted fieldcloth panels without rest penetration",
             EncounterForagerCloth);
+        yield return ("Wildlife eyes are fitted closed oval geometry with a real outlined rim",
+            EncounterEyeShells);
     }
     private static void EncounterSculptOrder()
     {
@@ -111,6 +113,36 @@ internal static partial class Program
                 throw new Exception(kind+" limb disconnected from physical skin.");
             var heel=S.Weights(kind,k[0],-.58f,k[2]);
             Equal(4+limb*2,heel.A);
+        }
+    }
+    private static void EncounterEyeShells()
+    {
+        foreach(var kind in new[]{S.Enemy.Seamstalker,S.Enemy.Sillrunner})
+        {
+            var eyes=S.EyeShells(kind);
+            if(eyes.TriangleCount<1100 || eyes.Indices[0].Count!=0 ||
+                eyes.Indices[1].Count==0 || eyes.Indices[2].Count==0)
+                throw new Exception("Wildlife eye uses material patches instead of physical shell.");
+            var uses=new Dictionary<ulong,int>();
+            void Edge(int a,int b)
+            {
+                ulong key=((ulong)(uint)Math.Min(a,b)<<32)|(uint)Math.Max(a,b);
+                uses[key]=uses.TryGetValue(key,out int n)?n+1:1;
+            }
+            foreach(var group in eyes.Indices)
+            for(int i=0;i<group.Count;i+=3)
+            {
+                Edge(group[i],group[i+1]);Edge(group[i+1],group[i+2]);Edge(group[i+2],group[i]);
+            }
+            if(uses.Any(e=>e.Value!=2))
+                throw new Exception("Eye lenses have an open rim.");
+            for(int i=0;i<eyes.Vertices.Count;i++)
+            {
+                var p=eyes.Vertices[i];var n=eyes.Normals[i];
+                if(Math.Abs(S.Field(kind,p[0],p[1],p[2]))>.026f||
+                    Math.Abs(n[0]*n[0]+n[1]*n[1]+n[2]*n[2]-1f)>.002f)
+                    throw new Exception("Eye shell detached from body or lacks a unit normal.");
+            }
         }
     }
     private static void EncounterForagerCloth()

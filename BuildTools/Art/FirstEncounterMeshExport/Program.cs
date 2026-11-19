@@ -18,6 +18,9 @@ internal static class Program
             var m=S.Tactical(kind);
             string path=Path.Combine(args[0],kind+"-RuntimeBody.obj");
             WriteMesh(path,kind+"_RuntimeBody",m);
+            if(kind!=S.Enemy.RiftForager)
+                WriteMesh(Path.Combine(args[0],kind+"-RuntimeEyes.obj"),
+                    kind+"_RuntimeEyes",S.EyeShells(kind));
             Console.WriteLine(kind+" "+m.Vertices.Count+" vertices; "+m.TriangleCount+
                 " triangles; "+S.BoneCount(kind)+" anatomical joints.");
         }

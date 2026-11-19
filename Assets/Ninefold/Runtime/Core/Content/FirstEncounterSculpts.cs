@@ -13,7 +13,7 @@ namespace Ninefold.Core.Content
     public static class FirstEncounterSculpts
     {
         public enum Enemy { Seamstalker, Sillrunner, RiftForager }
-        public const string Revision="first-encounter-connected-sculpt-01";
+        public const string Revision="first-encounter-connected-sculpt-02";
         public sealed class Surface
         {
             public readonly List<float[]> Vertices=new List<float[]>();
@@ -58,9 +58,9 @@ namespace Ninefold.Core.Content
             float s=limb<3?-1:1;
             int pair=limb%3;
             float z=pair==0?.36f:pair==1?-.04f:-.47f;
-            if(knee)return new[]{s*(stalker?.55f:.48f),-.33f,
+            if(knee)return new[]{s*(stalker?.55f:.48f),stalker?-.33f:-.425f,
                 z+(pair==0?.10f:pair==2?-.10f:.02f)};
-            return new[]{s*(stalker?.30f:.32f),-.035f,z};
+            return new[]{s*(stalker?.30f:.32f),stalker?-.035f:-.145f,z};
         }
 
         private static float Wildlife(Enemy kind,float x,float y,float z)
@@ -68,17 +68,19 @@ namespace Ninefold.Core.Content
             bool s=kind==Enemy.Seamstalker;
             // Distinct silhouettes, not a palette swap: lower slender stalker
             // with raised forequarters/crown, compact broad runner with fan.
-            float d=Ellipsoid(x,y,z,0,.115f,-.12f,
-                s?.31f:.395f,s?.25f:.29f,s?.66f:.55f);
-            d=Union(d,Ellipsoid(x,y,z,0,.17f,.34f,
-                s?.33f:.35f,s?.28f:.25f,.32f),.11f);
-            d=Union(d,Ellipsoid(x,y,z,0,s?.22f:.12f,.64f,
-                s?.205f:.25f,s?.19f:.19f,s?.35f:.30f),.09f);
-            d=Union(d,Ellipsoid(x,y,z,0,s?.12f:.07f,.91f,
-                s?.14f:.19f,.115f,.19f),.065f);
-            // Lower jaw and cheek contour remain part of the same surface.
-            d=Union(d,Ellipsoid(x,y,z,0,.012f,.76f,
-                s?.17f:.21f,.10f,.25f),.052f);
+            float d=Ellipsoid(x,y,z,0,s?.135f:.012f,-.12f,
+                s?.292f:.42f,s?.25f:.26f,s?.68f:.52f);
+            d=Union(d,Ellipsoid(x,y,z,0,s?.215f:.025f,.34f,
+                s?.32f:.37f,s?.29f:.235f,.33f),.10f);
+            // Stalker: narrow elongated predatory muzzle; runner: broad,
+            // flattened, less forward-projecting snout and low-set skull.
+            d=Union(d,Ellipsoid(x,y,z,0,s?.225f:.075f,.64f,
+                s?.184f:.255f,s?.173f:.145f,s?.34f:.245f),.077f);
+            d=Union(d,Ellipsoid(x,y,z,0,s?.125f:.016f,s?.947f:.835f,
+                s?.102f:.235f,s?.088f:.083f,s?.19f:.143f),.047f);
+            // True connected lower jaw, not another spherical prop.
+            d=Union(d,Ellipsoid(x,y,z,0,s?.037f:-.046f,.75f,
+                s?.139f:.217f,s?.068f:.070f,s?.245f:.165f),.047f);
             for(int limb=0;limb<6;limb++)
             {
                 // Scalar joint coordinates avoid millions of transient arrays
@@ -88,43 +90,51 @@ namespace Ninefold.Core.Content
                 float hipX=side*(s?.30f:.32f);
                 float hipZ=pair==0?.36f:pair==1?-.04f:-.47f;
                 float kneeX=side*(s?.55f:.48f);
+                float hipY=s?-.035f:-.145f;
+                float kneeY=s?-.33f:-.425f;
                 float kneeZ=hipZ+(pair==0?.10f:pair==2?-.10f:.02f);
                 float footZ=kneeZ+(pair==0?.18f:pair==2?-.05f:.07f);
                 // Splayed upper limb, clearly articulated lower limb,
                 // rounded weight-bearing foot and short anchor-claw (stalker).
-                d=Union(d,Capsule(x,y,z,hipX,-.035f,hipZ,
-                    kneeX,-.33f,kneeZ,s?.12f:.135f,.079f),.045f);
-                d=Union(d,Capsule(x,y,z,kneeX,-.33f,kneeZ,
-                    side*(s?.58f:.50f),-.64f,footZ,.078f,.053f),.032f);
-                d=Union(d,Ellipsoid(x,y,z,side*(s?.58f:.50f),-.695f,
-                    footZ+.055f,s?.086f:.098f,.063f,s?.155f:.12f),.025f);
+                d=Union(d,Capsule(x,y,z,hipX,hipY,hipZ,
+                    kneeX,kneeY,kneeZ,s?.115f:.142f,s?.068f:.10f),.041f);
+                d=Union(d,Capsule(x,y,z,kneeX,kneeY,kneeZ,
+                    side*(s?.58f:.50f),-.64f,footZ,s?.064f:.095f,s?.041f:.072f),.028f);
+                d=Union(d,Ellipsoid(x,y,z,side*(s?.58f:.50f),-.684f,
+                    footZ+.055f,s?.074f:.118f,s?.067f:.070f,s?.145f:.105f),.025f);
                 if(s && pair==0)
-                    d=Union(d,Ellipsoid(x,y,z,side*.58f,-.71f,
-                        footZ+.175f,.041f,.036f,.105f),.024f);
+                {
+                    d=Union(d,Capsule(x,y,z,side*.58f,-.675f,footZ+.120f,
+                        side*.59f,-.704f,footZ+.237f,.050f,.029f),.022f);
+                    d=Union(d,Capsule(x,y,z,side*.59f,-.704f,footZ+.237f,
+                        side*.59f,-.735f,footZ+.287f,.029f,.012f),.017f);
+                }
             }
             for(int sign=-1;sign<=1;sign+=2)
             {
                 float a=sign;
                 // Integrated lateral sensory ridge and recessed eye region
                 // are not human-like head additions.
-                d=Union(d,Ellipsoid(x,y,z,a*(s?.174f:.205f),.24f,.74f,
-                    .073f,.064f,.085f),.036f);
+                d=Union(d,Ellipsoid(x,y,z,a*(s?.162f:.214f),s?.232f:.150f,.74f,
+                    .052f,.049f,.088f),.027f);
                 if(s)
                 {
                     // Split crown merging into forequarters, not wings.
-                    d=Union(d,Capsule(x,y,z,a*.15f,.29f,.55f,
-                        a*.25f,.49f,.33f,.09f,.045f),.037f);
-                    d=Union(d,Ellipsoid(x,y,z,a*.23f,.40f,.24f,
-                        .11f,.14f,.22f),.054f);
+                    d=Union(d,Capsule(x,y,z,a*.135f,.31f,.51f,
+                        a*.25f,.455f,.31f,.075f,.043f),.032f);
+                    d=Union(d,Capsule(x,y,z,a*.25f,.455f,.31f,
+                        a*.33f,.515f,.11f,.043f,.021f),.026f);
+                    d=Union(d,Ellipsoid(x,y,z,a*.22f,.375f,.20f,
+                        .080f,.095f,.19f),.042f);
                 }
                 else
                 {
                     // Long lateral sensory folds terminate gradually.
                     for(int ridge=0;ridge<3;ridge++)
                     {
-                        float rz=.23f-ridge*.25f;
-                        d=Union(d,Ellipsoid(x,y,z,a*.33f,.29f,rz,
-                            .091f,.072f,.19f),.041f);
+                        float rz=.27f-ridge*.245f;
+                        d=Union(d,Ellipsoid(x,y,z,a*(.365f-ridge*.014f),.18f,rz,
+                            .075f,.049f,.14f),.028f);
                     }
                 }
             }
@@ -145,8 +155,8 @@ namespace Ninefold.Core.Content
                 // Dorsal folds model real geometry; color alone cannot
                 // make these profiles look like different animals.
                 for(int ridge=0;ridge<4;ridge++)
-                    d=Union(d,Ellipsoid(x,y,z,0,.34f,.23f-ridge*.22f,
-                        .29f,.085f,.105f),.038f);
+                    d=Union(d,Ellipsoid(x,y,z,0,.252f,.21f-ridge*.205f,
+                        .285f-ridge*.028f,.072f,.094f),.027f);
             }
             return d;
         }
@@ -157,27 +167,27 @@ namespace Ninefold.Core.Content
         // attached separately; old disconnected limb/torso lofts are removed.
         private static float Forager(float x,float y,float z)
         {
-            float d=Ellipsoid(x,y,z,0,-.22f,-.02f,.19f,.22f,.15f);
-            d=Union(d,Ellipsoid(x,y,z,0,.04f,-.035f,.205f,.29f,.155f),.085f);
+            float d=Ellipsoid(x,y,z,0,-.15f,-.02f,.165f,.175f,.132f);
+            d=Union(d,Ellipsoid(x,y,z,0,.05f,-.035f,.194f,.29f,.148f),.081f);
             d=Union(d,Ellipsoid(x,y,z,0,.285f,-.035f,.223f,.17f,.135f),.065f);
             d=Union(d,Ellipsoid(x,y,z,0,.465f,.008f,.086f,.14f,.084f),.056f);
             // Elongated, tapered temple-face; avoid a generic spherical head.
-            d=Union(d,Ellipsoid(x,y,z,0,.66f,.042f,.123f,.172f,.120f),.047f);
+            d=Union(d,Ellipsoid(x,y,z,0,.671f,.043f,.108f,.18f,.114f),.041f);
             d=Union(d,Ellipsoid(x,y,z,0,.505f,.083f,.075f,.077f,.080f),.035f);
             d=Union(d,Ellipsoid(x,y,z,0,.785f,.008f,.101f,.073f,.088f),.035f);
             for(int sign=-1;sign<=1;sign+=2)
             {
                 float a=sign;
-                d=Union(d,Ellipsoid(x,y,z,a*.098f,.645f,.101f,.052f,.057f,.052f),.028f);
+                d=Union(d,Ellipsoid(x,y,z,a*.095f,.647f,.111f,.044f,.056f,.048f),.024f);
                 d=Union(d,Ellipsoid(x,y,z,a*.193f,.302f,-.033f,.098f,.09f,.093f),.055f);
                 d=Union(d,Capsule(x,y,z,a*.22f,.29f,-.035f,
                     a*.282f,.045f,.017f,.096f,.078f),.051f);
                 d=Union(d,Capsule(x,y,z,a*.282f,.045f,.017f,
                     a*.311f,-.215f,.105f,.077f,.058f),.043f);
                 d=Union(d,Ellipsoid(x,y,z,a*.309f,-.274f,.148f,.048f,.079f,.058f),.032f);
-                d=Union(d,Ellipsoid(x,y,z,a*.115f,-.30f,-.025f,.114f,.14f,.106f),.064f);
+                d=Union(d,Ellipsoid(x,y,z,a*.115f,-.265f,-.025f,.096f,.125f,.092f),.053f);
                 d=Union(d,Capsule(x,y,z,a*.125f,-.29f,-.022f,
-                    a*.154f,-.51f,.015f,.103f,.083f),.052f);
+                    a*.154f,-.51f,.015f,.088f,.073f),.046f);
                 d=Union(d,Capsule(x,y,z,a*.154f,-.51f,.015f,
                     a*.16f,-.69f,.065f,.078f,.055f),.042f);
                 d=Union(d,Ellipsoid(x,y,z,a*.163f,-.72f,.137f,
@@ -202,10 +212,10 @@ namespace Ninefold.Core.Content
                 return y>.455f || (ax>.255f&&y<-.20f&&y>-.37f)?0:1;
             }
             bool s=kind==Enemy.Seamstalker;
-            float eyeX=s?.205f:.229f;
-            if(Math.Abs(ax-eyeX)<.066f && Math.Abs(y-.245f)<.065f &&
-               Math.Abs(z-.74f)<.092f)return 2;
-            if(y<-.65f || y>.31f && z<.55f ||
+            // Separate smoothly contoured corneal shells now supply the actual
+            // eyes; hard per-triangle material patches looked jagged.
+            if(y<-.713f)return 2;
+            if(y<-.65f || y>(s?.33f:.267f) && z<.52f ||
                !s && z<-.80f || s&&z>.75f&&y<-.62f)return 1;
             return 0;
         }
@@ -230,13 +240,15 @@ namespace Ninefold.Core.Content
                     return new Skin(x<0?4:5,0,Limit((-y-.23f)/.24f,0,1));
                 return new Skin(0,0,1);
             }
-            if(y<-.075f && ax>.23f)
+            float rootY=kind==Enemy.Seamstalker?-.075f:-.145f;
+            float kneeY=kind==Enemy.Seamstalker?-.22f:-.30f;
+            if(y<rootY && ax>.23f)
             {
                 int pair=z>.16f?0:z<-.26f?2:1;
                 int limb=(x<0?0:3)+pair;
                 int hip=3+limb*2,knee=hip+1;
-                if(y<-.22f)return new Skin(knee,hip,Limit((-y-.22f)/.22f,0,1));
-                return new Skin(hip,0,Limit((-y-.075f)/.145f,0,1));
+                if(y<kneeY)return new Skin(knee,hip,Limit((kneeY-y)/.22f,0,1));
+                return new Skin(hip,0,Limit((rootY-y)/(rootY-kneeY),0,1));
             }
             if(z>.42f)return new Skin(1,0,Limit((z-.42f)/.28f,0,1));
             if(z<-.70f)return new Skin(2,0,Limit((-z-.70f)/.25f,0,1));
@@ -250,6 +262,100 @@ namespace Ninefold.Core.Content
             new Lazy<Surface>(()=>Generate(Enemy.Sillrunner,.045f)),
             new Lazy<Surface>(()=>Generate(Enemy.RiftForager,.038f))};
         public static Surface Tactical(Enemy kind)=>TacticalCache[(int)kind].Value;
+
+        // Smooth fitted corneal surfaces: two actual closed shells per
+        // wildlife species. Unlike centroid-colored eyes these have a
+        // continuous outlined oval with thickness and geometric normals.
+        private static readonly Lazy<Surface>[] EyesCache={
+            new Lazy<Surface>(()=>GenerateEyes(Enemy.Seamstalker)),
+            new Lazy<Surface>(()=>GenerateEyes(Enemy.Sillrunner))};
+        public static Surface EyeShells(Enemy kind)
+        {
+            if(kind==Enemy.RiftForager)throw new ArgumentOutOfRangeException(nameof(kind));
+            return EyesCache[(int)kind].Value;
+        }
+        private static Surface GenerateEyes(Enemy kind)
+        {
+            bool stalker=kind==Enemy.Seamstalker;
+            var m=new Surface();
+            const int rings=5,segments=32,layerSize=1+rings*segments;
+            foreach(int side in new[]{-1,1})
+            {
+                int start=m.Vertices.Count;
+                float cy=stalker?.236f:.152f,cz=stalker?.782f:.744f;
+                float ry=stalker?.032f:.035f,rz=stalker?.085f:.053f;
+                float rake=stalker?.32f:-.12f;
+                void Add(float r,float a,bool rear)
+                {
+                    float dy=ry*r*(float)Math.Sin(a),dz=rz*r*(float)Math.Cos(a);
+                    float y=cy+dy+dz*rake,z=cz+dz;
+                    float lo=0f,hi=.75f;
+                    if(Field(kind,lo,y,z)>=0f || Field(kind,hi,y,z)<=0f)
+                        throw new InvalidOperationException("Wildlife eye fit outside head domain");
+                    for(int i=0;i<20;i++)
+                    {
+                        float mid=(lo+hi)*.5f;
+                        if(Field(kind,mid,y,z)<0f)lo=mid;else hi=mid;
+                    }
+                    float shell=rear?-.009f:.003f+.013f*(1f-r*r);
+                    m.Vertices.Add(new[]{side*(hi+shell),y,z});
+                    m.UVs.Add(new[]{.5f+.5f*r*(float)Math.Cos(a),.5f+.5f*r*(float)Math.Sin(a)});
+                    m.Normals.Add(new float[3]);
+                }
+                int Index(int layer,int ring,int i)
+                    =>start+layer*layerSize+(ring==0?0:1+(ring-1)*segments+(i%segments));
+                void Face(int a,int b,int c,bool reverse,int slot)
+                {
+                    m.Indices[slot].Add(a);
+                    m.Indices[slot].Add(reverse?c:b);
+                    m.Indices[slot].Add(reverse?b:c);
+                }
+                for(int layer=0;layer<2;layer++)
+                {
+                    Add(0,0,layer==1);
+                    for(int r=1;r<=rings;r++)
+                    for(int j=0;j<segments;j++)
+                        Add((float)r/rings,(float)(2*Math.PI*j/segments),layer==1);
+                    bool reverse=(side>0)^(layer==1);
+                    for(int j=0;j<segments;j++)
+                    {
+                        Face(Index(layer,0,0),Index(layer,1,j),Index(layer,1,j+1),reverse,2);
+                        for(int r=1;r<rings;r++)
+                        {
+                            int a=Index(layer,r,j),b=Index(layer,r+1,j),
+                                c=Index(layer,r+1,j+1),d=Index(layer,r,j+1);
+                            int slot=r==rings-1?1:2;
+                            Face(a,b,c,reverse,slot);Face(a,c,d,reverse,slot);
+                        }
+                    }
+                }
+                for(int j=0;j<segments;j++)
+                {
+                    int a=Index(0,rings,j),b=Index(0,rings,j+1);
+                    int c=Index(1,rings,j+1),d=Index(1,rings,j);
+                    Face(b,a,d,side>0,1);Face(b,d,c,side>0,1);
+                }
+            }
+            foreach(var tris in m.Indices)
+            for(int i=0;i<tris.Count;i+=3)
+            {
+                var a=m.Vertices[tris[i]];var b=m.Vertices[tris[i+1]];var c=m.Vertices[tris[i+2]];
+                float ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2];
+                float vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];
+                float nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;
+                for(int k=0;k<3;k++)
+                {
+                    var n=m.Normals[tris[i+k]];n[0]+=nx;n[1]+=ny;n[2]+=nz;
+                }
+            }
+            foreach(var n in m.Normals)
+            {
+                float len=Length(n[0],n[1],n[2]);
+                if(len<1e-9f)throw new InvalidOperationException("Degenerate eye shell");
+                n[0]/=len;n[1]/=len;n[2]/=len;
+            }
+            return m;
+        }
 
         private static readonly int[,] Tetrahedra = {
             {0,5,1,6},{0,1,2,6},{0,2,3,6},

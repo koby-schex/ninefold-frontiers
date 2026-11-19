@@ -104,7 +104,7 @@ namespace Ninefold.Presentation
             avarinWake = Make(new Color(.66f,.48f,.39f));
             avarinShadow = Make(new Color(.13f,.19f,.23f));
             foragerSkin=Make(avarinSkin.color);foragerFabric=Make(avarinFabric.color);
-            runnerAccent=Make(new Color(.64f,.60f,.58f));
+            runnerAccent=Make(new Color(.51f,.58f,.52f));
             stalkerAccent=Make(new Color(.43f,.39f,.46f));
             foreach(var m in new[]{sillrunner,seamstalker,avarinSkin,avarinMantle,
                 avarinFabric,avarinGear,avarinWake,avarinShadow})

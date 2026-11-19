@@ -82,6 +82,7 @@ namespace Ninefold.Presentation
                 bones[4+limb*2]=Joint(bones[3+limb*2],"Wildlife lower leg "+label,knee-hip);
             }
             AttachSkin(root,kind,bones,new[]{body,accent,dark},owned);
+            AttachSkin(root,kind,bones,new[]{accent,dark},owned,detail:"fitted eyes");
             return new WildlifeRig(kind,bones);
         }
 
@@ -132,16 +133,17 @@ namespace Ninefold.Presentation
             AttachSkin(root,Sculpt.Enemy.RiftForager,bones,
                 new[]{skin,fabric,dark},owned);
             AttachSkin(root,Sculpt.Enemy.RiftForager,bones,
-                new[]{fabric,dark},owned,true);
+                new[]{fabric,dark},owned,detail:"stitched fieldcloth");
         }
 
         private static void AttachSkin(GameObject root,Sculpt.Enemy kind,
-            Transform[] bones,Material[] materials,List<Mesh> owned,bool cloth=false)
+            Transform[] bones,Material[] materials,List<Mesh> owned,string detail=null)
         {
             if(bones.Length!=Sculpt.BoneCount(kind))throw new InvalidOperationException("Rig size");
             foreach(var bone in bones)
                 if(bone==null)throw new InvalidOperationException("Missing anatomical joint");
-            string meshName=kind+(cloth?" / stitched fieldcloth":" / connected battle skin");
+            bool extra=detail!=null;
+            string meshName=kind+" / "+(detail??"connected battle skin");
             var node=Joint(root.transform,meshName,Vector3.zero);
             // Same kind/rig rest dimensions are immutable. Reuse one GPU
             // mesh across all like enemies, never reuse a transform/bone.
@@ -149,7 +151,8 @@ namespace Ninefold.Presentation
             Mesh mesh=owned.Find(m=>m!=null && m.name==meshName);
             if(mesh==null)
             {
-                var geometry=cloth?FirstEncounterForagerCloth.Tactical():Sculpt.Tactical(kind);
+                var geometry=detail=="stitched fieldcloth"?FirstEncounterForagerCloth.Tactical():
+                    detail=="fitted eyes"?Sculpt.EyeShells(kind):Sculpt.Tactical(kind);
                 var vertices=new List<Vector3>(geometry.Vertices.Count);
                 var normals=new List<Vector3>(geometry.Vertices.Count);
                 var uv=new List<Vector2>(geometry.Vertices.Count);
@@ -165,9 +168,9 @@ namespace Ninefold.Presentation
                 }
                 mesh=new Mesh{name=meshName,indexFormat=IndexFormat.UInt32};
                 mesh.SetVertices(vertices);mesh.SetNormals(normals);mesh.SetUVs(0,uv);
-                mesh.subMeshCount=cloth?2:3;
+                mesh.subMeshCount=extra?2:3;
                 for(int i=0;i<mesh.subMeshCount;i++)
-                    mesh.SetTriangles(geometry.Indices[i+(cloth?1:0)],i);
+                    mesh.SetTriangles(geometry.Indices[i+(extra?1:0)],i);
                 mesh.RecalculateTangents();
                 // Bind to local-space pivots that also carry face/mantle/gear.
                 var binds=new Matrix4x4[bones.Length];
