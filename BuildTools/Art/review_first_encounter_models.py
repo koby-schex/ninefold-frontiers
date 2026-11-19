@@ -14,7 +14,7 @@ PALETTES = {
     "RiftForager": {"body": (.43,.48,.50), "accent": (.23,.24,.28), "dark": (.13,.19,.23)},
 }
 
-def load(path):
+def load(path, cloth=False):
     v, n, f, colors = [], [], [], []
     material = None
     for row in path.read_text(encoding="utf-8").splitlines():
@@ -31,9 +31,9 @@ def load(path):
             f.append([int(x.split("/")[0])-1 for x in tok[1:]])
             colors.append(material)
     v, n, f = np.asarray(v), np.asarray(n), np.asarray(f, dtype=np.int32)
-    if len(v) != len(n) or len(f) < 3000 or f.shape[1] != 3:
+    if len(v) != len(n) or len(f) < (1900 if cloth else 3000) or f.shape[1] != 3:
         raise ValueError("Invalid real body mesh")
-    if set(colors) != {"body", "accent", "dark"}:
+    if set(colors) != ({"accent", "dark"} if cloth else {"body", "accent", "dark"}):
         raise ValueError("All three true material regions required")
     if not np.isfinite(v).all() or not np.isfinite(n).all():
         raise ValueError("Invalid rest coordinates")
@@ -75,6 +75,11 @@ def main():
     args=p.parse_args()
     out=args.directory
     models={k:load(out/(k+"-RuntimeBody.obj")) for k in PALETTES}
+    body=models["RiftForager"]
+    cloth=load(out/"RiftForager-RuntimeCloth.obj",cloth=True)
+    models["RiftForager"]=(np.concatenate((body[0],cloth[0])),
+        np.concatenate((body[1],cloth[1])),
+        np.concatenate((body[2],cloth[2]+len(body[0]))),body[3]+cloth[3])
     for mode, angles, tilt, size, zoom in [
         ("Detail", (0,45,90,180), 15, (400,500), 1.70),
         ("Tactical", (0,45,90), 58, (390,844), 4.0)]:
@@ -88,7 +93,8 @@ def main():
         with Image.open(dest) as check:
             check.verify()
     metrics={"status":"actual tactical rest geometry; not native Unity, canon or phone performance",
-             "Forager":"separate attached runtime mantle and equipment not included",
+             "Forager":"body plus two stitched cloth panels; separate attached runtime mantle and equipment not included",
+             "Forager_body_triangles":len(body[2]),"Forager_cloth_triangles":len(cloth[2]),
              "meshes":{k:{"vertices":len(v),"triangles":len(f),
                           "bounds":[v.min(axis=0).tolist(),v.max(axis=0).tolist()]}
                        for k,(v,n,f,m) in models.items()}}
