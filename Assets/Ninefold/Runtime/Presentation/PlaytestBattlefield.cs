@@ -28,6 +28,7 @@ namespace Ninefold.Presentation
             public Vector3 Scale;
             public float Height;
             public FrontiersBattleModelMotion ModelMotion;
+            public PlayableBondBattleArt.Instance BondVisual;
             public bool Organic;
             // Exact authored Ashbound archetype, never inferred from a spawn
             // ID or a resemblance to another unit's geometry.
@@ -67,11 +68,13 @@ namespace Ninefold.Presentation
         private GameObject terrain;
         private readonly BattlefieldScenery scenery;
         private readonly FrontiersBattleVisualCatalog approvedModels;
+        private readonly PlayableBondBattleArt playableBonds;
         private string drawnSceneStudy = "none";
         public string SceneryStatus => terrain == null ? "not built (open a battle)" :
             "organic preview 01 | " + drawnSceneStudy + " | scenery meshes: " + scenery.MeshCount +
             " | visible: " + world.activeInHierarchy;
         private string drawnAttempt;
+        private bool playableBondScope;
         private string rescueSubjectId;
         private readonly GameObject destination, selection, inspection, impact, statusPulse;
         private readonly GameObject impactBurst;
@@ -92,6 +95,7 @@ namespace Ninefold.Presentation
         {
             this.camera = camera;
             this.approvedModels = approvedModels;
+            playableBonds=new PlayableBondBattleArt(template);
             world = new GameObject("Abstract battlefield — not canon"); world.transform.SetParent(parent, false);
             Material Make(Color color)
             {
@@ -576,8 +580,10 @@ namespace Ninefold.Presentation
 
         // Only the active mission catalog may assign a wildlife visual. Shared
         // spawn IDs from older studies never imply a particular creature type.
-        public void ConfigureWildlifeActors(IEnumerable<ActorSpawn> actors)
+        public void ConfigureWildlifeActors(IEnumerable<ActorSpawn> actors,string missionId=null)
         {
+            bool nextBondScope=PlayableBondRig.TrySelect(missionId,
+                WorldFivePlayableAbilityStudy.StandardIds[0],true,out _);
             var roster=actors.ToArray();
             var wildlife=roster.Where(actor =>
                 actor.UnitId == WorldFiveTutorialWildlifeV1.SillrunnerId ||
@@ -588,7 +594,8 @@ namespace Ninefold.Presentation
                 .ToDictionary(actor=>actor.Id,actor=>
                     Array.IndexOf(WorldFiveActOnePrototype.EnemyTemplateIds,actor.UnitId),
                     StringComparer.Ordinal);
-            if(wildlife.Count==wildlifeActors.Count &&
+            if(nextBondScope==playableBondScope &&
+                wildlife.Count==wildlifeActors.Count &&
                 wildlife.All(pair=>wildlifeActors.TryGetValue(pair.Key,out var old) &&
                     old==pair.Value) &&
                 ashbound.Count==ashboundActors.Count &&
@@ -605,6 +612,7 @@ namespace Ninefold.Presentation
                 token.Bar.RemoveFromHierarchy();
             }
             tokens.Clear();
+            playableBondScope=nextBondScope;
             foreach(var mesh in organicMeshes) Object.Destroy(mesh);
             organicMeshes.Clear();
             wildlifeActors.Clear(); ashboundActors.Clear();
@@ -855,6 +863,12 @@ namespace Ninefold.Presentation
                         t.Body=modelBody;
                         t.ModelMotion=new FrontiersBattleModelMotion(modelBody);
                     }
+                    else if(PlayableBondRig.TrySelect(view.MissionId,h.UnitId,h.IsPlayerSquad,
+                        out var bond) && playableBonds.TryBuild(bond,world.transform,StandardTokenHeight,
+                            out var playableBody,out var playableRig))
+                    {
+                        t.Body=playableBody;t.BondVisual=playableRig;
+                    }
                     else if(isSillrunner||isSeamstalker||
                         isAshbound)
                     {
@@ -935,6 +949,7 @@ namespace Ninefold.Presentation
                     t.Fill.style.backgroundColor = h.IsEnemyControlled ? new Color(.96f, .43f, .32f) : new Color(.25f, .87f, .83f); track.Add(t.Fill);
                 }
                 // Restore neutral poses after animation and on reduced-motion frames.
+                t.BondVisual?.Reset();
                 if (wildlifeActors.TryGetValue(h.UnitId,out var species))
                     PoseWildlife(t,species,0f,false,false,0f);
                 if(ashboundActors.ContainsKey(h.UnitId) && t.Organic)
@@ -1006,6 +1021,16 @@ namespace Ninefold.Presentation
             // never the authoritative root/collider/target position.
             foreach(var pair in tokens)
             {
+                if(pair.Value.BondVisual!=null)
+                {
+                    if(!isActionPlayback && pair.Value.Body.activeSelf)
+                    {
+                        float idlePhase=Time.unscaledTime*.43f+(pair.Key.GetHashCode()&7)*.071f;
+                        pair.Value.BondVisual.Pose(idlePhase,0f,0f,0f,0f,
+                            Mathf.Sin(idlePhase*2f*Mathf.PI));
+                    }
+                    continue;
+                }
                 if(!pair.Value.Organic || !pair.Value.Body.activeSelf) continue;
                 float phase=Time.unscaledTime*(1.35f+
                     (pair.Key.GetHashCode()&3)*.095f);
@@ -1246,6 +1271,32 @@ namespace Ninefold.Presentation
                                     -10f*flinch,0,-4f*flinch);
                         }
                     }
+                    if(token.BondVisual!=null)
+                    {
+                        bool travelling=movement?.UnitId==before.Id;
+                        bool acting=pulse?.UnitId==before.Id;
+                        bool target=pulse?.TargetId==before.Id;
+                        var effect=pulse?.AbilityEffect;
+                        bool healed=effect?.Health!=null && effect.Health.HealthAfter>effect.Health.HealthBefore;
+                        bool damaged=effect?.Health!=null && effect.Health.HealthAfter<effect.Health.HealthBefore;
+                        // This only animates the existing committed action. A
+                        // healing cue can unfold Olyra's existing protective
+                        // form; it may not give a shield, damage or new effect.
+                        bool protect=acting&&healed || target&&healed;
+                        float dead=after?.Health?.IsDefeated==true?strike:0f;
+                        float movementEnvelope=travelling?Mathf.Sin(moveTime*Mathf.PI):0f;
+                        token.BondVisual.Pose(moveTime*2.5f,movementEnvelope,
+                            acting?Mathf.Sin(t*Mathf.PI):0f,
+                            target&&(damaged||effect?.Status?.Applies==true)?impactEnvelope:0f,
+                            dead,0f,PlayableBondRig.Shelter(t,protect));
+                        if(travelling&&!acting)
+                        {
+                            var heading=AlongRoute(new[]{before.Position.Value}.Concat(movement.Movement.Path).ToArray(),
+                                Mathf.Min(1f,moveTime+.025f))-position;
+                            heading.y=0;
+                            if(heading.sqrMagnitude>.0001f)token.Body.transform.localRotation=Quaternion.LookRotation(heading);
+                        }
+                    }
                     if (after?.Health?.IsDefeated == true)
                     {
                         PoseAshboundDistal(token,0f,0f,0f,strike);
@@ -1343,13 +1394,15 @@ namespace Ninefold.Presentation
         public void Hide()
         {
             isActionPlayback=false;
-            foreach(var token in tokens.Values)token.ModelMotion?.EndMovement();
+            foreach(var token in tokens.Values)
+            {token.ModelMotion?.EndMovement();token.BondVisual?.Reset();}
             foreach (var item in feedback) item.Label.RemoveFromHierarchy(); feedback.Clear();
             impactBurst.SetActive(false); impactLight.enabled=false; cameraImpulse=Vector2.zero;
             world.SetActive(false); camera.enabled = true; camera.rect = new Rect(0, 0, 1, 1);
         }
         public static Vector3 Vector(FieldPoint p) => new Vector3((float)p.X, (float)p.Y, (float)p.Z);
         public void Dispose() { scenery.Dispose(); Object.Destroy(world);
+            playableBonds.Dispose();
             foreach(var organicMesh in organicMeshes) Object.Destroy(organicMesh);
             organicMeshes.Clear();
             foreach(var organicTexture in organicTextures) Object.Destroy(organicTexture);

@@ -1,0 +1,67 @@
+newmtl avar_skin
+Kd 1 1 1
+Ns 7.35393493851846
+d 1
+map_Kd Textures/avar_skin.png
+
+newmtl ceramic
+Kd 1 1 1
+Ns 93.91700493397073
+d 1
+map_Kd Textures/ceramic.png
+
+newmtl cloth
+Kd 1 1 1
+Ns 2.0171019276947364
+d 1
+map_Kd Textures/cloth.png
+
+newmtl continuance_frame
+Kd 1 1 1
+Ns 46.77305288827924
+d 1
+map_Kd Textures/continuance_frame.png
+
+newmtl eye
+Kd 0.055 0.065 0.07
+Ns 28
+d 1
+
+newmtl grown_mineral
+Kd 0.78 0.8 0.81
+Ns 82
+d 1
+
+newmtl olyra_core
+Kd 1 1 1
+Ns 11.535155129119968
+d 1
+map_Kd Textures/olyra_core.png
+
+newmtl olyra_membrane
+Kd 1 1 1
+Ns 95
+d 0.55
+map_Kd Textures/OlyraMembrane.png
+
+newmtl sail_membrane
+Kd 1 1 1
+Ns 23.346997223616654
+d 0.68
+map_Kd Textures/sail_membrane.png
+
+newmtl sail_vein
+Kd 0.55 0.51 0.66
+Ns 28
+d 1
+
+newmtl soft_charcoal
+Kd 1 1 1
+Ns 3.403206738360735
+d 1
+map_Kd Textures/soft_charcoal.png
+
+newmtl survey_light
+Kd 0.4 0.59 0.7
+Ns 72
+d 1

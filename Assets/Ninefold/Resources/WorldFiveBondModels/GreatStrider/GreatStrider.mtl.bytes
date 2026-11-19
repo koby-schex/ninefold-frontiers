@@ -1,0 +1,87 @@
+newmtl living_pearl
+Kd 1 1 1
+Ks 0.08 0.08 0.08
+Ns 22
+d 1
+
+map_Kd Textures/living_pearl.png
+
+newmtl limb_tissue
+Kd 1 1 1
+Ks 0.055 0.055 0.055
+Ns 18
+d 1
+
+map_Kd Textures/limb_tissue.png
+
+newmtl soft_charcoal
+Kd 1 1 1
+Ks 0.045 0.045 0.045
+Ns 16
+d 1
+
+map_Kd Textures/soft_charcoal.png
+
+newmtl grown_mineral
+Kd 1 1 1
+Ks 0.17 0.17 0.17
+Ns 82
+d 1
+
+map_Kd Textures/grown_mineral.png
+
+newmtl sail_membrane
+Kd 0.29 0.23 0.36
+Ks 0.18 0.18 0.18
+Ns 64
+d 0.68
+
+newmtl sail_vein
+Kd 0.55 0.51 0.66
+Ks 0.12 0.12 0.12
+Ns 28
+d 1
+
+newmtl continuance_frame
+Kd 1 1 1
+Ks 0.13 0.13 0.13
+Ns 100
+d 1
+
+map_Kd Textures/continuance_frame.png
+
+newmtl ceramic
+Kd 1 1 1
+Ks 0.22 0.22 0.22
+Ns 100
+d 1
+
+map_Kd Textures/ceramic.png
+
+newmtl avar_skin
+Kd 1 1 1
+Ks 0.06 0.06 0.06
+Ns 24
+d 1
+
+map_Kd Textures/avar_skin.png
+
+newmtl cloth
+Kd 1 1 1
+Ks 0.012 0.012 0.012
+Ns 4
+d 1
+
+map_Kd Textures/cloth.png
+
+newmtl survey_light
+Kd 0.4 0.59 0.7
+Ks 0.18 0.18 0.18
+Ns 72
+d 1
+
+newmtl eye
+Kd 0.055 0.065 0.07
+Ks 0.12 0.12 0.12
+Ns 28
+d 1
