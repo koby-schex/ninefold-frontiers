@@ -37,6 +37,7 @@ namespace Ninefold.Presentation
             public Transform OrganicCore, OrganicHead;
             public Transform OrganicArmLeft, OrganicArmRight;
             public Transform OrganicLegLeft, OrganicLegRight;
+            public FirstEncounterBattleArt.WildlifeRig WildlifeRig;
         }
         private sealed class FloatingFeedback
         {
@@ -59,6 +60,7 @@ namespace Ninefold.Presentation
         private readonly List<FloatingFeedback> feedback = new List<FloatingFeedback>();
         private readonly Material friendly, enemy, active, floor, grid, gold, cover, trim, markings, sillrunner, seamstalker;
         private readonly Material avarinSkin, avarinMantle, avarinFabric, avarinGear, avarinWake, avarinShadow;
+        private readonly Material foragerSkin, foragerFabric, runnerAccent, stalkerAccent;
         private readonly LineRenderer path, range;
         private GameObject terrain;
         private readonly BattlefieldScenery scenery;
@@ -101,6 +103,9 @@ namespace Ninefold.Presentation
             avarinGear = Make(new Color(.52f,.45f,.42f));
             avarinWake = Make(new Color(.66f,.48f,.39f));
             avarinShadow = Make(new Color(.13f,.19f,.23f));
+            foragerSkin=Make(avarinSkin.color);foragerFabric=Make(avarinFabric.color);
+            runnerAccent=Make(new Color(.51f,.58f,.52f));
+            stalkerAccent=Make(new Color(.43f,.39f,.46f));
             foreach(var m in new[]{sillrunner,seamstalker,avarinSkin,avarinMantle,
                 avarinFabric,avarinGear,avarinWake,avarinShadow})
                 if(m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness",.24f);
@@ -111,6 +116,29 @@ namespace Ninefold.Presentation
             organicTextures.Add(equipmentTexture);
             foreach(var m in new[]{sillrunner,seamstalker,avarinSkin}) m.mainTexture=hideTexture;
             avarinMantle.mainTexture=mantleTexture;
+            foragerSkin.mainTexture=hideTexture;
+            foragerFabric.mainTexture=equipmentTexture;
+            runnerAccent.mainTexture=mantleTexture;
+            stalkerAccent.mainTexture=mantleTexture;
+            // Real differentiated surface normal response for the three new
+            // connected battle assets, using the same source body palettes.
+            var runnerNormal=FirstEncounterBattleArt.OrganicNormal(false);
+            var stalkerNormal=FirstEncounterBattleArt.OrganicNormal(true);
+            organicTextures.Add(runnerNormal);organicTextures.Add(stalkerNormal);
+            void SurfaceNormal(Material material,Texture2D tex,float smooth,float scale)
+            {
+                if(material.HasProperty("_Smoothness"))material.SetFloat("_Smoothness",smooth);
+                if(!material.HasProperty("_BumpMap"))return;
+                material.SetTexture("_BumpMap",tex);
+                if(material.HasProperty("_BumpScale"))material.SetFloat("_BumpScale",scale);
+                material.EnableKeyword("_NORMALMAP");
+            }
+            SurfaceNormal(sillrunner,runnerNormal,.20f,.35f);
+            SurfaceNormal(seamstalker,stalkerNormal,.28f,.42f);
+            SurfaceNormal(runnerAccent,runnerNormal,.16f,.43f);
+            SurfaceNormal(stalkerAccent,stalkerNormal,.25f,.50f);
+            SurfaceNormal(foragerSkin,runnerNormal,.24f,.33f);
+            SurfaceNormal(foragerFabric,stalkerNormal,.13f,.42f);
             foreach(var m in new[]{avarinFabric,avarinGear,avarinWake,avarinShadow})
                 m.mainTexture=equipmentTexture;
             active = Make(new Color(.94f, .85f, .52f)); floor = Make(new Color(.075f, .12f, .17f));
@@ -567,16 +595,18 @@ namespace Ninefold.Presentation
         // The two native wildlife use continuous lofted anatomy with small
         // natural reliefs and no abstract Unity primitive assembly. The
         // existing movement-event pose contract is preserved.
-        private void AddWildlifeForm(GameObject root,bool stalker)
+        private FirstEncounterBattleArt.WildlifeRig AddWildlifeForm(GameObject root,bool stalker)
         {
-            WorldFiveBattleOrganics.Wildlife(root,stalker,
-                stalker ? seamstalker : sillrunner,trim,avarinShadow,organicMeshes);
+            return WorldFiveBattleOrganics.Wildlife(root,stalker,
+                stalker ? seamstalker : sillrunner,
+                stalker ? stalkerAccent : runnerAccent,avarinShadow,organicMeshes);
         }
 
         private void AddAshboundForm(GameObject root,int type)
         {
-            WorldFiveBattleOrganics.Ashbound(root,type,avarinSkin,avarinMantle,
-                avarinFabric,avarinGear,avarinWake,avarinShadow,organicMeshes);
+            WorldFiveBattleOrganics.Ashbound(root,type,
+                type==0?foragerSkin:avarinSkin,avarinMantle,
+                type==0?foragerFabric:avarinFabric,avarinGear,avarinWake,avarinShadow,organicMeshes);
         }
 
         private void PoseAshbound(Token token,float phase,bool moving,bool attacking,
@@ -660,38 +690,9 @@ namespace Ninefold.Presentation
             if (species != WorldFiveTutorialWildlifeV1.SillrunnerId &&
                 species != WorldFiveTutorialWildlifeV1.SeamstalkerId) return;
             bool stalker = species == WorldFiveTutorialWildlifeV1.SeamstalkerId;
-            int legIndex = 0;
-            foreach (Transform part in token.Body.transform)
-            {
-                if (part.name == "Walking limb")
-                {
-                    int pair = legIndex % 2; // front or rear on the same side
-                    int side = legIndex < 2 ? -1 : 1;
-                    float amplitude = stalker ? 24f : 13f;
-                    float stride = moving ? Mathf.Sin(phase * (stalker ? 21f : 17f)
-                        + pair * Mathf.PI + (side > 0 ? Mathf.PI : 0)) : 0f;
-                    part.localRotation = Quaternion.Euler(amplitude * stride,0,0);
-                    // Lift the advancing foot; child offsets return to their authored
-                    // location when the creature stops or reduced motion is selected.
-                    float lift = moving ? Mathf.Max(0f,stride) * (stalker ? .12f : .075f) : 0f;
-                    part.localPosition = new Vector3(side*.47f,-.38f+lift,pair==0?.34f:-.38f);
-                    legIndex++;
-                }
-                else if (part.name == "Head")
-                {
-                    float lean = attacking ? Mathf.Sin(strike * Mathf.PI) * (stalker ? -27f : -12f) : 0f;
-                    part.localRotation = Quaternion.Euler(lean,0,0);
-                }
-                else if (part.name == "Tapered tail")
-                    part.localRotation = Quaternion.Euler(0,
-                        (moving || attacking) ? Mathf.Sin(phase * 12f)*18f : 0f,0);
-                else if (part.name == "Balance fan")
-                    part.localRotation = Quaternion.Euler(0,
-                        moving ? Mathf.Sin(phase * 10f)*11f : 0f,0);
-                else if (part.name == "Dorsal shell")
-                    part.localRotation = Quaternion.Euler(
-                        moving ? Mathf.Sin(phase * (stalker ? 21f : 17f)) * 4f : 0f,0,0);
-            }
+            // Approved external prefabs use their own motion controller.
+            // Only our generated weighted native mesh receives these joints.
+            token.WildlifeRig?.Pose(phase,moving,attacking,strike);
         }
 
         private static Bounds MeasureLocalVisualBounds(Transform origin,Renderer[] renderers)
@@ -832,7 +833,7 @@ namespace Ninefold.Presentation
                         t.Body.transform.SetParent(world.transform,false);
                         t.Organic=true;
                         if(isSillrunner||isSeamstalker)
-                            AddWildlifeForm(t.Body,isSeamstalker);
+                            t.WildlifeRig=AddWildlifeForm(t.Body,isSeamstalker);
                         else
                         {
                             AddAshboundForm(t.Body,ashboundType);
@@ -967,7 +968,12 @@ namespace Ninefold.Presentation
                 float phase=Time.unscaledTime*(1.35f+
                     (pair.Key.GetHashCode()&3)*.095f);
                 float breath=1f+Mathf.Sin(phase)*.018f;
-                if(pair.Value.OrganicCore!=null)
+                if(pair.Value.WildlifeRig!=null)
+                {
+                    if(!isActionPlayback)
+                        pair.Value.WildlifeRig.Pose(phase,false,false,0f,true);
+                }
+                else if(pair.Value.OrganicCore!=null)
                 {
                     // One cached spine transform drives restrained quiet breath
                     // across all attached surfaces. The crescent stays a living

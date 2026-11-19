@@ -1,0 +1,36 @@
+name: First encounter model review
+on:
+  pull_request:
+    paths:
+      - 'Assets/Ninefold/Runtime/Core/Content/FirstEncounterSculpts.cs'
+      - 'Assets/Ninefold/Runtime/Presentation/FirstEncounterBattleArt.cs'
+      - 'Assets/Ninefold/Runtime/Presentation/WorldFiveBattleOrganics.cs'
+      - 'Assets/Ninefold/Runtime/Presentation/PlaytestBattlefield.cs'
+      - 'Tests/Ninefold.Core.Tests/FirstEncounterSculptsTests.cs'
+      - 'BuildTools/Art/FirstEncounterMeshExport/**'
+      - 'BuildTools/Art/review_first_encounter_models.py'
+      - '.github/workflows/first-encounter-model-review.yml'
+permissions:
+  contents: read
+jobs:
+  real-runtime-rest-meshes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Export all three exact runtime meshes
+        run: dotnet run --project BuildTools/Art/FirstEncounterMeshExport/FirstEncounterMeshExport.csproj --configuration Release -- FirstEncounterReview
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r BuildTools/Art/requirements-review.txt
+      - name: Render matched actual geometry at detail and tactical scale
+        run: python BuildTools/Art/review_first_encounter_models.py FirstEncounterReview
+      - uses: actions/upload-artifact@v4
+        with:
+          name: first-encounter-runtime-mesh-models
+          path: FirstEncounterReview/*
+          retention-days: 30
+          if-no-files-found: error
