@@ -10,7 +10,7 @@ import numpy as np
 from PIL import Image
 
 
-def draw_mesh_with_depth(base_image, screen_xy, camera_depth, triangles, shades):
+def draw_mesh_with_depth(base_image, screen_xy, camera_depth, triangles, shades, return_depth=False):
     """Rasterize actual indexed faces, interpolate their depth per pixel.
 
     A centroid-sorted painter cannot depict crossing or overlapping
@@ -70,4 +70,5 @@ def draw_mesh_with_depth(base_image, screen_xy, camera_depth, triangles, shades)
         if closer.any():
             region[closer] = candidate[closer]
             rgb[miny:maxy+1, minx:maxx+1][closer] = color
-    return Image.fromarray(rgb, "RGB")
+    image=Image.fromarray(rgb, "RGB")
+    return (image,zbuffer) if return_depth else image
