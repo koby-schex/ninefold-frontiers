@@ -10,7 +10,7 @@ internal static partial class Program
     {
         yield return ("First three distinct named hostile encounters remain ordered and scoped",
             EncounterSculptOrder);
-        yield return ("All three actual runtime enemy sculpts are closed connected finite surfaces",
+        yield return ("All eight actual runtime enemy sculpts are closed connected finite surfaces",
             EncounterSculptTopology);
         yield return ("Wildlife species have distinctive six-limb profiles and all joints influence skin",
             EncounterWildlifeIdentity);
@@ -20,6 +20,144 @@ internal static partial class Program
             EncounterForagerCloth);
         yield return ("Wildlife eyes are fitted closed oval geometry with a real outlined rim",
             EncounterEyeShells);
+        yield return ("Complete Ashbound roster has unique fitted wearable gear, closed geometry and valid bone attachment",
+            RosterWearableGeometry);
+        yield return ("All six Avarin body shapes and five new tailored fieldcloth profiles keep actual source fit",
+            RosterBodyAndCloth);
+        yield return ("Five Ashbound distal joint motion profiles use bounded differential gait, attack, recoil and defeat",
+            RosterMotion);
+    }
+
+    private static void RosterWearableGeometry()
+    {
+        string[] signatures={"Forager hooked route reader","Striker blunt contact ridge",
+            "Castigator right forearm cage","Wrecker right anchor contact-pad",
+            "Seer offset Wake capture cassette","Witness right camp registry satchel"};
+        var roles=new HashSet<string>(StringComparer.Ordinal);
+        for(int k=0;k<6;k++)
+        {
+            var kind=S.Ashbound(k);
+            Equal(WorldFiveActOnePrototype.EnemyTemplateIds[k],
+                new[]{"ashbound-rift-forager","ashbound-parted-striker","ashbound-seam-castigator",
+                    "ashbound-anchor-wrecker","ashbound-afterecho-seer","ashbound-camp-witness"}[k]);
+            var parts=AshboundWearablePlan.Build(k);
+            if(parts.Count<28 || !parts.Any(p=>p.Name==signatures[k]) ||
+                parts.Count(p=>p.Name.StartsWith("Living crescent ",StringComparison.Ordinal))!=2)
+                throw new Exception(kind+" lost silhouette/biological mantle or equipment.");
+            if(parts.Count(p=>p.Name.StartsWith("Temple eye ",StringComparison.Ordinal))!=2)
+                throw new Exception(kind+" lost original eyes.");
+            var seen=new HashSet<string>(StringComparer.Ordinal);
+            int count=0;
+            foreach(var piece in parts)
+            {
+                if(!seen.Add(piece.Name)||AshboundWearablePlan.ReplacedAnatomy(piece.Name))
+                    throw new Exception(kind+" duplicate wearable or old blockout: "+piece.Name);
+                int joint=AshboundWearablePlan.JointFor(piece.Name,k);
+                if(joint<0||joint>=S.BoneCount(kind) ||
+                    piece.Name.StartsWith("Living crescent ",StringComparison.Ordinal)&&joint!=1)
+                    throw new Exception(kind+" invalid wearable attachment: "+piece.Name);
+                var mesh=AshboundWearablePlan.Geometry(piece);
+                if(mesh.TriangleCount<60||mesh.Indices[1].Count!=0||mesh.Indices[2].Count!=0)
+                    throw new Exception(kind+" insufficient wearable mesh "+piece.Name);
+                var uses=new Dictionary<ulong,int>();
+                void Edge(int a,int b)
+                {
+                    ulong id=((ulong)(uint)Math.Min(a,b)<<32)|(uint)Math.Max(a,b);
+                    uses[id]=uses.TryGetValue(id,out int n)?n+1:1;
+                }
+                var triangles=mesh.Indices[0];
+                for(int i=0;i<triangles.Count;i+=3)
+                {
+                    int a=triangles[i],b=triangles[i+1],c=triangles[i+2];
+                    Edge(a,b);Edge(b,c);Edge(c,a);
+                }
+                if(uses.Any(e=>e.Value!=2))
+                    throw new Exception("Open wearable shell: "+piece.Name);
+                for(int i=0;i<mesh.Vertices.Count;i++)
+                {
+                    var n=mesh.Normals[i];var v=mesh.Vertices[i];
+                    if(v.Concat(n).Any(x=>float.IsNaN(x)||float.IsInfinity(x))||
+                        Math.Abs(n[0]*n[0]+n[1]*n[1]+n[2]*n[2]-1f)>.003f)
+                        throw new Exception("Bad wearable geometry: "+piece.Name);
+                }
+                count+=mesh.TriangleCount;
+            }
+            if(!roles.Add(string.Join("|",parts.Select(p=>p.Name))))
+                throw new Exception("Cloned enemy equipment layout.");
+            Console.WriteLine("INFO "+kind+" "+parts.Count+" mapped wearables, "+count+" real gear triangles.");
+        }
+        Equal(7,AshboundWearablePlan.JointFor("Striker blunt contact ridge",1));
+        Equal(7,AshboundWearablePlan.JointFor("Castigator right forearm cage",2));
+        Equal(8,AshboundWearablePlan.JointFor("Wrecker leg load-brace Left",3));
+        Equal(6,AshboundWearablePlan.JointFor("Seer left forearm brace",4));
+        Equal(6,AshboundWearablePlan.JointFor("Witness left arm signal support",5));
+    }
+
+    private static void RosterBodyAndCloth()
+    {
+        var hems=new HashSet<string>();
+        for(int k=0;k<6;k++)
+        {
+            var kind=S.Ashbound(k);
+            var body=S.Tactical(kind);
+            if(body.Vertices.Min(v=>v[1])>-.70f||body.Vertices.Max(v=>v[1])<.80f)
+                throw new Exception(kind+" changed shared Avarin height.");
+            foreach(float side in new[]{-1f,1f})
+            {
+                float eye=S.Field(kind,side*.103f,.692f,.166f);
+                if(eye<-.035f||eye>.06f)
+                    throw new Exception(kind+" lost authored face clearance");
+            }
+            var cloth=FirstEncounterForagerCloth.Tactical(k);
+            if(cloth.TriangleCount<1900||cloth.TriangleCount>4000)
+                throw new Exception(kind+" invalid physical garment budget.");
+            var edges=new Dictionary<ulong,int>();
+            void Edge(int a,int b)
+            {
+                ulong key=((ulong)(uint)Math.Min(a,b)<<32)|(uint)Math.Max(a,b);
+                edges[key]=edges.TryGetValue(key,out int n)?n+1:1;
+            }
+            foreach(var group in cloth.Indices)
+            for(int i=0;i<group.Count;i+=3)
+            {Edge(group[i],group[i+1]);Edge(group[i+1],group[i+2]);Edge(group[i+2],group[i]);}
+            if(edges.Any(e=>e.Value!=2))
+                throw new Exception(kind+" open garment border.");
+            foreach(var p in cloth.Vertices)
+            {
+                if(S.Field(kind,p[0],p[1],p[2])<.002f ||p[1]>-.12f||p[1]<-.68f)
+                    throw new Exception(kind+" garment intersects rest skin.");
+                var w=FirstEncounterForagerCloth.ClothWeights(k,p[0],p[1],p[2]);
+                if(k>0&&(w.A!=4&&w.A!=5||w.B!=0))
+                    throw new Exception("Fabric follows a weapon joint.");
+            }
+            string key=Math.Round(cloth.Vertices.Min(v=>v[1]),3)+":"+
+                Math.Round(cloth.Vertices.Max(v=>v[2]),3);
+            if(!hems.Add(key))throw new Exception("Identical garment silhouette.");
+        }
+        if(S.TorsoWidth(S.Enemy.AnchorWrecker)<=S.TorsoWidth(S.Enemy.PartedStriker)||
+            S.TorsoWidth(S.Enemy.AfterechoSeer)>=S.TorsoWidth(S.Enemy.RiftForager))
+            throw new Exception("Distinct torso profile lost.");
+    }
+
+    private static void RosterMotion()
+    {
+        var attacks=new HashSet<string>();
+        for(int k=1;k<=5;k++)
+        {
+            var idle=AshboundRosterMotion.Sample(k,0,0,0,0);
+            Equal(0f,idle.LeftElbow);Equal(0f,idle.RightKnee);
+            var l=AshboundRosterMotion.Sample(k,1,0,0,0);
+            var r=AshboundRosterMotion.Sample(k,-1,0,0,0);
+            if(l.LeftKnee>=-10||l.RightKnee!=0||r.RightKnee>=-10||r.LeftKnee!=0)
+                throw new Exception("Distal gait does not alternate.");
+            var a=AshboundRosterMotion.Sample(k,0,1,0,0);
+            if(!attacks.Add(a.LeftElbow+":"+a.RightElbow))
+                throw new Exception("Identical role attack follow-through.");
+            var hit=AshboundRosterMotion.Sample(k,0,0,1,0);
+            var dead=AshboundRosterMotion.Sample(k,0,0,0,1);
+            if(hit.LeftElbow<8||dead.LeftKnee> -30||dead.RightKnee> -35)
+                throw new Exception("Hit/defeat distal pose missing.");
+        }
     }
     private static void EncounterSculptOrder()
     {
