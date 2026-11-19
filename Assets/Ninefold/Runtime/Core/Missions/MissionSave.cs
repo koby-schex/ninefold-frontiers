@@ -59,6 +59,10 @@ namespace Ninefold.Core.Missions
             var definition=new MissionDefinition(missionId,attempt,squad,restored[0].Definition,priority,restored.Skip(1).Select(s=>s.Definition));
             var controller=new MissionController(turns,definition,true);
             for(int i=0;i<n;i++) controller.states[i]=restored[i];
+            foreach(var state in restored.Where(s=>s.Definition.IsFollowupStage))
+                SaveIO.Require(controller.StageAvailable(state)||
+                    (state.Status==ObjectiveStatus.Active&&state.Progress==0&&!state.Rescued),
+                    "A locked follow-up objective has progressed.");
             controller.LastResolvedRound=r.ReadInt32();
             SaveIO.Require(controller.LastResolvedRound>=0 && controller.LastResolvedRound<=turns.RoundNumber,"Invalid round checkpoint.");
             if(!turns.IsBattleEnded && turns.RoundNumber>0)
@@ -79,9 +83,9 @@ namespace Ninefold.Core.Missions
                 }
                 else
                 {
-                    bool won=restored[0].Status==ObjectiveStatus.Completed;
+                    bool won=restored.Where(controller.RequiredObjective).All(s=>s.Status==ObjectiveStatus.Completed);
                     bool squadLost=!squad.Any(controller.Alive);
-                    bool failed=squadLost || restored[0].Status==ObjectiveStatus.Failed;
+                    bool failed=squadLost || restored.Where(controller.RequiredObjective).Any(s=>s.Status==ObjectiveStatus.Failed);
                     bool victory=won && (!failed || priority==OutcomePriority.SuccessFirst);
                     SaveIO.Require((won || failed) && (outcome==MissionOutcome.Victory)==victory,"Inconsistent outcome.");
                     string expected=victory ? "PrimaryCompleted" : squadLost ? "SquadUnavailable" : "PrimaryFailed";

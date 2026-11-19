@@ -349,6 +349,14 @@ namespace Ninefold.Presentation
                 var state = view.Objectives.First(o=>o.Id==pair.Key);
                 var available = planning.Objectives.FirstOrDefault(o=>o.Id==pair.Key);
                 var definition = objectives.First(o=>o.Id==pair.Key);
+                // Only the current required stage is marked. Pending future
+                // points cannot masquerade as usable objectives.
+                bool multiStage=view.Objectives.Any(o=>o.IsFollowupStage);
+                var activeRequired=view.Objectives.Where((o,i)=>i==0||o.IsFollowupStage)
+                    .FirstOrDefault(o=>o.Status==ObjectiveStatus.Active);
+                bool showMarker=!multiStage || activeRequired?.Id==pair.Key || (!state.IsFollowupStage && pair.Key!=view.Objectives[0].Id);
+                pair.Value.style.display=showMarker?DisplayStyle.Flex:DisplayStyle.None;
+                if(objectiveVisuals.TryGetValue(pair.Key,out var stageMarker))stageMarker.SetActive(showMarker);
                 if (state.Kind == ObjectiveKind.RescueAndExtract &&
                     definition.Zone != null && definition.Interaction != null)
                 {
@@ -491,35 +499,46 @@ namespace Ninefold.Presentation
             // Secure and extraction are AREAS, not point interactions.
             // Previously the renderer only emitted Interaction markers, leaving
             // Mission 004's real Secure zone entirely invisible.
-            void OutlineZone(FieldBox zone, string title)
+            GameObject OutlineZone(FieldBox zone, string title)
             {
+                var group=new GameObject(title+" · zone group");
+                group.transform.SetParent(terrain.transform,false);
                 var lo=Vector(zone.Min); var hi=Vector(zone.Max);
                 float w=hi.x-lo.x,d=hi.z-lo.z;
-                if(w<=.1f || d<=.1f) return;
+                if(w<=.1f || d<=.1f) return group;
                 float x=(lo.x+hi.x)*.5f,z=(lo.z+hi.z)*.5f;
-                var foundation=Shape(title+" · field pad",new Vector3(x,.018f,z),
+                GameObject ZoneShape(string label,Vector3 position,Vector3 scale,Material material)
+                {
+                    var shape=Shape(label,position,scale,material);
+                    shape.transform.SetParent(group.transform,true);return shape;
+                }
+                var foundation=ZoneShape(title+" · field pad",new Vector3(x,.018f,z),
                     new Vector3(w,.028f,d),markings);
                 foundation.name=title+" · interior (visual only)";
-                Shape(title+" · south boundary",new Vector3(x,.056f,lo.z),
+                ZoneShape(title+" · south boundary",new Vector3(x,.056f,lo.z),
                     new Vector3(w,.075f,.11f),gold);
-                Shape(title+" · north boundary",new Vector3(x,.056f,hi.z),
+                ZoneShape(title+" · north boundary",new Vector3(x,.056f,hi.z),
                     new Vector3(w,.075f,.11f),gold);
-                Shape(title+" · west boundary",new Vector3(lo.x,.056f,z),
+                ZoneShape(title+" · west boundary",new Vector3(lo.x,.056f,z),
                     new Vector3(.11f,.075f,d),gold);
-                Shape(title+" · east boundary",new Vector3(hi.x,.056f,z),
+                ZoneShape(title+" · east boundary",new Vector3(hi.x,.056f,z),
                     new Vector3(.11f,.075f,d),gold);
                 foreach(float sx in new[]{lo.x,hi.x})
                     foreach(float sz in new[]{lo.z,hi.z})
-                        Shape(title+" · visible corner beacon",
+                        ZoneShape(title+" · visible corner beacon",
                             new Vector3(sx,.29f,sz),new Vector3(.16f,.50f,.16f),active);
+                return group;
             }
             foreach(var o in objectives.Where(o=>o.Zone!=null))
             {
                 // Extraction is also a physical destination, not a target
                 // that appears only after rescuing the traveler.
                 if(o.Kind==ObjectiveKind.Secure || o.Kind==ObjectiveKind.RescueAndExtract)
-                    OutlineZone(o.Zone,o.Kind==ObjectiveKind.Secure
+                {
+                    var zoneVisual=OutlineZone(o.Zone,o.Kind==ObjectiveKind.Secure
                         ? "CAPTURE AND HOLD "+o.Id : "EXTRACTION "+o.Id);
+                    if(o.Kind==ObjectiveKind.Secure)objectiveVisuals[o.Id]=zoneVisual;
+                }
                 if(o.Kind==ObjectiveKind.Secure)
                 {
                     var lo=Vector(o.Zone.Min);var hi=Vector(o.Zone.Max);

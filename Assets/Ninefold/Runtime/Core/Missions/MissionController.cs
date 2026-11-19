@@ -38,6 +38,10 @@ namespace Ninefold.Core.Missions
             }
         }
         public ObjectiveView GetObjective(string id) => states.First(s => s.Definition.Id == id).View();
+        private bool RequiredObjective(State state)=>ReferenceEquals(state,states[0])||state.Definition.IsFollowupStage;
+        private bool StageAvailable(State state)=>!state.Definition.IsFollowupStage||
+            states.TakeWhile(s=>!ReferenceEquals(s,state)).Where(RequiredObjective)
+                .All(s=>s.Status==ObjectiveStatus.Completed);
 
         public InteractionFailure PreviewInteraction(long activationId, string objectiveId)
         {
@@ -47,7 +51,8 @@ namespace Ninefold.Core.Missions
             var state = states.FirstOrDefault(s => s.Definition.Id == objectiveId);
             if (state == null) return InteractionFailure.UnknownObjective;
             var interaction = state.Definition.Interaction;
-            if (interaction == null || state.Status != ObjectiveStatus.Active || state.Rescued) return InteractionFailure.Unavailable;
+            if (interaction == null || state.Status != ObjectiveStatus.Active || state.Rescued ||
+                !StageAvailable(state)) return InteractionFailure.Unavailable;
             if (!interaction.AllowedActors.Contains(turn.UnitId) || !Alive(turn.UnitId)) return InteractionFailure.IneligibleActor;
             if (state.Definition.Kind == ObjectiveKind.RescueAndExtract)
             {
@@ -110,9 +115,11 @@ namespace Ninefold.Core.Missions
         private bool Alive(string id) => turns.IsUnitEligible(id) && !turns.Health.GetState(id).IsDefeated;
         private void Refresh(bool roundEnd)
         {
-            foreach (var state in states)
+            // Snapshot availability before this event: a capture round or
+            // interaction cannot advance two sequential contracts at once.
+            var available=states.Where(s=>s.Status==ObjectiveStatus.Active&&StageAvailable(s)).ToArray();
+            foreach (var state in available)
             {
-                if (state.Status != ObjectiveStatus.Active) continue;
                 var d = state.Definition;
                 switch (d.Kind)
                 {
@@ -151,8 +158,8 @@ namespace Ninefold.Core.Missions
         private BattleResult ResolveOutcome()
         {
             bool squadLost = !Definition.Squad.Any(Alive);
-            bool failed = squadLost || states[0].Status == ObjectiveStatus.Failed;
-            bool won = states[0].Status == ObjectiveStatus.Completed;
+            bool failed = squadLost || states.Where(RequiredObjective).Any(s=>s.Status==ObjectiveStatus.Failed);
+            bool won = states.Where(RequiredObjective).All(s=>s.Status==ObjectiveStatus.Completed);
             if (!won && !failed) return null;
             bool victory = won && (!failed || Definition.Priority == OutcomePriority.SuccessFirst);
             Result = new BattleResult(Definition,victory ? MissionOutcome.Victory : MissionOutcome.Defeat,turns.RoundNumber,
