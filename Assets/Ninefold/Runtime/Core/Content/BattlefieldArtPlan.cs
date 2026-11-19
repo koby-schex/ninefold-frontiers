@@ -172,7 +172,8 @@ namespace Ninefold.Core.Content
             float h=y1-y0,cut=Math.Min(.13f,Math.Min(x1-x0,z1-z0)*.09f);
             var baseRing=Ring(x0,z0,x1,z1,y0,cut*.45f);
             var bandA=Ring(x0,z0,x1,z1,y0+h*.38f,cut);
-            var bandB=Ring(x0+.012f,z0+.012f,x1-.012f,z1-.012f,y0+h*.48f,cut);
+            float bandInset=Math.Min(.012f,Math.Min(x1-x0,z1-z0)*.025f);
+            var bandB=Ring(x0+bandInset,z0+bandInset,x1-bandInset,z1-bandInset,y0+h*.48f,cut);
             var shoulder=Ring(x0,z0,x1,z1,y1-h*.12f,cut);
             float inset=Math.Min(.06f,cut*.4f);
             var crown=Ring(x0+inset,z0+inset,x1-inset,z1-inset,y1,cut*.80f);
@@ -194,9 +195,10 @@ namespace Ninefold.Core.Content
             for(int i=0;i<n;i++)
             {
                 float z=L(z0,z1,(i+.5f)/n);
-                Rect(s.Get(Surface.SlowEdge),x0,z-.023f,x0+w,z+.023f,.014f);
-                Rect(s.Get(Surface.SlowEdge),x1-w,z-.023f,x1,z+.023f,.014f);
-                if(x1-x0>.55f)Stroke(s.Get(Surface.SlowEdge),
+                float tick=Math.Min(.023f,(z1-z0)/(n*3f));
+                Rect(s.Get(Surface.SlowEdge),x0,z-tick,x0+w,z+tick,.014f);
+                Rect(s.Get(Surface.SlowEdge),x1-w,z-tick,x1,z+tick,.014f);
+                if(x1-x0>.55f&&z>z0+.09f&&z<z1-.09f)Stroke(s.Get(Surface.SlowEdge),
                     V((x0+x1)*.5f-.12f,.014f,z-.06f),
                     V((x0+x1)*.5f+.12f,.014f,z+.06f),.024f);
             }

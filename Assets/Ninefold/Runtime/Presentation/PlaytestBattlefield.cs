@@ -71,7 +71,7 @@ namespace Ninefold.Presentation
         private readonly PlayableBondBattleArt playableBonds;
         private string drawnSceneStudy = "none";
         public string SceneryStatus => terrain == null ? "not built (open a battle)" :
-            "organic preview 01 | " + drawnSceneStudy + " | scenery meshes: " + scenery.MeshCount +
+            "terrain art 02 | " + drawnSceneStudy + " | batched terrain meshes: " + scenery.MeshCount +
             " | visible: " + world.activeInHierarchy;
         private string drawnAttempt;
         private bool playableBondScope;
@@ -325,14 +325,14 @@ namespace Ninefold.Presentation
         }
 
         public void Show(InteractionView interaction, BattlePlanningView planning, IReadOnlyList<ObjectiveDefinition> objectives, VisualElement target,
-            string environmentKey = null)
+            string environmentKey = null,bool proceduralCover=false)
         {
             var view = interaction.Battle; var intent = interaction.Pending;
             surface = target; world.SetActive(true); camera.enabled = true;
             rescueSubjectId = objectives.FirstOrDefault(o=>o.Kind == ObjectiveKind.RescueAndExtract)?.Subjects.FirstOrDefault();
             if (drawnAttempt != view.AttemptId)
             {
-                BuildMap(view.Map,objectives,view.MissionId,environmentKey);
+                BuildMap(view.Map,objectives,view.MissionId,environmentKey,view.AttemptId,proceduralCover);
                 drawnAttempt = view.AttemptId;
             }
             Reconcile(view);
@@ -463,17 +463,18 @@ namespace Ninefold.Presentation
         }
 
         private void BuildMap(BattlefieldMap map, IReadOnlyList<ObjectiveDefinition> objectives, string missionId,
-            string environmentKey)
+            string environmentKey,string attempt,bool proceduralCover)
         {
-            var direction = BattlefieldSceneDirection.ForMission(missionId,environmentKey);
-            drawnSceneStudy = direction.Study;
-            camera.backgroundColor = direction.Sky;
-            // Presentation-only environment lighting. Does not alter encounter
-            // data, navigation, model prefabs or shared RenderSettings.
-            battlefieldKey.color = Color.Lerp(direction.Fill,Color.white,.25f);
-            battlefieldKey.intensity = direction.Study.StartsWith("W5",StringComparison.Ordinal) ? 1.15f : .95f;
-            battlefieldKey.transform.localRotation = Quaternion.Euler(52f,
-                direction.Study.Contains("fracture") ? -25f : -43f,0f);
+            // Always render the resolved snapshot, including its actual cover;
+            // story scenery is stable across retries, optional arenas vary.
+            var scene=BattlefieldArtPlan.Build(map,missionId,environmentKey,attempt,proceduralCover);
+            drawnSceneStudy=scene.Mood+" · "+scene.Seed.ToString("X8");
+            camera.backgroundColor=new Color(scene.Sky.X,scene.Sky.Y,scene.Sky.Z);
+            var fill=new Color(scene.Fill.X,scene.Fill.Y,scene.Fill.Z);
+            battlefieldKey.color=Color.Lerp(fill,Color.white,.28f);
+            battlefieldKey.intensity=scene.Mood==BattlefieldArtPlan.Mood.DeepFracture?1.15f:1.23f;
+            battlefieldKey.transform.localRotation=Quaternion.Euler(52f,
+                scene.Mood==BattlefieldArtPlan.Mood.DeepFracture?-26f:-43f,0f);
             foreach (var label in objectiveLabels.Values) label.RemoveFromHierarchy();
             objectiveLabels.Clear(); objectivePositions.Clear(); objectiveVisuals.Clear();
             if (terrain != null) { terrain.SetActive(false); Object.Destroy(terrain); }
@@ -483,22 +484,10 @@ namespace Ninefold.Presentation
                 var item = Primitive(name,PrimitiveType.Cube,position,scale,material);
                 item.transform.SetParent(terrain.transform,true); return item;
             }
-            var min = Vector(map.Bounds.Min); var max = Vector(map.Bounds.Max); var center = (min+max)/2;
-            float width=max.x-min.x, depth=max.z-min.z;
-            Shape("Bounded floor",new Vector3(center.x,-.16f,center.z),new Vector3(width,.3f,depth),floor);
-            Shape("Arena plinth",new Vector3(center.x,-.42f,center.z),new Vector3(width+.4f,.25f,depth+.4f),grid);
-            scenery.Build(terrain.transform, map, floor, direction);
-            Shape("West boundary",new Vector3(min.x,.15f,center.z),new Vector3(.1f,.3f,depth),trim);
-            Shape("East boundary",new Vector3(max.x,.15f,center.z),new Vector3(.1f,.3f,depth),trim);
-            Shape("South boundary",new Vector3(center.x,.15f,min.z),new Vector3(width,.3f,.1f),trim);
-            Shape("North boundary",new Vector3(center.x,.15f,max.z),new Vector3(width,.3f,.1f),trim);
-            foreach (var g in map.Ground)
-            {
-                var c=(Vector(g.Bounds.Min)+Vector(g.Bounds.Max))/2; var size=Vector(g.Bounds.Max)-Vector(g.Bounds.Min);
-                Shape("Slow ground",new Vector3(c.x,.02f,c.z),new Vector3(size.x,.025f,size.z),markings);
-                for (float z=(float)g.Bounds.Min.Z+.12f;z<(float)g.Bounds.Max.Z;z+=.35f)
-                    Shape("Slow ground stripe",new Vector3(c.x,.04f,z),new Vector3(size.x,.015f,.06f),gold);
-            }
+            // The shared surface includes the flat floor, true cover, actual
+            // difficult ground, exact rim and all noninteractive exterior relief.
+            // No foundation cube, raised boundary walls or stripe GameObjects.
+            scenery.Build(terrain.transform,scene);
             // Secure and extraction are AREAS, not point interactions.
             // Previously the renderer only emitted Interaction markers, leaving
             // Mission 004's real Secure zone entirely invisible.

@@ -1,435 +1,147 @@
 using System;
 using System.Collections.Generic;
-using Ninefold.Core.Combat;
 using UnityEngine;
-using Object = UnityEngine.Object;
+using UnityEngine.Rendering;
+using Plan=Ninefold.Core.Content.BattlefieldArtPlan;
+using Object=UnityEngine.Object;
+using N=System.Numerics.Vector3;
 
 namespace Ninefold.Presentation
 {
-    /// <summary>Presentation-only environment study. Never changes authored navigation or save data.</summary>
+    /// <summary>Presentation-only actual shared terrain mesh adapter.
+    /// One material and at most one mesh per terrain surface. No colliders,
+    /// navigation generation, per-prop GameObjects or global scene changes.</summary>
     internal sealed class BattlefieldScenery : IDisposable
     {
-        public int MeshCount => meshes.Count;
-        private readonly Material stone, pale, distant, vegetation, farHaze;
-        private readonly Material fractureBase, fractureEdge, fractureSeam, fractureFloorTrace, fractureFloorChip;
-        private readonly Material floorSurface, coverSurface;
-        private readonly Material[] paving = new Material[3];
-        private readonly Texture2D mineral, worldFiveMineral;
-        private bool hasWorldFiveMaterialPulse;
-        private Color restingSeamAccent;
-        private readonly List<Mesh> meshes = new List<Mesh>();
-        private readonly List<Material> materials = new List<Material>();
-
-        public BattlefieldScenery(Material template, Material floor, Material cover)
+        public int MeshCount=>meshes.Count;
+        private readonly List<Mesh> meshes=new List<Mesh>();
+        private readonly Material[] palette=new Material[Enum.GetValues(typeof(Plan.Surface)).Length];
+        private readonly Texture2D mineral,normal;
+        private readonly Material floorSurface,coverSurface;
+        private Color restingThreads;
+        private bool hasScene;
+        private static Color ColorOf(N p)=>new Color(p.X,p.Y,p.Z,1);
+        private static Vector3 Vec(N p)=>new Vector3(p.X,p.Y,p.Z);
+        public BattlefieldScenery(Material template,Material floor,Material cover)
         {
-            floorSurface = floor; coverSurface = cover;
-            Material Make(string name, Color color)
+            floorSurface=floor;coverSurface=cover;
+            var shader=Shader.Find("Universal Render Pipeline/Lit");
+            for(int i=0;i<palette.Length;i++)
             {
-                var m = new Material(template) { name = name, color = color };
-                if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", .16f);
-                materials.Add(m); return m;
+                var slot=(Plan.Surface)i;
+                var m=shader!=null?new Material(shader):new Material(template);
+                m.name="Fractured Meridian terrain / "+slot;
+                if(m.HasProperty("_Smoothness"))m.SetFloat("_Smoothness",
+                    slot==Plan.Surface.CoverCrown?.36f:slot==Plan.Surface.Threads?.21f:.13f);
+                if(m.HasProperty("_Metallic"))m.SetFloat("_Metallic",0);
+                palette[i]=m;
             }
-            stone = Make("Layered mauve stone", new Color(.29f,.25f,.30f));
-            pale = Make("Weathered mineral", new Color(.53f,.48f,.47f));
-            distant = Make("Dusk escarpment", new Color(.25f,.22f,.32f));
-            farHaze = Make("Far dusk shelf", new Color(.20f,.18f,.25f));
-            vegetation = Make("Dusty sage", new Color(.32f,.37f,.31f));
-            fractureBase = Make("World Five geological facets", new Color(.38f,.33f,.45f));
-            fractureEdge = Make("World Five quartz edges", new Color(.66f,.57f,.71f));
-            fractureSeam = Make("World Five fracture seams", new Color(.63f,.54f,.83f));
-            fractureFloorTrace = Make("World Five subtle mineral threads", new Color(.43f,.37f,.53f));
-            fractureFloorChip = Make("World Five polished fissure flecks", new Color(.51f,.45f,.57f));
-            worldFiveMineral = WorldFiveSceneryKit.CreateMineralSurface();
-            mineral = new Texture2D(128,128,TextureFormat.RGBA32,true) { name = "Procedural mineral grain", wrapMode = TextureWrapMode.Repeat, filterMode = FilterMode.Trilinear };
-            var pixels = new Color[128*128];
-            for (int y=0;y<128;y++) for (int x=0;x<128;x++)
+            mineral=CreateMineralMap(false);normal=CreateMineralMap(true);
+            foreach(var m in palette)
             {
-                // Periodic strata and deterministic fine grain; no global random state.
-                float grain = Noise(x,y)*.13f;
-                float strata = Mathf.Sin(x*Mathf.PI/16 + Mathf.Sin(y*Mathf.PI/32)*1.4f)*.045f;
-                float v=.76f+grain+strata;
-                pixels[y*128+x]=new Color(v,v*.97f,v*.99f,1);
+                var name=m.name;
+                if(name.EndsWith("Rim",StringComparison.Ordinal)||name.EndsWith("SlowEdge",StringComparison.Ordinal)||
+                    name.EndsWith("Threads",StringComparison.Ordinal)||name.EndsWith("FarHaze",StringComparison.Ordinal))continue;
+                m.mainTexture=mineral;
+                if(m.HasProperty("_BumpMap"))
+                {
+                    m.SetTexture("_BumpMap",normal);
+                    if(m.HasProperty("_BumpScale"))m.SetFloat("_BumpScale",.40f);
+                    m.EnableKeyword("_NORMALMAP");
+                }
             }
-            for (int i=0;i<3;i++)
-                paving[i] = Make("Mineral surface " + i, new Color(.34f+i*.025f,.30f+i*.023f,.35f+i*.022f));
-            mineral.SetPixels(pixels); mineral.Apply(true,true);
-            foreach (var material in paving) material.mainTexture = mineral;
-            stone.mainTexture = pale.mainTexture = mineral;
-            floor.mainTexture = mineral; cover.mainTexture = mineral;
-            floor.color = new Color(.34f,.30f,.35f); cover.color = new Color(.47f,.44f,.46f);
-            if (floor.HasProperty("_Smoothness")) floor.SetFloat("_Smoothness",.12f);
-            if (cover.HasProperty("_Smoothness")) cover.SetFloat("_Smoothness",.22f);
         }
-
-        // Subtle environmental liveliness, visual only: no hazard, lighting,
-        // spell effect, NavMesh operation or per-frame mesh allocation.
-        public void Animate(float time)
+        private static float Height(int x,int y,int size)
         {
-            if(!hasWorldFiveMaterialPulse) return;
-            float shimmer=.035f+.035f*Mathf.Sin(time*.85f);
-            fractureSeam.color=Color.Lerp(restingSeamAccent,Color.white,shimmer);
+            // Periodic integer tile sampling. Paired scalar and tangent-space
+            // maps share the same physical grain/vein pattern across UV seams.
+            float u=2f*Mathf.PI*x/size,v=2f*Mathf.PI*y/size;
+            float warp=Mathf.Sin(v*3+Mathf.Sin(u*2)*1.2f);
+            float bands=Mathf.Pow(.5f+.5f*Mathf.Sin(u*6+warp*.9f+v*2),9);
+            float fine=.5f*Mathf.Sin(u*37+v*29)+.28f*Mathf.Sin(v*67-u*41)+.22f*Mathf.Sin(u*83+v*71);
+            return .5f+.09f*Mathf.Sin(u*3+v*2)+.055f*Mathf.Sin(v*7-u*5)+.085f*bands+.035f*fine;
         }
-
-        private static float Noise(int x, int y)
+        private static Texture2D CreateMineralMap(bool bump)
         {
-            unchecked { uint n=(uint)(x*374761393+y*668265263); n=(n^(n>>13))*1274126177; return (n&65535)/65535f; }
+            const int size=256;
+            var pixels=new Color32[size*size];
+            for(int y=0;y<size;y++)for(int x=0;x<size;x++)
+            {
+                float h=Height(x,y,size);
+                if(bump)
+                {
+                    float dx=(Height(x+1,y,size)-Height(x-1,y,size))*3.0f;
+                    float dy=(Height(x,y+1,size)-Height(x,y-1,size))*3.0f;
+                    var n=new Vector3(-dx,-dy,1).normalized;
+                    byte Channel(float a)=>(byte)Mathf.RoundToInt((a*.5f+.5f)*255f);
+                    // URP tangent normal convention: encoded X in A, Y in G.
+                    pixels[y*size+x]=new Color32(255,Channel(n.y),255,Channel(n.x));
+                }
+                else
+                {
+                    float shade=Mathf.Clamp01(.58f+h*.38f);
+                    byte Channel(float a)=>(byte)Mathf.RoundToInt(Mathf.Clamp01(a)*255f);
+                    pixels[y*size+x]=new Color32(Channel(shade),Channel(shade*.985f),Channel(shade),255);
+                }
+            }
+            var texture=new Texture2D(size,size,TextureFormat.RGBA32,true,bump)
+            {
+                name=bump?"Mineral strata tangent surface":"Mineral strata albedo",
+                wrapMode=TextureWrapMode.Repeat,filterMode=FilterMode.Trilinear,anisoLevel=2
+            };
+            texture.SetPixels32(pixels);texture.Apply(true,true);return texture;
         }
-
-        public void Build(Transform parent, BattlefieldMap map, Material floor, BattlefieldSceneDirection direction)
+        public void Build(Transform parent,Plan.Scene scene)
         {
             ClearMeshes();
-            // These are the renderer-owned fixture materials, not shared model
-            // assets. Presentation variations never change tactical geometry.
-            floorSurface.color = direction.Floor;
-            coverSurface.color = direction.Cover;
-            stone.color = direction.Stone;
-            pale.color = direction.Ceramic;
-            distant.color = direction.Distant;
-            farHaze.color = direction.Haze;
-            vegetation.color = direction.Plants;
-            bool isWorldFive = WorldFiveSceneryKit.TryGet(direction,out var style);
-            hasWorldFiveMaterialPulse=isWorldFive;
-            var texture = isWorldFive ? worldFiveMineral : mineral;
-            floorSurface.mainTexture = texture;
-            coverSurface.mainTexture = texture;
-            stone.mainTexture = pale.mainTexture = texture;
-            foreach (var material in paving) material.mainTexture = texture;
-            if (isWorldFive)
+            for(int i=0;i<palette.Length;i++)palette[i].color=ColorOf(scene.Palette[i]);
+            floorSurface.color=ColorOf(scene.Palette[(int)Plan.Surface.Floor]);
+            coverSurface.color=ColorOf(scene.Palette[(int)Plan.Surface.Cover]);
+            floorSurface.mainTexture=mineral;coverSurface.mainTexture=mineral;
+            floorSurface.mainTextureScale=Vector2.one;coverSurface.mainTextureScale=Vector2.one;
+            restingThreads=palette[(int)Plan.Surface.Threads].color;hasScene=true;
+            foreach(var source in scene.Meshes)
             {
-                fractureBase.color = style.RiftStone;
-                fractureEdge.color = style.MineralHighlights;
-                fractureSeam.color = style.SeamAccent;
-                restingSeamAccent=style.SeamAccent;
-                fractureFloorTrace.color = Color.Lerp(direction.Floor,style.SeamAccent,.39f);
-                fractureFloorChip.color = Color.Lerp(direction.Floor,style.MineralHighlights,.54f);
-            }
-            for (int i=0; i<paving.Length; i++)
-                paving[i].color = Color.Lerp(direction.Floor, direction.Ceramic, .10f + i*.10f);
-            float x0=(float)map.Bounds.Min.X, x1=(float)map.Bounds.Max.X;
-            float z0=(float)map.Bounds.Min.Z, z1=(float)map.Bounds.Max.Z;
-            floor.mainTextureScale = new Vector2((x1-x0)/3,(z1-z0)/3);
-            BuildSurface(parent,x0,x1,z0,z1);
-            if(isWorldFive) BuildWorldFiveSurfaceDetails(parent,x0,x1,z0,z1,style);
-            var far=new Batch(); var coverFaces=new Batch(); var coverCaps=new Batch();
-            foreach(var obstacle in map.Obstacles)
-            {
-                var a=PlaytestBattlefield.Vector(obstacle.Bounds.Min);
-                var b=PlaytestBattlefield.Vector(obstacle.Bounds.Max);
-                BuildCover(coverFaces,coverCaps,a,b);
-            }
-            Emit(parent,"Weathered cover faces",coverFaces,stone);
-            Emit(parent,"Ash ceramic cover crowns",coverCaps,pale);
-            // A second low-contrast horizon layer adds depth, not extra playable space.
-            int distantCount = Mathf.Max(3,direction.HorizonDetail-2);
-            for(int i=0;i<distantCount;i++)
-                far.Rock(new Vector3(Mathf.Lerp(x0-7,x1+7,i/(float)(distantCount-1)),-1.8f,z1+8),
-                    new Vector3(5.5f,(3.8f+Noise(i,43)*2)*direction.SilhouetteHeight,3.2f),i+190);
-            Emit(parent,"Far atmospheric shelves",far,farHaze);
-            var layers=new Batch(); var highlights=new Batch(); var horizon=new Batch(); var plants=new Batch();
-            // Edge layers remain below walking height and outside the legal rectangle.
-            int edge=0;
-            for(float x=x0; x<x1; x+=1.4f)
-            {
-                float w=Mathf.Min(1.4f,x1-x);
-                layers.Rock(new Vector3(x+w/2,-.75f,z0-.45f),new Vector3(w,.9f,.85f),edge++);
-                layers.Rock(new Vector3(x+w/2,-.85f,z1+.5f),new Vector3(w,1.1f,.95f),edge++);
-            }
-            for(float z=z0; z<z1; z+=1.4f)
-            {
-                float d=Mathf.Min(1.4f,z1-z);
-                layers.Rock(new Vector3(x0-.5f,-.8f,z+d/2),new Vector3(.95f,1f,d),edge++);
-                layers.Rock(new Vector3(x1+.5f,-.8f,z+d/2),new Vector3(.95f,1f,d),edge++);
-            }
-            // Secondary lower strata break the straight plinth silhouette without entering lanes.
-            for(int i=0;i<12;i++)
-            {
-                float x=Mathf.Lerp(x0,x1,i/11f);
-                layers.Rock(new Vector3(x,-1.35f,z0-.25f),new Vector3(1.8f,1.2f,1.3f),i+130);
-            }
-            // Distant backdrop stays behind the far boundary; no props in playable lanes.
-            for(int i=0;i<direction.HorizonDetail;i++)
-            {
-                float x=Mathf.Lerp(x0-4,x1+4,i/(float)(direction.HorizonDetail-1)),
-                    h=(1.4f+Noise(i,9)*2.7f)*direction.SilhouetteHeight;
-                horizon.Rock(new Vector3(x,-.7f,z1+4+Noise(i,7)*2),new Vector3(2.3f,h,2.8f),i+50);
-                highlights.Rock(new Vector3(x,-.9f,z1+2),new Vector3(1.5f,.8f,1.3f),i+90);
-            }
-            // Restrained low silhouette vegetation, exclusively beyond the far edge.
-            for(int i=0;i<direction.PlantDetail;i++)
-            {
-                float x=Mathf.Lerp(x0-1,x1+1,i/(float)(direction.PlantDetail-1)),
-                    z=z1+1.3f+Noise(i,3)*.4f;
-                for(int j=0;j<3;j++) plants.Rock(new Vector3(x+j*.10f,-.25f,z),new Vector3(.12f,.3f+Noise(i,j)*.35f,.12f),i*3+j);
-            }
-            Emit(parent,"Layered boundary geology",layers,stone);
-            Emit(parent,"Weathered outer shelves",highlights,pale);
-            Emit(parent,"Distant fractured escarpment",horizon,distant);
-            Emit(parent,"Dusty vegetation silhouettes",plants,vegetation);
-            if (isWorldFive)
-                BuildWorldFiveOuterStrata(parent,x0,x1,z0,z1,style);
-            var lightObject=new GameObject("Dusk fill — environment study"); lightObject.transform.SetParent(parent,false);
-            lightObject.transform.localPosition=new Vector3((x0+x1)/2,7,z1+1);
-            var fill=lightObject.AddComponent<Light>(); fill.type=LightType.Point;
-            fill.color=direction.Fill; fill.intensity=1.4f; fill.range=Mathf.Max(x1-x0,z1-z0)*2;
-            fill.shadows=LightShadows.None;
-        }
-
-        private void BuildWorldFiveOuterStrata(Transform parent,float x0,float x1,float z0,float z1,
-            WorldFiveSceneryKit.Style style)
-        {
-            var mass=new Batch(); var facets=new Batch(); var seams=new Batch();
-            // All new strata are beyond the far/side *authoritative* boundaries.
-            // No collider or fake walkable geometry can enter a player lane.
-            for(int i=0;i<style.FacetCount;i++)
-            {
-                float fraction=(i+.5f)/style.FacetCount;
-                float x=Mathf.Lerp(x0-.8f,x1+.8f,fraction);
-                float z=z1+2f+Noise(i,23)*1.35f;
-                float height=1.4f+Noise(i,41)*1.5f;
-                mass.Rock(new Vector3(x,-.8f,z),
-                    new Vector3(.9f+Noise(i,5)*.9f,height,1.2f+Noise(i,17)*.9f),
-                    i+501);
-                facets.Rock(new Vector3(x+.25f,-.35f,z+.5f),
-                    new Vector3(.35f+Noise(i,2)*.33f,height*.67f,.46f),
-                    i+909);
-
-                // Thin mineral accents lie on the decorative shelf only.
-                float a=Mathf.Lerp(x0+.6f,x1-.6f,fraction);
-                float seamZ=z1+1.3f+Noise(i,18)*.15f;
-                seams.Face(new Vector3(a,-.055f,seamZ),
-                    new Vector3(a+.12f,-.052f,seamZ+.85f),
-                    new Vector3(a+.30f,-.055f,seamZ+.4f));
-            }
-            for(int i=0;i<4;i++)
-            {
-                float t=(i+.5f)/4f;
-                float z=Mathf.Lerp(z0,z1,t);
-                float height=1.2f+Noise(i,78)*1.3f;
-                mass.Rock(new Vector3(x0-2.5f,-.65f,z),
-                    new Vector3(1.1f,height,.9f),i+1211);
-                mass.Rock(new Vector3(x1+2.5f,-.65f,z),
-                    new Vector3(1.1f,height,.9f),i+1411);
-            }
-            // World Five strata are more than a distant rock wall: fractured
-            // standing fins, fallen plates and narrow quartz shards distinguish
-            // survey and mineral-fracture environments. All pieces remain
-            // outside battlefield bounds and cannot block tactical movement.
-            var standing=new Batch(); var fragments=new Batch();
-            int count=style.FacetCount;
-            for(int i=0;i<count;i++)
-            {
-                float t=(i+.5f)/count;
-                float x=Mathf.Lerp(x0+1f,x1-1f,t);
-                float offset=Noise(i,81)*1.4f;
-                float z=z1+3.4f+offset;
-                float high=1.1f+Noise(i,97)*2.0f;
-                standing.Rock(new Vector3(x,-.15f,z),
-                    new Vector3(.28f+Noise(i,9)*.32f,high,.55f),i+1701);
-                if(i%2==0)
+                if(source.Vertices.Count==0)continue;
+                var vertices=new List<Vector3>(source.Vertices.Count);
+                var uv=new List<Vector2>(source.Vertices.Count);
+                var indices=new int[source.Vertices.Count];
+                for(int i=0;i<source.Vertices.Count;i+=3)
                 {
-                    fragments.Rock(new Vector3(x+.65f,-.62f,z-.5f),
-                        new Vector3(.8f,.34f,.72f),i+2101);
-                    fragments.Rock(new Vector3(x-.45f,-.48f,z+1f),
-                        new Vector3(.38f,.6f,.45f),i+2201);
+                    var a=Vec(source.Vertices[i]);var b=Vec(source.Vertices[i+1]);var c=Vec(source.Vertices[i+2]);
+                    var n=Vector3.Cross(b-a,c-a);var abs=new Vector3(Mathf.Abs(n.x),Mathf.Abs(n.y),Mathf.Abs(n.z));
+                    for(int j=0;j<3;j++)
+                    {
+                        var p=Vec(source.Vertices[i+j]);vertices.Add(p);indices[i+j]=i+j;
+                        bool horizontal=abs.y>=abs.x&&abs.y>=abs.z;
+                        uv.Add(horizontal?new Vector2(p.x/2.7f,p.z/2.7f):
+                            abs.x>abs.z?new Vector2(p.z/2.7f,p.y/2.7f):new Vector2(p.x/2.7f,p.y/2.7f));
+                    }
                 }
+                var mesh=new Mesh{name="Terrain · "+source.Material,
+                    indexFormat=vertices.Count>65535?IndexFormat.UInt32:IndexFormat.UInt16};
+                mesh.SetVertices(vertices);mesh.SetUVs(0,uv);mesh.SetTriangles(indices,0);
+                mesh.RecalculateNormals();mesh.RecalculateTangents();mesh.RecalculateBounds();
+                mesh.UploadMeshData(true);meshes.Add(mesh);
+                var go=new GameObject(mesh.name);go.transform.SetParent(parent,false);
+                go.AddComponent<MeshFilter>().sharedMesh=mesh;
+                var renderer=go.AddComponent<MeshRenderer>();renderer.sharedMaterial=palette[(int)source.Material];
+                // Terrain is not a shadow-casting object wall; only the exact
+                // tactical obstacle shapes use vertical cover. No extra lights.
+                renderer.shadowCastingMode=ShadowCastingMode.Off;renderer.receiveShadows=true;
             }
-            // The more unstable study variant gains denser distal spires,
-            // without inventing hazards where the simulation has none.
-            if(style.FacetCount>10)
-            {
-                for(int i=0;i<6;i++)
-                {
-                    float z=Mathf.Lerp(z0+1f,z1-1f,(i+.5f)/6f);
-                    standing.Rock(new Vector3(x1+4.2f,-.3f,z),
-                        new Vector3(.34f,2.0f+Noise(i,111)*1.6f,.7f),i+2301);
-                }
-            }
-            Emit(parent,"W5 mineral standing fins",standing,fractureEdge);
-            Emit(parent,"W5 detached outer plates",fragments,fractureBase);
-            Emit(parent,"W5 fractured outer mineral masses",mass,fractureBase);
-            Emit(parent,"W5 faceted mineral rims",facets,fractureEdge);
-            Emit(parent,"W5 noninteractive seam reflections",seams,fractureSeam);
         }
-
-        /// <summary>
-        /// Narrow geological grain at floor level. Decorative shading only:
-        /// no collider, height step, navigation change or implied chasm.
-        /// Reuses two batched meshes instead of spawning per-fragment objects.
-        /// </summary>
-        private void BuildWorldFiveSurfaceDetails(Transform parent,
-            float x0,float x1,float z0,float z1,WorldFiveSceneryKit.Style style)
+        public void Animate(float time)
         {
-            var threads=new Batch();
-            var flecks=new Batch();
-            float width=x1-x0, depth=z1-z0;
-            if(width<3f || depth<3f) return;
-            int density=style.FacetCount>10?58:37;
-            for(int i=0;i<density;i++)
-            {
-                float x=Mathf.Lerp(x0+1f,x1-1f,Noise(i,401));
-                float z=Mathf.Lerp(z0+1f,z1-1f,Noise(i,402));
-                float angle=Noise(i,403)*Mathf.PI*2f;
-                float length=.25f+Noise(i,404)*.85f;
-                var axis=new Vector3(Mathf.Cos(angle),0,Mathf.Sin(angle));
-                var across=new Vector3(-axis.z,0,axis.x);
-                var center=new Vector3(x,.018f,z);
-                // Clip to an inset rectangle, ensuring every bright facet stays
-                // inside actual floor bounds and never reads as an exit route.
-                var tip=center+axis*length;
-                if(tip.x<x0+.5f || tip.x>x1-.5f ||
-                   tip.z<z0+.5f || tip.z>z1-.5f) continue;
-                float thick=.018f+Noise(i,405)*.027f;
-                var l=center+across*thick;
-                var rr=center-across*thick;
-                var tl=tip+across*(thick*.35f);
-                var tr=tip-across*(thick*.35f);
-                threads.Face(l,tl,tr); threads.Face(l,tr,rr);
-                if(i%3==0)
-                {
-                    float c=.11f+Noise(i,406)*.12f;
-                    var at=center+axis*(length*.55f);
-                    var back=at-axis*c;
-                    var front=at+axis*c;
-                    var wing=at+across*c*.50f;
-                    flecks.Face(back,front,wing);
-                }
-            }
-            Emit(parent,"W5 floor · narrow mineral threads",threads,fractureFloorTrace);
-            Emit(parent,"W5 floor · flecked quartz reflections",flecks,fractureFloorChip);
+            if(hasScene)palette[(int)Plan.Surface.Threads].color=Color.Lerp(restingThreads,
+                Color.white,.022f+.012f*Mathf.Sin(time*.70f));
         }
-
-        private void BuildSurface(Transform parent,float x0,float x1,float z0,float z1)
-        {
-            // Flat faceted slabs: no fake hills, steps, or holes in legal walking space.
-            int nx=Mathf.Clamp(Mathf.CeilToInt((x1-x0)/1.8f),2,32);
-            int nz=Mathf.Clamp(Mathf.CeilToInt((z1-z0)/1.8f),2,32);
-            var points=new Vector3[nx+1,nz+1];
-            for(int x=0;x<=nx;x++) for(int z=0;z<=nz;z++)
-            {
-                float px=Mathf.Lerp(x0,x1,x/(float)nx), pz=Mathf.Lerp(z0,z1,z/(float)nz);
-                if(x>0&&x<nx) px+=(Noise(x,z)-.5f)*(x1-x0)/nx*.4f;
-                if(z>0&&z<nz) pz+=(Noise(z+71,x)-.5f)*(z1-z0)/nz*.4f;
-                points[x,z]=new Vector3(px,-.006f,pz);
-            }
-            var batches=new[] {new Batch(),new Batch(),new Batch()};
-            for(int x=0;x<nx;x++) for(int z=0;z<nz;z++)
-            {
-                Vector3 a=points[x,z],b=points[x,z+1],c=points[x+1,z+1],d=points[x+1,z];
-                var center=(a+b+c+d)*.25f;
-                // Thin seams over the solid base floor; never imply an impassable fissure.
-                a=Vector3.Lerp(a,center,.018f); b=Vector3.Lerp(b,center,.018f);
-                c=Vector3.Lerp(c,center,.018f); d=Vector3.Lerp(d,center,.018f);
-                int shade=Mathf.Min(2,(int)(Noise(x+13,z+37)*3));
-                batches[shade].Face(a,b,c); batches[shade].Face(a,c,d);
-            }
-            for(int i=0;i<3;i++) Emit(parent,"Fractured mineral paving " + i,batches[i],paving[i]);
-        }
-
-        private static void BuildCover(Batch faces,Batch caps,Vector3 min,Vector3 max)
-        {
-            // Carve long block-out cubes into stratified chamfered stone with
-            // asymmetric middle facets, entirely WITHIN authored cover bounds.
-            // Simulation still sees the original opaque obstacle footprint.
-            float width=max.x-min.x,depth=max.z-min.z,h=max.y-min.y;
-            float cut=Mathf.Min(.23f,Mathf.Min(width,depth)*.19f);
-            var outline=new[] {
-                new Vector2(min.x+cut,min.z),
-                new Vector2(min.x,min.z+cut),
-                new Vector2(min.x,max.z-cut),
-                new Vector2(min.x+cut,max.z),
-                new Vector2(max.x-cut,max.z),
-                new Vector2(max.x,max.z-cut),
-                new Vector2(max.x,min.z+cut),
-                new Vector2(max.x-cut,min.z)
-            };
-            var mid=new Vector3[8];var baseRing=new Vector3[8];
-            var shoulder=new Vector3[8];var crown=new Vector3[8];
-            var center=(min+max)*.5f;
-            float crownInset=Mathf.Min(.12f,cut*.44f);
-            for(int i=0;i<8;i++)
-            {
-                var p=outline[i];
-                float grain=Mathf.Sin(i*2.18f+center.x*.9f+center.z*.43f);
-                baseRing[i]=new Vector3(p.x,min.y,p.y);
-                mid[i]=new Vector3(Mathf.Lerp(p.x,center.x,.026f),
-                    min.y+h*(.40f+.035f*grain),
-                    Mathf.Lerp(p.y,center.z,.026f));
-                shoulder[i]=new Vector3(p.x,max.y-Mathf.Min(.19f,h*.16f),p.y);
-                crown[i]=new Vector3(Mathf.Lerp(p.x,center.x,crownInset/Mathf.Max(.01f,width)),
-                    max.y,
-                    Mathf.Lerp(p.y,center.z,crownInset/Mathf.Max(.01f,depth)));
-            }
-            for(int i=0;i<8;i++)
-            {
-                int j=(i+1)%8;
-                faces.Face(baseRing[i],baseRing[j],mid[j]);
-                faces.Face(baseRing[i],mid[j],mid[i]);
-                // A subtle rotated upper stratum catches the scene key light.
-                faces.Face(mid[i],mid[j],shoulder[j]);
-                faces.Face(mid[i],shoulder[j],shoulder[i]);
-                caps.Face(shoulder[i],shoulder[j],crown[j]);
-                caps.Face(shoulder[i],crown[j],crown[i]);
-                caps.Face(new Vector3(center.x,max.y,center.z),
-                    crown[i],crown[j]);
-            }
-        }
-
-        private void Emit(Transform parent,string name,Batch batch,Material material)
-        {
-            if (batch.Vertices.Count == 0) return;
-            var mesh=new Mesh { name=name }; mesh.SetVertices(batch.Vertices); mesh.SetTriangles(batch.Triangles,0);
-            var uv=new List<Vector2>(batch.Vertices.Count);
-            for(int i=0;i<batch.Vertices.Count;i+=3)
-            {
-                var n=Vector3.Cross(batch.Vertices[i+1]-batch.Vertices[i],batch.Vertices[i+2]-batch.Vertices[i]);
-                for(int j=0;j<3;j++)
-                {
-                    var point=batch.Vertices[i+j];
-                    uv.Add(Mathf.Abs(n.y)>=Mathf.Abs(n.x)&&Mathf.Abs(n.y)>=Mathf.Abs(n.z)
-                        ? new Vector2(point.x/3,point.z/3)
-                        : Mathf.Abs(n.x)>Mathf.Abs(n.z) ? new Vector2(point.z/3,point.y/3) : new Vector2(point.x/3,point.y/3));
-                }
-            }
-            mesh.SetUVs(0,uv);
-            mesh.RecalculateNormals(); mesh.RecalculateBounds(); meshes.Add(mesh);
-            var go=new GameObject(name); go.transform.SetParent(parent,false);
-            go.AddComponent<MeshFilter>().sharedMesh=mesh; go.AddComponent<MeshRenderer>().sharedMaterial=material;
-            // No colliders, click targets, animations, or gameplay components.
-        }
-        private void ClearMeshes() { foreach(var mesh in meshes) Object.Destroy(mesh); meshes.Clear(); }
+        private void ClearMeshes(){foreach(var mesh in meshes)Object.Destroy(mesh);meshes.Clear();hasScene=false;}
         public void Dispose()
         {
             ClearMeshes();
-            foreach(var material in materials) Object.Destroy(material);
-            Object.Destroy(mineral);
-            Object.Destroy(worldFiveMineral);
-        }
-
-        private sealed class Batch
-        {
-            public readonly List<Vector3> Vertices=new List<Vector3>();
-            public readonly List<int> Triangles=new List<int>();
-            public void Face(Vector3 a,Vector3 b,Vector3 c)
-            { int n=Vertices.Count; Vertices.Add(a); Vertices.Add(b); Vertices.Add(c); Triangles.Add(n); Triangles.Add(n+1); Triangles.Add(n+2); }
-            public void Rock(Vector3 center,Vector3 size,int seed)
-            {
-                const int sides=7;
-                var lower=new Vector3[sides]; var upper=new Vector3[sides];
-                for(int i=0;i<sides;i++)
-                {
-                    float angle=i*Mathf.PI*2/sides, radius=.82f+Noise(seed,i)*.18f;
-                    var radial=new Vector3(Mathf.Cos(angle)*size.x*.5f*radius,0,Mathf.Sin(angle)*size.z*.5f*radius);
-                    lower[i]=center+radial-Vector3.up*size.y*.5f;
-                    upper[i]=center+radial*.78f+Vector3.up*size.y*(.28f+Noise(seed+7,i)*.22f);
-                }
-                for(int i=0;i<sides;i++)
-                {
-                    int j=(i+1)%sides;
-                    Face(upper[i],center+Vector3.up*size.y*.38f,upper[j]);
-                    Face(lower[i],upper[i],upper[j]); Face(lower[i],upper[j],lower[j]);
-                    Face(lower[j],center-Vector3.up*size.y*.5f,lower[i]);
-                }
-            }
+            foreach(var m in palette)Object.Destroy(m);
+            Object.Destroy(mineral);Object.Destroy(normal);
         }
     }
 }

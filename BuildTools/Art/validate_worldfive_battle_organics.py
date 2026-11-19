@@ -75,10 +75,12 @@ check("CreateSurfaceTexture" in art and
       "organicTextures.Clear()" in battle and
       "new Texture2D(size,size,TextureFormat.RGBA32,true)" in art,
       "Texture variation must have deterministic allocation and disposal")
-check("private static void BuildCover(Batch faces,Batch caps" in scenery and
-      "var outline=new[]" in scenery and "new Vector3[8]" in scenery and
-      "caps.Face" in scenery,
-      "Obstacles should be layered/chamfered inside existing authored bounds")
+terrain = read("Assets/Ninefold/Runtime/Core/Content/BattlefieldArtPlan.cs")
+check("private static void Cover(Scene s,FieldObstacle o)" in terrain and
+      "Join(s.Get(Surface.Cover)" in terrain and "Cap(s.Get(Surface.CoverCrown)" in terrain and
+      "BattlefieldArtPlan.Build(map,missionId,environmentKey,attempt,proceduralCover)" in battle and
+      "foreach(var source in scene.Meshes)" in scenery,
+      "Real obstacle shape and surface geometry share exact resolved map bounds")
 check("public void Animate(float time)" in scenery and
       "scenery.Animate(Time.unscaledTime);" in battle,
       "Subtle in-game environmental response must be wired to a real update path")
