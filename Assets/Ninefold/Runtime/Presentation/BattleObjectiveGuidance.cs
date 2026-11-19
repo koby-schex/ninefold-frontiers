@@ -44,7 +44,8 @@ namespace Ninefold.Presentation
             var panel = new VisualElement { pickingMode = PickingMode.Ignore };
             panel.AddToClassList("btg-objective-header");
             parent.Add(panel);
-            var primary = objectives.FirstOrDefault();
+            var required=objectives.Where((o,i)=>i==0||o.IsFollowupStage).ToArray();
+            var primary=required.FirstOrDefault(o=>o.Status!=ObjectiveStatus.Completed)??required.LastOrDefault();
             if (primary == null)
             {
                 Label(panel, "OBJECTIVE", "btg-goal");
@@ -54,9 +55,10 @@ namespace Ninefold.Presentation
             var headline = new VisualElement { pickingMode = PickingMode.Ignore };
             headline.AddToClassList("btg-goal-line");
             panel.Add(headline);
-            Label(headline,
-                primary.Kind == ObjectiveKind.RescueAndExtract && primary.Rescued
-                    ? "EXTRACT" : KindName(primary.Kind), "btg-goal");
+            string stage=required.Length>1?"STAGE "+(Array.IndexOf(required,primary)+1)+"/"+required.Length+" · ":"";
+            Label(headline,stage+
+                (primary.Kind == ObjectiveKind.RescueAndExtract && primary.Rescued
+                    ? "EXTRACT" : KindName(primary.Kind)), "btg-goal");
             Label(headline, primary.Status == ObjectiveStatus.Completed ? "DONE" :
                 primary.Status == ObjectiveStatus.Failed ? "FAILED" :
                 primary.Progress + "/" + primary.Required, "btg-progress");
@@ -72,7 +74,7 @@ namespace Ninefold.Presentation
                     "btg-rescue-instruction");
             }
 
-            var extras = objectives.Skip(1).ToArray();
+            var extras = objectives.Skip(1).Where(o=>!o.IsFollowupStage).ToArray();
             if (extras.Length == 0) return;
             int complete = extras.Count(o => o.Status == ObjectiveStatus.Completed);
             Label(panel, "BONUS " + complete + "/" + extras.Length, "btg-optional");
@@ -84,7 +86,7 @@ namespace Ninefold.Presentation
         /// </summary>
         public static void NextStep(VisualElement parent, MissionContent mission, BattleView battle)
         {
-            var current = battle.Objectives.FirstOrDefault(o => o.Status == ObjectiveStatus.Active);
+            var current = battle.Objectives.Where((o,i)=>i==0||o.IsFollowupStage).FirstOrDefault(o => o.Status == ObjectiveStatus.Active);
             if (current == null) return;
             var authored = mission.Objectives.FirstOrDefault(o => o.Id == current.Id);
             string instruction;
@@ -175,7 +177,7 @@ namespace Ninefold.Presentation
             foreach (var ground in battle.Map.Ground) Area(ground.Bounds, "btg-slow");
             foreach (var obstacle in battle.Map.Obstacles) Area(obstacle.Bounds, "btg-cover");
 
-            var current = battle.Objectives.FirstOrDefault(o => o.Status == ObjectiveStatus.Active);
+            var current = battle.Objectives.Where((o,i)=>i==0||o.IsFollowupStage).FirstOrDefault(o => o.Status == ObjectiveStatus.Active);
             var authored = current == null ? null : mission.Objectives.FirstOrDefault(o => o.Id == current.Id);
             bool hasDestination = false;
             if (authored != null)

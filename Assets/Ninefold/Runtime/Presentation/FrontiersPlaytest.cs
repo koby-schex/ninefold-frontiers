@@ -458,10 +458,10 @@ namespace Ninefold.Presentation
                 OpenCampaignPrototypeFromHome);
             if (worldFiveSlice && !wildlifeStudy)
             {
-                var wildlife=Button(panel,"WORLD FIVE CAMPAIGN · MISSIONS 1–34  ›",
+                var wildlife=Button(panel,"WORLD FIVE CAMPAIGN · MISSIONS 1–60  ›",
                     OpenWildlifeFromHome);
                 wildlife.AddToClassList("home-quick-link");
-                wildlife.tooltip="Continue the full World Five route, including twenty new missions. Existing native ecology progress is preserved.";
+                wildlife.tooltip="Continue the full World Five route, including the new escalation chapter. Existing native ecology progress is preserved.";
             }
             if (worldFiveSlice && !varietyStudy)
             {
@@ -1603,7 +1603,7 @@ namespace Ninefold.Presentation
                 // an independent directory to protect all old checkpoints.
                 if (actOneStudy)
                 {
-                    catalog = wildlifeStudy ? WorldFiveRouteRecovery.Create() :
+                    catalog = wildlifeStudy ? WorldFiveEscalation.Create() :
                         varietyStudy ? WorldFiveEncounterVarietyV2.Create() : WorldFiveCombatMechanicsV1.Create();
                     var battles=new DirectoryBattleSaveFiles(savePath);
                     var progress=new DirectoryProgressSaveFiles(savePath);
@@ -1665,7 +1665,7 @@ namespace Ninefold.Presentation
                 OpenProfile();
                 selectedCampaign=WorldFiveOpeningTenPrototype.CampaignId;
                 page=Page.Missions;
-                message="World Five · 34 available campaign missions · your existing progress is retained.";
+                message="World Five · 60 authored campaign missions · your existing progress is retained.";
                 dirty=true;
             }
             catch(Exception error)

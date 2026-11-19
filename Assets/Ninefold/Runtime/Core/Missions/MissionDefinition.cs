@@ -30,6 +30,9 @@ namespace Ninefold.Core.Missions
         public string Id { get; }
         public ObjectiveKind Kind { get; }
         public int Required { get; }
+        // Reserved serialized objective IDs provide an append-only stage
+        // contract without rewriting existing checkpoint bytes.
+        public bool IsFollowupStage => Id=="stage-2" || Id=="stage-3";
         public IReadOnlyList<string> Subjects { get; }
         public IReadOnlyList<string> Contestants { get; }
         public FieldBox Zone { get; }
@@ -111,6 +114,12 @@ namespace Ninefold.Core.Missions
             if (bonuses.Length > 2 || bonuses.Any(x => x == null)) throw new ArgumentException("At most two non-null optional objectives.");
             var all = new[] { primary }.Concat(bonuses).ToArray();
             if (all.Select(x => x.Id).Distinct(StringComparer.Ordinal).Count() != all.Length) throw new ArgumentException("Duplicate objective ID.");
+            if(primary.IsFollowupStage)throw new ArgumentException("First objective may not be a follow-up.");
+            for(int i=1;i<all.Length;i++)
+                if(all[i].IsFollowupStage && (all[i].Id!="stage-"+(i+1) ||
+                    (i>1&&!all[i-1].IsFollowupStage) ||
+                    (all[i].Kind!=ObjectiveKind.Stabilize && all[i].Kind!=ObjectiveKind.Secure && all[i].Kind!=ObjectiveKind.Defeat)))
+                    throw new ArgumentException("Required follow-up stages must be consecutive and cannot use time-limited protection or rescue.");
             MissionId = missionId; AttemptId = attemptId; Squad = ObjectiveDefinition.Ids(squad,false);
             Objectives = Array.AsReadOnly(all); Priority = priority;
         }
@@ -124,6 +133,7 @@ namespace Ninefold.Core.Missions
         public int Progress { get; }
         public int Required { get; }
         public bool Rescued { get; }
+        public bool IsFollowupStage => Id=="stage-2" || Id=="stage-3";
         internal ObjectiveView(ObjectiveDefinition definition, ObjectiveStatus status, int progress, bool rescued)
         { Id = definition.Id; Kind = definition.Kind; Required = definition.Required; Status = status; Progress = progress; Rescued = rescued; }
     }

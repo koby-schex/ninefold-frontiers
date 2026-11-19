@@ -73,12 +73,14 @@ internal static partial class Program
         }
         foreach(var p in m.Deployment.Concat(m.Actors.Select(a=>a.Position)))
             if(!visited.Contains(p))throw new Exception(m.Id+" unreachable spawn "+p.X+","+p.Z);
-        var o=m.Objectives[0];
+        foreach(var o in m.Objectives)
+        {
         if(o.Zone!=null&&!visited.Any(p=>p.X-hw>=o.Zone.Min.X&&p.X+hw<=o.Zone.Max.X&&
             p.Z-hd>=o.Zone.Min.Z&&p.Z+hd<=o.Zone.Max.Z))
             throw new Exception(m.Id+" unreachable objective zone");
         if(o.Interaction!=null&&!visited.Any(p=>p.X==o.Interaction.Point.X&&p.Z==o.Interaction.Point.Z))
             throw new Exception(m.Id+" unreachable interaction point");
+        }
     }
     private static void RecoveryMapAndNarrativeAudit()
     {

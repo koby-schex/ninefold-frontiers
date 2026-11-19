@@ -21,7 +21,7 @@ namespace Ninefold.Core.Content
         {
             n=0;
             return id!=null&&id.Length==12&&id.StartsWith("w5-story-",StringComparison.Ordinal)&&
-                int.TryParse(id.Substring(9),NumberStyles.None,CultureInfo.InvariantCulture,out n)&&n>=First&&n<=Last;
+                int.TryParse(id.Substring(9),NumberStyles.None,CultureInfo.InvariantCulture,out n)&&n>=First&&n<=WorldFiveEscalation.Last;
         }
         public sealed class Chapter
         {
@@ -249,6 +249,7 @@ namespace Ninefold.Core.Content
         {
             chapter=null;
             if(!TryNumber(id,out int n))return false;
+            if(n>Last)return WorldFiveEscalation.TryGet(id,out chapter);
             chapter=All[n-First];return true;
         }
 
