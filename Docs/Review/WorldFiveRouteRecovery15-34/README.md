@@ -1,0 +1,14 @@
+# World Five continuation: Missions 15–34
+Twenty individually authored missions, not a generated campaign string. This builds on the live native-ecology profile's 14 missions. Current content remains a playable **prototype**, not public-release or canon-approved.
+
+| Range | Story proposal |
+|---|---|
+| 15–20 | Recover route records, protect survivors, maintain crossings; learn more about the consequences of the Afterecho. |
+| 21–27 | Investigate equipment on dispersed camp approaches, extract a survivor, preserve the distinction between native ecology and Ashbound opposition. |
+| 28–34 | Restore a return corridor, recover travelers, secure the investigation records, and hold the evacuation lane. |
+
+The local rescue/recovery arc resolves without revealing the protected global route-crisis mystery, character origins, new canon geography, or named bosses. Six primary objective kinds, all six anonymous Ashbound types and two existing wildlife species. Four missions (17, 21, 26, 31) opt in to secondary-cover variation; the other sixteen remain authored. These are tactical patrols, not generated narrative events. All twenty have unique baseline maps, selected environmental moods, objective-specific directions, briefings and victory debriefs. Later deployment has room for four ordinary units, with the existing two-unit minimum and three starter ownership preserved. First-clear fragment rewards include Burdenbeast; no changes to existing unlock cost, paid progression or Apex gating.
+
+**Save compatibility:** this is an explicitly append-only extension of `WorldFiveTutorialWildlifeV1`, selected by the existing native-ecology entry and file path. Its manifest/save revision and profile ID are deliberately identical. All existing maps, kits, rewards, unit IDs, and checkpoint serialization stay intact. Older independent studies remain untouched. A prior 14-mission completion reward receipt remains valid and cannot be claimed a second time; completion percentage now reflects all required current missions rather than equating the existence of a receipt with clearing newly appended stages. No Apex or next-faction bundle is awarded at 34; the complete 100+ target campaign is not finished.
+
+**Review:** automated tests cover the ordered chain, old-save reopen, preserved rewards, 20 real starts/reloads/forfeits/retries using isolated test history, all objective footprint connectivity, terrain art bounds, and 48 procedural seeds per four opted-in missions. Controlled real stabilize and rescue journeys complete using actual interaction taps and save/reload with no opponent perception. The exact terrain export now includes all 34 baseline maps. Tests do not establish full 20-mission victory under active AI, balance, native Unity compilation, mobile rendering or art/lore approval. Friendly traveler visuals are existing proxy assets, pending final character art.
