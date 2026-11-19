@@ -71,7 +71,9 @@ internal static partial class Program
                 var b=c.Units[actor.UnitId].Body;var p=actor.Position;
                 var footprint=new FieldBox(new FieldPoint(p.X-b.HalfWidth,p.Y,p.Z-b.HalfDepth),
                     new FieldPoint(p.X+b.HalfWidth,p.Y+b.Height,p.Z+b.HalfDepth));
-                Equal(true,actor.Behavior.GuardArea.Contains(footprint));
+                var guard=actor.Behavior.GuardArea;
+                Equal(true,guard.Min.X<=footprint.Min.X&&guard.Min.Y<=footprint.Min.Y&&guard.Min.Z<=footprint.Min.Z&&
+                    guard.Max.X>=footprint.Max.X&&guard.Max.Y>=footprint.Max.Y&&guard.Max.Z>=footprint.Max.Z);
                 Equal(true,actor.Behavior.GuardArea.Max.X-actor.Behavior.GuardArea.Min.X<=10m);
             }
             Equal(false,ch.Rewards.FirstClear.Any(g=>g.ResourceId=="fragment-fixture-a-5"));
