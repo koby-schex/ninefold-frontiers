@@ -113,6 +113,8 @@ namespace Ninefold.Core.Content
         public EncounterKind Encounter { get; }
         // Visual direction key, never canonical geography or a game-rule input.
         public string EnvironmentKey { get; }
+        // Explicit author opt-in; never infer optional geometry from a mission number.
+        public bool ProceduralCover { get; }
         public string FactionId { get; }
         public bool IsCampaign { get; }
         public int MinimumSquad { get; }
@@ -125,7 +127,8 @@ namespace Ninefold.Core.Content
         public MissionContent(string id, string factionId, bool isCampaign, int minimumSquad, BattlefieldMap map,
             IEnumerable<FieldPoint> deployment, IEnumerable<ActorSpawn> actors, ObjectiveDefinition primary,
             OutcomePriority priority = OutcomePriority.FailureFirst, IEnumerable<ObjectiveDefinition> optional = null,
-            EncounterKind encounter = EncounterKind.Standard, string environmentKey = null)
+            EncounterKind encounter = EncounterKind.Standard, string environmentKey = null,
+            bool proceduralCover = false)
         {
             ContentIds.Check(id); if (factionId != null) ContentIds.Check(factionId);
             if (isCampaign && factionId == null) throw new ArgumentException("Campaign mission requires a faction.");
@@ -143,6 +146,10 @@ namespace Ninefold.Core.Content
             var definition = new MissionDefinition(id, "validation", new[] { "$leader" }, primary, priority, optional);
             Id = id; FactionId = factionId; IsCampaign = isCampaign; MinimumSquad = minimumSquad;
             Encounter = encounter; EnvironmentKey = environmentKey;
+            if(proceduralCover && (encounter!=EncounterKind.Standard || definition.Objectives.Any(o=>o.Kind!=ObjectiveKind.Defeat) ||
+                spawns.Any(a=>!a.IsHostile) || isCampaign && !BattlefieldVariation.IsLaterOptional(id)))
+                throw new ArgumentException("Procedural cover is limited to explicitly eligible defeat-only encounters.");
+            ProceduralCover=proceduralCover;
             Map = map ?? throw new ArgumentNullException(nameof(map)); Deployment = Array.AsReadOnly(points);
             Actors = Array.AsReadOnly(spawns); Objectives = definition.Objectives; Priority = priority;
         }

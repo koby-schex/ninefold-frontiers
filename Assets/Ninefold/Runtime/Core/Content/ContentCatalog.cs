@@ -135,7 +135,12 @@ namespace Ninefold.Core.Content
             var deployed = squad.Select((id, i) => (Id: id, Unit: Units[id], Position: m.Deployment[i], Hostile: false))
                 .Concat(m.Actors.Select(a => (Id: a.Id, Unit: Units[a.UnitId], Position: a.Position, Hostile: a.IsHostile))).ToArray();
             var battle = new BattleTurnController(deployed.Select(a => new UnitTurnDefinition(a.Id, a.Unit.Initiative, a.Unit.Movement)));
-            var field = battle.ConfigureBattlefield(m.Map);
+            // Save snapshots already serialize the complete resolved map. Only a
+            // fresh real attempt receives variation; restore never regenerates it.
+            var eligible=Units.Values.Where(u=>u.Roster!=null &&
+                (m.FactionId==null||u.Roster.FactionId==m.FactionId)).Select(u=>u.Body)
+                .Concat(m.Actors.Select(a=>Units[a.UnitId].Body)).ToArray();
+            var field = battle.ConfigureBattlefield(BattlefieldVariation.Resolve(m,attempt,eligible));
             foreach (var status in Statuses.Values) battle.Statuses.RegisterStatus(status);
             foreach (var a in deployed)
             {
