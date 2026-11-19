@@ -224,8 +224,26 @@ namespace Ninefold.Core.Content
         private static void Surround(Scene s,float x0,float x1,float z0,float z1)
         {
             float width=x1-x0,depth=z1-z0;
-            int n=Math.Min(22,Math.Max(6,(int)(width/1.10f)));
-            bool fracture=s.Mood==Mood.DeepFracture||s.Mood==Mood.BrokenTerrace;
+            float spacing=1.10f,ridgeHeight=1.45f,ridgeVariance=.85f,ridgeWidth=1.4f,ridgeDepth=1.30f;
+            float shelfDepth=8.5f;
+            int bands=2;
+            bool fins=false;
+            // Five different silhouettes, rather than one layout with a tint.
+            // All geology is interpretive unnamed scenery, not new canon.
+            switch(s.Mood)
+            {
+                case Mood.PaleSurvey:spacing=1.8f;ridgeHeight=.94f;ridgeVariance=.55f;
+                    ridgeWidth=2.05f;ridgeDepth=1.70f;shelfDepth=9.4f;break;
+                case Mood.VioletShelves:spacing=1.3f;ridgeHeight=1.65f;ridgeVariance=.55f;
+                    ridgeWidth=1.65f;ridgeDepth=2.0f;bands=3;break;
+                case Mood.MineralBasin:spacing=2.1f;ridgeHeight=.66f;ridgeVariance=.46f;
+                    ridgeWidth=2.7f;ridgeDepth=2.25f;shelfDepth=11.2f;break;
+                case Mood.BrokenTerrace:spacing=1.45f;ridgeHeight=1.9f;ridgeVariance=1.1f;
+                    ridgeWidth=1.3f;ridgeDepth=1.8f;bands=3;break;
+                case Mood.DeepFracture:spacing=.98f;ridgeHeight=2.7f;ridgeVariance=1.5f;
+                    ridgeWidth=.60f;ridgeDepth=1.3f;fins=true;break;
+            }
+            int n=Math.Min(22,Math.Max(6,(int)(width/spacing)));
             // Sculpted layers and staggered erosion outside the legal map only.
             // Foreground and side relief stays below walking height; distant
             // mountains are well beyond the far side and cannot be path targets.
@@ -235,9 +253,14 @@ namespace Ninefold.Core.Content
                 Rock(s,x,-1.7f,z0-1.13f,w,.92f+U(s.Seed,9000+i)*.57f,1.0f,9100+i*67,Surface.Foundation,false);
                 Rock(s,x,-1.35f,z1+1.14f,w,1.05f+U(s.Seed,9200+i)*.64f,1.15f,9300+i*67,Surface.OuterStone,false);
                 float dist=3.3f+U(s.Seed,9600+i)*1.4f;
-                float height=(fracture?2.7f:1.45f)+U(s.Seed,9700+i)*(fracture?1.5f:.85f);
-                Rock(s,x,-.92f,z1+dist,w*(fracture?.60f:1.4f),height,1.3f,9800+i*61,Surface.OuterStone,fracture);
-                Rock(s,x,-2.2f,z1+8.5f,Math.Max(3.2f,w*2.8f),3.9f+U(s.Seed,11000+i)*2.9f,3.6f,
+                float height=ridgeHeight+U(s.Seed,9700+i)*ridgeVariance;
+                Rock(s,x,-.92f,z1+dist,w*ridgeWidth,height,ridgeDepth,9800+i*61,Surface.OuterStone,fins);
+                if(bands==3 && i%2==0)
+                    Rock(s,x+.18f*w,-1.14f,z1+dist+2.05f,w*2.2f,
+                        .9f+height*.56f,1.9f,10400+i*71,Surface.OuterRidge,false);
+                if(s.Mood==Mood.MineralBasin && i%2==1)
+                    Rock(s,x,-1.8f,z1+2.8f,w*1.9f,.78f,2.2f,10500+i*91,Surface.Foundation,false);
+                Rock(s,x,-2.2f,z1+shelfDepth,Math.Max(3.2f,w*2.8f),3.9f+U(s.Seed,11000+i)*2.9f,3.6f,
                     11100+i*67,Surface.FarShelf,false);
                 if(i%2==0)Rock(s,x,-2.6f,z1+13f,Math.Max(6f,w*4),5.3f+U(s.Seed,12200+i)*3.3f,5f,
                     12300+i*67,Surface.FarHaze,false);

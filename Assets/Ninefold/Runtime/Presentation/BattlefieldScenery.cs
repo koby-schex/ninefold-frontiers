@@ -51,6 +51,19 @@ namespace Ninefold.Presentation
                 }
             }
         }
+        private static float TileNoise(int x,int y,int size,int cells,uint seed)
+        {
+            float u=(float)x*cells/size,v=(float)y*cells/size;
+            int a=Mathf.FloorToInt(u),b=Mathf.FloorToInt(v);
+            float s=u-a,t=v-b;s=s*s*(3f-2f*s);t=t*t*(3f-2f*t);
+            float Sample(int ix,int iy)
+            {
+                ix=(ix%cells+cells)%cells;iy=(iy%cells+cells)%cells;
+                return (Ninefold.Core.Content.BattlefieldVariation.Mix(seed,(uint)(iy*cells+ix))&65535u)/65535f;
+            }
+            return Mathf.Lerp(Mathf.Lerp(Sample(a,b),Sample(a+1,b),s),
+                Mathf.Lerp(Sample(a,b+1),Sample(a+1,b+1),s),t);
+        }
         private static float Height(int x,int y,int size)
         {
             // Periodic integer tile sampling. Paired scalar and tangent-space
@@ -59,19 +72,24 @@ namespace Ninefold.Presentation
             float warp=Mathf.Sin(v*3+Mathf.Sin(u*2)*1.2f);
             float bands=Mathf.Pow(.5f+.5f*Mathf.Sin(u*6+warp*.9f+v*2),9);
             float fine=.5f*Mathf.Sin(u*37+v*29)+.28f*Mathf.Sin(v*67-u*41)+.22f*Mathf.Sin(u*83+v*71);
-            return .5f+.09f*Mathf.Sin(u*3+v*2)+.055f*Mathf.Sin(v*7-u*5)+.085f*bands+.035f*fine;
+            float weathering=.09f*(TileNoise(x,y,size,7,19)-.5f)+
+                .048f*(TileNoise(x,y,size,23,71)-.5f)+.024f*(TileNoise(x,y,size,61,131)-.5f);
+            return .5f+.07f*Mathf.Sin(u*3+v*2)+.045f*Mathf.Sin(v*7-u*5)+.085f*bands+.026f*fine+weathering;
         }
         private static Texture2D CreateMineralMap(bool bump)
         {
             const int size=256;
             var pixels=new Color32[size*size];
+            var height=new float[size*size];
+            for(int y=0;y<size;y++)for(int x=0;x<size;x++)height[y*size+x]=Height(x,y,size);
+            float At(int x,int y)=>height[(y%size+size)%size*size+(x%size+size)%size];
             for(int y=0;y<size;y++)for(int x=0;x<size;x++)
             {
-                float h=Height(x,y,size);
+                float h=At(x,y);
                 if(bump)
                 {
-                    float dx=(Height(x+1,y,size)-Height(x-1,y,size))*3.0f;
-                    float dy=(Height(x,y+1,size)-Height(x,y-1,size))*3.0f;
+                    float dx=(At(x+1,y)-At(x-1,y))*3.0f;
+                    float dy=(At(x,y+1)-At(x,y-1))*3.0f;
                     var n=new Vector3(-dx,-dy,1).normalized;
                     byte Channel(float a)=>(byte)Mathf.RoundToInt((a*.5f+.5f)*255f);
                     // URP tangent normal convention: encoded X in A, Y in G.

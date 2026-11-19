@@ -18,14 +18,14 @@ internal static partial class Program
         yield return ("All fourteen story terrains and varied quick arenas have complete flat floor, exact cover and safe exterior relief",BattlefieldArtMeshGeometry);
         yield return ("Art moods, deterministic seeds and terrain mesh resource budgets remain distinct and bounded",BattlefieldArtMoodSeeds);
     }
-    private static string MapSignature(BattlefieldMap map)
+    private static string TerrainMapSignature(BattlefieldMap map)
         =>String.Join("|",map.Obstacles.Select(o=>o.Bounds.Min.X+","+o.Bounds.Min.Z+","+o.Bounds.Max.X+","+o.Bounds.Max.Z));
     private static FieldBody[] ArtBodies(ContentCatalog c)=>c.Units.Values.Select(u=>u.Body).ToArray();
     private static string ArtAttempt(int n)=>new Guid(n,0,0,new byte[8]).ToString("N");
-    private static bool InBox(Vector3 p,FieldBox b,float eps=.0001f)=>
+    private static bool TerrainInBox(Vector3 p,FieldBox b,float eps=.0001f)=>
         p.X>=(float)b.Min.X-eps&&p.X<=(float)b.Max.X+eps&&p.Y>=(float)b.Min.Y-eps&&p.Y<=(float)b.Max.Y+eps&&
         p.Z>=(float)b.Min.Z-eps&&p.Z<=(float)b.Max.Z+eps;
-    private static bool InFootprint(Vector3 p,FieldBox b,float eps=.0001f)=>
+    private static bool TerrainInFootprint(Vector3 p,FieldBox b,float eps=.0001f)=>
         p.X>=(float)b.Min.X-eps&&p.X<=(float)b.Max.X+eps&&p.Z>=(float)b.Min.Z-eps&&p.Z<=(float)b.Max.Z+eps;
     private static void BattlefieldOptionalVariants()
     {
@@ -36,7 +36,7 @@ internal static partial class Program
         {
             string seed=ArtAttempt(i);
             var map=BattlefieldVariation.Resolve(m,seed,bodies);
-            Equal(MapSignature(map),MapSignature(BattlefieldVariation.Resolve(m,seed,bodies)));
+            Equal(TerrainMapSignature(map),TerrainMapSignature(BattlefieldVariation.Resolve(m,seed,bodies)));
             Equal(m.Map.Bounds,map.Bounds);Equal(m.Map.Obstacles.Count,map.Obstacles.Count);
             Equal(m.Map.Obstacles[0],map.Obstacles[0]);Equal(m.Map.Ground.Count,map.Ground.Count);
             var old=m.Map.Obstacles.Last();var changed=map.Obstacles.Last();
@@ -49,7 +49,7 @@ internal static partial class Program
             foreach(var p in m.Deployment.Concat(m.Actors.Select(a=>a.Position)))
                 if(p.X>changed.Bounds.Min.X-.55m&&p.X<changed.Bounds.Max.X+.55m&&p.Z>changed.Bounds.Min.Z-.55m&&p.Z<changed.Bounds.Max.Z+.55m)
                     throw new Exception("Cover too close to a spawn");
-            variants.Add(MapSignature(map));
+            variants.Add(TerrainMapSignature(map));
         }
         if(variants.Count<12)throw new Exception("Procedural cover only has "+variants.Count+" resolved layouts.");
         Equal(m.Map,BattlefieldVariation.Resolve(m,"catalog-validation",bodies));
@@ -85,14 +85,14 @@ internal static partial class Program
         flow.Start("fixture-mixed",c.StarterUnits);
         var b=flow.ReadBattle();var map=b.Battlefield.Map;
         var expected=BattlefieldVariation.Resolve(c.Missions["fixture-mixed"],b.Mission.Definition.AttemptId,ArtBodies(c));
-        Equal(MapSignature(expected),MapSignature(map));
+        Equal(TerrainMapSignature(expected),TerrainMapSignature(map));
         var resumed=c.CreateFlow(files,progress,"terrain-variation-test");resumed.Open();
         var again=resumed.ReadBattle();
         Equal(b.Mission.Definition.AttemptId,again.Mission.Definition.AttemptId);
-        Equal(MapSignature(map),MapSignature(again.Battlefield.Map));
+        Equal(TerrainMapSignature(map),TerrainMapSignature(again.Battlefield.Map));
         foreach(var id in c.StarterUnits)Equal(b.Battlefield.GetPosition(id),again.Battlefield.GetPosition(id));
         // Save restoration reads real geometry even when the original map template differs.
-        Equal(MapSignature(map),MapSignature(BattleSave.Restore(BattleSave.Capture(b,c.Manifest.SaveRevision),
+        Equal(TerrainMapSignature(map),TerrainMapSignature(BattleSave.Restore(BattleSave.Capture(b,c.Manifest.SaveRevision),
             c.Manifest.SaveRevision).Battlefield.Map));
     }
     private static void CheckArtGeometry(BattlefieldMap map,A.Scene scene)
@@ -113,19 +113,19 @@ internal static partial class Program
                     {
                         case A.Surface.Floor:case A.Surface.FloorShade:case A.Surface.FloorLight:
                         case A.Surface.Threads:case A.Surface.Rim:
-                            if(!InFootprint(p,map.Bounds)||Math.Abs(p.Y)>.020f)
+                            if(!TerrainInFootprint(p,map.Bounds)||Math.Abs(p.Y)>.020f)
                                 throw new Exception("Walkable floor left the legal plane");
                             break;
                         case A.Surface.Slow:case A.Surface.SlowEdge:
-                            if(!map.Ground.Any(g=>InFootprint(p,g.Bounds))||p.Y>.02f)
+                            if(!map.Ground.Any(g=>TerrainInFootprint(p,g.Bounds))||p.Y>.02f)
                                 throw new Exception("Slow-ground art lies outside its actual rule area");
                             break;
                         case A.Surface.Cover:case A.Surface.CoverBand:case A.Surface.CoverCrown:
-                            if(!map.Obstacles.Any(o=>InBox(p,o.Bounds)))
+                            if(!map.Obstacles.Any(o=>TerrainInBox(p,o.Bounds)))
                                 throw new Exception("Cover geometry extends beyond the actual blocker");
                             break;
                         default:
-                            if(p.Y>.001f&&InFootprint(p,map.Bounds))
+                            if(p.Y>.001f&&TerrainInFootprint(p,map.Bounds))
                                 throw new Exception("Landscape obstructs legal combat space "+mesh.Material);
                             break;
                     }
