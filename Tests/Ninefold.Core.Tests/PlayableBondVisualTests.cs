@@ -70,6 +70,7 @@ internal static partial class Program
                 string ext=Path.GetExtension(file);
                 if(ext!=".obj"&&ext!=".mtl"&&ext!=".png")continue;
                 string relative=Path.GetRelativePath(Path.Combine(root,key),file);
+                if(ext==".png"&&!relative.StartsWith("Textures"+Path.DirectorySeparatorChar,StringComparison.Ordinal))continue;
                 string copy=Path.Combine(packed,relative+".bytes");
                 if(!File.Exists(copy)||!SHA256.HashData(File.ReadAllBytes(copy)).SequenceEqual(SHA256.HashData(File.ReadAllBytes(file))))
                     throw new Exception("Stale runtime source asset: "+key+"/"+relative);

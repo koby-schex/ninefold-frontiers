@@ -228,8 +228,12 @@ namespace Ninefold.Core.Content
             if(b==Partner||b==PartnerHead)
             {
                 float rider=plan.Kind==Bond.GreatStrider?bob:0;
-                return new BonePose(new Vector3(0,rider,0),
-                    new Vector3(b==PartnerHead?effort*6f+idle*1.5f:effort*2f,0,0));
+                // Keep the mounted operator/cradle rigid together. The
+                // standing partners use their own anatomy without moving the
+                // companion's position or changing the battlefield token.
+                float pitch=plan.Kind==Bond.GreatStrider?0:
+                    (b==PartnerHead?effort*6f+idle*1.5f:0);
+                return new BonePose(new Vector3(0,rider,0),new Vector3(pitch,0,0));
             }
             if(b==LeftArm||b==RightArm)
             {

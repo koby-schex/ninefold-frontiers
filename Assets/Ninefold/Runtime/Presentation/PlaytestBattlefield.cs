@@ -74,6 +74,7 @@ namespace Ninefold.Presentation
             "organic preview 01 | " + drawnSceneStudy + " | scenery meshes: " + scenery.MeshCount +
             " | visible: " + world.activeInHierarchy;
         private string drawnAttempt;
+        private bool playableBondScope;
         private string rescueSubjectId;
         private readonly GameObject destination, selection, inspection, impact, statusPulse;
         private readonly GameObject impactBurst;
@@ -579,8 +580,10 @@ namespace Ninefold.Presentation
 
         // Only the active mission catalog may assign a wildlife visual. Shared
         // spawn IDs from older studies never imply a particular creature type.
-        public void ConfigureWildlifeActors(IEnumerable<ActorSpawn> actors)
+        public void ConfigureWildlifeActors(IEnumerable<ActorSpawn> actors,string missionId=null)
         {
+            bool nextBondScope=PlayableBondRig.TrySelect(missionId,
+                WorldFivePlayableAbilityStudy.StandardIds[0],true,out _);
             var roster=actors.ToArray();
             var wildlife=roster.Where(actor =>
                 actor.UnitId == WorldFiveTutorialWildlifeV1.SillrunnerId ||
@@ -591,7 +594,8 @@ namespace Ninefold.Presentation
                 .ToDictionary(actor=>actor.Id,actor=>
                     Array.IndexOf(WorldFiveActOnePrototype.EnemyTemplateIds,actor.UnitId),
                     StringComparer.Ordinal);
-            if(wildlife.Count==wildlifeActors.Count &&
+            if(nextBondScope==playableBondScope &&
+                wildlife.Count==wildlifeActors.Count &&
                 wildlife.All(pair=>wildlifeActors.TryGetValue(pair.Key,out var old) &&
                     old==pair.Value) &&
                 ashbound.Count==ashboundActors.Count &&
@@ -608,6 +612,7 @@ namespace Ninefold.Presentation
                 token.Bar.RemoveFromHierarchy();
             }
             tokens.Clear();
+            playableBondScope=nextBondScope;
             foreach(var mesh in organicMeshes) Object.Destroy(mesh);
             organicMeshes.Clear();
             wildlifeActors.Clear(); ashboundActors.Clear();
