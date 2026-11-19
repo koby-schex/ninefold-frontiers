@@ -217,9 +217,12 @@ internal static partial class Program
             var v=play.Read().Battle;
             if(v.Phase!=BattleSessionPhase.PlayerInput)
             {
-                // Default production sensing, no empty-perception override.
-                if(v.Activation!=null&&v.Units.Any(u=>u.Id==v.Activation.UnitId&&u.IsEnemyControlled))enemyAdvances++;
-                var advance=play.Advance();
+                // Match the real Unity host: the session intentionally waits
+                // at EnemyInput until a perception frame is supplied.
+                if(v.Phase==BattleSessionPhase.EnemyInput)enemyAdvances++;
+                var advance=play.Advance(new EnemyPerception(
+                    v.Units.Where(u=>u.IsEligible&&u.IsPlayerSquad).Select(u=>u.Id),
+                    v.Units.Where(u=>u.IsEligible&&u.IsEnemyControlled).Select(u=>u.Id)));
                 if(advance.AnimationId!=null)Equal(true,play.CompleteAnimation(advance.AnimationId));
                 continue;
             }
@@ -240,20 +243,23 @@ internal static partial class Program
             }
             if(!acted)
             {
-                // Keep moving through the unobstructed southern approach
-                // until a valid target is available. The secondary obstacle
-                // can shift; the movement preview is always authoritative.
+                // Request destination points around the nearest eligible foe,
+                // using the same partial-route solver as the real player.
+                // Never greedily step into an obstacle or occupied body.
                 var p=actor.Position.Value;
-                var enemy=v.Units.Where(u=>u.IsEnemyControlled&&u.IsEligible&&u.Position.HasValue)
-                    .OrderBy(u=>DistanceSquared(p,u.Position.Value)).FirstOrDefault();
-                var goal=p.X<5m?new FieldPoint(6,0,-5):
-                    enemy?.Position??new FieldPoint(10,0,2);
-                var move=play.ReadPlanning().Movement.Where(m=>!m.Position.Equals(p))
-                    .OrderBy(m=>DistanceSquared(m.Position,goal)).ThenBy(m=>m.Cost).FirstOrDefault();
-                if(move!=null&&play.TapDestination(move.Position).Outcome==InputOutcome.Previewed)
+                var enemies=v.Units.Where(u=>u.IsEnemyControlled&&u.IsEligible&&u.Position.HasValue)
+                    .OrderBy(u=>DistanceSquared(p,u.Position.Value)).ToArray();
+                var offsets=new[]{(0m,1.5m),(1.5m,0m),(0m,-1.5m),(-1.5m,0m),
+                    (1.5m,1.5m),(-1.5m,1.5m),(1.5m,-1.5m),(-1.5m,-1.5m)};
+                var destinations=enemies.SelectMany(e=>offsets.Select(o=>
+                    new FieldPoint(e.Position.Value.X+o.Item1,0,e.Position.Value.Z+o.Item2)))
+                    .OrderBy(g=>DistanceSquared(p,g));
+                foreach(var goal in destinations)
                 {
-                    var result=play.TapDestination(move.Position);Equal(InputOutcome.Committed,result.Outcome);
-                    if(result.AnimationId!=null)Equal(true,play.CompleteAnimation(result.AnimationId));moves++;
+                    if(goal.Equals(p)||play.TapDestination(goal).Outcome!=InputOutcome.Previewed)continue;
+                    var result=play.TapDestination(goal);Equal(InputOutcome.Committed,result.Outcome);
+                    if(result.AnimationId!=null)Equal(true,play.CompleteAnimation(result.AnimationId));
+                    moves++;break;
                 }
             }
             if(!resumed&&moves>0&&menu.Read().Results==null)
@@ -265,7 +271,7 @@ internal static partial class Program
                 if(end.AnimationId!=null)Equal(true,play.CompleteAnimation(end.AnimationId));
             }
         }
-        if(menu.Read().Results==null)throw new Exception("Mission 63 patrol journey did not terminate.");
+        if(menu.Read().Results==null)throw new Exception("Mission 63 patrol journey did not terminate: round "+play.Read().Battle.Round+"; attacks "+attacks+"; moves "+moves+"; enemy turns "+enemyAdvances+".");
         Equal(MissionOutcome.Victory,menu.Read().Results.Result.Outcome);
         Equal(true,attacks>=3&&moves>0&&enemyAdvances>0&&resumed);
         string attempt=menu.Read().Results.Result.AttemptId;
