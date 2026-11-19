@@ -16,6 +16,8 @@ internal static partial class Program
             EncounterWildlifeIdentity);
         yield return ("Forager connected body retains bipedal anatomical silhouette and visible facial relief",
             EncounterForagerIdentity);
+        yield return ("Forager actually wears two closed fitted fieldcloth panels without rest penetration",
+            EncounterForagerCloth);
     }
     private static void EncounterSculptOrder()
     {
@@ -111,6 +113,33 @@ internal static partial class Program
             Equal(4+limb*2,heel.A);
         }
     }
+    private static void EncounterForagerCloth()
+    {
+        var cloth=FirstEncounterForagerCloth.Tactical();
+        if(cloth.TriangleCount<1900||cloth.TriangleCount>4000||
+            cloth.Indices[0].Count!=0||cloth.Indices[1].Count==0||
+            cloth.Indices[2].Count==0)
+            throw new Exception("Live fieldcloth lost actual fabric/trim geometry.");
+        var uses=new Dictionary<ulong,int>();
+        void Edge(int a,int b)
+        {
+            ulong key=((ulong)(uint)Math.Min(a,b)<<32)|(uint)Math.Max(a,b);
+            uses[key]=uses.TryGetValue(key,out int n)?n+1:1;
+        }
+        foreach(var group in cloth.Indices)
+        for(int k=0;k<group.Count;k+=3)
+        {
+            int a=group[k],b=group[k+1],c=group[k+2];
+            Edge(a,b);Edge(b,c);Edge(c,a);
+        }
+        if(uses.Any(x=>x.Value!=2))
+            throw new Exception("The runtime garment must have a closed sewn perimeter.");
+        foreach(var point in cloth.Vertices)
+            if(S.Field(S.Enemy.RiftForager,point[0],point[1],point[2])<.002f ||
+                point[1]>-.12f||point[1]<-.57f)
+                throw new Exception("The live fieldcloth penetrates the body or upper gear.");
+    }
+
     private static void EncounterForagerIdentity()
     {
         var kind=S.Enemy.RiftForager;
