@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Ninefold.Core.Content;
 
 namespace Ninefold.Presentation
 {
@@ -48,500 +49,84 @@ namespace Ninefold.Presentation
             return texture;
         }
 
-        // A curved loft makes connected shoulders/bodies/limbs, not Unity cubes
-        // and spheres assembled as a pretend character. All values are local.
-        private static Mesh Loft(string name, Vector3[] centers, Vector2[] widths, int sides=20)
+        private static Vector3 P(float x,float y,float z)=>new Vector3(x,y,z);
+        private static Transform Pivot(Transform parent,string label,Vector3 center)
         {
-            if(centers.Length!=widths.Length || centers.Length<3)
-                throw new ArgumentException("Every loft ring needs a matching radius.");
-            var vertices=new List<Vector3>();
-            var uv=new List<Vector2>();
-            var triangles=new List<int>();
-            for(int i=0;i<centers.Length;i++)
-            {
-                Vector3 tangent=centers[Mathf.Min(i+1,centers.Length-1)]-
-                    centers[Mathf.Max(i-1,0)];
-                tangent.Normalize();
-                if(tangent.sqrMagnitude<.5f) tangent=Vector3.up;
-                Vector3 axis=Vector3.Cross(tangent,Vector3.up);
-                if(axis.sqrMagnitude<.1f) axis=Vector3.Cross(tangent,Vector3.forward);
-                axis.Normalize();
-                Vector3 other=Vector3.Cross(tangent,axis).normalized;
-                for(int j=0;j<sides;j++)
-                {
-                    float angle=j*Mathf.PI*2f/sides;
-                    float rippling=1f + .025f*Mathf.Sin(j*2.7f+i*.93f);
-                    var p=centers[i]+
-                        (axis*Mathf.Cos(angle)*widths[i].x +
-                         other*Mathf.Sin(angle)*widths[i].y)*rippling;
-                    vertices.Add(p);
-                    uv.Add(new Vector2(j/(float)sides,i/(float)(centers.Length-1)));
-                }
-            }
-            for(int i=0;i<centers.Length-1;i++)
-            {
-                for(int j=0;j<sides;j++)
-                {
-                    int a=i*sides+j,b=i*sides+(j+1)%sides,c=(i+1)*sides+j,
-                        d=(i+1)*sides+(j+1)%sides;
-                    triangles.Add(a);triangles.Add(b);triangles.Add(c);
-                    triangles.Add(b);triangles.Add(d);triangles.Add(c);
-                }
-            }
-            // Close the ends; no open hollow primitive tubes at the ankles.
-            int baseA=vertices.Count;vertices.Add(centers[0]);uv.Add(new Vector2(.5f,0));
-            int baseB=vertices.Count;vertices.Add(centers[centers.Length-1]);uv.Add(new Vector2(.5f,1));
-            for(int j=0;j<sides;j++)
-            {
-                triangles.Add(baseA);triangles.Add(j);triangles.Add((j+1)%sides);
-                int last=(centers.Length-1)*sides;
-                triangles.Add(baseB);triangles.Add(last+(j+1)%sides);triangles.Add(last+j);
-            }
-            var mesh=new Mesh {name=name};
-            mesh.SetVertices(vertices);
-            mesh.SetUVs(0,uv);
-            mesh.SetTriangles(triangles,0);
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
-            return mesh;
+            var t=new GameObject(label).transform;
+            t.SetParent(parent,false);t.localPosition=center;return t;
         }
+        internal static FirstEncounterBattleArt.WildlifeRig Wildlife(GameObject root,bool stalker,
+            Material body,Material accent,Material dark,List<Mesh> owned)
+            =>FirstEncounterBattleArt.BuildWildlife(root,stalker,body,accent,dark,owned);
 
-        internal static GameObject Part(GameObject root,List<Mesh> owned,string name,
-            Material material,Vector3 position,Vector3[] centers,Vector2[] radii,int sides=20)
+        // Mesh source is the same engine-independent numerical geometry
+        // exported to the complete-model CI renderer. No substitute visual.
+        internal static GameObject Part(GameObject root,List<Mesh> owned,
+            AshboundWearablePlan.Piece piece,Material material,Transform joint)
         {
-            var node=new GameObject(name);
+            var node=new GameObject(piece.Name);
             node.transform.SetParent(root.transform,false);
-            node.transform.localPosition=position;
-            var mesh=Loft(name+" · connected surface",centers,radii,sides);
+            var data=AshboundWearablePlan.Geometry(piece);
+            var vertices=new List<Vector3>(data.Vertices.Count);
+            var uv=new List<Vector2>(data.Vertices.Count);
+            var normals=new List<Vector3>(data.Vertices.Count);
+            for(int i=0;i<data.Vertices.Count;i++)
+            {
+                var p=data.Vertices[i];vertices.Add(P(p[0],p[1],p[2]));
+                var n=data.Normals[i];normals.Add(P(n[0],n[1],n[2]));
+                var t=data.UVs[i];uv.Add(new Vector2(t[0],t[1]));
+            }
+            var mesh=new Mesh{name=piece.Name+" / shaped wearable"};
+            mesh.SetVertices(vertices);mesh.SetUVs(0,uv);mesh.SetNormals(normals);
+            mesh.SetTriangles(data.Indices[0],0);
+            mesh.RecalculateTangents();mesh.RecalculateBounds();
             owned.Add(mesh);
             node.AddComponent<MeshFilter>().sharedMesh=mesh;
             var renderer=node.AddComponent<MeshRenderer>();
             renderer.sharedMaterial=material;
             renderer.shadowCastingMode=ShadowCastingMode.Off;
             renderer.receiveShadows=false;
+            // Rest geometry is in actor-local coordinates. Preserve its
+            // placement when parenting to the articulated bone.
+            node.transform.SetParent(joint,true);
             return node;
-        }
-        internal static Vector2 R(float x,float y) => new Vector2(x,y);
-        internal static Vector3 P(float x,float y,float z) => new Vector3(x,y,z);
-
-        internal static FirstEncounterBattleArt.WildlifeRig Wildlife(GameObject root,bool stalker,
-            Material body,Material accent,Material dark,List<Mesh> owned)
-        {
-            // The two earliest named hostile wildlife now use their own actual
-            // closed, material-assigned skinned surfaces, not the old shared
-            // four-leg loft assembly. Identity and battle placement are unchanged.
-            return FirstEncounterBattleArt.BuildWildlife(root,stalker,body,accent,dark,owned);
         }
 
         internal static void Ashbound(GameObject root,int kind,
             Material skin,Material mantle,Material fabric,Material gear,
             Material conduit,Material dark,List<Mesh> owned)
         {
-            // Technical NPC type selects shoulder/gear proportions but NEVER
-            // creates companion creatures or turns the mantle into a magic organ.
-            float bulk=kind==1?1.19f:kind==3?1.32f:kind==4?.84f:1f;
-            Part(root,owned,"Avarin torso",skin,Vector3.zero,new[]{
-                P(0,-.35f,0),P(0,-.21f,0),P(0,-.04f,-.015f),
-                P(0,.16f,-.035f),P(0,.31f,-.03f),P(0,.44f,-.02f)
-            },new[]{R(.11f,.09f),R(.22f*bulk,.14f),
-                R(.23f*bulk,.16f),R(.255f*bulk,.17f),R(.21f*bulk,.14f),
-                R(.065f,.07f)},24);
-            Part(root,owned,"Avarin neck",skin,Vector3.zero,new[]{
-                P(0,.33f,-.01f),P(0,.45f,.012f),P(0,.57f,.027f)
-            },new[]{R(.065f,.067f),R(.10f,.09f),R(.071f,.08f)},18);
-            Part(root,owned,"Avarin temple face",skin,Vector3.zero,new[]{
-                P(0,.42f,.014f),P(0,.53f,.063f),P(0,.68f,.07f),
-                P(0,.80f,.025f),P(0,.85f,-.02f)
-            },new[]{R(.087f,.085f),R(.135f,.118f),R(.14f,.13f),
-                R(.105f,.105f),R(.023f,.035f)},24);
-            // Curved bilateral living *sensory* crescent with material continuity.
-            foreach(float side in new[]{-1f,1f})
-            {
-                string sideName=side<0?"Left":"Right";
-                Part(root,owned,"Living crescent "+sideName,mantle,Vector3.zero,new[]{
-                    P(side*.072f,.60f,-.16f),P(side*.18f,.66f,-.15f),
-                    P(side*.33f,.69f,-.14f),P(side*.46f,.72f,-.12f),
-                    P(side*.49f,.81f,-.09f),P(side*.40f,.91f,-.07f)
-                },new[]{R(.055f,.057f),R(.097f,.061f),R(.110f,.052f),
-                    R(.086f,.043f),R(.057f,.039f),R(.012f,.017f)},18);
-                Part(root,owned,"Avarin arm "+sideName,skin,
-                    P(side*.25f,.18f,-.035f),new[]{
-                    P(0,.14f,0),P(side*.035f,.02f,.02f),
-                    P(side*.061f,-.19f,.052f),P(side*.055f,-.44f,.13f)
-                },new[]{R(.13f,.10f),R(.122f,.092f),
-                    R(.079f,.079f),R(.051f,.065f)},16);
-                Part(root,owned,"Avarin leg "+sideName,skin,
-                    P(side*.145f,-.32f,-.02f),new[]{
-                    P(0,.04f,0),P(side*.015f,-.11f,.01f),
-                    P(side*.016f,-.28f,.045f),
-                    P(side*.016f,-.44f,.066f)
-                },new[]{R(.135f,.121f),R(.122f,.112f),
-                    R(.088f,.086f),R(.064f,.085f)},18);
-                Part(root,owned,"Avarin foot "+sideName,dark,
-                    P(side*.16f,-.70f,.035f),new[]{
-                    P(0,0,-.02f),P(0,-.012f,.09f),P(0,-.02f,.22f)
-                },new[]{R(.089f,.046f),R(.110f,.05f),
-                    R(.032f,.023f)},14);
-                Part(root,owned,"Salvage shoulder "+sideName,gear,
-                    P(side*.20f,.29f,-.067f),new[]{
-                    P(0,.078f,0),P(side*.045f,.012f,.028f),
-                    P(side*.066f,-.105f,.045f)
-                },new[]{R(.055f,.042f),R(.130f*bulk,.075f),
-                    R(.047f,.041f)},18);
-            }
-            // Damage-worn, non-magical clothing + deliberately external Wake.
-            Part(root,owned,"Field mantle drape",fabric,Vector3.zero,new[]{
-                P(0,.19f,-.148f),P(0,.07f,-.165f),
-                P(0,-.18f,-.17f),P(0,-.42f,-.14f)
-            },new[]{R(.20f,.048f),R(.225f,.056f),
-                R(.235f,.052f),R(.14f,.045f)},20);
-            Part(root,owned,"Fracture Wake equipment",conduit,
-                P(kind%2==0?-.185f:.19f,-.01f,-.20f),new[]{
-                P(0,.21f,0),P(0,.11f,-.045f),P(0,-.055f,-.061f),
-                P(0,-.20f,-.03f)
-            },new[]{R(.042f,.036f),R(.096f,.065f),
-                R(.083f,.072f),R(.041f,.038f)},16);
-            // The six approved archetypes are distinguished by external
-            // equipment density, not by altering species or adding a bond.
-            if(kind==0 || kind==2 || kind==4)
-                Part(root,owned,"Field sensor frame",gear,P(.32f,.07f,.065f),new[]{
-                    P(0,-.30f,.12f),P(.08f,-.05f,.14f),
-                    P(.09f,.24f,.12f),P(.028f,.41f,.05f)
-                },new[]{R(.026f,.028f),R(.051f,.048f),
-                    R(.064f,.043f),R(.017f,.022f)},16);
-            if(kind==1 || kind==3)
-                Part(root,owned,"Reinforced forearm brace",gear,
-                    P(.325f,-.11f,.14f),new[]{
-                    P(0,.11f,0),P(.005f,-.04f,.02f),
-                    P(.023f,-.22f,.062f)
-                },new[]{R(.089f,.083f),R(.117f,.092f),
-                    R(.063f,.071f)},16);
-            if(kind==5 || kind==3)
-                Part(root,owned,"Field registry satchel",gear,
-                    P(-.31f,-.32f,-.042f),new[]{
-                    P(0,.17f,0),P(-.019f,.015f,-.01f),
-                    P(-.028f,-.16f,.02f)
-                },new[]{R(.061f,.043f),R(.125f,.09f),
-                    R(.083f,.071f)},16);
-            if(kind==4 || kind==5)
-            {
-                // Final two ordinary enemy types use the same Avarin biology,
-                // but role-specific hardware and equipment. All are
-                // provisional, live battle meshes rather than canon masters.
-                WorldFiveAshboundFinalPairDetails.Build(root,kind,skin,mantle,
-                    fabric,gear,conduit,dark,owned);
-                GroupAshboundMotion(root,owned);
-            }
-            if(kind==2 || kind==3)
-            {
-                WorldFiveAshboundMidRosterDetails.Build(root,kind,skin,mantle,
-                    fabric,gear,conduit,dark,owned);
-                GroupAshboundMotion(root,owned);
-            }
-            if(kind==0 || kind==1)
-            {
-                // First contact: visually refines the actual Mission 11 enemy
-                // meshes, rather than only replacing their labels or making
-                // further disconnected ArtReview studies.
-                AshboundFirstContactDetails(root,kind,skin,mantle,
-                    fabric,gear,conduit,dark,owned);
-                // Replace only the Forager's old torso, neck and separate
-                // limbs. Keep all source sensory mantle, eyes, clothing and
-                // tools on the original live battle pivots. Striker unchanged.
-                if(kind==0)FirstEncounterBattleArt.RemoveForagerBlockout(root,owned);
-                GroupAshboundMotion(root,owned);
-                if(kind==0)FirstEncounterBattleArt.AttachForager(root,skin,fabric,dark,owned);
-            }
+            var bones=GroupAshboundMotion(root,kind);
+            var materials=new[]{skin,mantle,fabric,gear,conduit,dark};
+            foreach(var piece in AshboundWearablePlan.Build(kind))
+                Part(root,owned,piece,materials[(int)piece.Role],
+                    bones[AshboundWearablePlan.JointFor(piece.Name,kind)]);
+            // Co-material gear surfaces are batched per moving bone.
+            // Keep the head separate: living mantle movement is independent
+            // of the original facial relief and external equipment.
+            for(int i=0;i<bones.Length;i++)
+                if(i!=1)BatchPivotSurfaces(bones[i],owned);
+            FirstEncounterBattleArt.AttachAshbound(root,kind,bones,skin,fabric,dark,owned);
         }
 
-        /// <summary>
-        /// Added anatomical relief and wearable gear on the two first-contact
-        /// anonymous Avarin. Every feature is provisional artwork; no new
-        /// biology, magical organs, bonded creature or weapon lore is asserted.
-        /// </summary>
-        private static void AshboundFirstContactDetails(GameObject root,int kind,
-            Material skin,Material mantle,Material fabric,Material gear,
-            Material conduit,Material dark,List<Mesh> owned)
+        private static Transform[] GroupAshboundMotion(GameObject root,int kind)
         {
-            bool striker=kind==1;
-            AvarinDetailedAnatomy(root,striker,skin,mantle,fabric,
-                gear,conduit,dark,owned);
-            if(!striker)
+            int count=FirstEncounterSculpts.BoneCount(FirstEncounterSculpts.Ashbound(kind));
+            var bones=new Transform[count];
+            bones[0]=Pivot(root.transform,"Ashbound motion core",P(0,-.13f,-.01f));
+            bones[1]=Pivot(bones[0],"Ashbound motion head",P(0,.64f,0));
+            bones[2]=Pivot(bones[0],"Ashbound motion arm Left",P(-.245f,.28f,-.02f));
+            bones[3]=Pivot(bones[0],"Ashbound motion arm Right",P(.245f,.28f,-.02f));
+            bones[4]=Pivot(root.transform,"Ashbound motion leg Left",P(-.15f,-.32f,-.02f));
+            bones[5]=Pivot(root.transform,"Ashbound motion leg Right",P(.15f,-.32f,-.02f));
+            if(count==10)
             {
-                // Forager reads light and alert: asymmetrical terrain probe,
-                // flexible tethers, narrow repair apron and tool pack.
-                Part(root,owned,"Forager shoulder capture relay",gear,
-                    P(.305f,.305f,-.070f),
-                    new[]{P(-.07f,.038f,-.01f),
-                          P(0,.059f,-.027f),P(.109f,.009f,-.026f),
-                          P(.128f,-.081f,.010f)},
-                    new[]{R(.040f,.039f),R(.069f,.049f),
-                          R(.043f,.037f),R(.018f,.017f)},16);
-                Part(root,owned,"Forager hooked route reader",conduit,
-                    P(.335f,-.165f,.146f),
-                    new[]{P(0,.110f,-.012f),P(.018f,-.011f,.042f),
-                          P(.011f,-.172f,.160f),
-                          P(-.024f,-.230f,.242f)},
-                    new[]{R(.035f,.034f),R(.052f,.040f),
-                          R(.035f,.025f),R(.010f,.011f)},16);
-                Part(root,owned,"Forager reader tip",gear,
-                    P(.324f,-.396f,.389f),
-                    new[]{P(0,.028f,-.050f),P(.009f,0,0),
-                          P(-.021f,-.033f,.071f)},
-                    new[]{R(.015f,.014f),R(.059f,.027f),
-                          R(.010f,.008f)},12);
-                Part(root,owned,"Forager repair satchel",gear,
-                    P(-.245f,-.304f,-.16f),
-                    new[]{P(0,.106f,-.013f),P(-.021f,-.015f,-.014f),
-                          P(-.024f,-.185f,.017f)},
-                    new[]{R(.077f,.056f),R(.125f,.088f),
-                          R(.070f,.056f)},18);
-                Part(root,owned,"Forager trailing tag",fabric,
-                    P(-.24f,-.465f,-.108f),
-                    new[]{P(0,.07f,0),P(-.035f,-.024f,-.017f),
-                          P(-.070f,-.143f,-.015f)},
-                    new[]{R(.044f,.018f),R(.050f,.017f),
-                          R(.014f,.007f)},12);
+                bones[6]=Pivot(bones[2],"Ashbound elbow Left",P(-.037f,-.105f,.047f));
+                bones[7]=Pivot(bones[3],"Ashbound elbow Right",P(.037f,-.105f,.047f));
+                bones[8]=Pivot(bones[4],"Ashbound knee Left",P(-.004f,-.19f,.035f));
+                bones[9]=Pivot(bones[5],"Ashbound knee Right",P(.004f,-.19f,.035f));
             }
-            else
-            {
-                // Striker's silhouette is unequivocally different at battle
-                // scale: overbuilt RIGHT shoulder and broad blunt forearm
-                // contact implement; the left remains visibly lighter.
-                Part(root,owned,"Striker layered right shoulder",gear,
-                    P(.217f,.274f,-.09f),
-                    new[]{P(-.09f,.094f,.02f),
-                          P(.026f,.122f,-.025f),
-                          P(.165f,.025f,-.045f),
-                          P(.112f,-.121f,.037f)},
-                    new[]{R(.071f,.063f),R(.147f,.098f),
-                          R(.128f,.090f),R(.025f,.027f)},24);
-                Part(root,owned,"Striker right arm impact housing",gear,
-                    P(.320f,-.180f,.175f),
-                    new[]{P(0,.136f,-.024f),P(.022f,.014f,.023f),
-                          P(.019f,-.151f,.105f)},
-                    new[]{R(.093f,.082f),R(.147f,.110f),
-                          R(.101f,.077f)},20);
-                Part(root,owned,"Striker blunt contact ridge",conduit,
-                    P(.361f,-.336f,.282f),
-                    new[]{P(-.095f,.021f,-.020f),P(0,.032f,.024f),
-                          P(.100f,.017f,.039f)},
-                    new[]{R(.048f,.036f),R(.071f,.056f),
-                          R(.047f,.034f)},18);
-                Part(root,owned,"Striker side ballast",gear,
-                    P(-.232f,-.075f,-.212f),
-                    new[]{P(0,.165f,-.016f),P(-.022f,.009f,-.044f),
-                          P(-.021f,-.178f,.012f)},
-                    new[]{R(.055f,.048f),R(.127f,.073f),
-                          R(.056f,.041f)},18);
-                for(int plate=0;plate<3;plate++)
-                {
-                    float h=-.04f-plate*.082f;
-                    Part(root,owned,"Striker layered chest plate "+plate,gear,
-                        P(0,h,.157f),
-                        new[]{P(-.224f,.043f,-.060f),
-                              P(-.055f,.020f,.027f),
-                              P(.135f,-.008f,.014f),
-                              P(.234f,-.036f,-.056f)},
-                        new[]{R(.016f,.013f),R(.032f,.025f),
-                              R(.032f,.023f),R(.010f,.010f)},18);
-                }
-            }
-        }
-
-        // Unified species anatomy for first-contact and mid-roster
-        // nonplayable Avarin. External gear is role-specific and is not
-        // classified as a new biological structure or canon addition.
-        internal static void AvarinDetailedAnatomy(GameObject root,bool armored,
-            Material skin,Material mantle,Material fabric,Material gear,
-            Material conduit,Material dark,List<Mesh> owned)
-        {
-            bool striker=armored;
-            // Explicit face architecture. No sphere-blob face or floating eyes.
-            Part(root,owned,"Temple brow bridge",skin,P(0,.72f,.127f),
-                new[]{P(-.155f,0,0),P(-.085f,.018f,.02f),
-                      P(0,.022f,.027f),P(.085f,.018f,.02f),
-                      P(.155f,0,0)},
-                new[]{R(.014f,.018f),R(.037f,.026f),R(.035f,.028f),
-                      R(.037f,.026f),R(.014f,.018f)},14);
-            Part(root,owned,"Temple mouth relief",dark,P(0,.495f,.157f),
-                new[]{P(-.052f,.005f,0),P(0,0,.018f),P(.052f,.005f,0)},
-                new[]{R(.008f,.010f),R(.014f,.012f),R(.008f,.010f)},12);
-            for(float side=-1f;side<=1f;side+=2f)
-            {
-                string half=side<0?"Left":"Right";
-                Part(root,owned,"Temple eye "+half,dark,
-                    P(side*.103f,.692f,.166f),
-                    new[]{P(0,0,-.03f),P(side*.01f,.004f,0),
-                          P(side*.012f,.008f,.026f)},
-                    new[]{R(.011f,.010f),R(.029f,.022f),R(.007f,.009f)},12);
-                Part(root,owned,"Temple cheek structure "+half,skin,
-                    P(side*.099f,.625f,.146f),
-                    new[]{P(0,.042f,-.010f),P(side*.012f,0,.025f),
-                          P(-side*.007f,-.067f,.0f)},
-                    new[]{R(.019f,.021f),R(.037f,.034f),R(.012f,.015f)},14);
-                // Fine organic creases follow the living mantle, never
-                // replacing it with rigid ears, spikes or magical wings.
-                for(int rib=0;rib<3;rib++)
-                {
-                    float reach=rib*.036f;
-                    Part(root,owned,"Mantle filament "+half+" "+rib,
-                        rib==1?skin:mantle,Vector3.zero,
-                        new[]{P(side*(.105f+reach),.63f,-.108f),
-                              P(side*(.23f+reach),.69f,-.090f),
-                              P(side*(.37f+reach),.74f,-.067f),
-                              P(side*(.39f+reach),.83f,-.045f)},
-                        new[]{R(.010f,.011f),R(.014f,.012f),
-                              R(.012f,.010f),R(.003f,.004f)},10);
-                }
-
-                // Continuous layered muscle and soft field wrapping;
-                // narrower Forager and heavier reinforced Striker shapes.
-                Part(root,owned,"Clavicle contour "+half,skin,Vector3.zero,
-                    new[]{P(side*.058f,.335f,.100f),
-                          P(side*.14f,.301f,.137f),
-                          P(side*.230f,.270f,.092f)},
-                    new[]{R(.022f,.027f),R(.034f,.030f),
-                          R(.009f,.013f)},14);
-                Part(root,owned,"Avarin forearm relief "+half,
-                    skin,P(side*.285f,-.045f,.03f),
-                    new[]{P(0,.094f,-.012f),
-                          P(side*.026f,-.040f,.031f),
-                          P(side*.033f,-.195f,.088f)},
-                    new[]{R(.036f,.041f),R(.050f,.053f),
-                          R(.015f,.025f)},14);
-                Part(root,owned,"Field wrap "+half,fabric,
-                    P(side*.304f,-.210f,.101f),
-                    new[]{P(0,.048f,-.012f),
-                          P(side*.007f,0,.016f),
-                          P(side*.007f,-.062f,.042f)},
-                    new[]{R(.066f,.065f),R(.077f,.066f),
-                          R(.061f,.059f)},14);
-                Part(root,owned,"Shin reinforcement "+half,
-                    striker?gear:fabric,
-                    P(side*.161f,-.55f,.055f),
-                    new[]{P(0,.105f,-.018f),
-                          P(side*.008f,-.015f,.010f),
-                          P(side*.008f,-.15f,.057f)},
-                    new[]{R(.082f,.060f),R(.072f,.062f),
-                          R(.035f,.033f)},14);
-                Part(root,owned,"Heel geometry "+half,dark,
-                    P(side*.163f,-.739f,.016f),
-                    new[]{P(0,.025f,-.06f),P(0,-.012f,.035f),
-                          P(0,-.017f,.140f)},
-                    new[]{R(.059f,.038f),R(.097f,.046f),
-                          R(.024f,.018f)},12);
-            }
-            Part(root,owned,"Upper field wrap",fabric,Vector3.zero,
-                new[]{P(0,.258f,.122f),P(0,.145f,.160f),
-                      P(0,.016f,.163f),P(0,-.100f,.147f)},
-                new[]{R(.133f,.039f),R(striker ? .225f : .172f,.046f),
-                      R(striker ? .225f : .170f,.052f),R(.113f,.038f)},24);
-            // Overlapping chest-wear strips read clearly at portrait zoom.
-            for(int strip=0;strip<4;strip++)
-            {
-                float side=strip<2?-1f:1f;
-                float y=.195f-(strip%2)*.089f;
-                Part(root,owned,"Cross body harness "+strip,gear,Vector3.zero,
-                    new[]{P(side*.052f,y+.113f,.155f),
-                          P(side*.116f,y+.058f,.168f),
-                          P(side*.191f,y-.05f,.084f)},
-                    new[]{R(.021f,.015f),R(.025f,.018f),
-                          R(.013f,.010f)},14);
-            }
-            Part(root,owned,"External Wake support loom",gear,
-                P(-.16f,-.04f,-.187f),
-                new[]{P(0,.235f,0),P(-.014f,.070f,-.030f),
-                      P(-.008f,-.145f,-.043f),P(.012f,-.270f,.006f)},
-                new[]{R(.030f,.028f),R(.050f,.045f),
-                      R(.039f,.036f),R(.016f,.021f)},14);
-            for(int conduitIndex=0;conduitIndex<3;conduitIndex++)
-            {
-                float offset=conduitIndex*.027f;
-                Part(root,owned,"External Wake conductor "+conduitIndex,
-                    conduit,P(-.17f+offset,.012f,-.235f),
-                    new[]{P(0,.177f,.020f),P(.008f,.086f,-.020f),
-                          P(-.014f,-.051f,-.038f),
-                          P(-.017f,-.194f,-.006f)},
-                    new[]{R(.009f,.010f),R(.013f,.012f),
-                          R(.012f,.011f),R(.006f,.008f)},10);
-            }
-
-        }
-
-        /// <summary>
-        /// Pivots keep eyes attached to the face, living mantle attached to
-        /// the head and equipment attached to its actual limb. This corrects
-        /// floating accessories in the prior independent-part motion.
-        /// Per-limb contact remains a review study, not skeletal IK.
-        /// </summary>
-        internal static void GroupAshboundMotion(GameObject root,List<Mesh> owned)
-        {
-            Transform Pivot(string label,Vector3 center,Transform parent)
-            {
-                var t=new GameObject(label).transform;
-                t.SetParent(parent,false);t.localPosition=center;
-                return t;
-            }
-            var core=Pivot("Ashbound motion core",P(0,-.13f,-.01f),root.transform);
-            var head=Pivot("Ashbound motion head",P(0,.64f,.0f),core);
-            var leftArm=Pivot("Ashbound motion arm Left",P(-.245f,.28f,-.02f),core);
-            var rightArm=Pivot("Ashbound motion arm Right",P(.245f,.28f,-.02f),core);
-            var leftLeg=Pivot("Ashbound motion leg Left",P(-.15f,-.32f,-.02f),root.transform);
-            var rightLeg=Pivot("Ashbound motion leg Right",P(.15f,-.32f,-.02f),root.transform);
-            var parts=new List<Transform>();
-            foreach(Transform child in root.transform)
-                if(child!=core && child!=leftLeg && child!=rightLeg)
-                    parts.Add(child);
-            foreach(var part in parts)
-            {
-                string n=part.name;
-                Transform target=core;
-                bool left=n.EndsWith("Left",StringComparison.OrdinalIgnoreCase) ||
-                    n.IndexOf(" left ",StringComparison.OrdinalIgnoreCase)>=0;
-                bool right=n.EndsWith("Right",StringComparison.OrdinalIgnoreCase) ||
-                    n.IndexOf(" right ",StringComparison.OrdinalIgnoreCase)>=0;
-                if(n.StartsWith("Avarin leg ",StringComparison.Ordinal) ||
-                   n.StartsWith("Avarin foot ",StringComparison.Ordinal) ||
-                   n.StartsWith("Shin reinforcement ",StringComparison.Ordinal) ||
-                   n.StartsWith("Heel geometry ",StringComparison.Ordinal) ||
-                   n.StartsWith("Wrecker leg load-brace ",StringComparison.Ordinal) ||
-                   n.StartsWith("Wrecker leg brace-rivet ",StringComparison.Ordinal))
-                    target=left?leftLeg:rightLeg;
-                else if(n.StartsWith("Avarin arm ",StringComparison.Ordinal) ||
-                        n.StartsWith("Avarin forearm relief ",StringComparison.Ordinal) ||
-                        n.StartsWith("Field wrap ",StringComparison.Ordinal) ||
-                        n.StartsWith("Striker right arm ",StringComparison.Ordinal) ||
-                        n.StartsWith("Striker blunt ",StringComparison.Ordinal) ||
-                        n.StartsWith("Reinforced forearm ",StringComparison.Ordinal) ||
-                        n.StartsWith("Forager hooked ",StringComparison.Ordinal) ||
-                        n.StartsWith("Forager reader ",StringComparison.Ordinal) ||
-                        n.StartsWith("Field sensor frame",StringComparison.Ordinal) ||
-                        n.StartsWith("Castigator high right shoulder ",StringComparison.Ordinal) ||
-                        n.StartsWith("Castigator right ",StringComparison.Ordinal) ||
-                        n.StartsWith("Wrecker left load shoulder",StringComparison.Ordinal) ||
-                        n.StartsWith("Wrecker right ",StringComparison.Ordinal) ||
-                        n.StartsWith("Seer left forearm ",StringComparison.Ordinal) ||
-                        n.StartsWith("Seer left brace channel ",StringComparison.Ordinal) ||
-                        n.StartsWith("Seer right forearm ",StringComparison.Ordinal) ||
-                        n.StartsWith("Seer right brace channel ",StringComparison.Ordinal) ||
-                        n.StartsWith("Witness left arm ",StringComparison.Ordinal) ||
-                        n.StartsWith("Witness left signal ",StringComparison.Ordinal) ||
-                        n.StartsWith("Witness reinforced left shoulder ",StringComparison.Ordinal) ||
-                        n.StartsWith("Witness lighter right shoulder ",StringComparison.Ordinal))
-                    target=left?leftArm:rightArm;
-                else if(n.StartsWith("Avarin temple face",StringComparison.Ordinal) ||
-                        n.StartsWith("Living crescent ",StringComparison.Ordinal) ||
-                        n.StartsWith("Mantle filament ",StringComparison.Ordinal) ||
-                        n.StartsWith("Temple ",StringComparison.Ordinal))
-                    target=head;
-                part.SetParent(target,true);
-            }
-            // Reduce the draw-call cost of a sculpted study: combine same
-            // material surfaces within each independently moving limb/core.
-            // Face/mantle surfaces remain separate for sensory deformation.
-            foreach(var pivot in new[]{core,leftArm,rightArm,leftLeg,rightLeg})
-                BatchPivotSurfaces(pivot,owned);
+            return bones;
         }
 
         private static void BatchPivotSurfaces(Transform pivot,List<Mesh> owned)
@@ -593,8 +178,18 @@ namespace Ninefold.Presentation
                     // Unity schedules the source object teardown safely
                     // outside the traversal; scene models are not persisted.
                     owned.Remove(original.sharedMesh);
-                    UnityEngine.Object.Destroy(original.sharedMesh);
-                    UnityEngine.Object.Destroy(original.gameObject);
+                    original.gameObject.SetActive(false);
+                    original.transform.SetParent(null,true);
+                    if(Application.isPlaying)
+                    {
+                        UnityEngine.Object.Destroy(original.sharedMesh);
+                        UnityEngine.Object.Destroy(original.gameObject);
+                    }
+                    else
+                    {
+                        UnityEngine.Object.DestroyImmediate(original.sharedMesh);
+                        UnityEngine.Object.DestroyImmediate(original.gameObject);
+                    }
                 }
             }
         }

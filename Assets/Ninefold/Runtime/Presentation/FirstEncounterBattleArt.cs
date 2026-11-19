@@ -86,54 +86,12 @@ namespace Ninefold.Presentation
             return new WildlifeRig(kind,bones);
         }
 
-        // Preserve the original, carefully placed external route gear and
-        // living sensory crescent. Only old separate anatomical lofts are
-        // removed before batching/parenting. Skin replaces their actual
-        // visible geometry (not a second overlay on top of the old body).
-        internal static void RemoveForagerBlockout(GameObject root,List<Mesh> owned)
+        internal static void AttachAshbound(GameObject root,int kind,Transform[] bones,
+            Material skin,Material fabric,Material dark,List<Mesh> owned)
         {
-            var removed=new List<Transform>();
-            foreach(Transform part in root.transform)
-            {
-                string n=part.name;
-                if(n=="Avarin torso"||n=="Avarin neck"||n=="Avarin temple face"||
-                    n=="Field mantle drape"||
-                    n.StartsWith("Avarin arm ",StringComparison.Ordinal)||
-                    n.StartsWith("Avarin leg ",StringComparison.Ordinal)||
-                    n.StartsWith("Avarin foot ",StringComparison.Ordinal)||
-                    n.StartsWith("Avarin forearm relief ",StringComparison.Ordinal)||
-                    n.StartsWith("Clavicle contour ",StringComparison.Ordinal)||
-                    n.StartsWith("Heel geometry ",StringComparison.Ordinal)||
-                    n.StartsWith("Temple cheek structure ",StringComparison.Ordinal))
-                    removed.Add(part);
-            }
-            foreach(var part in removed)
-            {
-                var filter=part.GetComponent<MeshFilter>();
-                if(filter!=null&&filter.sharedMesh!=null)
-                {
-                    owned.Remove(filter.sharedMesh);
-                    UnityEngine.Object.Destroy(filter.sharedMesh);
-                }
-                part.gameObject.SetActive(false);
-                part.SetParent(null,true);
-                UnityEngine.Object.Destroy(part.gameObject);
-            }
-        }
-
-        internal static void AttachForager(GameObject root,Material skin,
-            Material fabric,Material dark,List<Mesh> owned)
-        {
-            var core=root.transform.Find("Ashbound motion core");
-            if(core==null)throw new InvalidOperationException("Missing Avarin spine");
-            var bones=new[]{core,core.Find("Ashbound motion head"),
-                core.Find("Ashbound motion arm Left"),core.Find("Ashbound motion arm Right"),
-                root.transform.Find("Ashbound motion leg Left"),
-                root.transform.Find("Ashbound motion leg Right")};
-            AttachSkin(root,Sculpt.Enemy.RiftForager,bones,
-                new[]{skin,fabric,dark},owned);
-            AttachSkin(root,Sculpt.Enemy.RiftForager,bones,
-                new[]{fabric,dark},owned,detail:"stitched fieldcloth");
+            var enemy=Sculpt.Ashbound(kind);
+            AttachSkin(root,enemy,bones,new[]{skin,fabric,dark},owned);
+            AttachSkin(root,enemy,bones,new[]{fabric,dark},owned,detail:"stitched fieldcloth");
         }
 
         private static void AttachSkin(GameObject root,Sculpt.Enemy kind,
@@ -151,7 +109,7 @@ namespace Ninefold.Presentation
             Mesh mesh=owned.Find(m=>m!=null && m.name==meshName);
             if(mesh==null)
             {
-                var geometry=detail=="stitched fieldcloth"?FirstEncounterForagerCloth.Tactical():
+                var geometry=detail=="stitched fieldcloth"?FirstEncounterForagerCloth.Tactical((int)kind-2):
                     detail=="fitted eyes"?Sculpt.EyeShells(kind):Sculpt.Tactical(kind);
                 var vertices=new List<Vector3>(geometry.Vertices.Count);
                 var normals=new List<Vector3>(geometry.Vertices.Count);
@@ -162,11 +120,15 @@ namespace Ninefold.Presentation
                     var point=geometry.Vertices[i];
                     vertices.Add(Vector(point)); normals.Add(Vector(geometry.Normals[i]));
                     uv.Add(new Vector2(geometry.UVs[i][0],geometry.UVs[i][1]));
-                    var w=Sculpt.Weights(kind,point[0],point[1],point[2]);
+                    var w=detail=="stitched fieldcloth"?
+                        FirstEncounterForagerCloth.ClothWeights((int)kind-2,point[0],point[1],point[2]):
+                        Sculpt.Weights(kind,point[0],point[1],point[2]);
+                    if(detail=="fitted eyes")w=new Sculpt.Skin(1,0,1f);
                     weights[i]=new BoneWeight{boneIndex0=w.A,boneIndex1=w.B,
                         weight0=w.WeightA,weight1=1f-w.WeightA};
                 }
-                mesh=new Mesh{name=meshName,indexFormat=IndexFormat.UInt32};
+                mesh=new Mesh{name=meshName,indexFormat=geometry.Vertices.Count>65535?
+                    IndexFormat.UInt32:IndexFormat.UInt16};
                 mesh.SetVertices(vertices);mesh.SetNormals(normals);mesh.SetUVs(0,uv);
                 mesh.subMeshCount=extra?2:3;
                 for(int i=0;i<mesh.subMeshCount;i++)
@@ -190,6 +152,30 @@ namespace Ninefold.Presentation
             // Conservative swing envelope measured in root-bone space.
             var origin=root.transform.InverseTransformPoint(bones[0].position);
             bounds.center-=origin;bounds.Expand(.65f);renderer.localBounds=bounds;
+        }
+
+        // Reused linear packed R-metallic/A-smoothness maps for external
+        // salvaged hardware and worn fabric. Distinct surfaces, not new hues.
+        internal static Texture2D SurfaceResponse(bool metal)
+        {
+            const int size=128;
+            var pixels=new Color32[size*size];
+            for(int y=0;y<size;y++)for(int x=0;x<size;x++)
+            {
+                float u=2f*Mathf.PI*x/size,v=2f*Mathf.PI*y/size;
+                float wear=Mathf.Sin(u*7+Mathf.Sin(v*5))*.6f+
+                    Mathf.Sin(v*19-u*13)*.4f;
+                byte Byte(float value)=>(byte)Mathf.RoundToInt(Mathf.Clamp01(value)*255);
+                pixels[y*size+x]=new Color32(Byte(metal?.40f+.11f*wear:.01f),0,0,
+                    Byte(metal?.33f+.09f*wear:.16f+.035f*wear));
+            }
+            var texture=new Texture2D(size,size,TextureFormat.RGBA32,true,true)
+            {
+                name=metal?"Ashbound worn salvage response":"Ashbound matte textile response",
+                wrapMode=TextureWrapMode.Repeat,filterMode=FilterMode.Trilinear
+            };
+            texture.SetPixels32(pixels);texture.Apply(true,true);
+            return texture;
         }
 
         // Separate non-flat material response for each wildlife surface

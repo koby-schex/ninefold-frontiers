@@ -118,14 +118,19 @@ namespace Ninefold.Core.Content
             }
             void Face(int a,int b,int c)
             {mesh.Indices[0].Add(a);mesh.Indices[0].Add(b);mesh.Indices[0].Add(c);}
+            Vector3 previousAxis=Vector3.Zero;
             for(int i=0;i<rings;i++)
             {
                 Vector3 tangent=points[Math.Min(i+1,rings-1)]-points[Math.Max(i-1,0)];
                 if(tangent.LengthSquared()<1e-10f)tangent=Vector3.UnitY;
                 tangent=Vector3.Normalize(tangent);
-                Vector3 axis=Vector3.Cross(tangent,Vector3.UnitY);
-                if(axis.LengthSquared()<.1f)axis=Vector3.Cross(tangent,Vector3.UnitZ);
+                Vector3 axis=i==0?Vector3.Cross(tangent,Vector3.UnitY):
+                    previousAxis-Vector3.Dot(previousAxis,tangent)*tangent;
+                if(axis.LengthSquared()<.01f)axis=Vector3.Cross(tangent,Vector3.UnitZ);
+                if(axis.LengthSquared()<.01f)axis=Vector3.Cross(tangent,Vector3.UnitX);
                 axis=Vector3.Normalize(axis);
+                if(i>0 && Vector3.Dot(axis,previousAxis)<0f)axis=-axis;
+                previousAxis=axis;
                 Vector3 other=Vector3.Normalize(Vector3.Cross(tangent,axis));
                 // Continuous oriented section; avoid arbitrary section-axis
                 // flips as the loft curves around a nearly vertical tangent.
