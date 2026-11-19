@@ -68,7 +68,10 @@ internal static partial class Program
             CheckArtGeometry(m.Map,BattlefieldArtPlan.Build(m.Map,m.Id,m.EnvironmentKey,ArtAttempt(9),m.ProceduralCover));
             foreach(var actor in m.Actors.Where(a=>a.Behavior?.Style==EnemyStyle.Defensive))
             {
-                Equal(true,actor.Behavior.GuardArea.Contains(c.Units[actor.UnitId].Body.At(actor.Position)));
+                var b=c.Units[actor.UnitId].Body;var p=actor.Position;
+                var footprint=new FieldBox(new FieldPoint(p.X-b.HalfWidth,p.Y,p.Z-b.HalfDepth),
+                    new FieldPoint(p.X+b.HalfWidth,p.Y+b.Height,p.Z+b.HalfDepth));
+                Equal(true,actor.Behavior.GuardArea.Contains(footprint));
                 Equal(true,actor.Behavior.GuardArea.Max.X-actor.Behavior.GuardArea.Min.X<=10m);
             }
             Equal(false,ch.Rewards.FirstClear.Any(g=>g.ResourceId=="fragment-fixture-a-5"));
