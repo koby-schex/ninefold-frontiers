@@ -12,8 +12,15 @@ namespace Ninefold.Core.Content
     /// </summary>
     public static class FirstEncounterSculpts
     {
-        public enum Enemy { Seamstalker, Sillrunner, RiftForager }
-        public const string Revision="first-encounter-connected-sculpt-02";
+        public enum Enemy { Seamstalker, Sillrunner, RiftForager,
+            PartedStriker, SeamCastigator, AnchorWrecker, AfterechoSeer, CampWitness }
+        public static bool IsAvarin(Enemy kind)=>kind>=Enemy.RiftForager && kind<=Enemy.CampWitness;
+        public static Enemy Ashbound(int kind)
+        {
+            if(kind<0||kind>5)throw new ArgumentOutOfRangeException(nameof(kind));
+            return (Enemy)(kind+2);
+        }
+        public const string Revision="full-world-five-connected-roster-03";
         public sealed class Surface
         {
             public readonly List<float[]> Vertices=new List<float[]>();
@@ -52,7 +59,7 @@ namespace Ninefold.Core.Content
         // with the existing native ecology proposal (not locked public lore).
         public static float[] WildlifeJoint(Enemy kind,int limb,bool knee)
         {
-            if(kind==Enemy.RiftForager || limb<0||limb>=6)
+            if(IsAvarin(kind) || limb<0||limb>=6)
                 throw new ArgumentOutOfRangeException(nameof(limb));
             bool stalker=kind==Enemy.Seamstalker;
             float s=limb<3?-1:1;
@@ -203,13 +210,36 @@ namespace Ninefold.Core.Content
             float waist=.005f*(float)Math.Exp(-(y+.10f)*(y+.10f)/.025f);
             return d+temple+waist;
         }
-        public static float Field(Enemy kind,float x,float y,float z)=>
-            kind==Enemy.RiftForager?Forager(x,y,z):Wildlife(kind,x,y,z);
+        public static float TorsoWidth(Enemy kind)
+        {
+            switch(kind)
+            {
+                case Enemy.PartedStriker:return 1.10f;
+                case Enemy.SeamCastigator:return .96f;
+                case Enemy.AnchorWrecker:return 1.19f;
+                case Enemy.AfterechoSeer:return .92f;
+                case Enemy.CampWitness:return 1.04f;
+                default:return 1f;
+            }
+        }
+
+        public static float Field(Enemy kind,float x,float y,float z)
+        {
+            if(!IsAvarin(kind))return Wildlife(kind,x,y,z);
+            if(kind==Enemy.RiftForager)return Forager(x,y,z);
+            // Localized body shape variation, not an overall size change:
+            // the temple-face, eyes, living crescent, shoulder pivots and
+            // limbs stay in the established shared Avarin coordinates.
+            float upper=(float)Math.Exp(-((y-.10f)*(y-.10f)/.095f));
+            float lateral=(float)Math.Exp(-((Math.Abs(x)-.13f)*(Math.Abs(x)-.13f)/.015f));
+            float scale=1f+(TorsoWidth(kind)-1f)*upper*lateral;
+            return Forager(x/scale,y,z);
+        }
 
         public static int MaterialSlot(Enemy kind,float x,float y,float z)
         {
             float ax=Math.Abs(x);
-            if(kind==Enemy.RiftForager)
+            if(IsAvarin(kind))
             {
                 if(y<-.67f)return 2;
                 return y>.455f || (ax>.255f&&y<-.20f&&y>-.37f)?0:1;
@@ -234,13 +264,26 @@ namespace Ninefold.Core.Content
         public static Skin Weights(Enemy kind,float x,float y,float z)
         {
             float ax=Math.Abs(x);
-            if(kind==Enemy.RiftForager)
+            if(IsAvarin(kind))
             {
                 if(y>.37f)return new Skin(1,0,Limit((y-.37f)/.20f,0,1));
                 if(ax>.18f && y>-.36f)
-                    return new Skin(x<0?2:3,0,Limit((ax-.18f)/.135f,0,1));
+                {
+                    int arm=x<0?2:3,elbow=x<0?6:7;
+                    float influence=Limit((ax-.18f)/.135f,0,1);
+                    // A soft upper/forearm transition with the original
+                    // shoulder joint retained for the preserved equipment.
+                    if(kind!=Enemy.RiftForager && y<.045f && influence>.48f)
+                        return new Skin(elbow,arm,Limit((.045f-y)/.20f,0,1)*influence);
+                    return new Skin(arm,0,influence);
+                }
                 if(y<-.23f)
-                    return new Skin(x<0?4:5,0,Limit((-y-.23f)/.24f,0,1));
+                {
+                    int leg=x<0?4:5,knee=x<0?8:9;
+                    if(kind!=Enemy.RiftForager && y<-.43f)
+                        return new Skin(knee,leg,Limit((-.43f-y)/.20f,0,1));
+                    return new Skin(leg,0,Limit((-y-.23f)/.24f,0,1));
+                }
                 return new Skin(0,0,1);
             }
             float rootY=kind==Enemy.Seamstalker?-.075f:-.145f;
@@ -257,13 +300,18 @@ namespace Ninefold.Core.Content
             if(z<-.70f)return new Skin(2,0,Limit((-z-.70f)/.25f,0,1));
             return new Skin(0,0,1);
         }
-        public static int BoneCount(Enemy kind)=>kind==Enemy.RiftForager?6:15;
+        public static int BoneCount(Enemy kind)=>IsAvarin(kind)?(kind==Enemy.RiftForager?6:10):15;
         // Runtime instances reuse immutable generated source data, not Unity
         // meshes (scene ownership still destroys each actual uploaded mesh).
         private static readonly Lazy<Surface>[] TacticalCache={
             new Lazy<Surface>(()=>Generate(Enemy.Seamstalker,.045f)),
             new Lazy<Surface>(()=>Generate(Enemy.Sillrunner,.045f)),
-            new Lazy<Surface>(()=>Generate(Enemy.RiftForager,.038f))};
+            new Lazy<Surface>(()=>Generate(Enemy.RiftForager,.038f)),
+            new Lazy<Surface>(()=>Generate(Enemy.PartedStriker,.038f)),
+            new Lazy<Surface>(()=>Generate(Enemy.SeamCastigator,.038f)),
+            new Lazy<Surface>(()=>Generate(Enemy.AnchorWrecker,.038f)),
+            new Lazy<Surface>(()=>Generate(Enemy.AfterechoSeer,.038f)),
+            new Lazy<Surface>(()=>Generate(Enemy.CampWitness,.038f))};
         public static Surface Tactical(Enemy kind)=>TacticalCache[(int)kind].Value;
 
         // Smooth fitted corneal surfaces: two actual closed shells per
@@ -274,7 +322,7 @@ namespace Ninefold.Core.Content
             new Lazy<Surface>(()=>GenerateEyes(Enemy.Sillrunner))};
         public static Surface EyeShells(Enemy kind)
         {
-            if(kind==Enemy.RiftForager)throw new ArgumentOutOfRangeException(nameof(kind));
+            if(IsAvarin(kind))throw new ArgumentOutOfRangeException(nameof(kind));
             return EyesCache[(int)kind].Value;
         }
         private static Surface GenerateEyes(Enemy kind)
@@ -380,7 +428,7 @@ namespace Ninefold.Core.Content
                 float.IsInfinity(step))
                 throw new ArgumentOutOfRangeException(nameof(step));
             if(!Enum.IsDefined(typeof(Enemy),kind))throw new ArgumentOutOfRangeException(nameof(kind));
-            bool forager=kind==Enemy.RiftForager;
+            bool forager=IsAvarin(kind);
             float minX=forager?-.55f:-.87f,minY=-.84f,minZ=forager?-.48f:-1.55f;
             float maxX=forager?.55f:.87f,maxY=forager?.94f:.73f,maxZ=forager?.53f:1.30f;
             int nx=(int)Math.Ceiling((maxX-minX)/step)+1;

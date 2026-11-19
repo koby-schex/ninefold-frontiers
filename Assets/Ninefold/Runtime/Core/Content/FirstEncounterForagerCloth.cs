@@ -19,14 +19,40 @@ namespace Ninefold.Core.Content
         private static readonly Lazy<FirstEncounterSculpts.Surface> Rest =
             new Lazy<FirstEncounterSculpts.Surface>(Generate);
         public static FirstEncounterSculpts.Surface Tactical()=>Rest.Value;
+        private static readonly Lazy<FirstEncounterSculpts.Surface>[] Roster={
+            Rest,
+            new Lazy<FirstEncounterSculpts.Surface>(()=>GenerateRole(1)),
+            new Lazy<FirstEncounterSculpts.Surface>(()=>GenerateRole(2)),
+            new Lazy<FirstEncounterSculpts.Surface>(()=>GenerateRole(3)),
+            new Lazy<FirstEncounterSculpts.Surface>(()=>GenerateRole(4)),
+            new Lazy<FirstEncounterSculpts.Surface>(()=>GenerateRole(5))
+        };
+        public static FirstEncounterSculpts.Surface Tactical(int kind)
+        {
+            if(kind<0||kind>=Roster.Length)throw new ArgumentOutOfRangeException(nameof(kind));
+            return Roster[kind].Value;
+        }
+
+        // Waist fabric never inherits a weapon/forearm weight just because
+        // a drape flares sideways. Use core and proximal hip only.
+        public static FirstEncounterSculpts.Skin ClothWeights(int kind,float x,float y,float z)
+        {
+            if(kind==0)return FirstEncounterSculpts.Weights(FirstEncounterSculpts.Enemy.RiftForager,x,y,z);
+            float w=Math.Max(0,Math.Min(.86f,(-y-.22f)/.30f));
+            return new FirstEncounterSculpts.Skin(x<0?4:5,0,w);
+        }
 
         // Shell is behind the torso, under and CLEAR of the living sensory
         // crescent, not a biological mantle or a third companion.
         public static float[] PanelPoint(int panel,int column,int row,bool inside)
+            =>PanelPoint(0,panel,column,row,inside);
+
+        public static float[] PanelPoint(int kind,int panel,int column,int row,bool inside)
         {
             if(panel<0 || panel>1 || column<0 || column>=Columns ||
                row<0 || row>=Rows)
                 throw new ArgumentOutOfRangeException(nameof(panel));
+            var enemy=FirstEncounterSculpts.Ashbound(kind);
             float u=(float)column/(Columns-1),v=(float)row/(Rows-1);
             bool left=panel==0;
             float leftEdge=left?-.150f:.019f;
@@ -37,45 +63,62 @@ namespace Ninefold.Core.Content
             // Asymmetric hanging hems are visibly different from one another.
             // Avoid perfectly straight sheet edges and disconnected ribbons.
             float length=left?.285f:.375f;
-            float y=-.158f-length*v+
-                (.017f*(float)Math.Sin(2.2f*Math.PI*u+.7f*panel))*v*v;
+            float top=-.158f;
+            // Each role carries distinctly tailored fabric rather than six
+            // cloned coats. Armored roles use shorter, split front panels.
+            bool front=kind==1||kind==3;
+            switch(kind)
+            {
+                case 1: length=left?.235f:.175f;top=-.235f;break;
+                case 2: length=left?.345f:.235f;top=-.20f;break;
+                case 3: length=left?.17f:.22f;top=-.27f;break;
+                case 4: length=left?.39f:.265f;top=-.20f;break;
+                case 5: length=left?.28f:.345f;top=-.205f;break;
+            }
+            if(kind!=0)x*=FirstEncounterSculpts.TorsoWidth(enemy);
+            float y=top-length*v+
+                (.017f*(float)Math.Sin(2.2f*Math.PI*u+.7f*panel+.45f*kind))*v*v;
             float fold=(float)Math.Sin(4f*Math.PI*u+1.4f*panel+.7f*v);
-            float bias=(float)Math.Sin(2f*Math.PI*u+1.3f*v+.8f*panel);
+            float bias=(float)Math.Sin(2f*Math.PI*u+1.3f*v+.8f*panel+.3f*kind);
             float z=-.166f-.034f*v-.011f*v*v-
                 .016f*(float)Math.Sin(Math.PI*v)*fold-
                 .006f*v*v*bias;
+            if(front)z=-z;
+            float direction=front?1f:-1f;
             // A smooth, continuous rest-fit solve along the rear normal.
             // Former fixed 8-mm steps made jagged diagonal surface stripes
             // when neighboring fabric columns crossed an anatomy threshold.
             // Bisection avoids quantized stepping and keeps the cloth outside.
-            if(FirstEncounterSculpts.Field(FirstEncounterSculpts.Enemy.RiftForager,x,y,z)<.011f)
+            if(FirstEncounterSculpts.Field(enemy,x,y,z)<.011f)
             {
                 float near=z;
-                float far=z-.35f;
-                if(FirstEncounterSculpts.Field(FirstEncounterSculpts.Enemy.RiftForager,x,y,far)<.011f)
+                float far=z+direction*.35f;
+                if(FirstEncounterSculpts.Field(enemy,x,y,far)<.011f)
                     throw new InvalidOperationException(
                         "Rear garment could not clear the original anatomy.");
                 for(int i=0;i<21;i++)
                 {
                     float mid=(near+far)*.5f;
-                    if(FirstEncounterSculpts.Field(FirstEncounterSculpts.Enemy.RiftForager,x,y,mid)<.011f)
+                    if(FirstEncounterSculpts.Field(enemy,x,y,mid)<.011f)
                         near=mid;
                     else
                         far=mid;
                 }
                 z=far;
             }
-            if(FirstEncounterSculpts.Field(FirstEncounterSculpts.Enemy.RiftForager,x,y,z)<.009f ||
-               z<-.49f)
+            if(FirstEncounterSculpts.Field(enemy,x,y,z)<.009f ||
+               Math.Abs(z)>.53f)
                 throw new InvalidOperationException(
                     "Fieldcloth intersects anatomy or floats off the back.");
             // Two physical sheets with stitched perimeter, 7 mm apart.
-            if(inside) z+=.003f;
-            else z-=.004f;
+            if(inside) z-=direction*.003f;
+            else z+=direction*.004f;
             return new[]{x,y,z};
         }
 
-        public static FirstEncounterSculpts.Surface Generate()
+        public static FirstEncounterSculpts.Surface Generate()=>GenerateRole(0);
+
+        private static FirstEncounterSculpts.Surface GenerateRole(int kind)
         {
             var mesh=new FirstEncounterSculpts.Surface();
             const int n=Columns*Rows;
@@ -88,7 +131,7 @@ namespace Ninefold.Core.Content
                 for(int c=0;c<Columns;c++)
                 {
                     bool inside=layer==1;
-                    mesh.Vertices.Add(PanelPoint(panel,c,r,inside));
+                    mesh.Vertices.Add(PanelPoint(kind,panel,c,r,inside));
                     mesh.UVs.Add(new[]{(float)c/(Columns-1),
                         (float)r/(Rows-1)});
                     mesh.Normals.Add(new[]{0f,0f,inside?1f:-1f});
@@ -100,7 +143,9 @@ namespace Ninefold.Core.Content
                 {
                     if(a==b || b==c || a==c)
                         throw new InvalidOperationException("Collapsed cloth face.");
-                    indices.Add(a);indices.Add(b);indices.Add(c);
+                    indices.Add(a);
+                    bool front=kind==1||kind==3;
+                    indices.Add(front?c:b);indices.Add(front?b:c);
                 }
                 for(int r=0;r<Rows-1;r++)
                 for(int c=0;c<Columns-1;c++)

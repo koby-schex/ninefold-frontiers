@@ -37,6 +37,8 @@ namespace Ninefold.Presentation
             public Transform OrganicCore, OrganicHead;
             public Transform OrganicArmLeft, OrganicArmRight;
             public Transform OrganicLegLeft, OrganicLegRight;
+            public Transform OrganicElbowLeft, OrganicElbowRight;
+            public Transform OrganicKneeLeft, OrganicKneeRight;
             public FirstEncounterBattleArt.WildlifeRig WildlifeRig;
         }
         private sealed class FloatingFeedback
@@ -139,6 +141,24 @@ namespace Ninefold.Presentation
             SurfaceNormal(stalkerAccent,stalkerNormal,.25f,.50f);
             SurfaceNormal(foragerSkin,runnerNormal,.24f,.33f);
             SurfaceNormal(foragerFabric,stalkerNormal,.13f,.42f);
+            SurfaceNormal(avarinSkin,runnerNormal,.24f,.33f);
+            SurfaceNormal(avarinMantle,runnerNormal,.22f,.24f);
+            SurfaceNormal(avarinFabric,stalkerNormal,.13f,.42f);
+            SurfaceNormal(avarinGear,stalkerNormal,.30f,.26f);
+            SurfaceNormal(avarinWake,runnerNormal,.33f,.19f);
+            var clothResponse=FirstEncounterBattleArt.SurfaceResponse(false);
+            var salvageResponse=FirstEncounterBattleArt.SurfaceResponse(true);
+            organicTextures.Add(clothResponse);organicTextures.Add(salvageResponse);
+            void Response(Material mat,Texture2D map)
+            {
+                if(!mat.HasProperty("_MetallicGlossMap"))return;
+                mat.SetTexture("_MetallicGlossMap",map);
+                if(mat.HasProperty("_Metallic"))mat.SetFloat("_Metallic",1f);
+                if(mat.HasProperty("_Smoothness"))mat.SetFloat("_Smoothness",1f);
+                mat.EnableKeyword("_METALLICSPECGLOSSMAP");
+            }
+            Response(avarinFabric,clothResponse);Response(foragerFabric,clothResponse);
+            Response(avarinGear,salvageResponse);Response(avarinWake,salvageResponse);
             foreach(var m in new[]{avarinFabric,avarinGear,avarinWake,avarinShadow})
                 m.mainTexture=equipmentTexture;
             active = Make(new Color(.94f, .85f, .52f)); floor = Make(new Color(.075f, .12f, .17f));
@@ -660,6 +680,7 @@ namespace Ninefold.Presentation
                 if(token.OrganicLegRight!=null)
                     token.OrganicLegRight.localPosition=new Vector3(.15f,
                         -.32f+(moving?Mathf.Max(0,-gait)*.038f:0),-.02f);
+                PoseAshboundDistal(token,gait,lunge,0f,0f);
                 return;
             }
             foreach(Transform part in token.Body.transform)
@@ -680,6 +701,17 @@ namespace Ninefold.Presentation
                         (part.name.EndsWith("Left",StringComparison.Ordinal)?-1f:1f)
                         *lunge*7f);
             }
+        }
+
+        private static void PoseAshboundDistal(Token token,float gait,float attack,
+            float hit,float defeat)
+        {
+            if(token.OrganicElbowLeft==null)return;
+            var p=AshboundRosterMotion.Sample(token.AshboundKind,gait,attack,hit,defeat);
+            token.OrganicElbowLeft.localRotation=Quaternion.Euler(p.LeftElbow,0,p.LeftTwist);
+            token.OrganicElbowRight.localRotation=Quaternion.Euler(p.RightElbow,0,p.RightTwist);
+            token.OrganicKneeLeft.localRotation=Quaternion.Euler(p.LeftKnee,0,0);
+            token.OrganicKneeRight.localRotation=Quaternion.Euler(p.RightKnee,0,0);
         }
 
         // Procedural motion on the child pieces only. The authoritative root,
@@ -848,6 +880,16 @@ namespace Ninefold.Presentation
                                 t.OrganicArmRight=t.OrganicCore.Find("Ashbound motion arm Right");
                                 t.OrganicLegLeft=t.Body.transform.Find("Ashbound motion leg Left");
                                 t.OrganicLegRight=t.Body.transform.Find("Ashbound motion leg Right");
+                                if(ashboundType!=0)
+                                {
+                                    t.OrganicElbowLeft=t.OrganicArmLeft.Find("Ashbound elbow Left");
+                                    t.OrganicElbowRight=t.OrganicArmRight.Find("Ashbound elbow Right");
+                                    t.OrganicKneeLeft=t.OrganicLegLeft.Find("Ashbound knee Left");
+                                    t.OrganicKneeRight=t.OrganicLegRight.Find("Ashbound knee Right");
+                                    if(t.OrganicElbowLeft==null||t.OrganicElbowRight==null||
+                                        t.OrganicKneeLeft==null||t.OrganicKneeRight==null)
+                                        throw new InvalidOperationException("Ashbound distal joints lost.");
+                                }
                                 if(t.OrganicHead==null || t.OrganicArmLeft==null ||
                                     t.OrganicArmRight==null || t.OrganicLegLeft==null ||
                                     t.OrganicLegRight==null)
@@ -1196,6 +1238,7 @@ namespace Ninefold.Presentation
                             // A real authoritative hit produces a bounded
                             // flinch; no damage or status is inferred by art.
                             float flinch=Mathf.Sin(strike*Mathf.PI);
+                            PoseAshboundDistal(token,0f,0f,flinch,0f);
                             token.OrganicCore.localRotation *= Quaternion.Euler(
                                 13f*flinch,0,3f*flinch);
                             if(token.OrganicHead!=null)
@@ -1205,6 +1248,7 @@ namespace Ninefold.Presentation
                     }
                     if (after?.Health?.IsDefeated == true)
                     {
+                        PoseAshboundDistal(token,0f,0f,0f,strike);
                         token.Body.transform.localScale=token.Scale*(1-strike*.85f);
                         token.Body.transform.localRotation=Quaternion.Euler(0,0,strike*70);
                     }

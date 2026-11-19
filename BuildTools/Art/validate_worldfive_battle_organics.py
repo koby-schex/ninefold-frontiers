@@ -12,6 +12,7 @@ art = read("Assets/Ninefold/Runtime/Presentation/WorldFiveBattleOrganics.cs")
 battle = read("Assets/Ninefold/Runtime/Presentation/PlaytestBattlefield.cs")
 scenery = read("Assets/Ninefold/Runtime/Presentation/BattlefieldScenery.cs")
 early = read("Assets/Ninefold/Runtime/Presentation/FirstEncounterBattleArt.cs")
+plan = read("Assets/Ninefold/Runtime/Core/Content/AshboundWearablePlan.cs")
 sculpt = read("Assets/Ninefold/Runtime/Core/Content/FirstEncounterSculpts.cs")
 tests = read("Tests/Ninefold.Core.Tests/FirstEncounterSculptsTests.cs")
 creatures = read("Assets/Ninefold/Runtime/Core/Content/WorldFiveTutorialWildlifeV1.cs")
@@ -21,19 +22,21 @@ def check(ok, message):
     if not ok:
         raise AssertionError(message)
 
-check("Mesh Loft(" in art and "mesh.SetVertices(vertices);" in art and
-      "mesh.SetTriangles(triangles,0);" in art and "mesh.RecalculateNormals();" in art,
-      "Procedural art must build actual multi-ring triangulated 3D surfaces")
+check("AshboundWearablePlan.Geometry(piece)" in art and
+      "mesh.SetVertices(vertices);" in art and "mesh.SetTriangles(data.Indices[0],0);" in art and
+      "mesh.SetNormals(normals);" in art and "Vector3.Normalize(v)" in plan,
+      "Actual shared wearable triangulation and finite geometric normals required")
 check("FirstEncounterBattleArt.BuildWildlife(root,stalker" in art and
       "internal static void Ashbound" in art,
       "Separate wildlife / hostile-Avarin art builders are required")
 for name in ["Avarin torso", "Avarin temple face", "Living crescent ",
              "Avarin arm ", "Avarin leg ", "Fracture Wake equipment"]:
-    check(name in art, "Missing named organic anatomy or safe hardware: " + name)
-check("FirstEncounterBattleArt.RemoveForagerBlockout(root,owned)" in art and
-      "FirstEncounterBattleArt.AttachForager(root,skin,fabric,dark,owned)" in art and
-      'if(kind==0)' in art,
-      "Only the intended Forager blockout must be replaced with connected skin")
+    check(name in plan, "Missing named organic anatomy or safe hardware: " + name)
+check("ReplacedAnatomy(name)" in plan and
+      "FirstEncounterBattleArt.AttachAshbound(root,kind,bones,skin,fabric,dark,owned)" in art and
+      "var bones=GroupAshboundMotion(root,kind)" in art and
+      "AshboundWearablePlan.Build(kind)" in art,
+      "ALL six named Ashbound must use connected skin, not old independent limb lofts")
 check("SkinnedMeshRenderer" in early and "mesh.bindposes=binds;mesh.boneWeights=weights;" in early and
       "Sculpt.Tactical(kind)" in early and "Sculpt.Weights(kind" in early and
       "WildlifeJoint(kind,limb" in early and "limb<6" in early and
@@ -44,11 +47,12 @@ check("SkinnedMeshRenderer" in early and "mesh.bindposes=binds;mesh.boneWeights=
 check("public static Surface Generate(Enemy kind" in sculpt and
       "var edges=new Dictionary<ulong,int>()" in sculpt and "MaterialSlot(kind" in sculpt and
       "EncounterSculptTopology" in tests and "EncounterWildlifeIdentity" in tests and
-      "EncounterSculptOrder" in tests,
-      "All three exact model surfaces require executable topology and encounter tests")
+      "EncounterSculptOrder" in tests and "RosterWearableGeometry" in tests and
+      "RosterBodyAndCloth" in tests and "RosterMotion" in tests,
+      "All eight exact bodies and six assembled Ashbound need executable tests")
 for forbidden in ("AddComponent<Collider>", "AddComponent<Rigidbody>", "AddComponent<MonoBehaviour>"):
     check(forbidden not in early, "Early models must remain presentation-only")
-check("new Mesh" in art and "new GameObject(name)" in art and
+check("new Mesh" in art and "new GameObject(piece.Name)" in art and
       "new GameObject(h.UnitId" in battle,
       "No fallback may be only a decorative cube on top of a game token")
 check("TryCreateApprovedVisual(h.UnitId,out var modelBody)" in battle and
