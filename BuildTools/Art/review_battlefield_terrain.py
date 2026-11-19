@@ -49,14 +49,17 @@ def main():
     p=argparse.ArgumentParser();p.add_argument("directory",type=Path);args=p.parse_args()
     manifest=json.loads((args.directory/"manifest.json").read_text())
     scenes=[json.loads((args.directory/m["file"]).read_text()) for m in manifest]
-    # Matched portrait tactical presentation for the whole 14-mission batch,
-    # plus a separate row of genuinely generated Quick Battle attempts.
+    # Separate opening and continuation sheets keep both reviews readable.
     w,h=350,440
-    story=Image.new("RGB",(w*4,h*4),(18,20,29))
-    for i,s in enumerate(scenes[:14]):story.paste(frame(s,w,h),(i%4*w,i//4*h))
-    story.save(args.directory/"World-Five-14-Battlefield-Roster.png")
+    story_scenes=[s for s in scenes if not s["label"].startswith("quick-")]
+    for label,group in [("World-Five-14-Battlefield-Roster",story_scenes[:14]),
+                        ("World-Five-15-34-Battlefield-Roster",story_scenes[14:])]:
+        if not group:continue
+        story=Image.new("RGB",(w*4,h*((len(group)+3)//4)),(18,20,29))
+        for i,s in enumerate(group):story.paste(frame(s,w,h),(i%4*w,i//4*h))
+        story.save(args.directory/(label+".png"))
     quick=Image.new("RGB",(w*4,h),(18,20,29))
-    for i,s in enumerate(scenes[14:]):quick.paste(frame(s,w,h),(i*w,0))
+    for i,s in enumerate(s for s in scenes if s["label"].startswith("quick-")):quick.paste(frame(s,w,h),(i*w,0))
     quick.save(args.directory/"Quick-Battle-4-Seeded-Arenas.png")
     moods=Image.new("RGB",(500*3,580*2),(18,20,29))
     seen=set();i=0

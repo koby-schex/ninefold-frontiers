@@ -458,10 +458,10 @@ namespace Ninefold.Presentation
                 OpenCampaignPrototypeFromHome);
             if (worldFiveSlice && !wildlifeStudy)
             {
-                var wildlife=Button(panel,"TRY WORLD FIVE WILDLIFE TUTORIAL  ›",
+                var wildlife=Button(panel,"WORLD FIVE CAMPAIGN · MISSIONS 1–34  ›",
                     OpenWildlifeFromHome);
                 wildlife.AddToClassList("home-quick-link");
-                wildlife.tooltip="Separate study with cautious Sillrunners and pursuing Seamstalkers in tutorial missions 7 and 8.";
+                wildlife.tooltip="Continue the full World Five route, including twenty new missions. Existing native ecology progress is preserved.";
             }
             if (worldFiveSlice && !varietyStudy)
             {
@@ -647,6 +647,8 @@ namespace Ninefold.Presentation
                 Text(identity, !mission.Available ? "LOCKED" : mission.IsReplay ? "CLEARED · REPLAY"
                     : highlighted ? "UP NEXT" : "AVAILABLE", "campaign-status").AddToClassList("mission-path-status");
                 Text(identity, MissionName(missionId), "section").AddToClassList("mission-path-name");
+                if(mission.Available && WorldFiveRouteRecovery.TryGet(missionId,out var chapter))
+                    Text(identity,chapter.Title,"detail");
                 if (mission.Definition.Encounter == EncounterKind.WorldCollision)
                     Text(identity, "WORLD COLLISION", "eyebrow").AddToClassList("vmp-world-collision");
                 if (!mission.Available)
@@ -699,6 +701,13 @@ namespace Ninefold.Presentation
                 Text(parent, "REPLAY · COMPLETED MISSION", "eyebrow")
                     .AddToClassList("mission-brief-context");
 
+            if(WorldFiveRouteRecovery.TryGet(definition.Id,out var chapter))
+            {
+                var narrative=Card(parent,"briefing-objective");
+                Text(narrative,chapter.Act,"eyebrow");
+                Text(narrative,chapter.Title,"section");
+                Text(narrative,chapter.Briefing,"detail");
+            }
             if (actOneStudy && definition.Id == WorldFiveStorySequence.FirstCampaignMissionId)
             {
                 var narrative = Card(parent, "briefing-objective");
@@ -1150,6 +1159,8 @@ namespace Ninefold.Presentation
             Text(summary, victory ? "Victory" : "Defeat", "display-title");
             Text(summary, MissionName(r.Result.MissionId) + " · Round " + r.Result.Round, "section");
             Text(summary, victory ? "Objective achieved." : "Regroup and try a new approach.", "detail");
+            if(victory && WorldFiveRouteRecovery.TryGet(r.Result.MissionId,out var chapter))
+                Text(summary,chapter.Success,"detail");
             if (actOneStudy && r.Result.MissionId == WorldFiveStorySequence.FirstCampaignMissionId && victory)
                 Text(summary, "The attackers are Ashbound. Their empty harnesses and damaged route " +
                     "equipment point toward deliberate sabotage. The Continuance must investigate.", "detail");
@@ -1592,7 +1603,7 @@ namespace Ninefold.Presentation
                 // an independent directory to protect all old checkpoints.
                 if (actOneStudy)
                 {
-                    catalog = wildlifeStudy ? WorldFiveTutorialWildlifeV1.Create() :
+                    catalog = wildlifeStudy ? WorldFiveRouteRecovery.Create() :
                         varietyStudy ? WorldFiveEncounterVarietyV2.Create() : WorldFiveCombatMechanicsV1.Create();
                     var battles=new DirectoryBattleSaveFiles(savePath);
                     var progress=new DirectoryProgressSaveFiles(savePath);
@@ -1654,7 +1665,7 @@ namespace Ninefold.Presentation
                 OpenProfile();
                 selectedCampaign=WorldFiveOpeningTenPrototype.CampaignId;
                 page=Page.Missions;
-                message="World Five wildlife study · native creature encounters in tutorial missions 7 and 8.";
+                message="World Five · 34 available campaign missions · your existing progress is retained.";
                 dirty=true;
             }
             catch(Exception error)
@@ -2148,7 +2159,11 @@ namespace Ninefold.Presentation
         private string BattleActorName(string actorId)
         {
             var threat=BattleEnemyThreat(actorId);
-            return threat==null?DisplayUnitName(actorId):threat.Name;
+            if(threat!=null)return threat.Name;
+            if(actorId!=null&&actorId.EndsWith("-traveler",StringComparison.Ordinal)&&
+                battleView!=null&&WorldFiveRouteRecovery.TryNumber(battleView.Battle.MissionId,out _))
+                return "Traveler";
+            return DisplayUnitName(actorId);
         }
 
         private string DisplayUnitName(string id)
@@ -2161,6 +2176,7 @@ namespace Ninefold.Presentation
         {
             if (worldFiveSlice)
             {
+                if(WorldFiveRouteRecovery.TryGet(id,out var chapter))return chapter.Instructions;
                 if (varietyStudy && WorldFiveEncounterVarietyV2.NewMissionIds.Contains(id))
                     return "Defeat the Ashbound defenders. Their numbers, roles and positioning differ from the last encounter.";
                 if (actOneStudy && id == WorldFiveStorySequence.FirstCampaignMissionId)
@@ -2202,6 +2218,7 @@ namespace Ninefold.Presentation
             for (int i=0;i<WorldFiveOpeningTenPrototype.MissionIds.Count;i++)
                 if (id==WorldFiveOpeningTenPrototype.MissionIds[i]) return "Mission " + (i+1);
             if (id==WorldFiveStorySequence.FirstCampaignMissionId) return "Mission 11";
+            if(WorldFiveRouteRecovery.TryNumber(id,out int stage))return "Mission "+stage;
             for (int i=0;i<WorldFiveEncounterVarietyV2.NewMissionIds.Length;i++)
                 if (id==WorldFiveEncounterVarietyV2.NewMissionIds[i]) return "Mission " + (i+12);
             return id=="fixture-opening"?"Stabilization":
