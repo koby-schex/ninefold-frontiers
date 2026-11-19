@@ -179,16 +179,16 @@ namespace Ninefold.Core.Content
             // Technical NPC type selects shoulder/gear proportions but NEVER
             // creates companion creatures or turns the mantle into a magic organ.
             float bulk=kind==1?1.19f:kind==3?1.32f:kind==4?.84f:1f;
-            Part(root,owned,"Avarin torso",skin,Vector3.zero,new[]{
+            Part(root,owned,"Avarin torso",skin,Vector3.Zero,new[]{
                 P(0,-.35f,0),P(0,-.21f,0),P(0,-.04f,-.015f),
                 P(0,.16f,-.035f),P(0,.31f,-.03f),P(0,.44f,-.02f)
             },new[]{R(.11f,.09f),R(.22f*bulk,.14f),
                 R(.23f*bulk,.16f),R(.255f*bulk,.17f),R(.21f*bulk,.14f),
                 R(.065f,.07f)},24);
-            Part(root,owned,"Avarin neck",skin,Vector3.zero,new[]{
+            Part(root,owned,"Avarin neck",skin,Vector3.Zero,new[]{
                 P(0,.33f,-.01f),P(0,.45f,.012f),P(0,.57f,.027f)
             },new[]{R(.065f,.067f),R(.10f,.09f),R(.071f,.08f)},18);
-            Part(root,owned,"Avarin temple face",skin,Vector3.zero,new[]{
+            Part(root,owned,"Avarin temple face",skin,Vector3.Zero,new[]{
                 P(0,.42f,.014f),P(0,.53f,.063f),P(0,.68f,.07f),
                 P(0,.80f,.025f),P(0,.85f,-.02f)
             },new[]{R(.087f,.085f),R(.135f,.118f),R(.14f,.13f),
@@ -197,7 +197,7 @@ namespace Ninefold.Core.Content
             foreach(float side in new[]{-1f,1f})
             {
                 string sideName=side<0?"Left":"Right";
-                Part(root,owned,"Living crescent "+sideName,mantle,Vector3.zero,new[]{
+                Part(root,owned,"Living crescent "+sideName,mantle,Vector3.Zero,new[]{
                     P(side*.072f,.60f,-.16f),P(side*.18f,.66f,-.15f),
                     P(side*.33f,.69f,-.14f),P(side*.46f,.72f,-.12f),
                     P(side*.49f,.81f,-.09f),P(side*.40f,.91f,-.07f)
@@ -229,7 +229,7 @@ namespace Ninefold.Core.Content
                     R(.047f,.041f)},18);
             }
             // Damage-worn, non-magical clothing + deliberately external Wake.
-            Part(root,owned,"Field mantle drape",fabric,Vector3.zero,new[]{
+            Part(root,owned,"Field mantle drape",fabric,Vector3.Zero,new[]{
                 P(0,.19f,-.148f),P(0,.07f,-.165f),
                 P(0,-.18f,-.17f),P(0,-.42f,-.14f)
             },new[]{R(.20f,.048f),R(.225f,.056f),
@@ -402,7 +402,7 @@ namespace Ninefold.Core.Content
                 {
                     float reach=rib*.036f;
                     Part(root,owned,"Mantle filament "+half+" "+rib,
-                        rib==1?skin:mantle,Vector3.zero,
+                        rib==1?skin:mantle,Vector3.Zero,
                         new[]{P(side*(.105f+reach),.63f,-.108f),
                               P(side*(.23f+reach),.69f,-.090f),
                               P(side*(.37f+reach),.74f,-.067f),
@@ -413,7 +413,7 @@ namespace Ninefold.Core.Content
 
                 // Continuous layered muscle and soft field wrapping;
                 // narrower Forager and heavier reinforced Striker shapes.
-                Part(root,owned,"Clavicle contour "+half,skin,Vector3.zero,
+                Part(root,owned,"Clavicle contour "+half,skin,Vector3.Zero,
                     new[]{P(side*.058f,.335f,.100f),
                           P(side*.14f,.301f,.137f),
                           P(side*.230f,.270f,.092f)},
@@ -448,7 +448,7 @@ namespace Ninefold.Core.Content
                     new[]{R(.059f,.038f),R(.097f,.046f),
                           R(.024f,.018f)},12);
             }
-            Part(root,owned,"Upper field wrap",fabric,Vector3.zero,
+            Part(root,owned,"Upper field wrap",fabric,Vector3.Zero,
                 new[]{P(0,.258f,.122f),P(0,.145f,.160f),
                       P(0,.016f,.163f),P(0,-.100f,.147f)},
                 new[]{R(.133f,.039f),R(striker ? .225f : .172f,.046f),
@@ -458,7 +458,7 @@ namespace Ninefold.Core.Content
             {
                 float side=strip<2?-1f:1f;
                 float y=.195f-(strip%2)*.089f;
-                Part(root,owned,"Cross body harness "+strip,gear,Vector3.zero,
+                Part(root,owned,"Cross body harness "+strip,gear,Vector3.Zero,
                     new[]{P(side*.052f,y+.113f,.155f),
                           P(side*.116f,y+.058f,.168f),
                           P(side*.191f,y-.05f,.084f)},
