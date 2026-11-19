@@ -53,6 +53,7 @@ namespace Ninefold.Core.Content
         public static Mood Choose(string mission,string environment)
         {
             if(!IsWorldFive(mission,environment))return Mood.Neutral;
+            if(WorldFiveRouteRecovery.TryGet(mission,out var chapter))return chapter.Mood;
             int n=0;
             if(mission!=null&&mission.Length>=3)
                 int.TryParse(mission.Substring(mission.Length-3),NumberStyles.None,CultureInfo.InvariantCulture,out n);

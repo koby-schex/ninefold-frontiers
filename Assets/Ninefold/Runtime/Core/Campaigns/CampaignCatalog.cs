@@ -22,7 +22,10 @@ namespace Ninefold.Core.Campaigns
             CampaignId = definition.Id; TotalMissions = definition.Missions.Count; CanEnter = canEnter;
             CompletedMissions = definition.Missions.Count(m => progress.Missions.ContainsKey(m.MissionId));
             RewardsClaimed = progress.CampaignClaims.Any(c => c.CampaignId == definition.Id);
-            IsComplete = RewardsClaimed || definition.Missions.Where(m => m.Required).All(m => progress.Missions.ContainsKey(m.MissionId));
+            // A completion receipt is permanent, but an append-only campaign
+            // continuation may add required stages afterward. Keep the receipt
+            // without treating new unplayed missions as already completed.
+            IsComplete = definition.Missions.Where(m => m.Required).All(m => progress.Missions.ContainsKey(m.MissionId));
             AvailableMissions = Array.AsReadOnly(available.ToArray());
         }
     }
