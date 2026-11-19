@@ -11,6 +11,9 @@ read = lambda name: (root / name).read_text(encoding="utf-8")
 art = read("Assets/Ninefold/Runtime/Presentation/WorldFiveBattleOrganics.cs")
 battle = read("Assets/Ninefold/Runtime/Presentation/PlaytestBattlefield.cs")
 scenery = read("Assets/Ninefold/Runtime/Presentation/BattlefieldScenery.cs")
+early = read("Assets/Ninefold/Runtime/Presentation/FirstEncounterBattleArt.cs")
+sculpt = read("Assets/Ninefold/Runtime/Core/Content/FirstEncounterSculpts.cs")
+tests = read("Tests/Ninefold.Core.Tests/FirstEncounterSculptsTests.cs")
 creatures = read("Assets/Ninefold/Runtime/Core/Content/WorldFiveTutorialWildlifeV1.cs")
 enemy = read("Assets/Ninefold/Runtime/Core/Content/WorldFiveActOnePrototype.cs")
 
@@ -21,16 +24,30 @@ def check(ok, message):
 check("Mesh Loft(" in art and "mesh.SetVertices(vertices);" in art and
       "mesh.SetTriangles(triangles,0);" in art and "mesh.RecalculateNormals();" in art,
       "Procedural art must build actual multi-ring triangulated 3D surfaces")
-check("internal static void Wildlife" in art and "internal static void Ashbound" in art,
+check("FirstEncounterBattleArt.BuildWildlife(root,stalker" in art and
+      "internal static void Ashbound" in art,
       "Separate wildlife / hostile-Avarin art builders are required")
-for name in ["Dorsal shell", "Head", "Walking limb", "Sensory ridge",
-             "Tapered tail", "Balance fan", "Lateral eye",
-             "Avarin torso", "Avarin temple face", "Living crescent ",
+for name in ["Avarin torso", "Avarin temple face", "Living crescent ",
              "Avarin arm ", "Avarin leg ", "Fracture Wake equipment"]:
     check(name in art, "Missing named organic anatomy or safe hardware: " + name)
-check("foot.transform.SetParent(walkingLeg.transform,true)" in art and
-      "eye.transform.SetParent(head.transform,true)" in art,
-      "Wildlife claws and eyes must follow actual moving anatomy")
+check("FirstEncounterBattleArt.RemoveForagerBlockout(root,owned)" in art and
+      "FirstEncounterBattleArt.AttachForager(root,skin,fabric,dark,owned)" in art and
+      'if(kind==0)' in art,
+      "Only the intended Forager blockout must be replaced with connected skin")
+check("SkinnedMeshRenderer" in early and "mesh.bindposes=binds;mesh.boneWeights=weights;" in early and
+      "Sculpt.Tactical(kind)" in early and "Sculpt.Weights(kind" in early and
+      "WildlifeJoint(kind,limb" in early and "limb<6" in early and
+      "token.WildlifeRig?.Pose" in battle and
+      "t.WildlifeRig=AddWildlifeForm" in battle and
+      "FirstEncounterBattleArt.OrganicNormal" in battle,
+      "Real gameplay wildlife skinning, anatomy, movement and material response required")
+check("public static Surface Generate(Enemy kind" in sculpt and
+      "var edges=new Dictionary<ulong,int>()" in sculpt and "MaterialSlot(kind" in sculpt and
+      "EncounterSculptTopology" in tests and "EncounterWildlifeIdentity" in tests and
+      "EncounterSculptOrder" in tests,
+      "All three exact model surfaces require executable topology and encounter tests")
+for forbidden in ("AddComponent<Collider>", "AddComponent<Rigidbody>", "AddComponent<MonoBehaviour>"):
+    check(forbidden not in early, "Early models must remain presentation-only")
 check("new Mesh" in art and "new GameObject(name)" in art and
       "new GameObject(h.UnitId" in battle,
       "No fallback may be only a decorative cube on top of a game token")
