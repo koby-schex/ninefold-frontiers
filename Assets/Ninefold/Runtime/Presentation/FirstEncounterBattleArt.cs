@@ -96,6 +96,7 @@ namespace Ninefold.Presentation
             {
                 string n=part.name;
                 if(n=="Avarin torso"||n=="Avarin neck"||n=="Avarin temple face"||
+                    n=="Field mantle drape"||
                     n.StartsWith("Avarin arm ",StringComparison.Ordinal)||
                     n.StartsWith("Avarin leg ",StringComparison.Ordinal)||
                     n.StartsWith("Avarin foot ",StringComparison.Ordinal)||
@@ -130,41 +131,52 @@ namespace Ninefold.Presentation
                 root.transform.Find("Ashbound motion leg Right")};
             AttachSkin(root,Sculpt.Enemy.RiftForager,bones,
                 new[]{skin,fabric,dark},owned);
+            AttachSkin(root,Sculpt.Enemy.RiftForager,bones,
+                new[]{fabric,dark},owned,true);
         }
 
         private static void AttachSkin(GameObject root,Sculpt.Enemy kind,
-            Transform[] bones,Material[] materials,List<Mesh> owned)
+            Transform[] bones,Material[] materials,List<Mesh> owned,bool cloth=false)
         {
             if(bones.Length!=Sculpt.BoneCount(kind))throw new InvalidOperationException("Rig size");
             foreach(var bone in bones)
                 if(bone==null)throw new InvalidOperationException("Missing anatomical joint");
-            var geometry=Sculpt.Tactical(kind);
-            var vertices=new List<Vector3>(geometry.Vertices.Count);
-            var normals=new List<Vector3>(geometry.Vertices.Count);
-            var uv=new List<Vector2>(geometry.Vertices.Count);
-            var weights=new BoneWeight[geometry.Vertices.Count];
-            for(int i=0;i<geometry.Vertices.Count;i++)
+            string meshName=kind+(cloth?" / stitched fieldcloth":" / connected battle skin");
+            var node=Joint(root.transform,meshName,Vector3.zero);
+            // Same kind/rig rest dimensions are immutable. Reuse one GPU
+            // mesh across all like enemies, never reuse a transform/bone.
+            // The scene's owned collection releases it exactly once.
+            Mesh mesh=owned.Find(m=>m!=null && m.name==meshName);
+            if(mesh==null)
             {
-                var point=geometry.Vertices[i];
-                vertices.Add(Vector(point)); normals.Add(Vector(geometry.Normals[i]));
-                uv.Add(new Vector2(geometry.UVs[i][0],geometry.UVs[i][1]));
-                var w=Sculpt.Weights(kind,point[0],point[1],point[2]);
-                weights[i]=new BoneWeight{boneIndex0=w.A,boneIndex1=w.B,
-                    weight0=w.WeightA,weight1=1f-w.WeightA};
+                var geometry=cloth?FirstEncounterForagerCloth.Tactical():Sculpt.Tactical(kind);
+                var vertices=new List<Vector3>(geometry.Vertices.Count);
+                var normals=new List<Vector3>(geometry.Vertices.Count);
+                var uv=new List<Vector2>(geometry.Vertices.Count);
+                var weights=new BoneWeight[geometry.Vertices.Count];
+                for(int i=0;i<geometry.Vertices.Count;i++)
+                {
+                    var point=geometry.Vertices[i];
+                    vertices.Add(Vector(point)); normals.Add(Vector(geometry.Normals[i]));
+                    uv.Add(new Vector2(geometry.UVs[i][0],geometry.UVs[i][1]));
+                    var w=Sculpt.Weights(kind,point[0],point[1],point[2]);
+                    weights[i]=new BoneWeight{boneIndex0=w.A,boneIndex1=w.B,
+                        weight0=w.WeightA,weight1=1f-w.WeightA};
+                }
+                mesh=new Mesh{name=meshName,indexFormat=IndexFormat.UInt32};
+                mesh.SetVertices(vertices);mesh.SetNormals(normals);mesh.SetUVs(0,uv);
+                mesh.subMeshCount=cloth?2:3;
+                for(int i=0;i<mesh.subMeshCount;i++)
+                    mesh.SetTriangles(geometry.Indices[i+(cloth?1:0)],i);
+                mesh.RecalculateTangents();
+                // Bind to local-space pivots that also carry face/mantle/gear.
+                var binds=new Matrix4x4[bones.Length];
+                for(int i=0;i<bones.Length;i++)
+                    binds[i]=bones[i].worldToLocalMatrix*node.localToWorldMatrix;
+                mesh.bindposes=binds;mesh.boneWeights=weights;
+                mesh.RecalculateBounds();
+                owned.Add(mesh);
             }
-            var mesh=new Mesh{name=kind+" / connected battle skin",
-                indexFormat=IndexFormat.UInt32};
-            mesh.SetVertices(vertices);mesh.SetNormals(normals);mesh.SetUVs(0,uv);
-            mesh.subMeshCount=3;
-            for(int i=0;i<3;i++)mesh.SetTriangles(geometry.Indices[i],i);
-            mesh.RecalculateTangents();
-            var node=Joint(root.transform,kind+" weighted rest surface",Vector3.zero);
-            // Bind to local-space pivots that also carry face/mantle/gear.
-            var binds=new Matrix4x4[bones.Length];
-            for(int i=0;i<bones.Length;i++)
-                binds[i]=bones[i].worldToLocalMatrix*node.localToWorldMatrix;
-            mesh.bindposes=binds;mesh.boneWeights=weights;
-            mesh.RecalculateBounds();
             var renderer=node.gameObject.AddComponent<SkinnedMeshRenderer>();
             renderer.sharedMesh=mesh;renderer.bones=bones;renderer.rootBone=bones[0];
             renderer.quality=SkinQuality.Bone2;renderer.sharedMaterials=materials;
@@ -175,7 +187,6 @@ namespace Ninefold.Presentation
             // Conservative swing envelope measured in root-bone space.
             var origin=root.transform.InverseTransformPoint(bones[0].position);
             bounds.center-=origin;bounds.Expand(.65f);renderer.localBounds=bounds;
-            owned.Add(mesh);
         }
 
         // Separate non-flat material response for each wildlife surface
