@@ -2047,7 +2047,7 @@ namespace Ninefold.Presentation
         }
         private static void BuildMapPreview(VisualElement parent, MissionContent mission, bool compact = false)
         {
-            if (!compact) Text(parent, "BATTLEFIELD OVERVIEW", "eyebrow");
+            if (!compact) Text(parent, mission.ProceduralCover?"BATTLEFIELD OVERVIEW · VARIABLE COVER":"BATTLEFIELD OVERVIEW", "eyebrow");
             var map = new VisualElement { pickingMode = PickingMode.Ignore }; map.AddToClassList("map-preview");
             if (compact) map.AddToClassList("vmp-scout-map");
             parent.Add(map);
@@ -2063,8 +2063,14 @@ namespace Ninefold.Presentation
             }
             foreach (var ground in mission.Map.Ground)
                 Mark((float)ground.Bounds.Min.X,(float)ground.Bounds.Min.Z,(float)(ground.Bounds.Max.X-ground.Bounds.Min.X),(float)(ground.Bounds.Max.Z-ground.Bounds.Min.Z),"map-slow");
-            foreach (var obstacle in mission.Map.Obstacles)
+            // The briefing is an authored baseline, not a false prediction
+            // of a not-yet-created attempt. Retained cover is guaranteed.
+            var previewObstacles=mission.ProceduralCover && mission.Map.Obstacles.Count>=2
+                ? mission.Map.Obstacles.Take(mission.Map.Obstacles.Count-1):mission.Map.Obstacles;
+            foreach (var obstacle in previewObstacles)
                 Mark((float)obstacle.Bounds.Min.X,(float)obstacle.Bounds.Min.Z,(float)(obstacle.Bounds.Max.X-obstacle.Bounds.Min.X),(float)(obstacle.Bounds.Max.Z-obstacle.Bounds.Min.Z),"map-cover");
+            if(mission.ProceduralCover)
+                Text(parent,"Secondary cover varies when the battle starts.","hint");
             foreach (var objective in mission.Objectives)
             {
                 if(objective.Zone != null &&

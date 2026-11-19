@@ -56,6 +56,8 @@ namespace Ninefold.Core.Content
                 bool Separated(FieldBox p,FieldBox q)=>p.Max.X+2*hw+.15m<q.Min.X ||
                     q.Max.X+2*hw+.15m<p.Min.X || p.Max.Z+2*hd+.15m<q.Min.Z || q.Max.Z+2*hd+.15m<p.Min.Z;
                 if(!Interior(box)||retained.Any(o=>o.BlocksMovement&&(!Interior(o.Bounds)||!Separated(o.Bounds,box))))continue;
+                var blocking=retained.Where(o=>o.BlocksMovement).ToArray();
+                if(blocking.SelectMany((p,j)=>blocking.Skip(j+1).Select(q=>!Separated(p.Bounds,q.Bounds))).Any(v=>v))continue;
                 if(placements.Any(p=>box.Overlaps(new FieldBox(
                     new FieldPoint(p.X-hw-.30m,p.Y,p.Z-hd-.30m),
                     new FieldPoint(p.X+hw+.30m,p.Y+height,p.Z+hd+.30m)))))continue;
