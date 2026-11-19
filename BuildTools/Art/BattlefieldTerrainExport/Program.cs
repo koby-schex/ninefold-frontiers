@@ -16,7 +16,7 @@ internal static class Program
     {
         if(args.Length!=1)throw new ArgumentException("Output directory required.");
         Directory.CreateDirectory(args[0]);
-        var catalog=WorldFiveRouteRecovery.Create();
+        var catalog=WorldFiveEscalation.Create();
         var bodies=catalog.Units.Values.Select(u=>u.Body).ToArray();
         var manifest=new List<object>();
         void Export(MissionContent mission,int seed,string label)
@@ -39,7 +39,7 @@ internal static class Program
         foreach(var id in WorldFiveOpeningTenPrototype.MissionIds
             .Concat(new[]{WorldFiveStorySequence.FirstCampaignMissionId}).Concat(WorldFiveEncounterVarietyV2.NewMissionIds))
             Export(catalog.Missions[id],17,id);
-        foreach(var chapter in WorldFiveRouteRecovery.All)Export(chapter.Mission,17,chapter.Mission.Id);
+        foreach(var chapter in WorldFiveRouteRecovery.All.Concat(WorldFiveEscalation.All))Export(chapter.Mission,17,chapter.Mission.Id);
         for(int i=1;i<=4;i++)Export(catalog.Missions["fixture-mixed"],i,"quick-"+i);
         File.WriteAllText(Path.Combine(args[0],"manifest.json"),JsonSerializer.Serialize(manifest,new JsonSerializerOptions{WriteIndented=true}));
         return 0;
