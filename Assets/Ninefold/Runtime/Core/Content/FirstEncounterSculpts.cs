@@ -81,16 +81,20 @@ namespace Ninefold.Core.Content
                 s?.17f:.21f,.10f,.25f),.052f);
             for(int limb=0;limb<6;limb++)
             {
-                var hip=WildlifeJoint(kind,limb,false);
-                var knee=WildlifeJoint(kind,limb,true);
+                // Scalar joint coordinates avoid millions of transient arrays
+                // during signed-distance sampling. Matched to WildlifeJoint.
                 float side=limb<3?-1f:1f;
                 int pair=limb%3;
-                float footZ=knee[2]+(pair==0?.18f:pair==2?-.05f:.07f);
+                float hipX=side*(s?.30f:.32f);
+                float hipZ=pair==0?.36f:pair==1?-.04f:-.47f;
+                float kneeX=side*(s?.55f:.48f);
+                float kneeZ=hipZ+(pair==0?.10f:pair==2?-.10f:.02f);
+                float footZ=kneeZ+(pair==0?.18f:pair==2?-.05f:.07f);
                 // Splayed upper limb, clearly articulated lower limb,
                 // rounded weight-bearing foot and short anchor-claw (stalker).
-                d=Union(d,Capsule(x,y,z,hip[0],hip[1],hip[2],
-                    knee[0],knee[1],knee[2],s?.12f:.135f,.079f),.045f);
-                d=Union(d,Capsule(x,y,z,knee[0],knee[1],knee[2],
+                d=Union(d,Capsule(x,y,z,hipX,-.035f,hipZ,
+                    kneeX,-.33f,kneeZ,s?.12f:.135f,.079f),.045f);
+                d=Union(d,Capsule(x,y,z,kneeX,-.33f,kneeZ,
                     side*(s?.58f:.50f),-.64f,footZ,.078f,.053f),.032f);
                 d=Union(d,Ellipsoid(x,y,z,side*(s?.58f:.50f),-.695f,
                     footZ+.055f,s?.086f:.098f,.063f,s?.155f:.12f),.025f);
