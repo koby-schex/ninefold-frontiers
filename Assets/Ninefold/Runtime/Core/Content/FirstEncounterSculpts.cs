@@ -105,9 +105,12 @@ namespace Ninefold.Core.Content
                 if(s && pair==0)
                 {
                     d=Union(d,Capsule(x,y,z,side*.58f,-.675f,footZ+.120f,
-                        side*.59f,-.704f,footZ+.237f,.050f,.029f),.022f);
+                        side*.59f,-.704f,footZ+.237f,.050f,.039f),.029f);
+                    // Keep the taper wider than one tactical half-cell at
+                    // the join. A thinner two-capsule tip could leave a
+                    // detached micro-island at .045f sampling resolution.
                     d=Union(d,Capsule(x,y,z,side*.59f,-.704f,footZ+.237f,
-                        side*.59f,-.735f,footZ+.287f,.029f,.012f),.017f);
+                        side*.59f,-.724f,footZ+.281f,.039f,.025f),.025f);
                 }
             }
             for(int sign=-1;sign<=1;sign+=2)
@@ -123,7 +126,7 @@ namespace Ninefold.Core.Content
                     d=Union(d,Capsule(x,y,z,a*.135f,.31f,.51f,
                         a*.25f,.455f,.31f,.075f,.043f),.032f);
                     d=Union(d,Capsule(x,y,z,a*.25f,.455f,.31f,
-                        a*.33f,.515f,.11f,.043f,.021f),.026f);
+                        a*.32f,.515f,.11f,.047f,.030f),.034f);
                     d=Union(d,Ellipsoid(x,y,z,a*.22f,.375f,.20f,
                         .080f,.095f,.19f),.042f);
                 }
