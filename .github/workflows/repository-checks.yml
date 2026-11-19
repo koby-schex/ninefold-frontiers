@@ -18,6 +18,7 @@ jobs:
       - run: python BuildTools/validate_battle_wayfinding.py
       - run: python BuildTools/Art/validate_great_strider.py
       - run: python BuildTools/Art/validate_worldfive_battle_organics.py
+      - run: python BuildTools/Art/validate_battlefield_terrain_art.py
       - run: python BuildTools/Art/validate_playable_bond_models.py
       - run: python BuildTools/Art/validate_ashbound_first_contact_runtime.py
       - run: python BuildTools/Art/validate_ashbound_mid_roster_runtime.py

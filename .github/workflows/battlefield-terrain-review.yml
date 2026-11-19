@@ -1,0 +1,35 @@
+name: Battlefield terrain art review
+on:
+  pull_request:
+    paths:
+      - 'Assets/Ninefold/Runtime/Core/Content/BattlefieldArtPlan.cs'
+      - 'Assets/Ninefold/Runtime/Core/Content/BattlefieldVariation.cs'
+      - 'Assets/Ninefold/Runtime/Presentation/BattlefieldScenery.cs'
+      - 'Assets/Ninefold/Runtime/Presentation/PlaytestBattlefield.cs'
+      - 'BuildTools/Art/BattlefieldTerrainExport/**'
+      - 'BuildTools/Art/review_battlefield_terrain.py'
+      - '.github/workflows/battlefield-terrain-review.yml'
+permissions:
+  contents: read
+jobs:
+  exact-terrain-review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet run --project BuildTools/Art/BattlefieldTerrainExport/BattlefieldTerrainExport.csproj --configuration Release -- BattlefieldTerrainReview
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r BuildTools/Art/requirements-review.txt
+      - run: python BuildTools/Art/review_battlefield_terrain.py BattlefieldTerrainReview
+      - uses: actions/upload-artifact@v4
+        with:
+          name: battlefield-terrain-actual-layout-review
+          path: |
+            BattlefieldTerrainReview/*.png
+            BattlefieldTerrainReview/manifest.json
+          if-no-files-found: error
+          retention-days: 30
