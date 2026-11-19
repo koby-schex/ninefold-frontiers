@@ -25,6 +25,17 @@ namespace Ninefold.Core.Content
             if(index<0||index>3)return false;
             bond=(Bond)index;return true;
         }
+        public static bool TryName(string unit,out string display)
+        {
+            int index=Array.IndexOf(WorldFivePlayableAbilityStudy.StandardIds,unit);
+            display=index switch {0=>"Great Strider",1=>"Living Veil",2=>"Riftwalker",3=>"Burdenbeast",_=>null};
+            return display!=null;
+        }
+        public static string ShortName(string unit)
+        {
+            int index=Array.IndexOf(WorldFivePlayableAbilityStudy.StandardIds,unit);
+            return index switch {0=>"GS",1=>"LV",2=>"RW",3=>"BB",_=>null};
+        }
         public const int Body=0,Head=1,Partner=2,PartnerHead=3,LeftArm=4,RightArm=5,
             LeftLeg=6,RightLeg=7,Mantle=8,Tail=9,FirstLimb=10;
         private static bool Starts(string s,string p)=>s.StartsWith(p,StringComparison.Ordinal);

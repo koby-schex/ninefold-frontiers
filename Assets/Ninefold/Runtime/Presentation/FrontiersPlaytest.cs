@@ -755,7 +755,7 @@ namespace Ninefold.Presentation
             foreach (var grant in mission.VictoryRewards)
             {
                 var line = Row(rewards); line.AddToClassList("briefing-reward");
-                Text(line, ResourceName(grant.ResourceId), "reward-name");
+                Text(line, DisplayResourceName(grant.ResourceId), "reward-name");
                 Text(line, "+" + grant.Amount, "reward-amount");
             }
             Text(rewards, "Awarded after victory", "hint")
@@ -784,7 +784,7 @@ namespace Ninefold.Presentation
             bool hasApex = menuView.Units.Any(x => menuView.Squad.Contains(x.Definition.Id) && x.Definition.Roster.IsApex);
             var summary = Card(parent, "team-summary");
             Text(summary, "YOUR TEAM · " + menuView.Squad.Count + " / " + definition.MaximumSquad, "eyebrow");
-            Text(summary, menuView.Squad.Count == 0 ? "No units selected" : string.Join("  •  ", menuView.Squad.Select(UnitName)), "section");
+            Text(summary, menuView.Squad.Count == 0 ? "No units selected" : string.Join("  •  ", menuView.Squad.Select(DisplayUnitName)), "section");
             Text(summary, (hasApex ? "1 / 1 Apex selected" : "0 / 1 Apex selected") + " · " + (definition.FactionId == null ? "Mixed factions allowed" : "This campaign's faction only"), "hint");
             Text(parent, "PLAYTEST · Abstract units and badges; not canonical faction designs.", "fixture-note");
             foreach (var u in menuView.Units.Where(u => definition.FactionId == null || u.Definition.Roster.FactionId == definition.FactionId))
@@ -799,7 +799,7 @@ namespace Ninefold.Presentation
                 tile.AddToClassList("squad-card"); tile.EnableInClassList("selected", selected);
                 var row = Row(tile); UnitBadge(row, id, u.Definition.Roster.IsApex);
                 var identity = new VisualElement(); identity.AddToClassList("unit-identity"); row.Add(identity);
-                Text(identity, UnitName(id), "section");
+                Text(identity, DisplayUnitName(id), "section");
                 Text(identity, (u.Definition.Roster.IsApex ? "APEX" : "STANDARD") + " · Rank " + u.Rank, "eyebrow");
                 Text(tile, "Health " + u.Health + " • Armor " + u.Armor, "detail");
                 var attack = u.Abilities.Single(a => a.Slot == AbilitySlot.NormalAttack).Effect;
@@ -881,7 +881,7 @@ namespace Ninefold.Presentation
                 var confirmation = Card(parent, "confirmation");
                 confirmation.AddToClassList("collection-confirmation");
                 Text(confirmation, "REVIEW CHANGE", "eyebrow").AddToClassList("collection-overline");
-                Text(confirmation, UnitName(p.UnitId), "display-title").AddToClassList("collection-page-title");
+                Text(confirmation, DisplayUnitName(p.UnitId), "display-title").AddToClassList("collection-page-title");
                 Text(confirmation, p.Operation == CollectionOperation.Unlock ? "Unlock this unit"
                     : p.Operation == CollectionOperation.Advance ? "Advance this unit's rank"
                     : "Adjust this unit's stats", "detail").AddToClassList("collection-overview-summary");
@@ -961,7 +961,7 @@ namespace Ninefold.Presentation
             var copy = new VisualElement(); copy.AddToClassList("collection-detail-copy"); identity.Add(copy);
             Text(copy, selected.Unit.Definition.Roster.IsApex ? "APEX UNIT" : "STANDARD UNIT", "eyebrow")
                 .AddToClassList("collection-overline");
-            Text(copy, UnitName(inspectedUnit), "display-title").AddToClassList("collection-detail-title");
+            Text(copy, DisplayUnitName(inspectedUnit), "display-title").AddToClassList("collection-detail-title");
             BuildUnitPreviewTags(copy, inspectedUnit);
             Text(copy, selected.Unit.Owned ? "UNLOCKED · RANK " + selected.Unit.Rank : "LOCKED", "detail")
                 .AddToClassList("collection-detail-status");
@@ -1064,12 +1064,12 @@ namespace Ninefold.Presentation
                     });
                     tile.AddToClassList("collection-roster-entry");
                     tile.AddToClassList("vif-roster-tile");
-                    tile.tooltip = UnitName(id) + (entry.Unit.Owned ? " · Unlocked" : " · Locked");
+                    tile.tooltip = DisplayUnitName(id) + (entry.Unit.Owned ? " · Unlocked" : " · Locked");
                     var line = Row(tile); line.AddToClassList("collection-roster-row");
                     FrontiersVisualPrimitives.UnitPortrait(line, id,
                         entry.Unit.Definition.Roster.IsApex, entry.Unit.Owned);
                     var identity = new VisualElement(); identity.AddToClassList("collection-roster-copy"); line.Add(identity);
-                    Text(identity, UnitName(id), "section").AddToClassList("collection-roster-title");
+                    Text(identity, DisplayUnitName(id), "section").AddToClassList("collection-roster-title");
                     Text(identity, entry.Unit.Owned ? "RANK " + entry.Unit.Rank : "LOCKED", "detail")
                         .AddToClassList("collection-roster-state");
                     var offer = entry.Unit.Owned ? entry.Advance : entry.Unlock;
@@ -1163,7 +1163,7 @@ namespace Ninefold.Presentation
             {
                 var row = Row(rewards); row.AddToClassList("result-reward-row");
                 var identity = new VisualElement(); identity.AddToClassList("reward-identity"); row.Add(identity);
-                Text(identity, ResourceName(grant.ResourceId), "detail");
+                Text(identity, DisplayResourceName(grant.ResourceId), "detail");
                 Text(identity, (r.Claimed ? "Total held: " : "Currently held: ") + menuView.Progress.Balance(grant.ResourceId), "hint");
                 Text(row, "+" + grant.Amount, "reward-amount");
             }
@@ -1187,7 +1187,7 @@ namespace Ninefold.Presentation
                 bool nextRank = offer.RankAfter > offer.RankBefore;
                 bool available = !unit.Unit.Owned || nextRank;
                 bool enough = available && unit.Fragments >= offer.Cost;
-                Text(progress, UnitName(id) + " · " + (unit.Unit.Owned ? "Rank " + unit.Unit.Rank : "Locked"), "section");
+                Text(progress, DisplayUnitName(id) + " · " + (unit.Unit.Owned ? "Rank " + unit.Unit.Rank : "Locked"), "section");
                 Text(progress, available ? unit.Fragments + " / " + offer.Cost + " fragments" : unit.Fragments + " fragments held", "detail");
                 if (available) Meter(progress, unit.Fragments, Math.Max(1, offer.Cost));
                 Text(progress, enough ? unit.Unit.Owned ? "Fragments ready for advancement" : "Fragments ready to unlock" : available ? offer.MissingFragments + " more fragments needed" : "No further advancement available in this test kit.", "hint");
@@ -1315,7 +1315,7 @@ namespace Ninefold.Presentation
                     Text(details, "Interact · " + ObjectiveReadiness(objective.Failure), "detail");
                 if (b.RescueCarrierId != null)
                     Text(details,"RESCUE: The traveler is carried by " +
-                        UnitName(b.RescueCarrierId) + ". You do NOT control the rescued NPC. " +
+                        DisplayUnitName(b.RescueCarrierId) + ". You do NOT control the rescued NPC. " +
                         "After picking them up, move the carrier into the marked gold EXIT zone.", "detail");
                 Text(details, "Tap a unit once to inspect health, armor and attacks. Double-tap an enemy for a normal attack. Choose Ability or Ult to target special actions. Tap ground to move and objectives to interact.", "detail");
                 Button(details, "Back to battle", () => battleDetails = false);
@@ -1969,7 +1969,7 @@ namespace Ninefold.Presentation
                 return "No legal target preview";
             var health = preview.Effect.Health;
             var status = preview.Effect.Status;
-            string target = UnitName(preview.TargetId);
+            string target = DisplayUnitName(preview.TargetId);
             string statusLine = status == null ? "" : (status.Applies
                 ? " · " + status.StatusId + " (" + status.StacksAfter + " stack" +
                     (status.StacksAfter == 1 ? "" : "s") + ")"
@@ -2110,12 +2110,14 @@ namespace Ninefold.Presentation
         }
         private static void Stat(VisualElement parent, string label, string value)
         { var item = Card(parent, "stat"); Text(item, value, "section"); Text(item, label, "hint"); }
-        private static void UnitBadge(VisualElement parent, string id, bool apex)
+        private void UnitBadge(VisualElement parent, string id, bool apex)
         {
             // Abstract ID badges, not faction emblems or substitutes for locked visual masters.
             var badge = new VisualElement { pickingMode = PickingMode.Ignore }; badge.AddToClassList("unit-badge");
             badge.EnableInClassList("apex-badge", apex); badge.EnableInClassList("faction-b", id.StartsWith("fixture-b-"));
-            Text(badge, UnitName(id), "badge-id").pickingMode = PickingMode.Ignore; parent.Add(badge);
+            string shortName=worldFiveSlice?PlayableBondRig.ShortName(id):null;
+            badge.tooltip=DisplayUnitName(id);
+            Text(badge, shortName??UnitName(id), "badge-id").pickingMode = PickingMode.Ignore; parent.Add(badge);
         }
         private Button Button(VisualElement parent, string label, Action action, bool enabled = true)
         {
@@ -2140,9 +2142,13 @@ namespace Ninefold.Presentation
         private string BattleActorName(string actorId)
         {
             var threat=BattleEnemyThreat(actorId);
-            return threat==null?UnitName(actorId):threat.Name;
+            return threat==null?DisplayUnitName(actorId):threat.Name;
         }
 
+        private string DisplayUnitName(string id)
+            =>worldFiveSlice && PlayableBondRig.TryName(id,out var display)?display:UnitName(id);
+        private string DisplayResourceName(string id)
+            =>id.StartsWith("fragment-")?DisplayUnitName(id.Substring(9))+" fragments":ResourceName(id);
         public static string UnitName(string id) => id == null ? "—" : id.Replace("fixture-enemy-", "Enemy ").Replace("fixture-a-", "A").Replace("fixture-b-", "B");
         private static string ResourceName(string id) => id.StartsWith("fragment-") ? UnitName(id.Substring(9)) + " fragments" : "Test supplies";
         private string Description(string id)
