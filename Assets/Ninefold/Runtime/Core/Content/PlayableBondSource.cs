@@ -166,6 +166,21 @@ namespace Ninefold.Core.Content
             }
             return model;
         }
+        public static void ValidateCorrespondence(Model rest,Model protective)
+        {
+            if(rest.SourceVertices!=protective.SourceVertices||rest.Triangles!=protective.Triangles||
+                rest.Sections.Count!=protective.Sections.Count||rest.Parts!=protective.Parts)
+                throw new InvalidDataException("Olyra pose lost original topology.");
+            for(int i=0;i<rest.Sections.Count;i++)
+            {
+                var a=rest.Sections[i];var b=protective.Sections[i];
+                if(a.Name!=b.Name||a.Material!=b.Material||
+                    !a.Indices.SequenceEqual(b.Indices)||!a.SourceParts.SequenceEqual(b.SourceParts)||
+                    !a.SourceIndices.SequenceEqual(b.SourceIndices))
+                    throw new InvalidDataException("Olyra authored vertex correspondence changed: "+a.Name);
+            }
+        }
+
         private static int Index(string text, int count)
         {
             if (!int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out int index) || index < 1 || index > count)

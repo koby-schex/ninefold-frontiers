@@ -170,6 +170,15 @@ namespace Ninefold.Core.Content
                 return new Weight(j+1,j+2,Smooth(t/.45f));
             }
             int b=Region(plan.Kind,part);
+            // The inner ends of the independent standing Avarin's skin and
+            // fieldwear follow the torso at their anatomical attachments.
+            // Keep hand/foot accessories entirely on their proper limb.
+            if((b==LeftArm||b==RightArm)&&Starts(part,"Avarin_Arm_"))
+                return new Weight(b,Partner,Smooth((plan.Pivots[b].Y-point.Y)/.19f));
+            if((b==LeftLeg||b==RightLeg)&&Starts(part,"Avarin_Leg_"))
+                return new Weight(b,Partner,Smooth((plan.Pivots[b].Y-point.Y)/.22f));
+            if(b==Tail)
+                return new Weight(b,Body,Smooth(Math.Abs(point.X-plan.Pivots[Body].X)/.55f));
             return new Weight(b,b,1);
         }
         public static Vector3 ProtectiveVertex(string part,Vector3 rest,Vector3 protective)
