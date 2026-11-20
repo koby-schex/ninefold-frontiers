@@ -233,7 +233,7 @@ namespace Ninefold.Presentation
                 (menuView.Phase == MissionFlowPhase.Battle && !inBattle);
             bool campaignScreen = resultsScreen || page == Page.Settings ||
                 (browsing && (page == Page.Battles || page == Page.OtherModes || page == Page.Missions ||
-                    page == Page.Briefing || page == Page.Squad || page == Page.Collection));
+                    page == Page.Briefing || page == Page.Squad || page == Page.Collection || page == Page.Completion));
             root.EnableInClassList("campaign-mode", campaignScreen);
             // Campaign overview has its own restrained hierarchy; mission briefing
             // and squad pages keep their existing presentation.
@@ -306,6 +306,7 @@ namespace Ninefold.Presentation
                 else if (page == Page.Briefing) BuildBriefing(scroll);
                 else if (page == Page.Squad) BuildSquad(scroll);
                 else if (page == Page.Missions) BuildMissionList(scroll);
+                else if (page == Page.Completion) BuildCampaignCompletion(scroll);
                 else BuildSelection(scroll);
                 menuScroll = scroll; renderedPage = page; renderedUnit = inspectedUnit; renderedOffer = offerOpen;
                 scroll.schedule.Execute(() => scroll.scrollOffset = scrollOffset);
@@ -326,6 +327,59 @@ namespace Ninefold.Presentation
             if(claim.Receipt.CampaignId==WorldFiveFinale.CompletionReceiptId)
                 Navigate(Page.Completion);
             message = "Completion rewards collected. Your campaign progress is saved.";
+        }
+
+        private void ReviewCampaignClaim(string id)
+        {
+            if(wildlifeStudy&&id==WorldFivePlayableSlice.CampaignId)
+                Navigate(Page.Completion);
+            else ClaimCampaign(id);
+        }
+
+        // Dedicated screen rather than a popup. All ownership, counts and
+        // claim state come from the durable profile, including after reload.
+        private void BuildCampaignCompletion(VisualElement parent)
+        {
+            var campaign=menuView.Campaigns.SingleOrDefault(c=>c.CampaignId==WorldFivePlayableSlice.CampaignId);
+            if(!wildlifeStudy||campaign==null||!campaign.IsComplete)
+            {
+                Text(parent,"Complete all 100 World Five missions to unlock this milestone.","detail");
+                Button(parent,"Campaigns  ›",()=>Navigate(Page.Battles));
+                return;
+            }
+            var hero=Card(parent,"result-summary");
+            Text(hero,"WORLD FIVE · THE FRACTURED MERIDIAN","eyebrow");
+            Text(hero,"The route endures","display-title");
+            Text(hero,"CAMPAIGN COMPLETE","result-status");
+            Text(hero,campaign.CompletedMissions+" / "+campaign.TotalMissions+" MISSIONS CLEARED","section");
+            Meter(hero,campaign.CompletedMissions,campaign.TotalMissions);
+            Text(hero,"The immediate Ashbound obstruction has been isolated. The Continuance has restored the local crossing and recovered the stranded. The wider mystery endures.","detail");
+
+            var reward=Card(parent,"result-rewards");
+            Text(reward,campaign.RewardsClaimed?"Rewards collected":"One-time completion rewards","section");
+            var definition=catalog.Campaigns.Single(c=>c.Id==campaign.CampaignId);
+            foreach(var grant in definition.CompletionRewards)
+            {
+                var row=Row(reward);Text(row,DisplayResourceName(grant.ResourceId),"detail");
+                Text(row,"+"+grant.Amount,"reward-amount");
+            }
+            Text(reward,"WORLD FIVE APEX","eyebrow");
+            Text(reward,menuView.Progress.Owns("fixture-a-5")?"Owned · Apex prototype":"Unlock the Apex prototype","section");
+            Text(reward,"Gameplay placeholder · final lore-approved kit, identity and model pending.","hint");
+            Text(reward,"NEXT FACTION","eyebrow");
+            Text(reward,"Three standard units · playable transfer study","section");
+            Text(reward,"A separate, provisional handoff encounter. The next world's canonical campaign and assets are not yet authored.","detail");
+            if(!campaign.RewardsClaimed)
+                Primary(reward,"Collect completion rewards",()=>ClaimCampaign(campaign.CampaignId));
+            else
+            {
+                Text(reward,"SAVED · One-time rewards cannot be collected again.","result-assurance");
+                var next=menuView.Missions.FirstOrDefault(m=>m.Definition.Id==WorldFiveFinale.TransferMissionId);
+                if(next!=null&&next.Available)
+                    Primary(reward,"Enter next faction study  ›",()=>SelectMission(WorldFiveFinale.TransferMissionId));
+                Button(reward,"Review units  ›",()=>Navigate(Page.Collection));
+            }
+            Button(parent,"Return to campaigns  ›",()=>Navigate(Page.Battles));
         }
 
         private void BuildHomeScreen()
@@ -429,7 +483,7 @@ namespace Ninefold.Presentation
             else if (claim != null)
             {
                 actionLabel = "COLLECT REWARDS";
-                main = Button(panel, "", () => ClaimCampaign(claim));
+                main = Button(panel, "", () => ReviewCampaignClaim(claim));
             }
             else if (next != null)
             {
@@ -576,7 +630,7 @@ namespace Ninefold.Presentation
 
                 if (c.IsComplete && !c.RewardsClaimed)
                 {
-                    var claim = Button(card, "Collect rewards  ›", () => ClaimCampaign(id), !readOnly);
+                    var claim = Button(card, "Review rewards  ›", () => ReviewCampaignClaim(id), !readOnly);
                     claim.AddToClassList("campaign-choice-action");
                     if (featured) claim.AddToClassList("primary");
                 }
@@ -593,6 +647,8 @@ namespace Ninefold.Presentation
                 {
                     Text(card, "All missions cleared · Replays available", "hint")
                         .AddToClassList("campaign-choice-next");
+                    if(wildlifeStudy&&id==WorldFivePlayableSlice.CampaignId)
+                        Button(card,"Campaign completion  ›",()=>Navigate(Page.Completion),!readOnly);
                 }
 
                 // This remains available even when a completion reward is waiting,
@@ -1243,8 +1299,9 @@ namespace Ninefold.Presentation
             if (campaign != null && campaign.IsComplete && !campaign.RewardsClaimed)
             {
                 Text(next, "Campaign complete", "section");
-                Text(next, "Your separate, one-time campaign rewards are ready to collect from Home.", "detail");
-                Primary(next, "Review campaign rewards  ›", () => LeaveResults(attempt, Page.Home));
+                Text(next, "Your separate, one-time campaign rewards are ready to review.", "detail");
+                Primary(next, "Review campaign rewards  ›", () => LeaveResults(attempt,
+                    wildlifeStudy&&campaign.CampaignId==WorldFivePlayableSlice.CampaignId?Page.Completion:Page.Home));
             }
             else if (victory && nextMission != null)
                 Primary(next, "Next mission · " + MissionName(nextMission.Definition.Id), () => LeaveResults(attempt, Page.Briefing, nextMission.Definition.Id));
@@ -1935,7 +1992,7 @@ namespace Ninefold.Presentation
             }
             string label = page == Page.Collection ? "UNITS" : page == Page.Settings ? "SETTINGS"
                 : page == Page.Squad ? "SQUAD" : page == Page.Briefing ? "MISSION"
-                : page == Page.Missions ? "CAMPAIGN PATH" : "CAMPAIGNS";
+                : page == Page.Missions ? "CAMPAIGN PATH" : page == Page.Completion ? "CAMPAIGN COMPLETE" : "CAMPAIGNS";
             Text(header, label, "native-top-title").pickingMode = PickingMode.Ignore;
             // Nested screens have one contextual Back button only.
             // Home is always accessible as a sibling tab at the bottom.
@@ -2203,13 +2260,16 @@ namespace Ninefold.Presentation
         }
 
         private string DisplayUnitName(string id)
-            =>worldFiveSlice && PlayableBondRig.TryName(id,out var display)?display:UnitName(id);
+            =>wildlifeStudy&&id=="fixture-a-5"?"World Five Apex · prototype":
+                wildlifeStudy&&id!=null&&id.StartsWith("fixture-b-",StringComparison.Ordinal)?"Transfer prototype "+id.Substring(10):
+                worldFiveSlice && PlayableBondRig.TryName(id,out var display)?display:UnitName(id);
         private string DisplayResourceName(string id)
             =>id.StartsWith("fragment-")?DisplayUnitName(id.Substring(9))+" fragments":ResourceName(id);
         public static string UnitName(string id) => id == null ? "—" : id.Replace("fixture-enemy-", "Enemy ").Replace("fixture-a-", "A").Replace("fixture-b-", "B");
         private static string ResourceName(string id) => id.StartsWith("fragment-") ? UnitName(id.Substring(9)) + " fragments" : "Test supplies";
         private string Description(string id)
         {
+            if(id==WorldFiveFinale.TransferMissionId)return "Provisional faction handoff. Move to the marked reference and stabilize it once. This is not a canonical second-world story mission.";
             if (worldFiveSlice)
             {
                 if(WorldFiveRouteRecovery.TryGet(id,out var chapter))return chapter.Instructions;
@@ -2251,6 +2311,7 @@ namespace Ninefold.Presentation
         }
         private static string MissionName(string id)
         {
+            if(id==WorldFiveFinale.TransferMissionId)return "Transfer study · Entry";
             for (int i=0;i<WorldFiveOpeningTenPrototype.MissionIds.Count;i++)
                 if (id==WorldFiveOpeningTenPrototype.MissionIds[i]) return "Mission " + (i+1);
             if (id==WorldFiveStorySequence.FirstCampaignMissionId) return "Mission 11";
