@@ -47,6 +47,7 @@ namespace Ninefold.Presentation
         private enum Page { Home, Battles, Missions, Briefing, Squad, Collection, OtherModes, Settings }
         private Page page;
         private string selectedCampaign, squadInspection;
+        private int missionWindow=-1;
         private bool dirty, fatal, suspended, reducedMotion, inBattle, legacyProfile, worldFiveSlice, actOneStudy, varietyStudy, wildlifeStudy;
         private bool showDiagnostics;
         private Coroutine playback;
@@ -458,7 +459,7 @@ namespace Ninefold.Presentation
                 OpenCampaignPrototypeFromHome);
             if (worldFiveSlice && !wildlifeStudy)
             {
-                var wildlife=Button(panel,"WORLD FIVE CAMPAIGN · MISSIONS 1–60  ›",
+                var wildlife=Button(panel,"WORLD FIVE CAMPAIGN · MISSIONS 1–80  ›",
                     OpenWildlifeFromHome);
                 wildlife.AddToClassList("home-quick-link");
                 wildlife.tooltip="Continue the full World Five route, including the new escalation chapter. Existing native ecology progress is preserved.";
@@ -621,8 +622,32 @@ namespace Ninefold.Presentation
             var authored = catalog.Campaigns.Single(c => c.Id == selectedCampaign);
             string nextId = authored.Missions.Select(n => menuView.Missions.Single(m => m.Definition.Id == n.MissionId))
                 .FirstOrDefault(m => m.Available && !m.IsReplay)?.Definition.Id;
-            int number = 0;
-            foreach (var node in authored.Missions)
+            // Long campaigns keep a ten-mission route segment on screen,
+            // opening at the next uncleared mission. All prior and future
+            // segments remain inspectable; no changes to eligibility.
+            int total=authored.Missions.Count;
+            int start=0,end=total;
+            if(total>20)
+            {
+                int current=nextId==null?total-1:Array.FindIndex(authored.Missions.ToArray(),m=>m.MissionId==nextId);
+                int currentWindow=Math.Max(0,current)/10;
+                if(missionWindow<0)missionWindow=currentWindow;
+                missionWindow=Math.Max(0,Math.Min((total-1)/10,missionWindow));
+                start=missionWindow*10;end=Math.Min(total,start+10);
+                var controls=Row(parent);
+                var previous=Button(controls,"‹",()=>{missionWindow--;menuScroll=null;dirty=true;},start>0);
+                previous.tooltip="Previous ten missions";
+                Text(controls,"MISSIONS "+(start+1)+"–"+end,"section");
+                var next=Button(controls,"›",()=>{missionWindow++;menuScroll=null;dirty=true;},end<total);
+                next.tooltip="Next ten missions";
+                if(missionWindow!=currentWindow)
+                {
+                    var currentButton=Button(parent,"Current mission segment  ›",()=>{missionWindow=currentWindow;menuScroll=null;dirty=true;});
+                    currentButton.AddToClassList("mission-path-action");
+                }
+            }
+            int number = start;
+            foreach (var node in authored.Missions.Skip(start).Take(end-start))
             {
                 var mission = menuView.Missions.Single(m => m.Definition.Id == node.MissionId);
                 string missionId = mission.Definition.Id;
@@ -1603,7 +1628,7 @@ namespace Ninefold.Presentation
                 // an independent directory to protect all old checkpoints.
                 if (actOneStudy)
                 {
-                    catalog = wildlifeStudy ? WorldFiveEscalation.Create() :
+                    catalog = wildlifeStudy ? WorldFiveConvergence.Create() :
                         varietyStudy ? WorldFiveEncounterVarietyV2.Create() : WorldFiveCombatMechanicsV1.Create();
                     var battles=new DirectoryBattleSaveFiles(savePath);
                     var progress=new DirectoryProgressSaveFiles(savePath);
@@ -1664,8 +1689,9 @@ namespace Ninefold.Presentation
                 input=null; battleView=null; inBattle=false;
                 OpenProfile();
                 selectedCampaign=WorldFiveOpeningTenPrototype.CampaignId;
+                missionWindow=-1;
                 page=Page.Missions;
-                message="World Five · 60 authored campaign missions · your existing progress is retained.";
+                message="World Five · 80 authored campaign missions · your existing progress is retained.";
                 dirty=true;
             }
             catch(Exception error)
@@ -1695,6 +1721,7 @@ namespace Ninefold.Presentation
                 input=null; battleView=null; inBattle=false;
                 OpenProfile();
                 selectedCampaign=WorldFiveOpeningTenPrototype.CampaignId;
+                missionWindow=-1;
                 page=Page.Missions;
                 message="World Five encounter study · Missions 11–14 after tutorial · separate progress.";
                 dirty=true;
@@ -1725,6 +1752,7 @@ namespace Ninefold.Presentation
                 input=null; battleView=null; inBattle=false;
                 OpenProfile();
                 selectedCampaign=WorldFiveOpeningTenPrototype.CampaignId;
+                missionWindow=-1;
                 page=Page.Missions;
                 message="World Five Act One study · Mission 11 follows the tutorial · independent progress.";
                 dirty=true;
@@ -1842,7 +1870,11 @@ namespace Ninefold.Presentation
             bool changingPage = page != destinationPage;
             menu.Collection.Cancel();
             page = destinationPage;
-            if (changingPage) menuScroll = null;
+            if (changingPage)
+            {
+                menuScroll = null;
+                if(destinationPage==Page.Missions)missionWindow=-1;
+            }
             battleExitPrompt = false;
             message = "Your progress saves automatically.";
         }
