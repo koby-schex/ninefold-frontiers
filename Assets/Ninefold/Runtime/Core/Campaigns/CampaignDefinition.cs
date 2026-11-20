@@ -44,14 +44,18 @@ namespace Ninefold.Core.Campaigns
         public string Id { get; }
         public string FactionId { get; }
         public string Revision { get; }
+        // Stable receipt identity can differ from the playable campaign ID
+        // when a prototype completion grows into a genuinely new milestone.
+        public string CompletionClaimId { get; }
         public IReadOnlyList<CampaignMission> Missions { get; }
         public IReadOnlyList<ResourceGrant> CompletionRewards { get; }
         public StarterCampaignBonus StarterBonus { get; }
         public CampaignDefinition(string id, string factionId, string revision, IEnumerable<CampaignMission> missions,
-            IEnumerable<ResourceGrant> completionRewards, StarterCampaignBonus starterBonus = null)
+            IEnumerable<ResourceGrant> completionRewards, StarterCampaignBonus starterBonus = null, string completionClaimId = null)
         {
             RewardRules.Id(id); RewardRules.Id(factionId); RewardRules.Id(revision);
             Id = id; FactionId = factionId; Revision = revision; StarterBonus = starterBonus;
+            CompletionClaimId=completionClaimId??id;RewardRules.Id(CompletionClaimId);
             var array = missions?.ToArray() ?? throw new ArgumentNullException(nameof(missions));
             if (array.Length == 0 || array.Length > 4096 || array.Any(m => m == null) || !array.Any(m => m.Required))
                 throw new ArgumentException("Campaign needs bounded missions and at least one required mission.");

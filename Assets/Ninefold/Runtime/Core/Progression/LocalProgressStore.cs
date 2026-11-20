@@ -143,7 +143,10 @@ namespace Ninefold.Core.Progression
             lock (gate)
             {
                 var previous = Latest(out bool recovered) ?? throw new InvalidOperationException("Profile absent.");
-                var prior = previous.Progress.CampaignClaims.FirstOrDefault(c => c.CampaignId == campaignId);
+                // Consult the active definition first: an early prototype
+                // receipt must not shadow the later completion milestone.
+                string receiptId=catalog==null?campaignId:catalog.Get(campaignId).CompletionClaimId;
+                var prior = previous.Progress.CampaignClaims.FirstOrDefault(c => c.CampaignId == receiptId);
                 if (prior != null) return new CampaignClaimResult(new LoadedProgress(previous.Progress, recovered), prior, true);
                 if (catalog == null) throw new ArgumentNullException(nameof(catalog));
                 var receipt = catalog.Prepare(campaignId, previous.Progress);
