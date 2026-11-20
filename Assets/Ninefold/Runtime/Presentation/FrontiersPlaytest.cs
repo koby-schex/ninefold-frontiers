@@ -44,7 +44,7 @@ namespace Ninefold.Presentation
         private CollectionFilter collectionFilter = CollectionFilter.All;
         private bool collectionDetailsExpanded;
         private bool battleExitPrompt;
-        private enum Page { Home, Battles, Missions, Briefing, Squad, Collection, OtherModes, Settings }
+        private enum Page { Home, Battles, Missions, Briefing, Squad, Collection, OtherModes, Settings, Completion }
         private Page page;
         private string selectedCampaign, squadInspection;
         private int missionWindow=-1;
@@ -315,12 +315,16 @@ namespace Ninefold.Presentation
             }
         }
 
-        private static string CampaignName(string id) => id == WorldFivePlayableSlice.CampaignId
-            ? "World Five · Opening Prototype" : id == "fixture-starter" ? "Test campaign A" : "Test campaign B";
+        private string CampaignName(string id) => id == WorldFivePlayableSlice.CampaignId
+            ? wildlifeStudy?"World Five · The Fractured Meridian":"World Five · Opening Prototype"
+            : id==WorldFiveFinale.TransferCampaignId?"Next faction · Transfer study"
+            : id == "fixture-starter" ? "Test campaign A" : "Test campaign B";
 
         private void ClaimCampaign(string id)
         {
-            menu.ClaimCampaign(id);
+            var claim=menu.ClaimCampaign(id);
+            if(claim.Receipt.CampaignId==WorldFiveFinale.CompletionReceiptId)
+                Navigate(Page.Completion);
             message = "Completion rewards collected. Your campaign progress is saved.";
         }
 
@@ -459,7 +463,7 @@ namespace Ninefold.Presentation
                 OpenCampaignPrototypeFromHome);
             if (worldFiveSlice && !wildlifeStudy)
             {
-                var wildlife=Button(panel,"WORLD FIVE CAMPAIGN · MISSIONS 1–80  ›",
+                var wildlife=Button(panel,"WORLD FIVE CAMPAIGN · MISSIONS 1–100  ›",
                     OpenWildlifeFromHome);
                 wildlife.AddToClassList("home-quick-link");
                 wildlife.tooltip="Continue the full World Five route, including the new escalation chapter. Existing native ecology progress is preserved.";
@@ -1628,7 +1632,7 @@ namespace Ninefold.Presentation
                 // an independent directory to protect all old checkpoints.
                 if (actOneStudy)
                 {
-                    catalog = wildlifeStudy ? WorldFiveConvergence.Create() :
+                    catalog = wildlifeStudy ? WorldFiveFinale.Create() :
                         varietyStudy ? WorldFiveEncounterVarietyV2.Create() : WorldFiveCombatMechanicsV1.Create();
                     var battles=new DirectoryBattleSaveFiles(savePath);
                     var progress=new DirectoryProgressSaveFiles(savePath);
@@ -1691,7 +1695,7 @@ namespace Ninefold.Presentation
                 selectedCampaign=WorldFiveOpeningTenPrototype.CampaignId;
                 missionWindow=-1;
                 page=Page.Missions;
-                message="World Five · 80 authored campaign missions · your existing progress is retained.";
+                message="World Five · 100 authored campaign missions · your existing progress is retained.";
                 dirty=true;
             }
             catch(Exception error)

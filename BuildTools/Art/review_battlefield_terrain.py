@@ -55,7 +55,8 @@ def main():
     for label,group in [("World-Five-14-Battlefield-Roster",story_scenes[:14]),
                         ("World-Five-15-34-Battlefield-Roster",story_scenes[14:34]),
                         ("World-Five-35-60-Battlefield-Roster",story_scenes[34:60]),
-                        ("World-Five-61-80-Battlefield-Roster",story_scenes[60:])]:
+                        ("World-Five-61-80-Battlefield-Roster",story_scenes[60:80]),
+                        ("World-Five-81-100-Battlefield-Roster",story_scenes[80:])]:
         if not group:continue
         story=Image.new("RGB",(w*4,h*((len(group)+3)//4)),(18,20,29))
         for i,s in enumerate(group):story.paste(frame(s,w,h),(i%4*w,i//4*h))

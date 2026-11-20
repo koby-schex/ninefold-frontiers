@@ -21,7 +21,7 @@ namespace Ninefold.Core.Campaigns
         {
             CampaignId = definition.Id; TotalMissions = definition.Missions.Count; CanEnter = canEnter;
             CompletedMissions = definition.Missions.Count(m => progress.Missions.ContainsKey(m.MissionId));
-            RewardsClaimed = progress.CampaignClaims.Any(c => c.CampaignId == definition.Id);
+            RewardsClaimed = progress.CampaignClaims.Any(c => c.CampaignId == definition.CompletionClaimId);
             // A completion receipt is permanent, but an append-only campaign
             // continuation may add required stages afterward. Keep the receipt
             // without treating new unplayed missions as already completed.
@@ -43,6 +43,9 @@ namespace Ninefold.Core.Campaigns
             var array = definitions.ToArray();
             if (array.Any(c => c == null) || array.Length > 4096 || array.Count(c => c.StarterBonus != null) > 1) throw new ArgumentException("At most one starter campaign allowed.");
             campaigns = array.ToDictionary(c => c.Id, StringComparer.Ordinal);
+            if(array.Select(c=>c.CompletionClaimId).Distinct(StringComparer.Ordinal).Count()!=array.Length ||
+                array.Any(c=>c.CompletionClaimId!=c.Id&&campaigns.ContainsKey(c.CompletionClaimId)))
+                throw new ArgumentException("Campaign receipt IDs must be unique and cannot alias another campaign.");
             units = roster.ToDictionary(u => u.Id, StringComparer.Ordinal); entries = missions.ToDictionary(m => m.Id, StringComparer.Ordinal);
             Campaigns = Array.AsReadOnly(array);
             foreach (var campaign in array)
@@ -106,7 +109,7 @@ namespace Ninefold.Core.Campaigns
                 var next = candidates[index]; nextId = next.CampaignId;
                 granted.Add(c.StarterBonus.ApexUnitId); granted.AddRange(next.StandardUnits);
             }
-            return new CampaignClaim(c.Id, c.Revision, c.Missions.Where(m => m.Required).Select(m => m.MissionId),
+            return new CampaignClaim(c.CompletionClaimId, c.Revision, c.Missions.Where(m => m.Required).Select(m => m.MissionId),
                 c.CompletionRewards, granted.Where(id2 => !progress.Owns(id2)), c.StarterBonus != null, nextId);
         }
     }
