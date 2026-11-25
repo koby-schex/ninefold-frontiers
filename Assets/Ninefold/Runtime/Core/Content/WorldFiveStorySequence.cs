@@ -22,7 +22,7 @@ namespace Ninefold.Core.Content
             if(IsTutorial(missionId)) return "Prologue";
             if(MayRevealAshbound(missionId)) return "Act One";
             if(WorldFiveRouteRecovery.TryGet(missionId,out var chapter))
-                return chapter.Number<=20?"Act One":chapter.Number<=34?"Act Two":chapter.Number<=60?"Act Three":"Act Four";
+                return chapter.Number<=20?"Act One":chapter.Number<=34?"Act Two":chapter.Number<=60?"Act Three":chapter.Number<=80?"Act Four":"Act Five";
             return null;
         }
         public static void Validate()
