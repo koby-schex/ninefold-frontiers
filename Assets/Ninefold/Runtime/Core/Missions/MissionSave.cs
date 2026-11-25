@@ -26,7 +26,7 @@ namespace Ninefold.Core.Missions
         internal static MissionController ReadSave(BattleTurnController turns, BinaryReader r)
         {
             string missionId=SaveIO.Text(r), attempt=SaveIO.Text(r); var squad=SaveIO.Strings(r); var priority=SaveIO.EnumValue<OutcomePriority>(r);
-            int n=SaveIO.Count(r); SaveIO.Require(n >= 1 && n <= 11,"Invalid objective count.");
+            int n=SaveIO.Count(r); SaveIO.Require(n >= 1 && n <= (missionId=="nf-horde-continuous"?11:3),"Invalid objective count.");
             var restored=new State[n];
             for (int i=0;i<n;i++)
             {

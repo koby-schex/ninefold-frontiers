@@ -117,7 +117,8 @@ namespace Ninefold.Core.Missions
             if (!Enum.IsDefined(typeof(OutcomePriority),priority)) throw new ArgumentOutOfRangeException(nameof(priority));
             if (primary == null) throw new ArgumentNullException(nameof(primary));
             var bonuses = (optional ?? Array.Empty<ObjectiveDefinition>()).ToArray();
-            if (bonuses.Length > 10 || bonuses.Any(x => x == null)) throw new ArgumentException("At most ten non-null additional objectives.");
+            int cap=missionId=="nf-horde-continuous"?10:2;
+            if (bonuses.Length > cap || bonuses.Any(x => x == null)) throw new ArgumentException("Too many or null additional objectives.");
             var all = new[] { primary }.Concat(bonuses).ToArray();
             if (all.Select(x => x.Id).Distinct(StringComparer.Ordinal).Count() != all.Length) throw new ArgumentException("Duplicate objective ID.");
             if(primary.IsFollowupStage)throw new ArgumentException("First objective may not be a follow-up.");
