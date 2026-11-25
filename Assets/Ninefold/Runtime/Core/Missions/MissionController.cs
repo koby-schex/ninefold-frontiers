@@ -37,6 +37,34 @@ namespace Ninefold.Core.Missions
                 turns.Battlefield.GetPosition(id); // Fail setup before publishing a partially configured mission.
             }
         }
+        // One battle, six enemy waves and five player-controlled preparation
+        // intervals. Future enemies cannot act or obstruct until awakened.
+        // Dormancy reuses existing saved scheduler eligibility and health.
+        internal void PrepareWaveEncounter()
+        {
+            if(Definition.MissionId!="nf-horde-continuous" || states.Length!=11 ||
+                turns.RoundNumber!=0)throw new InvalidOperationException("Invalid wave encounter setup.");
+            for(int i=2;i<states.Length;i+=2)
+            {
+                if(states[i].Definition.Kind!=ObjectiveKind.Defeat)
+                    throw new InvalidOperationException("Wave stage must defeat its hostile group.");
+                foreach(var id in states[i].Definition.Subjects)
+                    turns.SuspendForWave(id);
+            }
+        }
+        private void WakeNextWave()
+        {
+            if(Definition.MissionId!="nf-horde-continuous")return;
+            for(int i=2;i<states.Length;i+=2)
+            {
+                var state=states[i];
+                if(state.Status!=ObjectiveStatus.Active||!StageAvailable(state))continue;
+                foreach(var id in state.Definition.Subjects)
+                    if(!turns.IsUnitEligible(id)&&!turns.Health.GetState(id).IsDefeated)
+                        turns.WakeForWave(id);
+                break;
+            }
+        }
         public ObjectiveView GetObjective(string id) => states.First(s => s.Definition.Id == id).View();
         private bool RequiredObjective(State state)=>ReferenceEquals(state,states[0])||state.Definition.IsFollowupStage;
         private bool StageAvailable(State state)=>!state.Definition.IsFollowupStage||
@@ -154,6 +182,7 @@ namespace Ninefold.Core.Missions
                 }
                 if (state.Status == ObjectiveStatus.Active && state.Progress >= d.Required) state.Status = ObjectiveStatus.Completed;
             }
+            WakeNextWave();
         }
         private BattleResult ResolveOutcome()
         {

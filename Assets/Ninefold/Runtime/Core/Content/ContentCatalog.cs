@@ -166,6 +166,7 @@ namespace Ninefold.Core.Content
             foreach (var a in m.Actors.Where(a => a.IsHostile)) field.RegisterEnemy(a.Id, a.Behavior);
             var objectives = m.Objectives.Select(o => Bind(o, squad)).ToArray();
             battle.ConfigureMission(new MissionDefinition(m.Id, attempt, squad, objectives[0], m.Priority, objectives.Skip(1)));
+            if(m.Id=="nf-horde-continuous")battle.Mission.PrepareWaveEncounter();
             battle.StartNextRound(); battle.BeginNextActivation(); return battle;
         }
         private static ObjectiveDefinition Bind(ObjectiveDefinition o, IReadOnlyList<string> squad)

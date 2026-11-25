@@ -32,7 +32,13 @@ namespace Ninefold.Core.Missions
         public int Required { get; }
         // Reserved serialized objective IDs provide an append-only stage
         // contract without rewriting existing checkpoint bytes.
-        public bool IsFollowupStage => Id=="stage-2" || Id=="stage-3";
+        public bool IsFollowupStage => IsSequentialStage(Id);
+        internal static bool IsSequentialStage(string id)
+        {
+            if(id==null || !id.StartsWith("stage-",StringComparison.Ordinal))return false;
+            for(int n=2;n<=11;n++)if(id=="stage-"+n)return true;
+            return false;
+        }
         public IReadOnlyList<string> Subjects { get; }
         public IReadOnlyList<string> Contestants { get; }
         public FieldBox Zone { get; }
@@ -111,7 +117,8 @@ namespace Ninefold.Core.Missions
             if (!Enum.IsDefined(typeof(OutcomePriority),priority)) throw new ArgumentOutOfRangeException(nameof(priority));
             if (primary == null) throw new ArgumentNullException(nameof(primary));
             var bonuses = (optional ?? Array.Empty<ObjectiveDefinition>()).ToArray();
-            if (bonuses.Length > 2 || bonuses.Any(x => x == null)) throw new ArgumentException("At most two non-null optional objectives.");
+            int cap=missionId=="nf-horde-continuous"?10:2;
+            if (bonuses.Length > cap || bonuses.Any(x => x == null)) throw new ArgumentException("Too many or null additional objectives.");
             var all = new[] { primary }.Concat(bonuses).ToArray();
             if (all.Select(x => x.Id).Distinct(StringComparer.Ordinal).Count() != all.Length) throw new ArgumentException("Duplicate objective ID.");
             if(primary.IsFollowupStage)throw new ArgumentException("First objective may not be a follow-up.");
@@ -133,7 +140,7 @@ namespace Ninefold.Core.Missions
         public int Progress { get; }
         public int Required { get; }
         public bool Rescued { get; }
-        public bool IsFollowupStage => Id=="stage-2" || Id=="stage-3";
+        public bool IsFollowupStage => ObjectiveDefinition.IsSequentialStage(Id);
         internal ObjectiveView(ObjectiveDefinition definition, ObjectiveStatus status, int progress, bool rescued)
         { Id = definition.Id; Kind = definition.Kind; Required = definition.Required; Status = status; Progress = progress; Rescued = rescued; }
     }

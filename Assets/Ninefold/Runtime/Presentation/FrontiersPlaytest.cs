@@ -786,7 +786,7 @@ namespace Ninefold.Presentation
                 Text(parent, "REPLAY · COMPLETED MISSION", "eyebrow")
                     .AddToClassList("mission-brief-context");
 
-            if(WorldFiveModes.TryGet(definition.Id,out var modeStage))
+            if(WorldFiveModeExpansion.TryGetAny(definition.Id,out var modeStage))
             {
                 var narrative=Card(parent,"briefing-objective");
                 Text(narrative,modeStage.Mode==FrontierMode.Horde?"HORDE":
@@ -1255,8 +1255,12 @@ namespace Ninefold.Presentation
             Text(summary, victory ? "Objective achieved." : "Regroup and try a new approach.", "detail");
             if(victory && WorldFiveRouteRecovery.TryGet(r.Result.MissionId,out var chapter))
                 Text(summary,chapter.Success,"detail");
-            if(victory&&WorldFiveModes.TryGet(r.Result.MissionId,out var modeStage))
+            if(victory&&WorldFiveModeExpansion.TryGetAny(r.Result.MissionId,out var modeStage))
                 Text(summary,modeStage.Success,"detail");
+            if(r.Result.MissionId==WorldFiveModeExpansion.HordeRunId)
+                Text(summary,"Horde · "+WorldFiveModeExpansion.HordeWave(r.Result)+
+                    " / 6 waves cleared · "+WorldFiveModeExpansion.HordeScore(r.Result)+
+                    " run points · "+r.Result.Round+" rounds","section");
             if (actOneStudy && r.Result.MissionId == WorldFiveStorySequence.FirstCampaignMissionId && victory)
                 Text(summary, "The attackers are Ashbound. Their empty harnesses and damaged route " +
                     "equipment point toward deliberate sabotage. The Continuance must investigate.", "detail");
@@ -1314,13 +1318,13 @@ namespace Ninefold.Presentation
                 Primary(next, "Review campaign rewards  ›", () => LeaveResults(attempt,
                     wildlifeStudy&&campaign.CampaignId==WorldFivePlayableSlice.CampaignId?Page.Completion:Page.Home));
             }
-            else if(victory&&WorldFiveModes.IsModeMission(r.Result.MissionId))
+            else if(victory&&WorldFiveModeExpansion.IsModeMission(r.Result.MissionId))
                 Primary(next,"Continue this mode  ›",()=>LeaveResults(attempt,Page.OtherModes));
             else if (victory && nextMission != null)
                 Primary(next, "Next mission · " + MissionName(nextMission.Definition.Id), () => LeaveResults(attempt, Page.Briefing, nextMission.Definition.Id));
             if (mission.Available)
                 Button(next, victory ? "Replay mission" : "Prepare another attempt", () => LeaveResults(attempt, Page.Briefing, r.Result.MissionId));
-            if(WorldFiveModes.IsModeMission(r.Result.MissionId))
+            if(WorldFiveModeExpansion.IsModeMission(r.Result.MissionId))
                 Button(next,"Explore all modes  ›",()=>LeaveResults(attempt,Page.OtherModes));
             Button(next, "View unit collection", () => LeaveResults(attempt, Page.Collection));
             Button(next, "Browse campaigns", () => LeaveResults(attempt, Page.Battles));
@@ -1345,6 +1349,19 @@ namespace Ninefold.Presentation
             root.EnableInClassList("rescue-objective-mode",b.RescueCarrierId != null);
             if (b.Phase != BattleSessionPhase.PlayerInput) lastTapUnitId = null;
             var top = Card(content, "battle-header");
+            if(b.MissionId==WorldFiveModeExpansion.HordeRunId)
+            {
+                int completed=b.Objectives.Count(o=>o.Kind==ObjectiveKind.Defeat &&
+                    o.Status==ObjectiveStatus.Completed);
+                bool preparing=b.Objectives.Any(o=>o.Kind==ObjectiveKind.Stabilize &&
+                    o.Status==ObjectiveStatus.Active &&
+                    b.Objectives.TakeWhile(x=>x.Id!=o.Id)
+                        .Where(x=>x.Kind==ObjectiveKind.Defeat).All(x=>x.Status==ObjectiveStatus.Completed));
+                Text(top,"HORDE · "+(preparing?"PREPARE FOR WAVE "+(completed+1):
+                    "WAVE "+Math.Min(6,completed+1)+" / 6"),"battle-kicker");
+                Text(top,preparing?"Heal, reposition, then tap the rally marker when ready.":
+                    "Hold the same squad · Health and signatures carry across every wave.","hint");
+            }
             var line = Row(top); line.AddToClassList("battle-title-row");
             var actor = b.Units.FirstOrDefault(u => u.Id == b.Activation?.UnitId);
             var exit = Button(line, "‹", () => { input.Cancel(); inBattle = false; battleDetails = false; Navigate(Page.Home); }, !battleView.IsAnimating);
@@ -1704,7 +1721,7 @@ namespace Ninefold.Presentation
                 // an independent directory to protect all old checkpoints.
                 if (actOneStudy)
                 {
-                    catalog = wildlifeStudy ? WorldFiveModes.Create() :
+                    catalog = wildlifeStudy ? WorldFiveModeExpansion.Create() :
                         varietyStudy ? WorldFiveEncounterVarietyV2.Create() : WorldFiveCombatMechanicsV1.Create();
                     var battles=new DirectoryBattleSaveFiles(savePath);
                     var progress=new DirectoryProgressSaveFiles(savePath);
@@ -1995,7 +2012,7 @@ namespace Ninefold.Presentation
                     else if (page == Page.Squad) Navigate(Page.Briefing);
                     else if (page == Page.Briefing)
                         Navigate(catalog.Missions[menuView.SelectedMissionId].IsCampaign ? Page.Missions :
-                            WorldFiveModes.IsModeMission(menuView.SelectedMissionId)?Page.OtherModes:Page.Home);
+                            WorldFiveModeExpansion.IsModeMission(menuView.SelectedMissionId)?Page.OtherModes:Page.Home);
                     else Navigate(Page.Battles);
                 });
                 back.AddToClassList("native-top-back");
@@ -2061,20 +2078,22 @@ namespace Ninefold.Presentation
                 Text(intro,"SAVED BATTLE · Finish the active encounter or claim the result before starting another mode.","hint");
             foreach(var mode in new[]{FrontierMode.Horde,FrontierMode.Pathweave,FrontierMode.WorldCollision})
             {
-                var stages=WorldFiveModes.Stages.Where(x=>x.Mode==mode).ToArray();
+                var stages=WorldFiveModeExpansion.Stages.Concat(WorldFiveModes.Stages)
+                    .Where(x=>x.Mode==mode).ToArray();
                 var card=Card(parent,"campaign-panel");
                 card.AddToClassList("campaign-choice");
                 string name=mode==FrontierMode.Horde?"HORDE":mode==FrontierMode.Pathweave?"PATHWEAVE":"WORLD COLLISION";
                 Text(card,name,"section");
                 if(mode==FrontierMode.Horde)
                 {
-                    Text(card,"Waves 1–6 · playable pilot","detail");
-                    Text(card,"Defend a World Five crossing against a growing series of Ashbound assaults. Each wave is its own saved battle; health and abilities reset between waves. Continuous/endless waves are later work.","hint");
+                    Text(card,"THE UNBROKEN LINE · SIX WAVES IN ONE BATTLE","detail");
+                    Text(card,"A continuous six-wave encounter is now playable. Clear a wave, heal or reposition, then interact with the rally marker to start the next. Surviving health, positions and signature use persist. The original six separate skirmishes remain replayable training.","hint");
                 }
                 else if(mode==FrontierMode.Pathweave)
                 {
                     Text(card,"Ninefold-exclusive branching route prototype","detail");
-                    Text(card,"A fractured crossing forces a consequential choice: shelter the stranded or seal the unsafe route. Your completed choice locks its alternative and changes the concluding encounter.","hint");
+                    Text(card,"World Five's fractured crossing forces a durable route choice: shelter the stranded or seal the unstable lane. The chosen outcome opens a SECOND exclusive decision about what survives — testimony, passage, recorded containment or a guarded boundary.","hint");
+                    Text(card,WorldFiveModeExpansion.Consequence(menuView.Progress),"detail");
                     string path=WorldFiveModes.ChosenPath(menuView.Progress);
                     if(path!=null)Text(card,"PATH CHOSEN · "+path,"campaign-status");
                     else if(menuView.Progress.Missions.ContainsKey(WorldFiveModes.PathEntry))
@@ -2083,10 +2102,10 @@ namespace Ninefold.Presentation
                 else
                 {
                     Text(card,"Large formation · mixed-faction exercise","detail");
-                    Text(card,"Two larger maps with 6–7 unit deployments. Unlocks after the complete World Five campaign and one-time Apex reward. This is mechanical testing, not a lore-approved collision between named worlds.","hint");
+                    Text(card,"Five large battlefields with 6–7 deployable units, multiple fronts and sequential objectives. Unlocks after the full World Five campaign and one-time Apex reward. This is mechanical testing, not a lore-approved collision between named worlds.","hint");
                 }
                 int clears=stages.Count(x=>menuView.Progress.Missions.ContainsKey(x.Id));
-                Text(card,clears+" / "+stages.Length+" PILOT ENCOUNTERS CLEARED","detail");
+                Text(card,clears+" / "+stages.Length+" MODE ENCOUNTERS CLEARED","detail");
                 Meter(card,clears,stages.Length);
                 foreach(var stage in stages)
                 {
@@ -2348,7 +2367,7 @@ namespace Ninefold.Presentation
         private static string ResourceName(string id) => id.StartsWith("fragment-") ? UnitName(id.Substring(9)) + " fragments" : "Test supplies";
         private string Description(string id)
         {
-            if(WorldFiveModes.TryGet(id,out var modeStage))return modeStage.Instruction;
+            if(WorldFiveModeExpansion.TryGetAny(id,out var modeStage))return modeStage.Instruction;
             if(id==WorldFiveFinale.TransferMissionId)return "Provisional faction handoff. Move to the marked reference and stabilize it once. This is not a canonical second-world story mission.";
             if (worldFiveSlice)
             {
@@ -2391,7 +2410,7 @@ namespace Ninefold.Presentation
         }
         private static string MissionName(string id)
         {
-            if(WorldFiveModes.TryGet(id,out var stage))return stage.Name;
+            if(WorldFiveModeExpansion.TryGetAny(id,out var stage))return stage.Name;
             if(id==WorldFiveFinale.TransferMissionId)return "Transfer study · Entry";
             for (int i=0;i<WorldFiveOpeningTenPrototype.MissionIds.Count;i++)
                 if (id==WorldFiveOpeningTenPrototype.MissionIds[i]) return "Mission " + (i+1);
