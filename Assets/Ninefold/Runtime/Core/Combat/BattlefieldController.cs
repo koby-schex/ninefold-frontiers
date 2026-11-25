@@ -50,6 +50,22 @@ namespace Ninefold.Core.Combat
             if (!LegalPosition(id, placement, position)) throw new ArgumentException("Illegal starting position.");
             units.Add(id, placement);
         }
+        internal void PlaceWaveReinforcement(string id)
+        {
+            if(!units.TryGetValue(id,out var actor))throw new ArgumentException("Unknown wave actor.");
+            var origin=actor.Position;
+            // Stable spiral, never overlap surviving allies or impassable cover.
+            for(int r=0;r<=36;r++)
+                for(int z=-r;z<=r;z++)
+                    for(int x=-r;x<=r;x++)
+                    {
+                        if(Math.Max(Math.Abs(x),Math.Abs(z))!=r)continue;
+                        var candidate=new FieldPoint(origin.X+x,origin.Y,origin.Z+z);
+                        if(!LegalPosition(id,actor,candidate))continue;
+                        actor.Position=candidate;return;
+                    }
+            throw new InvalidOperationException("No safe reinforcement position.");
+        }
         public FieldPoint GetPosition(string id) => units[id].Position;
 
         public bool TryPreviewMovement(long activationId, IEnumerable<FieldPoint> waypoints,

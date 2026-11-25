@@ -95,6 +95,27 @@ namespace Ninefold.Core.Combat
             units.Add(unit.UnitId, new UnitState(unit));
         }
 
+        // An ineligible opponent with positive health is dormant, not
+        // defeated. Existing save eligibility bits encode this without
+        // changing the binary schema or disrupting earlier checkpoints.
+        internal void SuspendForWave(string id)
+        {
+            EnsureBattleOpen();
+            if(RoundNumber!=0 || active!=null||!FindUnit(id).Eligible||
+                Health.GetState(id).IsDefeated||FindUnit(id).ActivationCount!=0)
+                throw new InvalidOperationException("Cannot suspend active or defeated opponent.");
+            FindUnit(id).Eligible=false;
+        }
+        internal void WakeForWave(string id)
+        {
+            EnsureBattleOpen();
+            if(FindUnit(id).Eligible || Health.GetState(id).IsDefeated ||
+                FindUnit(id).ActivationCount!=0 || Battlefield==null)
+                throw new InvalidOperationException("Cannot awaken wave opponent.");
+            Battlefield.PlaceWaveReinforcement(id);
+            FindUnit(id).Eligible=true;
+        }
+
         /// <summary>Changes take effect only when the next round order is constructed.</summary>
         public void SetInitiative(string unitId, int initiative)
         {
