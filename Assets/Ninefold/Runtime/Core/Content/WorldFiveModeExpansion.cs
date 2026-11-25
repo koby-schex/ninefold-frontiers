@@ -101,7 +101,7 @@ namespace Ninefold.Core.Content
         public static long HordeScore(BattleResult result)
         {
             int waves=HordeWave(result);
-            return checked(waves*1000L+Math.Max(0,100-result.Round)*10L);
+            return waves==0?0L:checked(waves*1000L+Math.Max(0,100-result.Round)*10L);
         }
 
         private static FieldPoint P(decimal x,decimal z)=>new FieldPoint(x,0,z);

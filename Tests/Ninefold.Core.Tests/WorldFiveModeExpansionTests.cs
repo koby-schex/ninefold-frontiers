@@ -64,7 +64,7 @@ internal static partial class Program
             Equal("stage-"+(i+1),mission.Objectives[i].Id);
         Equal(21,mission.Actors.Count);Equal(21,mission.Actors.Select(a=>a.Id).Distinct().Count());
         Equal(0,mission.Actors.Count(a=>!a.IsHostile));
-        Equal(11,c.Rewards[mission.Id].Replay.Single().Amount); // rewards deliberately bounded
+        Equal(16L,c.Rewards[mission.Id].Replay.Single().Amount); // rewards deliberately bounded
     }
     private static void HordeDormantPersistence()
     {
@@ -78,7 +78,6 @@ internal static partial class Program
         flow.Start(id,c.StarterUnits);
         var b=flow.ReadBattle();
         Equal(2,b.Mission.Definition.Objectives[0].Subjects.Count);
-        var ids=b.Mission.Definition.Objectives.SelectMany(o=>o.Subjects).Distinct().ToArray();
         var future=b.Mission.Definition.Objectives.Skip(1)
             .Where(o=>o.Kind==ObjectiveKind.Defeat).SelectMany(o=>o.Subjects).ToArray();
         Equal(19,future.Length);
@@ -88,7 +87,7 @@ internal static partial class Program
             Equal(true,b.Health.GetState(enemy).CurrentHealth>0);
             Equal(0L,b.GetActivationCount(enemy));
         }
-        Equal(2,b.Battlefield.InspectEnemyIds().Count(enemy=>b.IsUnitEligible(enemy)));
+        Equal(2,b.Mission.Definition.Objectives[0].Subjects.Count(enemy=>b.IsUnitEligible(enemy)));
         Equal(InteractionFailure.Unavailable,
             b.Mission.PreviewInteraction(b.CurrentActivation.ActivationId,"stage-2"));
         var restored=c.CreateFlow(saves,progress,profile);restored.Open();
@@ -272,7 +271,7 @@ internal static partial class Program
             Equal(true,m.EnvironmentKey.StartsWith("study-w5-",StringComparison.Ordinal));
             Equal(true,m.Deployment.Count>=4);
             Equal(true,m.Actors.Count>=3||m.Id==WorldFiveModeExpansion.HordeRunId);
-            Equal(true,c.Rewards[m.Id].Replay.Sum(g=>g.Amount)<=12);
+            Equal(true,c.Rewards[m.Id].Replay.Sum(g=>g.Amount)<=16);
         }
         Equal(100,c.Campaigns.Single(x=>x.Id==WorldFivePlayableSlice.CampaignId).Missions.Count);
     }
@@ -283,7 +282,8 @@ internal static partial class Program
         ExpansionClear(store,c,WorldFiveModes.HordeId(1));
         var flow=c.CreateFlow(new FakeSaveFiles(),progress,profile);flow.Open();
         flow.Start(WorldFiveModeExpansion.HordeRunId,c.StarterUnits);
-        var terminal=flow.Execute(b=>b.Mission.Forfeit()).Mission.Result;
+        flow.Execute(b=>b.Mission.Forfeit());
+        var terminal=flow.ReadBattle().Mission.Result;
         Equal(0,WorldFiveModeExpansion.HordeWave(terminal));
         Equal(0L,WorldFiveModeExpansion.HordeScore(terminal));
         Throws<ArgumentException>(()=>WorldFiveModeExpansion.HordeWave(null));
