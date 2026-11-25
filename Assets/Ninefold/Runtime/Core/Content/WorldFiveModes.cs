@@ -183,7 +183,18 @@ namespace Ninefold.Core.Content
         private static MissionContent Paths(string id)
         {
             var bounds=B(-12,-9,15,12);
-            var map=new BattlefieldMap(bounds,new[]{Rock(-6,1,-4,4),Rock(0,-2,2,1),Rock(8,0,10,3)},
+            // A route decision changes the actual authored battlefield
+            // footprint and later mission, not only its briefing text.
+            FieldObstacle[] cover;
+            switch(id)
+            {
+                case PathEntry:cover=new[]{Rock(-6,1,-4,4),Rock(0,-2,2,1),Rock(8,0,10,3)};break;
+                case PathShelter:cover=new[]{Rock(-6,0,-4,3),Rock(1,-3,3,0),Rock(7,2,9,4)};break;
+                case PathSeal:cover=new[]{Rock(-6,2,-4,5),Rock(1,-2,3,0),Rock(8,3,10,5)};break;
+                case PathShelterEnd:cover=new[]{Rock(-7,1,-5,4),Rock(0,2,2,4),Rock(8,-2,10,0)};break;
+                default:cover=new[]{Rock(-6,-1,-4,2),Rock(1,1,3,3),Rock(7,3,9,5)};break;
+            }
+            var map=new BattlefieldMap(bounds,cover,
                 new[]{Slow(3,-5,5,-3)});
             var threats=Threats(id,bounds,(0,10,-5),(2,11,5),(1,12,9));
             var actors=new List<ActorSpawn>(threats);
