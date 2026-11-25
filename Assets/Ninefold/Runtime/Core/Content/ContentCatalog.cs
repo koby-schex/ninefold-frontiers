@@ -29,7 +29,8 @@ namespace Ninefold.Core.Content
 
         public ContentCatalog(ContentManifest manifest, IEnumerable<string> resources, IEnumerable<AbilityContent> abilities,
             IEnumerable<KitContent> kits, IEnumerable<UnitContent> units, IEnumerable<MissionContent> missions,
-            IEnumerable<MissionRewardPolicy> rewards, IEnumerable<CampaignDefinition> campaigns, IEnumerable<string> starterUnits, IEnumerable<StatusDefinition> statuses = null)
+            IEnumerable<MissionRewardPolicy> rewards, IEnumerable<CampaignDefinition> campaigns, IEnumerable<string> starterUnits, IEnumerable<StatusDefinition> statuses = null,
+            IReadOnlyDictionary<string,Func<PlayerProgress,bool>> availability = null)
         {
             Manifest = manifest ?? throw new ArgumentNullException(nameof(manifest));
             Statuses = Index(statuses ?? Array.Empty<StatusDefinition>(), d => d.Id);
@@ -63,13 +64,20 @@ namespace Ninefold.Core.Content
                 });
             foreach (var c in Campaigns)
                 InContext("campaign " + c.Id, () => { foreach (var grant in c.CompletionRewards) RequireResource(grant.ResourceId); });
+            // Optional per-mission availability belongs to the authored game
+            // mode, never to a UI-only lock. It must be enforced by the flow.
+            if(availability!=null)
+                foreach(var id in availability.Keys)
+                    if(!Missions.TryGetValue(id,out var declared)||declared.IsCampaign||availability[id]==null)
+                        throw new ArgumentException("Mode gate requires an existing standalone mission and predicate: "+id);
             var entries = new List<MissionEntry>();
             foreach (var m in Missions.Values)
                 InContext("mission " + m.Id, () => {
                     if (!Rewards.ContainsKey(m.Id)) throw new ArgumentException("Missing mission reward policy.");
                     ValidateMission(m);
                     entries.Add(new MissionEntry(m.Id, m.MinimumSquad, m.MaximumSquad, m.FactionId, m.IsCampaign, Rewards[m.Id],
-                        (attempt, squad) => Build(m, attempt, squad)));
+                        (attempt, squad) => Build(m, attempt, squad),
+                        availability!=null&&availability.TryGetValue(m.Id,out var gate)?gate:null));
                 });
             Entries = entries.AsReadOnly();
             _ = new CampaignCatalog(Campaigns, Entries, roster);

@@ -78,7 +78,8 @@ namespace Ninefold.Core.Campaigns
             => units.Values.Count(u => !u.IsApex && u.FactionId == c.FactionId && p.Owns(u.Id)) >= 3;
         public bool IsMissionAvailable(string id, PlayerProgress progress)
         {
-            if (!byMission.TryGetValue(id, out var campaign)) return true; // Standalone mode uses its own gates.
+            if (!byMission.TryGetValue(id, out var campaign))
+                return entries.TryGetValue(id,out var standalone)&&standalone.IsAvailable(progress);
             if (!CanEnter(campaign, progress)) return false;
             if (progress.Missions.ContainsKey(id)) return true; // Completed missions remain replayable.
             var node = campaign.Missions.First(m => m.MissionId == id);
