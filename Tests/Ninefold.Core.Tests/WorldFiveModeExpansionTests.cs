@@ -25,12 +25,12 @@ internal static partial class Program
     }
 
     private static readonly Lazy<ContentCatalog> ExpandedCatalog=new Lazy<ContentCatalog>(WorldFiveModeExpansion.Create);
-    private static ContentCatalog Expanded()=>ExpandedCatalog.Value;
+    private static ContentCatalog Expansion197()=>ExpandedCatalog.Value;
     private static void ExpansionClear(LocalProgressStore store,ContentCatalog c,string id)
         =>store.Claim(Result("expanded-clear-"+id,id),c.Rewards[id]);
     private static void ExpandedSaveCompatibility()
     {
-        var old=WorldFiveModes.Create();var c=Expanded();
+        var old=WorldFiveModes.Create();var c=Expansion197();
         Equal(old.Manifest.SaveRevision,c.Manifest.SaveRevision);
         Equal(8,WorldFiveModeExpansion.Stages.Count);
         Equal(old.Missions.Count+8,c.Missions.Count);
@@ -55,7 +55,7 @@ internal static partial class Program
     }
     private static void HordeRunStructure()
     {
-        var c=Expanded();var mission=c.Missions[WorldFiveModeExpansion.HordeRunId];
+        var c=Expansion197();var mission=c.Missions[WorldFiveModeExpansion.HordeRunId];
         Equal(false,mission.IsCampaign);Equal(4,mission.MaximumSquad);
         Equal(11,mission.Objectives.Count);
         Equal(6,mission.Objectives.Count(o=>o.Kind==ObjectiveKind.Defeat));
@@ -68,7 +68,7 @@ internal static partial class Program
     }
     private static void HordeDormantPersistence()
     {
-        var c=Expanded();var saves=new FakeSaveFiles();var progress=new ProgressFiles();
+        var c=Expansion197();var saves=new FakeSaveFiles();var progress=new ProgressFiles();
         const string profile="horde-dormant-save";
         var store=new LocalProgressStore(progress,profile);store.Create(c.StarterUnits);
         ExpansionClear(store,c,WorldFiveModes.HordeId(1));
@@ -103,7 +103,7 @@ internal static partial class Program
     }
     private static void HordeLiveTransition()
     {
-        var c=Expanded();var files=new FakeSaveFiles();var progress=new ProgressFiles();
+        var c=Expansion197();var files=new FakeSaveFiles();var progress=new ProgressFiles();
         const string profile="horde-live-phase";
         var store=new LocalProgressStore(progress,profile);store.Create(c.StarterUnits);
         ExpansionClear(store,c,WorldFiveModes.HordeId(1));
@@ -188,7 +188,7 @@ internal static partial class Program
     }
     private static void PathSecondChoices()
     {
-        var c=Expanded();
+        var c=Expansion197();
         foreach(var shelter in new[]{true,false})
         {
             var progress=new ProgressFiles();string profile="expanded-path-"+shelter;
@@ -216,7 +216,7 @@ internal static partial class Program
     }
     private static void CollisionMultiFront()
     {
-        var c=Expanded();var progress=new ProgressFiles();const string profile="expanded-collision";
+        var c=Expansion197();var progress=new ProgressFiles();const string profile="expanded-collision";
         var files=new FakeSaveFiles();var store=new LocalProgressStore(progress,profile);
         store.Create(c.StarterUnits);
         var flow=c.CreateFlow(files,progress,profile);flow.Open();
@@ -249,7 +249,7 @@ internal static partial class Program
     }
     private static void ExpandedLegacyGates()
     {
-        var c=Expanded();var progress=new ProgressFiles();
+        var c=Expansion197();var progress=new ProgressFiles();
         const string profile="expanded-old-gates";
         var store=new LocalProgressStore(progress,profile);store.Create(c.StarterUnits);
         var flow=c.CreateFlow(new FakeSaveFiles(),progress,profile);flow.Open();
@@ -262,7 +262,7 @@ internal static partial class Program
     }
     private static void ExpandedGeometry()
     {
-        var c=Expanded();var bodies=ArtBodies(c);
+        var c=Expansion197();var bodies=ArtBodies(c);
         Equal(8,WorldFiveModeExpansion.Stages.Select(x=>TerrainMapSignature(c.Missions[x.Id].Map)).Distinct().Count());
         foreach(var stage in WorldFiveModeExpansion.Stages)
         {
@@ -277,7 +277,7 @@ internal static partial class Program
     }
     private static void HordeScoring()
     {
-        var c=Expanded();var progress=new ProgressFiles();const string profile="horde-scoring";
+        var c=Expansion197();var progress=new ProgressFiles();const string profile="horde-scoring";
         var store=new LocalProgressStore(progress,profile);store.Create(c.StarterUnits);
         ExpansionClear(store,c,WorldFiveModes.HordeId(1));
         var flow=c.CreateFlow(new FakeSaveFiles(),progress,profile);flow.Open();
