@@ -174,7 +174,11 @@ namespace Ninefold.Core.Content
         {
             string id=HordeId(wave);
             var bounds=B(-13-wave,-10,16+wave,13);
-            var cover=new[]{Rock(-7,1,-5,4),Rock(1,-4,3,-2),Rock(7,2,9,4)};
+            // Each wave must change its tactical cover, not merely enlarge
+            // the outer map bounds. Six distinct left/centre lane patterns.
+            int lane=wave%3,offset=wave%2;
+            var cover=new[]{Rock(-7,1+lane,-5,4+lane),
+                Rock(1,-4-offset,3,-2-offset),Rock(7,2,9,4)};
             var ground=new[]{Slow(-1,6,2,8)};
             var threats=Threats(id,bounds,WavePositions.Take(wave+1).ToArray());
             return new MissionContent(id,null,false,2,new BattlefieldMap(bounds,cover,ground),
